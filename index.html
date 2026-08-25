@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#f5f5f7" />
+    <meta
+      name="description"
+      content="英コミ定期テスト対策用の単語・熟語・構文学習アプリ"
+    />
+    <title>Words — 英コミ対策</title>
+    <link rel="stylesheet" href="./styles.css?v=phase3.1" />
+  </head>
+  <body>
+    <div class="app-shell" id="app-shell" aria-busy="true">
+      <header class="app-header" id="app-header">
+        <button class="brand" type="button" data-view-target="home" aria-label="ホームへ">
+          <span class="brand-mark" aria-hidden="true">W</span>
+          <span>Words</span>
+        </button>
+        <div class="header-status" id="header-status">読み込み中</div>
+      </header>
+
+      <main class="main-content">
+        <section class="view" id="view-home" data-view="home">
+          <div class="home-hero">
+            <p class="eyebrow" id="greeting">Good evening.</p>
+            <h1>英コミを、書けるまで。</h1>
+            <p class="hero-copy">意味・スペル・前置詞を、同じ語句で何度も確かめます。</p>
+            <div class="mastery-card">
+              <div>
+                <span class="subtle-label">これまでの正答率</span>
+                <strong id="home-accuracy">—</strong>
+              </div>
+              <div class="progress-track" aria-hidden="true">
+                <span id="home-progress"></span>
+              </div>
+              <p id="home-summary">まだ回答履歴がありません</p>
+            </div>
+            <button class="primary-button hero-button" type="button" data-view-target="setup">
+              学習開始
+              <span aria-hidden="true">→</span>
+            </button>
+          </div>
+
+          <section class="content-section" aria-labelledby="quick-heading">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">QUICK STUDY</p>
+                <h2 id="quick-heading">クイック学習</h2>
+              </div>
+            </div>
+            <div class="quick-grid" id="quick-grid"></div>
+          </section>
+
+          <section class="content-section" aria-labelledby="range-heading">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">8 RANGES</p>
+                <h2 id="range-heading">範囲から選ぶ</h2>
+              </div>
+              <button class="text-button" type="button" data-view-target="list">一覧を見る</button>
+            </div>
+            <div class="range-grid" id="range-grid"></div>
+          </section>
+        </section>
+
+        <section class="view" id="view-setup" data-view="setup" hidden>
+          <div class="page-heading">
+            <p class="eyebrow">STUDY SETUP</p>
+            <h1>何を学習しますか？</h1>
+            <p>条件を組み合わせると、該当する問題数がすぐに更新されます。</p>
+          </div>
+
+          <div class="setup-grid">
+            <section class="panel-card setup-filter-card">
+              <div class="panel-heading">
+                <div>
+                  <span class="subtle-label">絞り込み</span>
+                  <h2>学習範囲</h2>
+                </div>
+                <button class="secondary-button compact" id="open-filter" type="button">
+                  条件を編集
+                </button>
+              </div>
+              <div class="active-filter-list" id="active-filter-list"></div>
+              <div class="match-count">
+                <strong id="setup-match-count">0</strong>
+                <span>項目が該当</span>
+              </div>
+            </section>
+
+            <section class="panel-card">
+              <label class="field-label" for="sort-select">並び替え</label>
+              <select class="select-control" id="sort-select">
+                <option value="random">ランダム</option>
+                <option value="difficulty">苦手順</option>
+                <option value="importance-desc">重要度が高い順</option>
+                <option value="importance-asc">重要度が低い順</option>
+                <option value="wrong-desc">間違い回数が多い順</option>
+                <option value="wrong-asc">間違い回数が少ない順</option>
+                <option value="accuracy-asc">正答率が低い順</option>
+                <option value="accuracy-desc">正答率が高い順</option>
+                <option value="attempts-asc">回答回数が少ない順</option>
+                <option value="attempts-desc">回答回数が多い順</option>
+                <option value="recent-wrong">最近間違えた順</option>
+                <option value="recent-attempted">最近回答した順</option>
+                <option value="oldest-attempted">古く回答した順</option>
+                <option value="range">範囲順</option>
+                <option value="registration">登録順</option>
+                <option value="alpha-en">A–Z</option>
+                <option value="alpha-ja">あいうえお順</option>
+              </select>
+            </section>
+
+            <section class="panel-card">
+              <span class="field-label">問題数</span>
+              <div class="segmented-options" id="question-count-options" role="radiogroup" aria-label="問題数">
+                <button type="button" data-count="5">5</button>
+                <button type="button" data-count="10">10</button>
+                <button type="button" data-count="15" class="selected">15</button>
+                <button type="button" data-count="20">20</button>
+                <button type="button" data-count="30">30</button>
+                <button type="button" data-count="50">50</button>
+                <button type="button" data-count="all">全問</button>
+              </div>
+            </section>
+
+            <section class="panel-card toggle-row">
+              <div>
+                <span class="field-label">苦手再出題</span>
+                <p>間違えた項目を5問後にもう一度出します。</p>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="repeat-wrong" />
+                <span aria-hidden="true"></span>
+                <span class="sr-only">苦手再出題を有効にする</span>
+              </label>
+            </section>
+          </div>
+
+          <div class="sticky-action">
+            <button class="primary-button" id="start-session" type="button">
+              <span id="start-session-label">15問をスタート</span>
+              <span aria-hidden="true">→</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="view" id="view-list" data-view="list" hidden>
+          <div class="page-heading list-heading">
+            <div>
+              <p class="eyebrow">WORD BOOK</p>
+              <h1>単語帳</h1>
+            </div>
+            <button class="secondary-button compact" id="list-open-filter" type="button">絞り込み</button>
+          </div>
+          <div class="list-toolbar">
+            <label class="search-field">
+              <span aria-hidden="true">⌕</span>
+              <input id="list-search" type="search" placeholder="英語・日本語で検索" autocomplete="off" />
+            </label>
+            <select class="select-control compact-select" id="list-sort" aria-label="一覧の並び替え">
+              <option value="importance-desc">重要度順</option>
+              <option value="difficulty">苦手順</option>
+              <option value="wrong-desc">ミスが多い順</option>
+              <option value="accuracy-asc">正答率が低い順</option>
+              <option value="range">範囲順</option>
+              <option value="registration">登録順</option>
+              <option value="alpha-en">A–Z</option>
+              <option value="alpha-ja">あいうえお順</option>
+            </select>
+          </div>
+          <div class="list-count" id="list-count"></div>
+          <div class="word-list" id="word-list"></div>
+          <button class="secondary-button load-more" id="load-more" type="button" hidden>さらに表示</button>
+        </section>
+
+        <section class="view quiz-view" id="view-quiz" data-view="quiz" hidden>
+          <div id="quiz-content"></div>
+        </section>
+      </main>
+
+      <nav class="bottom-nav" id="bottom-nav" aria-label="メインナビゲーション">
+        <button type="button" data-view-target="home" class="active">
+          <span aria-hidden="true">⌂</span>
+          <span>ホーム</span>
+        </button>
+        <button type="button" data-view-target="setup">
+          <span aria-hidden="true">✎</span>
+          <span>学習</span>
+        </button>
+        <button type="button" data-view-target="list">
+          <span aria-hidden="true">▤</span>
+          <span>単語帳</span>
+        </button>
+      </nav>
+    </div>
+
+    <div class="sheet-backdrop" id="filter-backdrop" hidden></div>
+    <aside class="filter-sheet" id="filter-sheet" aria-modal="true" aria-labelledby="filter-title" hidden>
+      <div class="sheet-handle" aria-hidden="true"></div>
+      <div class="sheet-heading">
+        <div>
+          <p class="eyebrow">FILTER</p>
+          <h2 id="filter-title">絞り込み</h2>
+        </div>
+        <button class="icon-button" id="close-filter" type="button" aria-label="閉じる">×</button>
+      </div>
+      <form id="filter-form">
+        <fieldset>
+          <legend>範囲</legend>
+          <div class="filter-chip-grid" id="filter-ranges"></div>
+        </fieldset>
+        <fieldset>
+          <legend>重要度</legend>
+          <div class="filter-chip-grid compact-grid" id="filter-importance"></div>
+        </fieldset>
+        <fieldset>
+          <legend>種類</legend>
+          <div class="filter-chip-grid" id="filter-types"></div>
+        </fieldset>
+        <fieldset>
+          <legend>問題形式</legend>
+          <div class="check-list" id="filter-modes"></div>
+        </fieldset>
+        <fieldset>
+          <legend>成績</legend>
+          <select class="select-control" id="filter-performance" name="performance">
+            <option value="all">全て</option>
+            <option value="unanswered">未回答</option>
+            <option value="answered">回答済み</option>
+            <option value="everCorrect">正解したことがある</option>
+            <option value="everMissed">一度でも間違えた</option>
+            <option value="neverMissed">間違えたことがない</option>
+            <option value="lastCorrect">最後に正解</option>
+            <option value="lastWrong">最後に不正解</option>
+            <option value="accuracyUnder50">正答率50%未満</option>
+            <option value="accuracyUnder70">正答率70%未満</option>
+            <option value="accuracyUnder80">正答率80%未満</option>
+            <option value="accuracyAtLeast90">正答率90%以上</option>
+          </select>
+          <label class="number-field" for="filter-minimum-wrong">
+            <span>最低間違い回数</span>
+            <input id="filter-minimum-wrong" type="number" min="0" max="999" value="0" inputmode="numeric" />
+          </label>
+        </fieldset>
+        <fieldset>
+          <legend>タグ</legend>
+          <div class="filter-chip-grid compact-grid" id="filter-tags"></div>
+        </fieldset>
+      </form>
+      <div class="filter-preview"><strong id="filter-preview-count">0</strong>項目が該当</div>
+      <div class="sheet-actions">
+        <button class="secondary-button" id="reset-filter" type="button">リセット</button>
+        <button class="primary-button" id="apply-filter" type="button">この条件を使う</button>
+      </div>
+    </aside>
+
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+    <script type="module" src="./src/app.js?v=phase3.2"></script>
+  </body>
+</html>

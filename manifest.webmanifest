@@ -1,0 +1,20 @@
+{
+  "name": "Words — 英コミ定期テスト対策",
+  "short_name": "Words",
+  "description": "英単語・熟語・構文を、意味からスペルまで書けるようにする学習アプリ",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f5f5f7",
+  "theme_color": "#f5f5f7",
+  "icons": [
+    {
+      "src": "./icons/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

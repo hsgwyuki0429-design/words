@@ -26,7 +26,16 @@ import {
   summarizeHistory,
   summarizeSession,
 } from "./logic.js";
-import { getMeta, loadHistory, recordAttempt, setMeta } from "./storage.js";
+import { clearAllData, getMeta, loadHistory, recordAttempt, setMeta } from "./storage.js";
+
+const DEFAULT_SETTINGS = {
+  effectsMode: null,
+  sound: false,
+  vibration: true,
+  particles: true,
+  shake: true,
+  showSources: true,
+};
 
 const state = {
   items: [],
@@ -50,6 +59,9 @@ const state = {
   repeatWrong: false,
   listLimit: 60,
   session: null,
+  settings: { ...DEFAULT_SETTINGS },
+  combo: 0,
+  bestCombo: 0,
 };
 
 const elements = Object.fromEntries(
@@ -85,7 +97,11 @@ const elements = Object.fromEntries(
     "load-more",
     "quiz-content",
     "analysis-content",
+    "settings-content",
     "bottom-nav",
+    "effects-canvas",
+    "max-callout",
+    "onboarding",
     "filter-backdrop",
     "filter-sheet",
     "filter-form",
@@ -291,6 +307,167 @@ function showToast(message) {
   }, 2400);
 }
 
+function isMaxMode() {
+  return state.settings.effectsMode === "max";
+}
+
+function applySettings() {
+  document.body.classList.toggle("max-mode", isMaxMode());
+  document.querySelector('meta[name="theme-color"]')?.setAttribute(
+    "content",
+    isMaxMode() && state.view === "quiz" ? "#090a12" : "#f5f5f7",
+  );
+}
+
+function saveSettings() {
+  applySettings();
+  setMeta("settings", state.settings).catch(console.warn);
+}
+
+function renderSettings() {
+  const toggle = (key, title, detail) => `
+    <label class="settings-row">
+      <span><strong>${title}</strong><small>${detail}</small></span>
+      <span class="switch"><input type="checkbox" data-setting="${key}" ${state.settings[key] ? "checked" : ""}><span aria-hidden="true"></span></span>
+    </label>`;
+  elements.settingsContent.innerHTML = `
+    <section class="settings-card">
+      <h2>演出モード</h2><p>問題と正答判定はどちらのモードでも同じです。</p>
+      <div class="segmented-options" role="radiogroup" aria-label="演出モード">
+        <button type="button" data-effects-mode="simple" class="${isMaxMode() ? "" : "selected"}">SIMPLE</button>
+        <button type="button" data-effects-mode="max" class="${isMaxMode() ? "selected" : ""}">MAX</button>
+      </div>
+    </section>
+    <section class="settings-card">
+      <h2>MAX MODE</h2><p>端末の負荷と好みに合わせて個別に切り替えられます。</p>
+      ${toggle("particles", "パーティクル", "正解時にCanvasの光を表示")}
+      ${toggle("shake", "画面シェイク", "コンボ時に画面を短く揺らす")}
+      ${toggle("sound", "効果音", "初期設定はオフ")}
+      ${toggle("vibration", "振動", "対応端末のみ短く振動")}
+    </section>
+    <section class="settings-card">
+      <h2>学習画面</h2>
+      ${toggle("showSources", "出典を表示", "回答後に教材と範囲を表示")}
+    </section>
+    <section class="settings-card">
+      <h2>学習データ</h2><p>正誤履歴、途中位置、設定をこの端末から削除します。</p>
+      <button class="secondary-button danger-button" type="button" data-reset-data>学習データを初期化</button>
+    </section>`;
+}
+
+let effectFrame = 0;
+let calloutTimer = 0;
+
+function playEffectSound(power = 1) {
+  if (!state.settings.sound) return;
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    const context = new AudioContext();
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(520 + power * 70, context.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(880 + power * 90, context.currentTime + 0.1);
+    gain.gain.setValueAtTime(0.045, context.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.14);
+    oscillator.connect(gain).connect(context.destination);
+    oscillator.start();
+    oscillator.stop(context.currentTime + 0.15);
+    oscillator.onended = () => context.close();
+  } catch { /* Audio is an optional enhancement. */ }
+}
+
+function drawParticles(power = 1) {
+  if (!state.settings.particles || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const canvas = elements.effectsCanvas;
+  const context = canvas.getContext("2d", { alpha: true });
+  const scale = Math.min(devicePixelRatio || 1, 2);
+  canvas.width = Math.round(innerWidth * scale);
+  canvas.height = Math.round(innerHeight * scale);
+  context.setTransform(scale, 0, 0, scale, 0, 0);
+  const lowPower = (navigator.hardwareConcurrency ?? 8) <= 4;
+  const count = Math.min(lowPower ? 90 : 300, power >= 4 ? 300 : power >= 2 ? 150 : 80);
+  const colors = ["#70d7ff", "#ffffff", "#9b7cff", "#ffd86b", "#ff5db1"];
+  const particles = Array.from({ length: count }, (_, index) => {
+    const angle = (Math.PI * 2 * index) / count + Math.random() * 0.3;
+    const speed = 2.5 + Math.random() * (5 + power);
+    return {
+      x: innerWidth / 2,
+      y: innerHeight * 0.42,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 1.5,
+      size: 1.5 + Math.random() * 3.5,
+      color: colors[index % colors.length],
+      life: 1,
+    };
+  });
+  cancelAnimationFrame(effectFrame);
+  let previous = performance.now();
+  const animate = (now) => {
+    const frameDuration = now - previous;
+    const frameScale = Math.min(2, frameDuration / 16.67);
+    if (frameDuration > 30 && particles.length > 80) {
+      particles.length = Math.max(80, Math.ceil(particles.length * 0.6));
+    }
+    previous = now;
+    context.clearRect(0, 0, innerWidth, innerHeight);
+    let alive = false;
+    for (const particle of particles) {
+      if (particle.life <= 0) continue;
+      alive = true;
+      particle.x += particle.vx * frameScale;
+      particle.y += particle.vy * frameScale;
+      particle.vy += 0.08 * frameScale;
+      particle.life -= 0.022 * frameScale;
+      context.globalAlpha = Math.max(0, particle.life);
+      context.fillStyle = particle.color;
+      context.beginPath();
+      context.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+      context.fill();
+    }
+    context.globalAlpha = 1;
+    if (alive) effectFrame = requestAnimationFrame(animate);
+    else context.clearRect(0, 0, innerWidth, innerHeight);
+  };
+  effectFrame = requestAnimationFrame(animate);
+}
+
+function showMaxCallout(label, detail = "", power = 1) {
+  if (!isMaxMode() || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  clearTimeout(calloutTimer);
+  elements.maxCallout.innerHTML = `${escapeHtml(label)}${detail ? `<small>${escapeHtml(detail)}</small>` : ""}`;
+  elements.maxCallout.hidden = false;
+  elements.maxCallout.style.animation = "none";
+  requestAnimationFrame(() => { elements.maxCallout.style.animation = ""; });
+  calloutTimer = setTimeout(() => { elements.maxCallout.hidden = true; }, 650);
+  drawParticles(power);
+  playEffectSound(power);
+  if (state.settings.vibration && navigator.vibrate) navigator.vibrate(power >= 4 ? [35, 30, 55] : power >= 2 ? 35 : 15);
+  if (state.settings.shake && power >= 2 && (navigator.hardwareConcurrency ?? 8) > 4) {
+    document.body.classList.remove("screen-shake");
+    requestAnimationFrame(() => document.body.classList.add("screen-shake"));
+    setTimeout(() => document.body.classList.remove("screen-shake"), 280);
+  }
+}
+
+function correctEffect(special = "") {
+  if (!isMaxMode()) return;
+  let label = "CORRECT";
+  let detail = "";
+  let power = 1;
+  if (state.combo >= 30) { label = "UNSTOPPABLE"; detail = `${state.combo} COMBO`; power = 4; }
+  else if (state.combo >= 20) { label = `🔥 ${state.combo} COMBO 🔥`; power = 4; }
+  else if (state.combo >= 10) { label = `🔥 ${state.combo} COMBO 🔥`; power = 3; }
+  else if (state.combo >= 5) { label = `${state.combo} COMBO`; power = 2; }
+  else if (state.combo >= 3) { label = `${state.combo} COMBO`; power = 2; }
+  if (special) {
+    label = special;
+    detail = special === "NEW RECORD" ? `${state.combo} COMBO` : "";
+    power = 4;
+  }
+  showMaxCallout(label, detail, power);
+}
+
 function setView(view) {
   if (view === "setup" && !selectionIsComplete()) view = "study-content";
   state.view = view;
@@ -317,6 +494,8 @@ function setView(view) {
   if (view === "setup") renderSetup();
   if (view === "list") renderList(true);
   if (view === "analysis") renderAnalysis();
+  if (view === "settings") renderSettings();
+  applySettings();
 }
 
 function renderHeader() {
@@ -682,6 +861,7 @@ function startSession(overrides = {}) {
     combinationKey,
     selection: usesSelection ? selection : null,
   };
+  state.combo = 0;
   setView("quiz");
   prepareQuestion();
 }
@@ -781,13 +961,13 @@ function renderFeedback(question, answer, correct) {
         <div><dt>あなた</dt><dd>${escapeHtml(answer || "（未入力）")}</dd></div>
         <div><dt>正解</dt><dd>${escapeHtml(correctAnswer)}</dd></div>
       </dl>
-      <div class="source-box">
+      ${state.settings.showSources ? `<div class="source-box">
         <span class="importance-badge importance-${question.item.importance.toLowerCase()}">${question.item.importance}</span>
         <div>
           <div class="item-tags">${renderTags([question.item.type, ...question.item.tags])}</div>
           <p>${escapeHtml(sourceLine(question.item))}</p>
         </div>
-      </div>
+      </div>` : ""}
     </section>
     <button class="primary-button next-button" type="button" data-next-question>
       ${state.session.cursor + 1 >= state.session.queue.length ? "結果を見る" : "次の問題へ"}
@@ -823,6 +1003,7 @@ function renderQuiz() {
         <div class="quiz-progress-copy"><strong>${session.cursor + 1}</strong> / ${session.queue.length}</div>
         <span class="mode-pill">${escapeHtml(question.label)}</span>
       </header>
+      ${isMaxMode() && state.combo ? `<div class="combo-pill">🔥 ${state.combo} COMBO</div>` : ""}
       <div class="quiz-progress"><span style="width:${progress}%"></span></div>
       <article class="question-card">
         <p class="question-instruction">${escapeHtml(question.instruction)}</p>
@@ -859,15 +1040,17 @@ async function submitAnswer(answer) {
   const durationMs = Math.round(performance.now() - session.questionStartedAt);
   session.currentAnswer = answer;
   session.answered = true;
+  const previousHistory = getHistory(state.history, question.item.id);
+  let savedHistory = null;
 
   try {
-    const nextHistory = await recordAttempt(
+    savedHistory = await recordAttempt(
       question.item.id,
       question.mode,
       correct,
       durationMs,
     );
-    state.history.set(question.item.id, nextHistory);
+    state.history.set(question.item.id, savedHistory);
   } catch (error) {
     console.error(error);
     showToast("履歴の保存に失敗しました");
@@ -881,6 +1064,21 @@ async function submitAnswer(answer) {
     answer,
     durationMs,
   });
+
+  if (correct) {
+    state.combo += 1;
+    let special = previousHistory.wrongCount >= 3 && (savedHistory?.currentCorrectStreak ?? 0) >= 3
+      ? "WEAKNESS DESTROYED"
+      : "";
+    if (state.combo > state.bestCombo) {
+      state.bestCombo = state.combo;
+      setMeta("bestCombo", state.bestCombo).catch(console.warn);
+      if (state.combo >= 3) special = "NEW RECORD";
+    }
+    correctEffect(special);
+  } else {
+    state.combo = 0;
+  }
 
   if (session.combinationKey) {
     const currentProgress = state.progress.get(session.combinationKey) ?? {
@@ -997,6 +1195,10 @@ function renderSessionComplete() {
         <button class="primary-button" type="button" data-result-home>ホームへ</button>
       </div>
     </div>`;
+  if (summary.total && summary.correct === summary.total) {
+    const sssOnly = session.results.every((result) => result.item.importance === "SSS");
+    requestAnimationFrame(() => showMaxCallout(sssOnly ? "SSS MASTER" : "PERFECT", `${summary.correct} / ${summary.total}`, 4));
+  }
   renderHeader();
 }
 
@@ -1108,6 +1310,25 @@ function bindEvents() {
     const target = event.target.closest("button");
     if (!target) return;
     if (target.dataset.viewTarget) setView(target.dataset.viewTarget);
+    if (target.dataset.selectEffects) {
+      state.settings.effectsMode = target.dataset.selectEffects;
+      elements.onboarding.hidden = true;
+      saveSettings();
+      if (isMaxMode()) showMaxCallout("MAX MODE", "READY", 3);
+    }
+    if (target.dataset.effectsMode) {
+      state.settings.effectsMode = target.dataset.effectsMode;
+      saveSettings();
+      renderSettings();
+      if (isMaxMode()) showMaxCallout("MAX MODE", "ON", 3);
+    }
+    if (target.hasAttribute("data-reset-data")) {
+      if (!window.confirm("本当に学習履歴を削除しますか？")) return;
+      if (!window.confirm("この操作は取り消せません。削除しますか？")) return;
+      clearAllData()
+        .then(() => location.reload())
+        .catch(() => showToast("データを削除できませんでした"));
+    }
     if (target.hasAttribute("data-start-study")) {
       state.studySelection = { content: null, method: null, scope: null };
       state.sortKey = "importance-desc";
@@ -1228,6 +1449,13 @@ function bindEvents() {
   elements.filterForm.addEventListener("input", renderFilterPreview);
   elements.filterBackdrop.addEventListener("click", closeFilter);
 
+  document.addEventListener("change", (event) => {
+    const setting = event.target.dataset?.setting;
+    if (!setting || !(setting in state.settings)) return;
+    state.settings[setting] = event.target.checked;
+    saveSettings();
+  });
+
   elements.quizContent.addEventListener("keydown", (event) => {
     if (event.key === "Enter") {
       event.preventDefault();
@@ -1271,19 +1499,27 @@ async function boot() {
         return [key, await getMeta(`studyProgress:${key}`, { completedItemIds: [] })];
       }),
     );
-    const [response, history, selectedMode, progressEntries] = await Promise.all([
+    const [response, history, selectedMode, progressEntries, settings, bestCombo] = await Promise.all([
       fetch("./data/items.json?v=phase3.1"),
       loadHistory(),
       getMeta("selectedMode"),
       progressPromise,
+      getMeta("settings", DEFAULT_SETTINGS),
+      getMeta("bestCombo", 0),
     ]);
     if (!response.ok) throw new Error(`教材データを読み込めませんでした (${response.status})`);
     state.items = await response.json();
     state.history = history;
     state.selectedMode = ALL_MODES.includes(selectedMode) ? selectedMode : null;
     state.progress = new Map(progressEntries);
+    state.settings = { ...DEFAULT_SETTINGS, ...(settings ?? {}) };
+    state.bestCombo = Number(bestCombo) || 0;
     elements.appShell.setAttribute("aria-busy", "false");
     setView("home");
+    if (!state.settings.effectsMode) elements.onboarding.hidden = false;
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("./sw.js").catch((error) => console.warn("オフライン準備に失敗しました", error));
+    }
   } catch (error) {
     console.error(error);
     elements.appShell.setAttribute("aria-busy", "false");

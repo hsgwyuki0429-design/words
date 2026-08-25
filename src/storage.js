@@ -120,3 +120,15 @@ export async function setMeta(key, value) {
   }
   await transaction(META_STORE, "readwrite", (store) => store.put({ key, value }));
 }
+
+export async function clearAllData() {
+  await openDatabase();
+  if (useFallback) {
+    localStorage.removeItem(FALLBACK_KEY);
+    return;
+  }
+  await Promise.all([
+    transaction(HISTORY_STORE, "readwrite", (store) => store.clear()),
+    transaction(META_STORE, "readwrite", (store) => store.clear()),
+  ]);
+}

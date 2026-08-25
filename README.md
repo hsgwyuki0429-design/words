@@ -1,6 +1,6 @@
 # Words — 英コミ定期テスト対策
 
-添付の単語・熟語帳をもとにした、GitHub Pages向けの静的学習アプリです。Phase 1〜4として、423語句の一覧、6つの出題形式、IndexedDB学習履歴、複合フィルター、詳細リザルト、学習分析、自動おすすめまで実装しています。
+添付の単語・熟語帳をもとにした、GitHub Pages向けの静的学習アプリです。Phase 1〜7を実装し、423語句の学習、詳細分析、SIMPLE／MAX演出、PWA・オフライン利用まで対応しています。
 
 ## 使い方
 
@@ -31,6 +31,13 @@ python -m http.server 8000
 - 正答率、連続正解、回答時間、範囲別成績、誤答語句を表示する詳細リザルト
 - 全体・8範囲・6形式の学習分析と、履歴・重要度・直近ミスに基づくおすすめ15問
 - 形式選択、単語帳、回答フィードバック、リザルト、分析でのタグ表示
+- Apple純正アプリに近いSIMPLE UIと、iPhone・iPad・PC向けレスポンシブ表示
+- 初回起動時のSIMPLE／MAX選択と、後から変更できる設定画面
+- MAX MODEのCanvasパーティクル、コンボ、画面シェイク、効果音・振動の個別設定
+- `CORRECT`、3／5／10／20／30コンボ、`PERFECT`、`SSS MASTER`、`WEAKNESS DESTROYED`、`NEW RECORD`演出
+- `prefers-reduced-motion`と低性能端末を考慮した演出量の自動抑制
+- Web App Manifest、Service Worker、ホーム画面追加、読み込み後のオフライン利用
+- Dynamic Island／Home Indicatorを考慮したセーフエリアと44px以上のタップ領域
 
 ## テスト
 

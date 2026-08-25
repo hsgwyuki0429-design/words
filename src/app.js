@@ -62,6 +62,7 @@ const state = {
   settings: { ...DEFAULT_SETTINGS },
   combo: 0,
   bestCombo: 0,
+  activeStudy: null,
 };
 
 const elements = Object.fromEntries(
@@ -73,6 +74,7 @@ const elements = Object.fromEntries(
     "home-accuracy",
     "home-progress",
     "home-summary",
+    "resume-study-card",
     "study-content-options",
     "study-method-heading",
     "study-method-copy",
@@ -517,6 +519,22 @@ function renderHome() {
     ? `${summary.answeredItems}語句を学習・苦手 ${summary.weakItems}語句`
     : "まだ回答履歴がありません";
 
+  if (state.activeStudy?.config?.selection) {
+    const answered = Number(state.activeStudy.answeredCount) || 0;
+    const total = Number(state.activeStudy.totalCount) || 0;
+    elements.resumeStudyCard.hidden = false;
+    elements.resumeStudyCard.innerHTML = `
+      <div>
+        <span class="subtle-label">前回の学習</span>
+        <strong>途中から</strong>
+        <small>${escapeHtml(studySelectionLabel(state.activeStudy.config.selection))} · ${answered} / ${total}問まで回答</small>
+      </div>
+      <button class="primary-button compact" type="button" data-resume-active>途中から再開</button>`;
+  } else {
+    elements.resumeStudyCard.hidden = true;
+    elements.resumeStudyCard.innerHTML = "";
+  }
+
   elements.quickGrid.innerHTML = QUICK_ACTIONS.map(
     (action) => `
       <button class="quick-card" type="button" data-quick="${action.id}">
@@ -780,6 +798,9 @@ async function quickStart(id) {
 }
 
 function startSession(overrides = {}) {
+  const resumeSnapshot = state.activeStudy && overrides === state.activeStudy.config
+    ? state.activeStudy
+    : null;
   const mode = overrides.mode ?? overrides.modes?.[0] ?? state.selectedMode;
   const selection = normalizeStudySelection(overrides.selection ?? state.studySelection);
   const usesSelection = Boolean(selection.content && selection.method && !overrides.mode && !overrides.modes);
@@ -861,6 +882,15 @@ function startSession(overrides = {}) {
     combinationKey,
     selection: usesSelection ? selection : null,
   };
+  if (usesSelection) {
+    state.activeStudy = {
+      config: { ...config, itemIds: queue.map((entry) => entry.item.id) },
+      answeredCount: Number(resumeSnapshot?.answeredCount) || 0,
+      totalCount: Number(resumeSnapshot?.totalCount) || queue.length,
+      startedAt: resumeSnapshot?.startedAt ?? Date.now(),
+    };
+    setMeta("activeStudy", state.activeStudy).catch(console.warn);
+  }
   state.combo = 0;
   setView("quiz");
   prepareQuestion();
@@ -1065,6 +1095,15 @@ async function submitAnswer(answer) {
     durationMs,
   });
 
+  if (session.combinationKey && state.activeStudy) {
+    state.activeStudy = {
+      ...state.activeStudy,
+      answeredCount: (Number(state.activeStudy.answeredCount) || 0) + 1,
+      updatedAt: Date.now(),
+    };
+    setMeta("activeStudy", state.activeStudy).catch(console.warn);
+  }
+
   if (correct) {
     state.combo += 1;
     let special = previousHistory.wrongCount >= 3 && (savedHistory?.currentCorrectStreak ?? 0) >= 3
@@ -1140,6 +1179,10 @@ function renderSessionComplete() {
   const session = state.session;
   if (!session) return;
   const summary = summarizeSession(session.results);
+  if (session.combinationKey) {
+    state.activeStudy = null;
+    setMeta("activeStudy", null).catch(console.warn);
+  }
   const wrongItems = [
     ...new Map(
       session.results
@@ -1343,6 +1386,9 @@ function bindEvents() {
       };
       setView("study-content");
     }
+    if (target.hasAttribute("data-resume-active") && state.activeStudy?.config) {
+      startSession(state.activeStudy.config);
+    }
     if (target.dataset.studyContent) {
       state.studySelection = {
         content: target.dataset.studyContent,
@@ -1402,6 +1448,10 @@ function bindEvents() {
     if (target.hasAttribute("data-next-question")) nextQuestion();
     if (target.hasAttribute("data-quit-quiz")) {
       if (!state.session.results.length || window.confirm("この学習を終了しますか？")) {
+        if (state.session.combinationKey) {
+          state.activeStudy = null;
+          setMeta("activeStudy", null).catch(console.warn);
+        }
         state.session = null;
         setView("home");
       }
@@ -1499,13 +1549,14 @@ async function boot() {
         return [key, await getMeta(`studyProgress:${key}`, { completedItemIds: [] })];
       }),
     );
-    const [response, history, selectedMode, progressEntries, settings, bestCombo] = await Promise.all([
+    const [response, history, selectedMode, progressEntries, settings, bestCombo, activeStudy] = await Promise.all([
       fetch("./data/items.json?v=phase3.1"),
       loadHistory(),
       getMeta("selectedMode"),
       progressPromise,
       getMeta("settings", DEFAULT_SETTINGS),
       getMeta("bestCombo", 0),
+      getMeta("activeStudy", null),
     ]);
     if (!response.ok) throw new Error(`教材データを読み込めませんでした (${response.status})`);
     state.items = await response.json();
@@ -1514,6 +1565,7 @@ async function boot() {
     state.progress = new Map(progressEntries);
     state.settings = { ...DEFAULT_SETTINGS, ...(settings ?? {}) };
     state.bestCombo = Number(bestCombo) || 0;
+    state.activeStudy = activeStudy?.config?.selection ? activeStudy : null;
     elements.appShell.setAttribute("aria-busy", "false");
     setView("home");
     if (!state.settings.effectsMode) elements.onboarding.hidden = false;

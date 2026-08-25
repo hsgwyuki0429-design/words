@@ -173,6 +173,26 @@ h2 {
   text-align: center;
 }
 
+.resume-study-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  width: 100%;
+  margin-top: 12px;
+  padding: 16px 18px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  text-align: left;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.035);
+}
+
+.resume-study-card strong,
+.resume-study-card small { display: block; }
+.resume-study-card strong { margin: 3px 0; font-size: 19px; }
+.resume-study-card small { color: var(--secondary); font-size: 12px; }
+
 .home-hero h1 {
   max-width: 640px;
   margin: 0 auto 16px;
@@ -2196,6 +2216,8 @@ body.screen-shake .quiz-shell { animation: screen-shake 260ms linear; }
   .onboarding-options { grid-template-columns: 1fr; }
   .onboarding-options button { min-height: 112px; }
   .settings-card { padding: 18px; }
+  .resume-study-card { align-items: stretch; flex-direction: column; }
+  .resume-study-card .primary-button { width: 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) {

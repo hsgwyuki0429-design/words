@@ -428,3 +428,148 @@ export function summarizeHistory(items, history) {
     accuracy: attempts ? correct / attempts : null,
   };
 }
+
+export function summarizeSession(results = []) {
+  const total = results.length;
+  const correct = results.filter((result) => result.correct).length;
+  let streak = 0;
+  let bestStreak = 0;
+  for (const result of results) {
+    streak = result.correct ? streak + 1 : 0;
+    bestStreak = Math.max(bestStreak, streak);
+  }
+  const durationMs = results.reduce(
+    (sum, result) => sum + Math.max(0, Number(result.durationMs ?? 0)),
+    0,
+  );
+  return {
+    total,
+    correct,
+    wrong: total - correct,
+    accuracy: total ? correct / total : null,
+    uniqueItems: new Set(results.map((result) => result.itemId)).size,
+    bestStreak,
+    durationMs,
+    averageDurationMs: total ? durationMs / total : 0,
+  };
+}
+
+function masteryForRecord(record) {
+  if (!record.totalAttempts) return 0;
+  const accuracy = accuracyFor(record) ?? 0;
+  const repetition = Math.min(record.totalAttempts, 3) / 3;
+  const recentResult = record.lastResult === "correct" ? 1 : 0;
+  return Math.min(1, accuracy * 0.7 + repetition * 0.2 + recentResult * 0.1);
+}
+
+export function summarizeByRange(items, history) {
+  return RANGE_ORDER.map((range) => {
+    const rangeItems = items.filter((item) => item.range === range);
+    const summary = summarizeHistory(rangeItems, history);
+    const mastery = rangeItems.length
+      ? rangeItems.reduce(
+          (sum, item) => sum + masteryForRecord(getHistory(history, item.id)),
+          0,
+        ) / rangeItems.length
+      : 0;
+    return {
+      range,
+      itemCount: rangeItems.length,
+      unansweredItems: rangeItems.length - summary.answeredItems,
+      mastery,
+      ...summary,
+    };
+  });
+}
+
+export function summarizeByMode(items, history) {
+  return ALL_MODES.map((mode) => {
+    const supported = items.filter((item) => item.questionModes.includes(mode));
+    const records = supported.map((item) => getHistory(history, item.id).modeStats?.[mode]);
+    const attempts = records.reduce((sum, record) => sum + (record?.attempts ?? 0), 0);
+    const correct = records.reduce((sum, record) => sum + (record?.correct ?? 0), 0);
+    const wrong = records.reduce((sum, record) => sum + (record?.wrong ?? 0), 0);
+    const durationMs = records.reduce(
+      (sum, record) => sum + (record?.totalAnswerTimeMs ?? 0),
+      0,
+    );
+    return {
+      mode,
+      label: MODE_LABELS[mode],
+      supportedItems: supported.length,
+      answeredItems: records.filter((record) => (record?.attempts ?? 0) > 0).length,
+      weakItems: records.filter((record) => (record?.wrong ?? 0) > 0).length,
+      attempts,
+      correct,
+      wrong,
+      accuracy: attempts ? correct / attempts : null,
+      averageDurationMs: attempts ? durationMs / attempts : 0,
+    };
+  });
+}
+
+function recommendationScore(item, record, mode, now) {
+  const modeRecord = record.modeStats?.[mode];
+  const attempts = modeRecord?.attempts ?? 0;
+  const correct = modeRecord?.correct ?? 0;
+  const wrong = modeRecord?.wrong ?? 0;
+  const accuracy = attempts ? correct / attempts : null;
+  const importance = Math.max(1, IMPORTANCE_ORDER.length - IMPORTANCE_ORDER.indexOf(item.importance));
+  const lastWrong = record.lastWrongAt ?? 0;
+  const daysSinceWrong = lastWrong ? Math.max(0, (now - lastWrong) / 86_400_000) : Infinity;
+  const recentWrongBoost = Number.isFinite(daysSinceWrong)
+    ? Math.max(0, 18 - Math.min(daysSinceWrong, 18))
+    : 0;
+  return (
+    importance * 5 +
+    wrong * 18 +
+    (accuracy === null ? 14 : (1 - accuracy) * 34) +
+    recentWrongBoost +
+    (record.lastResult === "wrong" ? 10 : 0) -
+    Math.min(attempts, 6)
+  );
+}
+
+export function recommendStudy(items, history, preferredMode = null, count = 15, now = Date.now()) {
+  const supportedModes = ALL_MODES.filter((mode) =>
+    items.some((item) => item.questionModes.includes(mode)),
+  );
+  const modeStats = summarizeByMode(items, history).filter((stat) =>
+    supportedModes.includes(stat.mode),
+  );
+  let mode = supportedModes.includes(preferredMode) ? preferredMode : null;
+  if (!mode) {
+    const practiced = modeStats.filter((stat) => stat.attempts > 0);
+    mode = practiced.length
+      ? [...practiced].sort((a, b) =>
+          (a.accuracy ?? 1) - (b.accuracy ?? 1) || b.wrong - a.wrong,
+        )[0].mode
+      : supportedModes.includes("ja_to_en_input")
+        ? "ja_to_en_input"
+        : supportedModes[0];
+  }
+  if (!mode) {
+    return { mode: null, itemIds: [], count: 0, title: "おすすめはまだありません", detail: "学習データがありません" };
+  }
+
+  const candidates = items
+    .filter((item) => item.questionModes.includes(mode))
+    .map((item) => ({
+      item,
+      score: recommendationScore(item, getHistory(history, item.id), mode, now),
+    }))
+    .sort((a, b) => b.score - a.score || a.item.order - b.item.order)
+    .slice(0, Math.max(0, Number(count)))
+    .map(({ item }) => item.id);
+  const stat = modeStats.find((candidate) => candidate.mode === mode);
+  const detail = stat?.attempts
+    ? `苦手度・直近のミス・重要度から選んだ${candidates.length}問`
+    : `重要度の高い未学習問題から選んだ${candidates.length}問`;
+  return {
+    mode,
+    itemIds: candidates,
+    count: candidates.length,
+    title: MODE_LABELS[mode],
+    detail,
+  };
+}

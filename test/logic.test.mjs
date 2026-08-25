@@ -13,8 +13,12 @@ import {
   isAnswerCorrect,
   mergeAttempt,
   normalizeAnswer,
+  recommendStudy,
   slotTokensForQuestion,
   sortItems,
+  summarizeByMode,
+  summarizeByRange,
+  summarizeSession,
 } from "../src/logic.js";
 
 const items = JSON.parse(fs.readFileSync(new URL("../data/items.json", import.meta.url), "utf8"));
@@ -123,4 +127,61 @@ test("sessions never repeat an item and only use supported modes", () => {
   assert.equal(new Set(session.map((entry) => entry.item.id)).size, 30);
   assert.ok(session.every((entry) => entry.item.range === "Mars"));
   assert.ok(session.every((entry) => entry.item.questionModes.includes(entry.mode)));
+});
+
+test("session summary reports streak, speed, and unique items", () => {
+  const summary = summarizeSession([
+    { itemId: "a", correct: true, durationMs: 900 },
+    { itemId: "b", correct: true, durationMs: 1100 },
+    { itemId: "a", correct: false, durationMs: 1000 },
+  ]);
+  assert.equal(summary.total, 3);
+  assert.equal(summary.correct, 2);
+  assert.equal(summary.bestStreak, 2);
+  assert.equal(summary.uniqueItems, 2);
+  assert.equal(summary.averageDurationMs, 1000);
+});
+
+test("phase 4 analytics aggregate history by range and by mode", () => {
+  const target = items.find((item) => item.questionModes.includes("ja_to_en_input"));
+  const history = new Map([
+    [
+      target.id,
+      mergeAttempt(emptyHistory(target.id), {
+        itemId: target.id,
+        mode: "ja_to_en_input",
+        correct: false,
+        durationMs: 1500,
+      }),
+    ],
+  ]);
+  const range = summarizeByRange(items, history).find((stat) => stat.range === target.range);
+  const mode = summarizeByMode(items, history).find((stat) => stat.mode === "ja_to_en_input");
+  assert.equal(range.wrong, 1);
+  assert.equal(range.answeredItems, 1);
+  assert.equal(mode.attempts, 1);
+  assert.equal(mode.wrong, 1);
+  assert.equal(mode.averageDurationMs, 1500);
+});
+
+test("recommended study always returns one supported mode and at most 15 items", () => {
+  const target = items.find((item) => item.questionModes.includes("spelling_input"));
+  const history = new Map([
+    [
+      target.id,
+      mergeAttempt(emptyHistory(target.id), {
+        itemId: target.id,
+        mode: "spelling_input",
+        correct: false,
+      }),
+    ],
+  ]);
+  const recommendation = recommendStudy(items, history, "spelling_input", 15, 1000);
+  assert.equal(recommendation.mode, "spelling_input");
+  assert.ok(recommendation.itemIds.length <= 15);
+  assert.ok(
+    recommendation.itemIds.every((id) =>
+      items.find((item) => item.id === id).questionModes.includes(recommendation.mode),
+    ),
+  );
 });

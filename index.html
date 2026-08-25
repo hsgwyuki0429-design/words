@@ -9,7 +9,7 @@
       content="英コミ定期テスト対策用の単語・熟語・構文学習アプリ"
     />
     <title>Words — 英コミ対策</title>
-    <link rel="stylesheet" href="./styles.css?v=phase3.1" />
+    <link rel="stylesheet" href="./styles.css?v=phase4" />
   </head>
   <body>
     <div class="app-shell" id="app-shell" aria-busy="true">
@@ -37,10 +37,10 @@
               </div>
               <p id="home-summary">まだ回答履歴がありません</p>
             </div>
-            <button class="primary-button hero-button" type="button" data-view-target="setup">
-              学習開始
-              <span aria-hidden="true">→</span>
-            </button>
+            <div class="hero-mode-block">
+              <p class="subtle-label">学習形式を一つ選ぶ</p>
+              <div class="mode-grid hero-mode-grid" id="hero-mode-grid"></div>
+            </div>
           </div>
 
           <section class="content-section" aria-labelledby="quick-heading">
@@ -65,6 +65,15 @@
           </section>
         </section>
 
+        <section class="view" id="view-mode" data-view="mode" hidden>
+          <div class="page-heading">
+            <p class="eyebrow">STUDY MODE</p>
+            <h1>学習形式を選ぶ</h1>
+            <p>一回の学習では、一つの形式だけに集中します。</p>
+          </div>
+          <div class="mode-grid study-mode-grid" id="study-mode-grid"></div>
+        </section>
+
         <section class="view" id="view-setup" data-view="setup" hidden>
           <div class="page-heading">
             <p class="eyebrow">STUDY SETUP</p>
@@ -73,6 +82,16 @@
           </div>
 
           <div class="setup-grid">
+            <section class="panel-card selected-mode-card">
+              <div>
+                <span class="subtle-label">選択中の形式</span>
+                <h2 id="selected-mode-label">—</h2>
+                <div class="item-tags" id="selected-mode-tags"></div>
+              </div>
+              <button class="secondary-button compact" type="button" data-view-target="mode">
+                形式を変更
+              </button>
+            </section>
             <section class="panel-card setup-filter-card">
               <div class="panel-heading">
                 <div>
@@ -176,6 +195,15 @@
           <button class="secondary-button load-more" id="load-more" type="button" hidden>さらに表示</button>
         </section>
 
+        <section class="view" id="view-analysis" data-view="analysis" hidden>
+          <div class="page-heading">
+            <p class="eyebrow">PHASE 4 · ANALYSIS</p>
+            <h1>学習分析</h1>
+            <p>範囲と形式ごとの結果から、次に取り組む問題を提案します。</p>
+          </div>
+          <div id="analysis-content"></div>
+        </section>
+
         <section class="view quiz-view" id="view-quiz" data-view="quiz" hidden>
           <div id="quiz-content"></div>
         </section>
@@ -186,13 +214,17 @@
           <span aria-hidden="true">⌂</span>
           <span>ホーム</span>
         </button>
-        <button type="button" data-view-target="setup">
+        <button type="button" data-view-target="mode">
           <span aria-hidden="true">✎</span>
           <span>学習</span>
         </button>
         <button type="button" data-view-target="list">
           <span aria-hidden="true">▤</span>
           <span>単語帳</span>
+        </button>
+        <button type="button" data-view-target="analysis">
+          <span aria-hidden="true">⌁</span>
+          <span>分析</span>
         </button>
       </nav>
     </div>
@@ -219,10 +251,6 @@
         <fieldset>
           <legend>種類</legend>
           <div class="filter-chip-grid" id="filter-types"></div>
-        </fieldset>
-        <fieldset>
-          <legend>問題形式</legend>
-          <div class="check-list" id="filter-modes"></div>
         </fieldset>
         <fieldset>
           <legend>成績</legend>
@@ -258,6 +286,6 @@
     </aside>
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-    <script type="module" src="./src/app.js?v=phase3.2"></script>
+    <script type="module" src="./src/app.js?v=phase4"></script>
   </body>
 </html>

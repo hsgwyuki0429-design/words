@@ -14,7 +14,11 @@ import {
   normalizeAnswer,
   slotTokensForQuestion,
   sortItems,
+  recommendStudy,
+  summarizeByMode,
+  summarizeByRange,
   summarizeHistory,
+  summarizeSession,
 } from "./logic.js";
 import { getMeta, loadHistory, recordAttempt, setMeta } from "./storage.js";
 
@@ -22,11 +26,11 @@ const state = {
   items: [],
   history: new Map(),
   view: "home",
+  selectedMode: null,
   filters: {
     ranges: [],
     importance: [],
     types: [],
-    modes: [...ALL_MODES],
     tags: [],
     performance: "all",
     minimumWrong: 0,
@@ -49,8 +53,12 @@ const elements = Object.fromEntries(
     "home-accuracy",
     "home-progress",
     "home-summary",
+    "hero-mode-grid",
+    "study-mode-grid",
     "quick-grid",
     "range-grid",
+    "selected-mode-label",
+    "selected-mode-tags",
     "active-filter-list",
     "setup-match-count",
     "sort-select",
@@ -64,6 +72,7 @@ const elements = Object.fromEntries(
     "word-list",
     "load-more",
     "quiz-content",
+    "analysis-content",
     "bottom-nav",
     "filter-backdrop",
     "filter-sheet",
@@ -71,7 +80,6 @@ const elements = Object.fromEntries(
     "filter-ranges",
     "filter-importance",
     "filter-types",
-    "filter-modes",
     "filter-performance",
     "filter-minimum-wrong",
     "filter-tags",
@@ -109,6 +117,25 @@ const QUICK_ACTIONS = [
   { id: "spelling", icon: "Aa", title: "スペルだけ", detail: "日本語から英単語へ", tone: "yellow" },
 ];
 
+const MODE_META = {
+  en_to_ja_choice: { icon: "英→日", tags: ["4択", "意味"] },
+  ja_to_en_choice: { icon: "日→英", tags: ["4択", "英語"] },
+  ja_to_en_input: { icon: "日→英", tags: ["完全入力", "語句"] },
+  spelling_input: { icon: "Aa", tags: ["完全入力", "スペル"] },
+  preposition_input: { icon: "_", tags: ["穴埋め", "前置詞"] },
+  phrase_blank_input: { icon: "…", tags: ["穴埋め", "熟語・構文"] },
+};
+
+const TAG_LABELS = {
+  word: "単語",
+  phrase: "熟語",
+  structure: "構文",
+  expression: "表現",
+  preposition: "前置詞",
+  spelling: "スペル",
+  blank: "穴埋め",
+};
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -126,6 +153,38 @@ function pluralQuestions(value) {
   return value === "all" ? "全問" : `${value}問`;
 }
 
+function formatSeconds(milliseconds) {
+  const seconds = Math.max(0, Math.round(Number(milliseconds ?? 0) / 1000));
+  if (seconds < 60) return `${seconds}秒`;
+  return `${Math.floor(seconds / 60)}分${String(seconds % 60).padStart(2, "0")}秒`;
+}
+
+function renderTags(tags = [], limit = 4) {
+  return [...new Set(tags)]
+    .slice(0, limit)
+    .map((tag) => `<span class="item-tag">${escapeHtml(TAG_LABELS[tag] ?? tag)}</span>`)
+    .join("");
+}
+
+function renderModeButtons() {
+  const markup = ALL_MODES.map((mode) => {
+    const meta = MODE_META[mode];
+    const count = state.items.filter((item) => item.questionModes.includes(mode)).length;
+    return `
+      <button class="mode-card${state.selectedMode === mode ? " selected" : ""}" type="button" data-mode-start="${mode}">
+        <span class="mode-card-icon" aria-hidden="true">${meta.icon}</span>
+        <span class="mode-card-copy">
+          <strong>${escapeHtml(MODE_LABELS[mode])}</strong>
+          <small>${count.toLocaleString()}語句</small>
+          <span class="item-tags">${renderTags(meta.tags)}</span>
+        </span>
+        <span class="card-arrow" aria-hidden="true">›</span>
+      </button>`;
+  }).join("");
+  elements.heroModeGrid.innerHTML = markup;
+  elements.studyModeGrid.innerHTML = markup;
+}
+
 function showToast(message) {
   elements.toast.textContent = message;
   elements.toast.hidden = false;
@@ -136,12 +195,16 @@ function showToast(message) {
 }
 
 function setView(view) {
+  if (view === "setup" && !state.selectedMode) view = "mode";
   state.view = view;
   document.querySelectorAll("[data-view]").forEach((section) => {
     section.hidden = section.dataset.view !== view;
   });
   document.querySelectorAll("[data-view-target]").forEach((button) => {
-    button.classList.toggle("active", button.dataset.viewTarget === view);
+    button.classList.toggle(
+      "active",
+      button.dataset.viewTarget === view || (view === "setup" && button.dataset.viewTarget === "mode"),
+    );
   });
   elements.bottomNav.hidden = view === "quiz";
   elements.appHeader.hidden = view === "quiz";
@@ -149,8 +212,10 @@ function setView(view) {
   window.scrollTo({ top: 0, behavior: "auto" });
 
   if (view === "home") renderHome();
+  if (view === "mode") renderModeButtons();
   if (view === "setup") renderSetup();
   if (view === "list") renderList(true);
+  if (view === "analysis") renderAnalysis();
 }
 
 function renderHeader() {
@@ -171,6 +236,8 @@ function renderHome() {
   elements.homeSummary.textContent = summary.attempts
     ? `${summary.answeredItems}語句を学習・苦手 ${summary.weakItems}語句`
     : "まだ回答履歴がありません";
+
+  renderModeButtons();
 
   elements.quickGrid.innerHTML = QUICK_ACTIONS.map(
     (action) => `
@@ -203,9 +270,6 @@ function activeFilterLabels(filters = state.filters) {
   if (filters.ranges.length) labels.push(filters.ranges.join("・"));
   if (filters.importance.length) labels.push(filters.importance.join(" + "));
   if (filters.types.length) labels.push(filters.types.map((type) => TYPE_LABELS[type]).join("・"));
-  if (filters.modes.length && filters.modes.length < ALL_MODES.length) {
-    labels.push(filters.modes.map((mode) => MODE_LABELS[mode].replace(/完全|入力/g, "")).join("・"));
-  }
   if (filters.performance !== "all") labels.push(PERFORMANCE_LABELS[filters.performance]);
   if (filters.minimumWrong > 0) labels.push(`ミス ${filters.minimumWrong}回以上`);
   if (filters.tags.length) labels.push(filters.tags.join("・"));
@@ -213,15 +277,28 @@ function activeFilterLabels(filters = state.filters) {
 }
 
 function filteredItems(filters = state.filters) {
-  return applyFilters(state.items, state.history, filters);
+  const { modes: _ignoredModes, ...withoutModes } = filters;
+  return applyFilters(state.items, state.history, withoutModes);
+}
+
+function learningItems(filters = state.filters, mode = state.selectedMode) {
+  if (!mode) return [];
+  return applyFilters(state.items, state.history, { ...filters, modes: [mode] });
 }
 
 function renderSetup() {
+  if (!state.selectedMode) {
+    setView("mode");
+    return;
+  }
+  const meta = MODE_META[state.selectedMode];
+  elements.selectedModeLabel.textContent = MODE_LABELS[state.selectedMode];
+  elements.selectedModeTags.innerHTML = renderTags(meta.tags);
   const labels = activeFilterLabels();
   elements.activeFilterList.innerHTML = labels.length
     ? labels.map((label) => `<span class="filter-summary-chip">${escapeHtml(label)}</span>`).join("")
     : '<span class="empty-filter">全範囲・全重要度</span>';
-  const count = filteredItems().length;
+  const count = learningItems().length;
   elements.setupMatchCount.textContent = count.toLocaleString();
   elements.sortSelect.value = state.sortKey;
   elements.repeatWrong.checked = state.repeatWrong;
@@ -260,6 +337,7 @@ function renderList(resetLimit = false) {
           </div>
           <h2>${escapeHtml(item.english)}</h2>
           <p>${escapeHtml(item.japanese)}</p>
+          <div class="item-tags word-card-tags">${renderTags([item.type, ...item.tags])}</div>
         </div>
         <div class="word-card-meta">
           <span>${escapeHtml(item.range)}</span>
@@ -296,15 +374,6 @@ function renderFilterForm() {
   elements.filterTypes.innerHTML = Object.entries(TYPE_LABELS)
     .map(([value, label]) => checkInput("types", value, label, state.filters.types.includes(value)))
     .join("");
-  elements.filterModes.innerHTML = Object.entries(MODE_LABELS)
-    .map(
-      ([value, label]) => `
-        <label>
-          <input type="checkbox" name="modes" value="${value}" ${state.filters.modes.includes(value) ? "checked" : ""} />
-          <span>${label}</span>
-        </label>`,
-    )
-    .join("");
   const tagLabels = { preposition: "前置詞", spelling: "スペル", blank: "穴埋め" };
   elements.filterTags.innerHTML = Object.entries(tagLabels)
     .map(([value, label]) => checkInput("tags", value, label, state.filters.tags.includes(value)))
@@ -326,7 +395,6 @@ function collectFilterForm() {
     ranges: valuesFor("ranges"),
     importance: valuesFor("importance"),
     types: valuesFor("types"),
-    modes: valuesFor("modes"),
     tags: valuesFor("tags"),
     performance: elements.filterPerformance.value,
     minimumWrong: Math.max(0, Number(elements.filterMinimumWrong.value || 0)),
@@ -335,7 +403,8 @@ function collectFilterForm() {
 
 function renderFilterPreview() {
   const draft = collectFilterForm();
-  elements.filterPreviewCount.textContent = filteredItems(draft).length.toLocaleString();
+  const items = state.view === "setup" ? learningItems(draft) : filteredItems(draft);
+  elements.filterPreviewCount.textContent = items.length.toLocaleString();
 }
 
 function openFilter() {
@@ -358,7 +427,6 @@ function resetFilters() {
     ranges: [],
     importance: [],
     types: [],
-    modes: [...ALL_MODES],
     tags: [],
     performance: "all",
     minimumWrong: 0,
@@ -383,13 +451,14 @@ async function quickStart(id) {
       showToast("前回の学習条件はまだありません");
       return;
     }
-    startSession(previous);
+    startSession({ ...previous, mode: previous.mode ?? previous.modes?.[0] });
     return;
   }
 
+  const recommendation = recommendStudy(state.items, state.history);
   const config = {
     filters: base,
-    modes: [...ALL_MODES],
+    mode: state.selectedMode ?? recommendation.mode ?? "ja_to_en_input",
     sortKey: "random",
     count: 15,
     repeatWrong: false,
@@ -400,26 +469,41 @@ async function quickStart(id) {
   }
   if (id === "missed") config.filters.performance = "everMissed";
   if (id === "sss") config.filters.importance = ["SSS"];
-  if (id === "recommended") config.sortKey = "difficulty";
+  if (id === "recommended") {
+    config.mode = recommendation.mode;
+    config.itemIds = recommendation.itemIds;
+    config.count = recommendation.count;
+    config.sortKey = "difficulty";
+  }
   if (id === "random") config.count = 20;
-  if (id === "preposition") config.modes = ["preposition_input"];
-  if (id === "spelling") config.modes = ["spelling_input"];
+  if (id === "preposition") config.mode = "preposition_input";
+  if (id === "spelling") config.mode = "spelling_input";
   startSession(config);
 }
 
 function startSession(overrides = {}) {
+  const mode = overrides.mode ?? overrides.modes?.[0] ?? state.selectedMode;
+  if (!mode || !ALL_MODES.includes(mode)) {
+    showToast("先に学習形式を一つ選んでください");
+    setView("mode");
+    return;
+  }
   const config = {
     filters: overrides.filters ?? { ...state.filters, search: "" },
-    modes: overrides.modes ?? state.filters.modes,
+    mode,
     sortKey: overrides.sortKey ?? state.sortKey,
     count: overrides.count ?? state.questionCount,
     repeatWrong: overrides.repeatWrong ?? state.repeatWrong,
+    itemIds: overrides.itemIds ?? null,
   };
+  const sessionItems = config.itemIds
+    ? state.items.filter((item) => config.itemIds.includes(item.id))
+    : state.items;
   const queue = buildSession({
-    items: state.items,
+    items: sessionItems,
     history: state.history,
     filters: config.filters,
-    selectedModes: config.modes,
+    selectedModes: [config.mode],
     sortKey: config.sortKey,
     count: config.count,
   });
@@ -427,6 +511,8 @@ function startSession(overrides = {}) {
     showToast("この条件に合う問題がありません");
     return;
   }
+  state.selectedMode = config.mode;
+  setMeta("selectedMode", config.mode).catch(console.warn);
   setMeta("lastSessionConfig", config).catch(console.warn);
   state.session = {
     queue,
@@ -542,7 +628,10 @@ function renderFeedback(question, answer, correct) {
       </dl>
       <div class="source-box">
         <span class="importance-badge importance-${question.item.importance.toLowerCase()}">${question.item.importance}</span>
-        <p>${escapeHtml(sourceLine(question.item))}</p>
+        <div>
+          <div class="item-tags">${renderTags([question.item.type, ...question.item.tags])}</div>
+          <p>${escapeHtml(sourceLine(question.item))}</p>
+        </div>
       </div>
     </section>
     <button class="primary-button next-button" type="button" data-next-question>
@@ -666,8 +755,7 @@ function nextQuestion() {
 function renderSessionComplete() {
   const session = state.session;
   if (!session) return;
-  const correct = session.results.filter((result) => result.correct).length;
-  const total = session.results.length;
+  const summary = summarizeSession(session.results);
   const wrongItems = [
     ...new Map(
       session.results
@@ -675,26 +763,121 @@ function renderSessionComplete() {
         .map((result) => [result.itemId, result]),
     ).values(),
   ];
+  const rangeRows = [...new Set(session.results.map((result) => result.item.range))]
+    .map((range) => {
+      const rangeSummary = summarizeSession(
+        session.results.filter((result) => result.item.range === range),
+      );
+      return `<div class="result-breakdown-row">
+        <span>${escapeHtml(range)}</span>
+        <strong>${rangeSummary.correct} / ${rangeSummary.total}</strong>
+        <span>${formatPercent(rangeSummary.accuracy)}</span>
+      </div>`;
+    })
+    .join("");
+  const recommendation = recommendStudy(state.items, state.history);
   elements.quizContent.innerHTML = `
     <div class="result-shell">
       <p class="eyebrow">SESSION COMPLETE</p>
-      <div class="result-score"><strong>${correct}</strong><span>/ ${total}</span></div>
-      <h1>${correct === total ? "全問正解です。" : "学習を記録しました。"}</h1>
-      <p>正答率 ${formatPercent(total ? correct / total : null)}・${Math.round((Date.now() - session.startedAt) / 1000)}秒</p>
+      <div class="result-score"><strong>${summary.correct}</strong><span>/ ${summary.total}</span></div>
+      <h1>${summary.correct === summary.total ? "全問正解です。" : "学習を記録しました。"}</h1>
+      <p>${escapeHtml(MODE_LABELS[state.selectedMode])}</p>
+      <div class="result-stat-grid">
+        <div><span>正答率</span><strong>${formatPercent(summary.accuracy)}</strong></div>
+        <div><span>連続正解</span><strong>${summary.bestStreak}</strong></div>
+        <div><span>平均回答</span><strong>${formatSeconds(summary.averageDurationMs)}</strong></div>
+        <div><span>学習時間</span><strong>${formatSeconds(summary.durationMs)}</strong></div>
+      </div>
+      <section class="result-breakdown">
+        <div class="result-section-heading"><h2>範囲別</h2><span>${summary.uniqueItems}語句</span></div>
+        ${rangeRows}
+      </section>
       ${
         wrongItems.length
           ? `<div class="result-wrong-list"><h2>今回間違えた語句</h2>${wrongItems
               .map(
-                (result) => `<div><strong>${escapeHtml(result.item.english)}</strong><span>${escapeHtml(result.item.japanese)}</span></div>`,
+                (result) => `<div>
+                  <span class="result-word-copy"><strong>${escapeHtml(result.item.english)}</strong><small>${escapeHtml(result.item.japanese)}</small></span>
+                  <span class="item-tags">${renderTags([result.item.type, ...result.item.tags], 3)}</span>
+                </div>`,
               )
               .join("")}</div>`
           : ""
       }
+      ${renderRecommendationCard(recommendation, "result")}
       <div class="result-actions">
         ${wrongItems.length ? '<button class="secondary-button" type="button" data-retry-wrong>間違いだけ復習</button>' : ""}
+        <button class="secondary-button" type="button" data-view-analysis>分析を見る</button>
         <button class="primary-button" type="button" data-result-home>ホームへ</button>
       </div>
     </div>`;
+  renderHeader();
+}
+
+function renderRecommendationCard(recommendation, context = "analysis") {
+  if (!recommendation.mode || !recommendation.count) return "";
+  return `
+    <section class="recommendation-card recommendation-${context}">
+      <div class="recommendation-icon" aria-hidden="true">✦</div>
+      <div class="recommendation-copy">
+        <p class="eyebrow">NEXT RECOMMENDATION</p>
+        <h2>次は「${escapeHtml(recommendation.title)}」</h2>
+        <p>${escapeHtml(recommendation.detail)}</p>
+        <div class="item-tags">${renderTags(MODE_META[recommendation.mode].tags)}</div>
+      </div>
+      <button class="primary-button" type="button" data-recommended-start="${context}">
+        おすすめ${recommendation.count}問をやる
+      </button>
+    </section>`;
+}
+
+function renderAnalysis() {
+  const overall = summarizeHistory(state.items, state.history);
+  const ranges = summarizeByRange(state.items, state.history);
+  const modes = summarizeByMode(state.items, state.history);
+  const recommendation = recommendStudy(state.items, state.history);
+  const rangeMarkup = ranges.map((stat) => `
+    <article class="analysis-row">
+      <div>
+        <strong>${escapeHtml(stat.range)}</strong>
+        <small>${stat.answeredItems} / ${stat.itemCount}語句を学習</small>
+      </div>
+      <div class="analysis-progress" aria-label="定着度 ${formatPercent(stat.mastery)}">
+        <span style="width:${Math.round(stat.mastery * 100)}%"></span>
+      </div>
+      <div class="analysis-numbers">
+        <strong>${formatPercent(stat.accuracy)}</strong>
+        <small>${stat.wrong}ミス</small>
+      </div>
+    </article>`).join("");
+  const modeMarkup = modes.map((stat) => `
+    <article class="mode-analysis-card${state.selectedMode === stat.mode ? " selected" : ""}">
+      <div class="mode-analysis-heading">
+        <span class="mode-card-icon" aria-hidden="true">${MODE_META[stat.mode].icon}</span>
+        <div><strong>${escapeHtml(stat.label)}</strong><small>${stat.attempts}回答</small></div>
+      </div>
+      <div class="mode-analysis-score">${formatPercent(stat.accuracy)}</div>
+      <div class="item-tags">${renderTags(MODE_META[stat.mode].tags)}</div>
+      <p>${stat.attempts ? `${stat.wrong}ミス・平均 ${formatSeconds(stat.averageDurationMs)}` : "まだ学習していません"}</p>
+      <button class="secondary-button compact" type="button" data-mode-start="${stat.mode}">この形式で学習</button>
+    </article>`).join("");
+
+  elements.analysisContent.innerHTML = `
+    <section class="analysis-stat-grid" aria-label="全体の学習結果">
+      <div><span>正答率</span><strong>${formatPercent(overall.accuracy)}</strong></div>
+      <div><span>回答</span><strong>${overall.attempts.toLocaleString()}</strong></div>
+      <div><span>学習済み</span><strong>${overall.answeredItems}</strong></div>
+      <div><span>要復習</span><strong>${overall.weakItems}</strong></div>
+    </section>
+    ${renderRecommendationCard(recommendation)}
+    <section class="analysis-section">
+      <div class="section-heading"><div><p class="eyebrow">BY RANGE</p><h2>範囲別分析</h2></div></div>
+      <div class="analysis-table">${rangeMarkup}</div>
+    </section>
+    <section class="analysis-section">
+      <div class="section-heading"><div><p class="eyebrow">BY MODE</p><h2>形式別分析</h2></div></div>
+      <div class="mode-analysis-grid">${modeMarkup}</div>
+    </section>`;
   renderHeader();
 }
 
@@ -739,19 +922,23 @@ function bindEvents() {
     const target = event.target.closest("button");
     if (!target) return;
     if (target.dataset.viewTarget) setView(target.dataset.viewTarget);
+    if (target.dataset.modeStart) {
+      state.selectedMode = target.dataset.modeStart;
+      setMeta("selectedMode", state.selectedMode).catch(console.warn);
+      setView("setup");
+    }
     if (target.dataset.quick) quickStart(target.dataset.quick);
     if (target.dataset.rangeStart) {
       state.filters = {
         ranges: [target.dataset.rangeStart],
         importance: [],
         types: [],
-        modes: [...ALL_MODES],
         tags: [],
         performance: "all",
         minimumWrong: 0,
         search: "",
       };
-      setView("setup");
+      setView(state.selectedMode ? "setup" : "mode");
     }
     if (target.id === "open-filter" || target.id === "list-open-filter") openFilter();
     if (target.id === "close-filter") closeFilter();
@@ -780,6 +967,28 @@ function bindEvents() {
       }
     }
     if (target.hasAttribute("data-retry-wrong")) retryWrongItems();
+    if (target.dataset.recommendedStart) {
+      const recommendation = recommendStudy(state.items, state.history);
+      startSession({
+        mode: recommendation.mode,
+        itemIds: recommendation.itemIds,
+        count: recommendation.count,
+        sortKey: "difficulty",
+        filters: {
+          ranges: [],
+          importance: [],
+          types: [],
+          tags: [],
+          performance: "all",
+          minimumWrong: 0,
+          search: "",
+        },
+      });
+    }
+    if (target.hasAttribute("data-view-analysis")) {
+      state.session = null;
+      setView("analysis");
+    }
     if (target.hasAttribute("data-result-home")) {
       state.session = null;
       setView("home");
@@ -837,13 +1046,15 @@ function bindEvents() {
 async function boot() {
   bindEvents();
   try {
-    const [response, history] = await Promise.all([
+    const [response, history, selectedMode] = await Promise.all([
       fetch("./data/items.json?v=phase3.1"),
       loadHistory(),
+      getMeta("selectedMode"),
     ]);
     if (!response.ok) throw new Error(`教材データを読み込めませんでした (${response.status})`);
     state.items = await response.json();
     state.history = history;
+    state.selectedMode = ALL_MODES.includes(selectedMode) ? selectedMode : null;
     elements.appShell.setAttribute("aria-busy", "false");
     setView("home");
   } catch (error) {

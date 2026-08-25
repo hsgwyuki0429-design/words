@@ -4,17 +4,23 @@ import {
   MODE_LABELS,
   RANGE_ORDER,
   TYPE_LABELS,
+  STUDY_CONTENT_LABELS,
+  STUDY_METHOD_LABELS,
   accuracyFor,
   answersForMode,
   applyFilters,
   buildQuestion,
   buildSession,
+  buildStudySession,
   getHistory,
   isAnswerCorrect,
   normalizeAnswer,
   slotTokensForQuestion,
   sortItems,
   recommendStudy,
+  normalizeStudySelection,
+  studyCombinationKey,
+  studyModeForItem,
   summarizeByMode,
   summarizeByRange,
   summarizeHistory,
@@ -27,6 +33,8 @@ const state = {
   history: new Map(),
   view: "home",
   selectedMode: null,
+  studySelection: { content: null, method: null, scope: null },
+  progress: new Map(),
   filters: {
     ranges: [],
     importance: [],
@@ -36,7 +44,7 @@ const state = {
     minimumWrong: 0,
     search: "",
   },
-  sortKey: "random",
+  sortKey: "importance-desc",
   listSortKey: "importance-desc",
   questionCount: 15,
   repeatWrong: false,
@@ -53,14 +61,18 @@ const elements = Object.fromEntries(
     "home-accuracy",
     "home-progress",
     "home-summary",
-    "hero-mode-grid",
-    "study-mode-grid",
+    "study-content-options",
+    "study-method-heading",
+    "study-method-copy",
+    "study-method-options",
+    "study-scope-options",
     "quick-grid",
     "range-grid",
     "selected-mode-label",
     "selected-mode-tags",
     "active-filter-list",
     "setup-match-count",
+    "setup-resume-note",
     "sort-select",
     "question-count-options",
     "repeat-wrong",
@@ -126,6 +138,28 @@ const MODE_META = {
   phrase_blank_input: { icon: "…", tags: ["穴埋め", "熟語・構文"] },
 };
 
+const STUDY_CONTENT_META = {
+  word: { icon: "Aa", title: "単語", detail: "英単語を中心に学習", tags: ["単語"] },
+  phrase: { icon: "…", title: "熟語・構文", detail: "熟語・構文・表現を学習", tags: ["熟語", "構文"] },
+  all: { icon: "＋", title: "どちらも", detail: "単語と熟語・構文を続けて学習", tags: ["単語", "熟語・構文"] },
+};
+
+const STUDY_METHOD_META = {
+  ja_to_en_choice: { icon: "日→英", detail: "日本語に合う英語を4つから選ぶ", tags: ["4択"] },
+  en_to_ja_choice: { icon: "英→日", detail: "英語に合う日本語を4つから選ぶ", tags: ["4択"] },
+  write: { icon: "✎", detail: "日本語を見て英語を正しく書く", tags: ["記述"] },
+};
+
+const KNOWN_STUDY_SELECTIONS = [
+  ...["word", "phrase", "all"].flatMap((content) => [
+    { content, method: "ja_to_en_choice", scope: "full" },
+    { content, method: "en_to_ja_choice", scope: "full" },
+    { content, method: "write", scope: "full" },
+  ]),
+  { content: "phrase", method: "write", scope: "partial" },
+  { content: "all", method: "write", scope: "partial" },
+];
+
 const TAG_LABELS = {
   word: "単語",
   phrase: "熟語",
@@ -166,23 +200,86 @@ function renderTags(tags = [], limit = 4) {
     .join("");
 }
 
-function renderModeButtons() {
-  const markup = ALL_MODES.map((mode) => {
-    const meta = MODE_META[mode];
-    const count = state.items.filter((item) => item.questionModes.includes(mode)).length;
-    return `
-      <button class="mode-card${state.selectedMode === mode ? " selected" : ""}" type="button" data-mode-start="${mode}">
-        <span class="mode-card-icon" aria-hidden="true">${meta.icon}</span>
-        <span class="mode-card-copy">
-          <strong>${escapeHtml(MODE_LABELS[mode])}</strong>
-          <small>${count.toLocaleString()}語句</small>
-          <span class="item-tags">${renderTags(meta.tags)}</span>
-        </span>
-        <span class="card-arrow" aria-hidden="true">›</span>
-      </button>`;
-  }).join("");
-  elements.heroModeGrid.innerHTML = markup;
-  elements.studyModeGrid.innerHTML = markup;
+function selectionIsComplete(selection = state.studySelection) {
+  const normalized = normalizeStudySelection(selection);
+  return Boolean(normalized.content && normalized.method);
+}
+
+function studySelectionLabel(selection = state.studySelection) {
+  const normalized = normalizeStudySelection(selection);
+  if (!normalized.content || !normalized.method) return "—";
+  const parts = [
+    STUDY_CONTENT_LABELS[normalized.content],
+    STUDY_METHOD_LABELS[normalized.method],
+  ];
+  if (normalized.method === "write" && normalized.content !== "word") {
+    parts.push(normalized.scope === "partial" ? "一部を穴埋め" : "全部を書く");
+  }
+  return parts.join(" / ");
+}
+
+function progressForSelection(selection = state.studySelection) {
+  const key = studyCombinationKey(selection);
+  return key ? state.progress.get(key) ?? { completedItemIds: [] } : { completedItemIds: [] };
+}
+
+function selectionCard({ icon, title, detail, tags, dataAttribute }) {
+  return `
+    <button class="selection-card" type="button" ${dataAttribute}>
+      <span class="selection-card-icon" aria-hidden="true">${escapeHtml(icon)}</span>
+      <span class="selection-card-copy">
+        <strong>${escapeHtml(title)}</strong>
+        <small>${escapeHtml(detail)}</small>
+        <span class="item-tags">${renderTags(tags)}</span>
+      </span>
+      <span class="card-arrow" aria-hidden="true">›</span>
+    </button>`;
+}
+
+function renderStudyContent() {
+  elements.studyContentOptions.innerHTML = Object.entries(STUDY_CONTENT_META)
+    .map(([content, meta]) => selectionCard({
+      ...meta,
+      dataAttribute: `data-study-content="${content}"`,
+    }))
+    .join("");
+}
+
+function renderStudyMethod() {
+  const contentLabel = STUDY_CONTENT_LABELS[state.studySelection.content] ?? "教材";
+  elements.studyMethodHeading.textContent = `${contentLabel}の出題方法`;
+  elements.studyMethodCopy.textContent = "4択または記述から一つ選んでください。";
+  elements.studyMethodOptions.innerHTML = Object.entries(STUDY_METHOD_META)
+    .map(([method, meta]) => selectionCard({
+      icon: meta.icon,
+      title: STUDY_METHOD_LABELS[method],
+      detail: meta.detail,
+      tags: meta.tags,
+      dataAttribute: `data-study-method="${method}"`,
+    }))
+    .join("");
+}
+
+function renderStudyScope() {
+  elements.studyScopeOptions.innerHTML = [
+    {
+      scope: "partial",
+      icon: "＿",
+      title: "一部を入力",
+      detail: "日本語訳を見ながら、熟語・構文の空欄部分だけを書く",
+      tags: ["穴埋め"],
+    },
+    {
+      scope: "full",
+      icon: "ABC",
+      title: "全部を書く",
+      detail: "日本語訳を見て、英語を最初から最後まで書く",
+      tags: ["完全入力"],
+    },
+  ].map((meta) => selectionCard({
+    ...meta,
+    dataAttribute: `data-study-scope="${meta.scope}"`,
+  })).join("");
 }
 
 function showToast(message) {
@@ -195,7 +292,7 @@ function showToast(message) {
 }
 
 function setView(view) {
-  if (view === "setup" && !state.selectedMode) view = "mode";
+  if (view === "setup" && !selectionIsComplete()) view = "study-content";
   state.view = view;
   document.querySelectorAll("[data-view]").forEach((section) => {
     section.hidden = section.dataset.view !== view;
@@ -203,7 +300,9 @@ function setView(view) {
   document.querySelectorAll("[data-view-target]").forEach((button) => {
     button.classList.toggle(
       "active",
-      button.dataset.viewTarget === view || (view === "setup" && button.dataset.viewTarget === "mode"),
+      button.dataset.viewTarget === view ||
+        (["study-content", "study-method", "study-scope", "setup"].includes(view) &&
+          button.dataset.viewTarget === "study-content"),
     );
   });
   elements.bottomNav.hidden = view === "quiz";
@@ -212,7 +311,9 @@ function setView(view) {
   window.scrollTo({ top: 0, behavior: "auto" });
 
   if (view === "home") renderHome();
-  if (view === "mode") renderModeButtons();
+  if (view === "study-content") renderStudyContent();
+  if (view === "study-method") renderStudyMethod();
+  if (view === "study-scope") renderStudyScope();
   if (view === "setup") renderSetup();
   if (view === "list") renderList(true);
   if (view === "analysis") renderAnalysis();
@@ -236,8 +337,6 @@ function renderHome() {
   elements.homeSummary.textContent = summary.attempts
     ? `${summary.answeredItems}語句を学習・苦手 ${summary.weakItems}語句`
     : "まだ回答履歴がありません";
-
-  renderModeButtons();
 
   elements.quickGrid.innerHTML = QUICK_ACTIONS.map(
     (action) => `
@@ -281,25 +380,45 @@ function filteredItems(filters = state.filters) {
   return applyFilters(state.items, state.history, withoutModes);
 }
 
-function learningItems(filters = state.filters, mode = state.selectedMode) {
-  if (!mode) return [];
-  return applyFilters(state.items, state.history, { ...filters, modes: [mode] });
+function learningItems(filters = state.filters, selection = state.studySelection) {
+  if (!selectionIsComplete(selection)) return [];
+  return applyFilters(state.items, state.history, { ...filters, modes: [] })
+    .filter((item) => studyModeForItem(item, selection));
+}
+
+function remainingLearningItems(filters = state.filters, selection = state.studySelection) {
+  const completed = new Set(progressForSelection(selection).completedItemIds ?? []);
+  return learningItems(filters, selection).filter((item) => !completed.has(item.id));
 }
 
 function renderSetup() {
-  if (!state.selectedMode) {
-    setView("mode");
+  if (!selectionIsComplete()) {
+    setView("study-content");
     return;
   }
-  const meta = MODE_META[state.selectedMode];
-  elements.selectedModeLabel.textContent = MODE_LABELS[state.selectedMode];
-  elements.selectedModeTags.innerHTML = renderTags(meta.tags);
+  const selection = normalizeStudySelection(state.studySelection);
+  elements.selectedModeLabel.textContent = studySelectionLabel(selection);
+  elements.selectedModeTags.innerHTML = renderTags([
+    STUDY_CONTENT_LABELS[selection.content],
+    STUDY_METHOD_LABELS[selection.method],
+    ...(selection.method === "write" && selection.content !== "word"
+      ? [selection.scope === "partial" ? "一部" : "全部"]
+      : []),
+  ]);
   const labels = activeFilterLabels();
   elements.activeFilterList.innerHTML = labels.length
     ? labels.map((label) => `<span class="filter-summary-chip">${escapeHtml(label)}</span>`).join("")
     : '<span class="empty-filter">全範囲・全重要度</span>';
-  const count = learningItems().length;
-  elements.setupMatchCount.textContent = count.toLocaleString();
+  const eligible = learningItems();
+  const remaining = remainingLearningItems();
+  const completedCount = eligible.length - remaining.length;
+  const count = remaining.length || eligible.length;
+  elements.setupMatchCount.textContent = eligible.length.toLocaleString();
+  elements.setupResumeNote.textContent = completedCount
+    ? remaining.length
+      ? `${completedCount}問まで回答済み。この組み合わせの続き ${remaining.length}問から始めます。`
+      : "この組み合わせは一周完了しています。次は最初から始めます。"
+    : "この組み合わせは最初から始まります。";
   elements.sortSelect.value = state.sortKey;
   elements.repeatWrong.checked = state.repeatWrong;
   elements.questionCountOptions.querySelectorAll("button").forEach((button) => {
@@ -311,7 +430,7 @@ function renderSetup() {
   });
   const actual = state.questionCount === "all" ? count : Math.min(count, state.questionCount);
   elements.startSessionLabel.textContent = `${pluralQuestions(actual)}をスタート`;
-  elements.startSession.disabled = count === 0;
+  elements.startSession.disabled = eligible.length === 0;
   renderHeader();
 }
 
@@ -483,14 +602,16 @@ async function quickStart(id) {
 
 function startSession(overrides = {}) {
   const mode = overrides.mode ?? overrides.modes?.[0] ?? state.selectedMode;
-  if (!mode || !ALL_MODES.includes(mode)) {
-    showToast("先に学習形式を一つ選んでください");
-    setView("mode");
+  const selection = normalizeStudySelection(overrides.selection ?? state.studySelection);
+  const usesSelection = Boolean(selection.content && selection.method && !overrides.mode && !overrides.modes);
+  if (!usesSelection && (!mode || !ALL_MODES.includes(mode))) {
+    showToast("先に学習内容と出題方法を選んでください");
+    setView("study-content");
     return;
   }
   const config = {
     filters: overrides.filters ?? { ...state.filters, search: "" },
-    mode,
+    ...(usesSelection ? { selection } : { mode }),
     sortKey: overrides.sortKey ?? state.sortKey,
     count: overrides.count ?? state.questionCount,
     repeatWrong: overrides.repeatWrong ?? state.repeatWrong,
@@ -499,20 +620,52 @@ function startSession(overrides = {}) {
   const sessionItems = config.itemIds
     ? state.items.filter((item) => config.itemIds.includes(item.id))
     : state.items;
-  const queue = buildSession({
-    items: sessionItems,
-    history: state.history,
-    filters: config.filters,
-    selectedModes: [config.mode],
-    sortKey: config.sortKey,
-    count: config.count,
-  });
+  const combinationKey = usesSelection ? studyCombinationKey(selection) : null;
+  const progress = usesSelection ? progressForSelection(selection) : { completedItemIds: [] };
+  let queue = usesSelection
+    ? buildStudySession({
+        items: sessionItems,
+        history: state.history,
+        filters: config.filters,
+        selection,
+        completedItemIds: progress.completedItemIds,
+        sortKey: config.sortKey,
+        count: config.count,
+      })
+    : buildSession({
+        items: sessionItems,
+        history: state.history,
+        filters: config.filters,
+        selectedModes: [config.mode],
+        sortKey: config.sortKey,
+        count: config.count,
+      });
+  if (usesSelection && !queue.length && progress.completedItemIds.length) {
+    const resetProgress = {
+      ...progress,
+      completedItemIds: [],
+      completedCycles: (progress.completedCycles ?? 0) + 1,
+    };
+    state.progress.set(combinationKey, resetProgress);
+    setMeta(`studyProgress:${combinationKey}`, resetProgress).catch(console.warn);
+    queue = buildStudySession({
+      items: sessionItems,
+      history: state.history,
+      filters: config.filters,
+      selection,
+      completedItemIds: [],
+      sortKey: config.sortKey,
+      count: config.count,
+    });
+    if (queue.length) showToast("この組み合わせを最初からもう一周します");
+  }
   if (!queue.length) {
     showToast("この条件に合う問題がありません");
     return;
   }
-  state.selectedMode = config.mode;
-  setMeta("selectedMode", config.mode).catch(console.warn);
+  if (usesSelection) state.studySelection = selection;
+  state.selectedMode = queue[0].mode;
+  setMeta("selectedMode", state.selectedMode).catch(console.warn);
   setMeta("lastSessionConfig", config).catch(console.warn);
   state.session = {
     queue,
@@ -526,6 +679,8 @@ function startSession(overrides = {}) {
     questionStartedAt: 0,
     startedAt: Date.now(),
     complete: false,
+    combinationKey,
+    selection: usesSelection ? selection : null,
   };
   setView("quiz");
   prepareQuestion();
@@ -652,6 +807,9 @@ function renderQuiz() {
   const progress = Math.round(((session.cursor + (answered ? 1 : 0)) / session.queue.length) * 100);
   const isChoice = question.mode.endsWith("choice");
   const usesSlots = ["ja_to_en_input", "spelling_input"].includes(question.mode);
+  const translation = question.mode === "phrase_blank_input"
+    ? `<p class="question-translation"><span>日本語訳</span>${escapeHtml(question.item.japanese)}</p>`
+    : "";
   const answerArea = isChoice
     ? renderChoiceArea(question, answered, session.currentAnswer)
     : usesSlots
@@ -669,6 +827,7 @@ function renderQuiz() {
       <article class="question-card">
         <p class="question-instruction">${escapeHtml(question.instruction)}</p>
         <h1>${escapeHtml(question.prompt)}</h1>
+        ${translation}
         <div class="answer-area">${answerArea}</div>
       </article>
       ${answered ? renderFeedback(question, session.currentAnswer, lastResult.correct) : ""}
@@ -722,6 +881,33 @@ async function submitAnswer(answer) {
     answer,
     durationMs,
   });
+
+  if (session.combinationKey) {
+    const currentProgress = state.progress.get(session.combinationKey) ?? {
+      completedItemIds: [],
+    };
+    const completedItemIds = [
+      ...new Set([...(currentProgress.completedItemIds ?? []), question.item.id]),
+    ];
+    const nextProgress = {
+      completedItemIds,
+      attempts: (currentProgress.attempts ?? 0) + 1,
+      correctCount: (currentProgress.correctCount ?? 0) + (correct ? 1 : 0),
+      wrongCount: (currentProgress.wrongCount ?? 0) + (correct ? 0 : 1),
+      itemResults: {
+        ...(currentProgress.itemResults ?? {}),
+        [question.item.id]: {
+          lastResult: correct ? "correct" : "wrong",
+          answeredAt: Date.now(),
+        },
+      },
+      updatedAt: Date.now(),
+    };
+    state.progress.set(session.combinationKey, nextProgress);
+    setMeta(`studyProgress:${session.combinationKey}`, nextProgress).catch((error) => {
+      console.warn("学習位置の保存に失敗しました", error);
+    });
+  }
 
   if (
     !correct &&
@@ -781,7 +967,7 @@ function renderSessionComplete() {
       <p class="eyebrow">SESSION COMPLETE</p>
       <div class="result-score"><strong>${summary.correct}</strong><span>/ ${summary.total}</span></div>
       <h1>${summary.correct === summary.total ? "全問正解です。" : "学習を記録しました。"}</h1>
-      <p>${escapeHtml(MODE_LABELS[state.selectedMode])}</p>
+      <p>${escapeHtml(session.selection ? studySelectionLabel(session.selection) : MODE_LABELS[state.selectedMode])}</p>
       <div class="result-stat-grid">
         <div><span>正答率</span><strong>${formatPercent(summary.accuracy)}</strong></div>
         <div><span>連続正解</span><strong>${summary.bestStreak}</strong></div>
@@ -859,7 +1045,7 @@ function renderAnalysis() {
       <div class="mode-analysis-score">${formatPercent(stat.accuracy)}</div>
       <div class="item-tags">${renderTags(MODE_META[stat.mode].tags)}</div>
       <p>${stat.attempts ? `${stat.wrong}ミス・平均 ${formatSeconds(stat.averageDurationMs)}` : "まだ学習していません"}</p>
-      <button class="secondary-button compact" type="button" data-mode-start="${stat.mode}">この形式で学習</button>
+      <button class="secondary-button compact" type="button" data-start-study>学習条件を選ぶ</button>
     </article>`).join("");
 
   elements.analysisContent.innerHTML = `
@@ -922,9 +1108,40 @@ function bindEvents() {
     const target = event.target.closest("button");
     if (!target) return;
     if (target.dataset.viewTarget) setView(target.dataset.viewTarget);
-    if (target.dataset.modeStart) {
-      state.selectedMode = target.dataset.modeStart;
-      setMeta("selectedMode", state.selectedMode).catch(console.warn);
+    if (target.hasAttribute("data-start-study")) {
+      state.studySelection = { content: null, method: null, scope: null };
+      state.sortKey = "importance-desc";
+      state.filters = {
+        ranges: [],
+        importance: [],
+        types: [],
+        tags: [],
+        performance: "all",
+        minimumWrong: 0,
+        search: "",
+      };
+      setView("study-content");
+    }
+    if (target.dataset.studyContent) {
+      state.studySelection = {
+        content: target.dataset.studyContent,
+        method: null,
+        scope: null,
+      };
+      setView("study-method");
+    }
+    if (target.dataset.studyMethod) {
+      state.studySelection.method = target.dataset.studyMethod;
+      if (target.dataset.studyMethod === "write" && state.studySelection.content !== "word") {
+        state.studySelection.scope = null;
+        setView("study-scope");
+      } else {
+        state.studySelection.scope = "full";
+        setView("setup");
+      }
+    }
+    if (target.dataset.studyScope) {
+      state.studySelection.scope = target.dataset.studyScope;
       setView("setup");
     }
     if (target.dataset.quick) quickStart(target.dataset.quick);
@@ -938,7 +1155,9 @@ function bindEvents() {
         minimumWrong: 0,
         search: "",
       };
-      setView(state.selectedMode ? "setup" : "mode");
+      state.studySelection = { content: null, method: null, scope: null };
+      state.sortKey = "importance-desc";
+      setView("study-content");
     }
     if (target.id === "open-filter" || target.id === "list-open-filter") openFilter();
     if (target.id === "close-filter") closeFilter();
@@ -1046,15 +1265,23 @@ function bindEvents() {
 async function boot() {
   bindEvents();
   try {
-    const [response, history, selectedMode] = await Promise.all([
+    const progressPromise = Promise.all(
+      KNOWN_STUDY_SELECTIONS.map(async (selection) => {
+        const key = studyCombinationKey(selection);
+        return [key, await getMeta(`studyProgress:${key}`, { completedItemIds: [] })];
+      }),
+    );
+    const [response, history, selectedMode, progressEntries] = await Promise.all([
       fetch("./data/items.json?v=phase3.1"),
       loadHistory(),
       getMeta("selectedMode"),
+      progressPromise,
     ]);
     if (!response.ok) throw new Error(`教材データを読み込めませんでした (${response.status})`);
     state.items = await response.json();
     state.history = history;
     state.selectedMode = ALL_MODES.includes(selectedMode) ? selectedMode : null;
+    state.progress = new Map(progressEntries);
     elements.appShell.setAttribute("aria-busy", "false");
     setView("home");
   } catch (error) {

@@ -9,7 +9,7 @@
       content="英コミ定期テスト対策用の単語・熟語・構文学習アプリ"
     />
     <title>Words — 英コミ対策</title>
-    <link rel="stylesheet" href="./styles.css?v=phase4" />
+    <link rel="stylesheet" href="./styles.css?v=phase4.1" />
   </head>
   <body>
     <div class="app-shell" id="app-shell" aria-busy="true">
@@ -37,10 +37,10 @@
               </div>
               <p id="home-summary">まだ回答履歴がありません</p>
             </div>
-            <div class="hero-mode-block">
-              <p class="subtle-label">学習形式を一つ選ぶ</p>
-              <div class="mode-grid hero-mode-grid" id="hero-mode-grid"></div>
-            </div>
+            <button class="primary-button hero-button" type="button" data-start-study>
+              学習を始める
+              <span aria-hidden="true">→</span>
+            </button>
           </div>
 
           <section class="content-section" aria-labelledby="quick-heading">
@@ -65,13 +65,33 @@
           </section>
         </section>
 
-        <section class="view" id="view-mode" data-view="mode" hidden>
+        <section class="view" id="view-study-content" data-view="study-content" hidden>
           <div class="page-heading">
-            <p class="eyebrow">STUDY MODE</p>
-            <h1>学習形式を選ぶ</h1>
-            <p>一回の学習では、一つの形式だけに集中します。</p>
+            <p class="eyebrow">STEP 1 OF 3</p>
+            <h1>何を学習しますか？</h1>
+            <p>学習する教材の種類を選んでください。</p>
           </div>
-          <div class="mode-grid study-mode-grid" id="study-mode-grid"></div>
+          <div class="selection-grid content-selection-grid" id="study-content-options"></div>
+        </section>
+
+        <section class="view" id="view-study-method" data-view="study-method" hidden>
+          <div class="page-heading selection-page-heading">
+            <button class="text-button back-link" type="button" data-view-target="study-content">← 教材を選び直す</button>
+            <p class="eyebrow">STEP 2 OF 3</p>
+            <h1 id="study-method-heading">出題方法を選ぶ</h1>
+            <p id="study-method-copy">一回の学習では一つの方法に集中します。</p>
+          </div>
+          <div class="selection-grid" id="study-method-options"></div>
+        </section>
+
+        <section class="view" id="view-study-scope" data-view="study-scope" hidden>
+          <div class="page-heading selection-page-heading">
+            <button class="text-button back-link" type="button" data-view-target="study-method">← 出題方法を選び直す</button>
+            <p class="eyebrow">STEP 3 OF 3</p>
+            <h1>どこまで書きますか？</h1>
+            <p>熟語・構文の一部だけを穴埋めするか、英語を全部書くか選べます。</p>
+          </div>
+          <div class="selection-grid scope-selection-grid" id="study-scope-options"></div>
         </section>
 
         <section class="view" id="view-setup" data-view="setup" hidden>
@@ -88,8 +108,8 @@
                 <h2 id="selected-mode-label">—</h2>
                 <div class="item-tags" id="selected-mode-tags"></div>
               </div>
-              <button class="secondary-button compact" type="button" data-view-target="mode">
-                形式を変更
+              <button class="secondary-button compact" type="button" data-view-target="study-content">
+                選び直す
               </button>
             </section>
             <section class="panel-card setup-filter-card">
@@ -107,14 +127,15 @@
                 <strong id="setup-match-count">0</strong>
                 <span>項目が該当</span>
               </div>
+              <p class="resume-note" id="setup-resume-note"></p>
             </section>
 
             <section class="panel-card">
               <label class="field-label" for="sort-select">並び替え</label>
               <select class="select-control" id="sort-select">
+                <option value="importance-desc">重要度が高い順</option>
                 <option value="random">ランダム</option>
                 <option value="difficulty">苦手順</option>
-                <option value="importance-desc">重要度が高い順</option>
                 <option value="importance-asc">重要度が低い順</option>
                 <option value="wrong-desc">間違い回数が多い順</option>
                 <option value="wrong-asc">間違い回数が少ない順</option>
@@ -214,7 +235,7 @@
           <span aria-hidden="true">⌂</span>
           <span>ホーム</span>
         </button>
-        <button type="button" data-view-target="mode">
+        <button type="button" data-view-target="study-content" data-start-study>
           <span aria-hidden="true">✎</span>
           <span>学習</span>
         </button>
@@ -286,6 +307,6 @@
     </aside>
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-    <script type="module" src="./src/app.js?v=phase4"></script>
+    <script type="module" src="./src/app.js?v=phase4.1"></script>
   </body>
 </html>

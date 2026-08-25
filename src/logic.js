@@ -28,6 +28,18 @@ export const TYPE_LABELS = {
 
 export const ALL_MODES = Object.keys(MODE_LABELS);
 
+export const STUDY_CONTENT_LABELS = {
+  word: "単語",
+  phrase: "熟語・構文",
+  all: "単語＋熟語・構文",
+};
+
+export const STUDY_METHOD_LABELS = {
+  ja_to_en_choice: "日本語 → 英語 4択",
+  en_to_ja_choice: "英語 → 日本語 4択",
+  write: "日本語 → 英語 記述",
+};
+
 export function normalizeAnswer(value) {
   return String(value ?? "")
     .normalize("NFKC")
@@ -410,6 +422,69 @@ export function buildSession({
     usage.set(mode, (usage.get(mode) ?? 0) + 1);
     return { item, mode };
   });
+}
+
+export function normalizeStudySelection(selection = {}) {
+  const content = ["word", "phrase", "all"].includes(selection.content)
+    ? selection.content
+    : null;
+  const method = ["ja_to_en_choice", "en_to_ja_choice", "write"].includes(
+    selection.method,
+  )
+    ? selection.method
+    : null;
+  const scope = method === "write" && content !== "word"
+    ? selection.scope === "partial" ? "partial" : "full"
+    : "full";
+  return { content, method, scope };
+}
+
+export function studyCombinationKey(selection) {
+  const normalized = normalizeStudySelection(selection);
+  if (!normalized.content || !normalized.method) return null;
+  return `${normalized.content}:${normalized.method}:${normalized.scope}`;
+}
+
+export function studyModeForItem(item, selection) {
+  const normalized = normalizeStudySelection(selection);
+  if (!normalized.content || !normalized.method) return null;
+  const isWord = item.type === "word";
+  if (normalized.content === "word" && !isWord) return null;
+  if (normalized.content === "phrase" && isWord) return null;
+  if (normalized.method === "ja_to_en_choice") {
+    return item.questionModes.includes("ja_to_en_choice") ? "ja_to_en_choice" : null;
+  }
+  if (normalized.method === "en_to_ja_choice") {
+    return item.questionModes.includes("en_to_ja_choice") ? "en_to_ja_choice" : null;
+  }
+  if (isWord) {
+    return item.questionModes.includes("spelling_input") ? "spelling_input" : null;
+  }
+  const mode = normalized.scope === "partial" ? "phrase_blank_input" : "ja_to_en_input";
+  return item.questionModes.includes(mode) ? mode : null;
+}
+
+export function buildStudySession({
+  items,
+  history,
+  filters = {},
+  selection,
+  completedItemIds = [],
+  sortKey = "importance-desc",
+  count = 15,
+  rng = Math.random,
+}) {
+  const completed = new Set(completedItemIds);
+  const candidates = sortItems(
+    applyFilters(items, history, { ...filters, modes: [] }),
+    history,
+    sortKey,
+    rng,
+  )
+    .map((item) => ({ item, mode: studyModeForItem(item, selection) }))
+    .filter((entry) => entry.mode && !completed.has(entry.item.id));
+  const limit = count === "all" ? candidates.length : Math.max(0, Number(count));
+  return candidates.slice(0, limit);
 }
 
 export function summarizeHistory(items, history) {

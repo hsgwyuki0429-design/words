@@ -8,11 +8,14 @@ import {
   applyFilters,
   buildQuestion,
   buildSession,
+  buildStudySession,
   difficultyScore,
   emptyHistory,
   isAnswerCorrect,
   mergeAttempt,
   normalizeAnswer,
+  studyCombinationKey,
+  studyModeForItem,
   recommendStudy,
   slotTokensForQuestion,
   sortItems,
@@ -184,4 +187,49 @@ test("recommended study always returns one supported mode and at most 15 items",
       items.find((item) => item.id === id).questionModes.includes(recommendation.mode),
     ),
   );
+});
+
+test("step-based study selection maps words and phrases to the requested writing scope", () => {
+  const word = items.find((item) => item.type === "word" && item.questionModes.includes("spelling_input"));
+  const phrase = items.find((item) => item.type !== "word" && item.questionModes.includes("phrase_blank_input"));
+  assert.equal(
+    studyModeForItem(word, { content: "all", method: "write", scope: "partial" }),
+    "spelling_input",
+  );
+  assert.equal(
+    studyModeForItem(phrase, { content: "phrase", method: "write", scope: "partial" }),
+    "phrase_blank_input",
+  );
+  assert.equal(
+    studyModeForItem(phrase, { content: "phrase", method: "write", scope: "full" }),
+    "ja_to_en_input",
+  );
+  assert.equal(
+    studyModeForItem(phrase, { content: "word", method: "write", scope: "full" }),
+    null,
+  );
+});
+
+test("same study combination resumes after completed item ids", () => {
+  const selection = { content: "phrase", method: "en_to_ja_choice", scope: "full" };
+  const first = buildStudySession({
+    items,
+    history: new Map(),
+    selection,
+    sortKey: "importance-desc",
+    count: 5,
+  });
+  const resumed = buildStudySession({
+    items,
+    history: new Map(),
+    selection,
+    completedItemIds: first.map((entry) => entry.item.id),
+    sortKey: "importance-desc",
+    count: 5,
+  });
+  assert.equal(studyCombinationKey(selection), "phrase:en_to_ja_choice:full");
+  assert.equal(first.length, 5);
+  assert.equal(resumed.length, 5);
+  assert.ok(resumed.every((entry) => !first.some((done) => done.item.id === entry.item.id)));
+  assert.ok(first.every((entry) => entry.item.type !== "word"));
 });

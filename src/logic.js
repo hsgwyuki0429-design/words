@@ -445,6 +445,17 @@ export function studyCombinationKey(selection) {
   return `${normalized.content}:${normalized.method}:${normalized.scope}`;
 }
 
+export function studyCyclePolicy(cycleNumber, explicitPerformance = null) {
+  const cycle = Math.max(1, Number(cycleNumber) || 1);
+  if (cycle === 1) return { cycle, performance: "all", requiresChoice: false };
+  if (cycle === 2) return { cycle, performance: "everMissed", requiresChoice: false };
+  return {
+    cycle,
+    performance: explicitPerformance || null,
+    requiresChoice: !explicitPerformance,
+  };
+}
+
 export function studyModeForItem(item, selection) {
   const normalized = normalizeStudySelection(selection);
   if (!normalized.content || !normalized.method) return null;

@@ -15,7 +15,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icons/app-icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icons/app-icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=phase7" />
+    <link rel="stylesheet" href="./styles.css?v=phase7.5" />
   </head>
   <body>
     <div class="app-shell" id="app-shell" aria-busy="true">
@@ -104,8 +104,8 @@
         <section class="view" id="view-setup" data-view="setup" hidden>
           <div class="page-heading">
             <p class="eyebrow">STUDY SETUP</p>
-            <h1>何を学習しますか？</h1>
-            <p>条件を組み合わせると、該当する問題数がすぐに更新されます。</p>
+            <h1>学習範囲を絞り込む</h1>
+            <p>形式は選択済みです。範囲と重要度、周回に応じた成績条件を設定します。</p>
           </div>
 
           <div class="setup-grid">
@@ -136,6 +136,8 @@
               </div>
               <p class="resume-note" id="setup-resume-note"></p>
             </section>
+
+            <section class="panel-card cycle-performance-card" id="cycle-performance-card"></section>
 
             <section class="panel-card">
               <label class="field-label" for="sort-select">並び替え</label>
@@ -311,11 +313,11 @@
           <legend>重要度</legend>
           <div class="filter-chip-grid compact-grid" id="filter-importance"></div>
         </fieldset>
-        <fieldset>
+        <fieldset hidden>
           <legend>種類</legend>
           <div class="filter-chip-grid" id="filter-types"></div>
         </fieldset>
-        <fieldset>
+        <fieldset id="filter-performance-fieldset">
           <legend>成績</legend>
           <select class="select-control" id="filter-performance" name="performance">
             <option value="all">全て</option>
@@ -336,7 +338,7 @@
             <input id="filter-minimum-wrong" type="number" min="0" max="999" value="0" inputmode="numeric" />
           </label>
         </fieldset>
-        <fieldset>
+        <fieldset hidden>
           <legend>タグ</legend>
           <div class="filter-chip-grid compact-grid" id="filter-tags"></div>
         </fieldset>
@@ -349,6 +351,6 @@
     </aside>
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-    <script type="module" src="./src/app.js?v=phase7.1"></script>
+    <script type="module" src="./src/app.js?v=phase7.5"></script>
   </body>
 </html>

@@ -15,6 +15,7 @@ import {
   mergeAttempt,
   normalizeAnswer,
   studyCombinationKey,
+  studyCyclePolicy,
   studyModeForItem,
   recommendStudy,
   slotTokensForQuestion,
@@ -232,4 +233,23 @@ test("same study combination resumes after completed item ids", () => {
   assert.equal(resumed.length, 5);
   assert.ok(resumed.every((entry) => !first.some((done) => done.item.id === entry.item.id)));
   assert.ok(first.every((entry) => entry.item.type !== "word"));
+});
+
+test("study cycle performance is automatic twice and required from cycle three", () => {
+  assert.deepEqual(studyCyclePolicy(1), {
+    cycle: 1,
+    performance: "all",
+    requiresChoice: false,
+  });
+  assert.deepEqual(studyCyclePolicy(2), {
+    cycle: 2,
+    performance: "everMissed",
+    requiresChoice: false,
+  });
+  assert.equal(studyCyclePolicy(3).requiresChoice, true);
+  assert.deepEqual(studyCyclePolicy(4, "accuracyUnder70"), {
+    cycle: 4,
+    performance: "accuracyUnder70",
+    requiresChoice: false,
+  });
 });

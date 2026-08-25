@@ -20,12 +20,13 @@ import {
   recommendStudy,
   normalizeStudySelection,
   studyCombinationKey,
+  studyCyclePolicy,
   studyModeForItem,
   summarizeByMode,
   summarizeByRange,
   summarizeHistory,
   summarizeSession,
-} from "./logic.js";
+} from "./logic.js?v=phase7.5";
 import { clearAllData, getMeta, loadHistory, recordAttempt, setMeta } from "./storage.js";
 
 const DEFAULT_SETTINGS = {
@@ -63,6 +64,8 @@ const state = {
   combo: 0,
   bestCombo: 0,
   activeStudy: null,
+  performanceExplicit: false,
+  cycleContextKey: null,
 };
 
 const elements = Object.fromEntries(
@@ -87,6 +90,7 @@ const elements = Object.fromEntries(
     "active-filter-list",
     "setup-match-count",
     "setup-resume-note",
+    "cycle-performance-card",
     "sort-select",
     "question-count-options",
     "repeat-wrong",
@@ -111,6 +115,7 @@ const elements = Object.fromEntries(
     "filter-importance",
     "filter-types",
     "filter-performance",
+    "filter-performance-fieldset",
     "filter-minimum-wrong",
     "filter-tags",
     "filter-preview-count",
@@ -588,12 +593,78 @@ function remainingLearningItems(filters = state.filters, selection = state.study
   return learningItems(filters, selection).filter((item) => !completed.has(item.id));
 }
 
+function cycleItems(selection, performance, minimumWrong = 0) {
+  return applyFilters(state.items, state.history, {
+    ...state.filters,
+    types: [],
+    tags: [],
+    performance,
+    minimumWrong,
+    modes: [],
+  }).filter((item) => studyModeForItem(item, selection));
+}
+
+function syncStudyCycle(selection) {
+  const key = studyCombinationKey(selection);
+  let progress = progressForSelection(selection);
+  let cycle = (progress.completedCycles ?? 0) + 1;
+  const completed = new Set(progress.completedItemIds ?? []);
+  const policy = studyCyclePolicy(cycle, state.performanceExplicit ? state.filters.performance : null);
+  const performance = policy.performance ?? "all";
+  const minimumWrong = cycle <= 2 ? 0 : state.filters.minimumWrong;
+  const target = cycleItems(selection, performance, minimumWrong);
+  const completedTarget = target.length > 0 && target.every((item) => completed.has(item.id));
+  const emptySecondCycle = cycle === 2 && target.length === 0;
+
+  if (completedTarget || emptySecondCycle) {
+    progress = {
+      ...progress,
+      completedItemIds: [],
+      completedCycles: (progress.completedCycles ?? 0) + 1,
+    };
+    state.progress.set(key, progress);
+    setMeta(`studyProgress:${key}`, progress).catch(console.warn);
+    cycle = (progress.completedCycles ?? 0) + 1;
+  }
+
+  if (cycle === 2 && cycleItems(selection, "everMissed", 0).length === 0) {
+    progress = {
+      ...progress,
+      completedItemIds: [],
+      completedCycles: (progress.completedCycles ?? 0) + 1,
+    };
+    state.progress.set(key, progress);
+    setMeta(`studyProgress:${key}`, progress).catch(console.warn);
+    cycle = (progress.completedCycles ?? 0) + 1;
+  }
+
+  const contextKey = `${key}:${cycle}`;
+  if (state.cycleContextKey !== contextKey) {
+    state.cycleContextKey = contextKey;
+    state.performanceExplicit = false;
+    state.filters.types = [];
+    state.filters.tags = [];
+    state.filters.minimumWrong = 0;
+    state.filters.performance = cycle === 2 ? "everMissed" : "all";
+  }
+
+  if (cycle === 1) {
+    state.filters.performance = "all";
+    state.filters.minimumWrong = 0;
+  } else if (cycle === 2) {
+    state.filters.performance = "everMissed";
+    state.filters.minimumWrong = 0;
+  }
+  return { cycle, progress };
+}
+
 function renderSetup() {
   if (!selectionIsComplete()) {
     setView("study-content");
     return;
   }
   const selection = normalizeStudySelection(state.studySelection);
+  const { cycle } = syncStudyCycle(selection);
   elements.selectedModeLabel.textContent = studySelectionLabel(selection);
   elements.selectedModeTags.innerHTML = renderTags([
     STUDY_CONTENT_LABELS[selection.content],
@@ -602,6 +673,20 @@ function renderSetup() {
       ? [selection.scope === "partial" ? "一部" : "全部"]
       : []),
   ]);
+  elements.cyclePerformanceCard.innerHTML = cycle === 1
+    ? `<div><span class="subtle-label">1周目</span><h2>成績の絞り込みなし</h2><p>最初は選んだ範囲の問題をすべて学習します。</p></div>`
+    : cycle === 2
+      ? `<div><span class="subtle-label">2周目</span><h2>一度でも間違えた問題</h2><p>1周目で間違えた問題だけを自動で出題します。</p></div>`
+      : `<div>
+          <span class="subtle-label">${cycle}周目・選択必須</span>
+          <h2>今回の成績条件</h2>
+          <p>${state.performanceExplicit ? PERFORMANCE_LABELS[state.filters.performance] : "どちらかを選んでください"}</p>
+        </div>
+        <div class="cycle-performance-actions">
+          <button class="secondary-button compact${state.performanceExplicit && state.filters.performance === "everMissed" ? " selected" : ""}" type="button" data-cycle-performance="everMissed">間違えた問題</button>
+          <button class="secondary-button compact${state.performanceExplicit && state.filters.performance === "all" ? " selected" : ""}" type="button" data-cycle-performance="all">全部</button>
+          <button class="text-button" type="button" data-open-performance-detail>詳細を選ぶ</button>
+        </div>`;
   const labels = activeFilterLabels();
   elements.activeFilterList.innerHTML = labels.length
     ? labels.map((label) => `<span class="filter-summary-chip">${escapeHtml(label)}</span>`).join("")
@@ -627,7 +712,7 @@ function renderSetup() {
   });
   const actual = state.questionCount === "all" ? count : Math.min(count, state.questionCount);
   elements.startSessionLabel.textContent = `${pluralQuestions(actual)}をスタート`;
-  elements.startSession.disabled = eligible.length === 0;
+  elements.startSession.disabled = eligible.length === 0 || (cycle >= 3 && !state.performanceExplicit);
   renderHeader();
 }
 
@@ -687,13 +772,12 @@ function renderFilterForm() {
       state.filters.importance.includes(importance),
     ),
   ).join("");
-  elements.filterTypes.innerHTML = Object.entries(TYPE_LABELS)
-    .map(([value, label]) => checkInput("types", value, label, state.filters.types.includes(value)))
-    .join("");
-  const tagLabels = { preposition: "前置詞", spelling: "スペル", blank: "穴埋め" };
-  elements.filterTags.innerHTML = Object.entries(tagLabels)
-    .map(([value, label]) => checkInput("tags", value, label, state.filters.tags.includes(value)))
-    .join("");
+  elements.filterTypes.innerHTML = "";
+  elements.filterTags.innerHTML = "";
+  const cycle = state.view === "setup" && selectionIsComplete()
+    ? (progressForSelection().completedCycles ?? 0) + 1
+    : 3;
+  elements.filterPerformanceFieldset.hidden = state.view === "setup" && cycle < 3;
   elements.filterPerformance.value = state.filters.performance;
   elements.filterMinimumWrong.value = String(state.filters.minimumWrong);
   renderFilterPreview();
@@ -710,8 +794,8 @@ function collectFilterForm() {
     ...state.filters,
     ranges: valuesFor("ranges"),
     importance: valuesFor("importance"),
-    types: valuesFor("types"),
-    tags: valuesFor("tags"),
+    types: [],
+    tags: [],
     performance: elements.filterPerformance.value,
     minimumWrong: Math.max(0, Number(elements.filterMinimumWrong.value || 0)),
   };
@@ -747,6 +831,7 @@ function resetFilters() {
     performance: "all",
     minimumWrong: 0,
   };
+  if (state.view === "setup") state.performanceExplicit = false;
   renderFilterForm();
 }
 
@@ -978,23 +1063,19 @@ function renderTextInput(answered, currentAnswer) {
 
 function renderFeedback(question, answer, correct) {
   if (!state.session.answered) return "";
-  const correctAnswer = question.mode.endsWith("choice")
-    ? question.correctChoice
-    : answersForMode(question.item, question.mode)[0];
+  const isChoice = question.mode.endsWith("choice");
+  const correctAnswer = answersForMode(question.item, question.mode)[0];
   return `
     <section class="feedback-card ${correct ? "feedback-correct" : "feedback-wrong"}" aria-live="polite">
       <div class="feedback-result">
         <span aria-hidden="true">${correct ? "✓" : "×"}</span>
         <strong>${correct ? "正解" : "不正解"}</strong>
       </div>
-      <dl>
-        <div><dt>あなた</dt><dd>${escapeHtml(answer || "（未入力）")}</dd></div>
-        <div><dt>正解</dt><dd>${escapeHtml(correctAnswer)}</dd></div>
-      </dl>
+      ${!correct && !isChoice ? `<p class="input-correct-answer"><span>正解</span><strong>${escapeHtml(correctAnswer)}</strong></p>` : ""}
       ${state.settings.showSources ? `<div class="source-box">
         <span class="importance-badge importance-${question.item.importance.toLowerCase()}">${question.item.importance}</span>
         <div>
-          <div class="item-tags">${renderTags([question.item.type, ...question.item.tags])}</div>
+          <strong class="source-range">範囲：${escapeHtml(question.item.range)}</strong>
           <p>${escapeHtml(sourceLine(question.item))}</p>
         </div>
       </div>` : ""}
@@ -1027,7 +1108,7 @@ function renderQuiz() {
       : renderTextInput(answered, session.currentAnswer);
 
   elements.quizContent.innerHTML = `
-    <div class="quiz-shell">
+    <div class="quiz-shell${answered ? " quiz-answered" : ""}">
       <header class="quiz-header">
         <button class="icon-button" type="button" data-quit-quiz aria-label="学習を終了">×</button>
         <div class="quiz-progress-copy"><strong>${session.cursor + 1}</strong> / ${session.queue.length}</div>
@@ -1046,10 +1127,14 @@ function renderQuiz() {
 
   if (!answered) {
     requestAnimationFrame(() => {
+      window.scrollTo(0, 0);
       elements.quizContent.querySelector("input")?.focus({ preventScroll: true });
     });
   } else {
-    elements.quizContent.querySelector("[data-next-question]")?.focus({ preventScroll: true });
+    requestAnimationFrame(() => {
+      window.scrollTo(0, 0);
+      elements.quizContent.querySelector("[data-next-question]")?.focus({ preventScroll: true });
+    });
   }
 }
 
@@ -1351,7 +1436,10 @@ function distributeSlotText(startInput, text) {
 function bindEvents() {
   document.addEventListener("click", (event) => {
     const target = event.target.closest("button");
-    if (!target) return;
+    if (!target) {
+      if (state.view === "quiz" && state.session?.answered) nextQuestion();
+      return;
+    }
     if (target.dataset.viewTarget) setView(target.dataset.viewTarget);
     if (target.dataset.selectEffects) {
       state.settings.effectsMode = target.dataset.selectEffects;
@@ -1384,8 +1472,17 @@ function bindEvents() {
         minimumWrong: 0,
         search: "",
       };
+      state.performanceExplicit = false;
+      state.cycleContextKey = null;
       setView("study-content");
     }
+    if (target.dataset.cyclePerformance) {
+      state.filters.performance = target.dataset.cyclePerformance;
+      state.filters.minimumWrong = 0;
+      state.performanceExplicit = true;
+      renderSetup();
+    }
+    if (target.hasAttribute("data-open-performance-detail")) openFilter();
     if (target.hasAttribute("data-resume-active") && state.activeStudy?.config) {
       startSession(state.activeStudy.config);
     }
@@ -1431,6 +1528,10 @@ function bindEvents() {
     if (target.id === "reset-filter") resetFilters();
     if (target.id === "apply-filter") {
       state.filters = collectFilterForm();
+      if (state.view === "setup" && selectionIsComplete()) {
+        const cycle = (progressForSelection().completedCycles ?? 0) + 1;
+        if (cycle >= 3) state.performanceExplicit = true;
+      }
       closeFilter();
       state.view === "list" ? renderList(true) : renderSetup();
     }

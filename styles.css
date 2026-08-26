@@ -213,35 +213,6 @@ h2 {
   line-height: 1.7;
 }
 
-.mastery-card {
-  width: min(100%, 470px);
-  margin: 0 auto 18px;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(210, 210, 215, 0.75);
-  border-radius: var(--radius-md);
-  text-align: left;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.035);
-}
-
-.mastery-card > div:first-child {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.mastery-card strong {
-  font-size: 27px;
-  letter-spacing: -0.05em;
-}
-
-.mastery-card p {
-  margin: 10px 0 0;
-  color: var(--secondary);
-  font-size: 13px;
-}
-
 .subtle-label,
 .field-label {
   display: block;
@@ -249,25 +220,6 @@ h2 {
   font-size: 12px;
   font-weight: 680;
   letter-spacing: 0.01em;
-}
-
-.progress-track,
-.mini-progress {
-  display: block;
-  overflow: hidden;
-  height: 5px;
-  margin-top: 13px;
-  background: #e7e7eb;
-  border-radius: 999px;
-}
-
-.progress-track span,
-.mini-progress i {
-  display: block;
-  height: 100%;
-  background: var(--accent);
-  border-radius: inherit;
-  transition: width 300ms ease;
 }
 
 .primary-button,
@@ -292,8 +244,6 @@ h2 {
 
 .primary-button:active,
 .secondary-button:active,
-.quick-card:active,
-.range-card:active,
 .choice-button:active {
   transform: scale(0.985);
 }
@@ -332,10 +282,6 @@ h2 {
   font-weight: 650;
 }
 
-.content-section {
-  margin: 28px 0 58px;
-}
-
 .section-heading,
 .panel-heading,
 .page-heading.list-heading,
@@ -357,114 +303,9 @@ h2 {
   font-size: 25px;
 }
 
-.quick-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.quick-card {
-  display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 13px;
-  min-height: 88px;
-  padding: 16px;
-  text-align: left;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.025);
-}
-
-.quick-card strong,
-.quick-card small {
-  display: block;
-}
-
-.quick-card strong {
-  margin-bottom: 3px;
-  font-size: 15px;
-}
-
-.quick-card small {
-  overflow: hidden;
-  color: var(--secondary);
-  font-size: 12px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.quick-icon {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 13px;
-  font-weight: 800;
-}
-
-.tone-red { color: #b42318; background: #fee9e7; }
-.tone-orange { color: #b54708; background: #fef0c7; }
-.tone-violet { color: #6941c6; background: #eee9ff; }
-.tone-blue { color: #175cd3; background: #e5efff; }
-.tone-green { color: #067647; background: #dff7eb; }
-.tone-gray { color: #475467; background: #eef0f3; }
-.tone-cyan { color: #0e7090; background: #dff4fb; }
-.tone-yellow { color: #8b5d00; background: #fff1bd; }
-
 .card-arrow {
   color: var(--tertiary);
   font-size: 23px;
-}
-
-.range-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.range-card {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  min-height: 154px;
-  padding: 18px;
-  text-align: left;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-}
-
-.range-name {
-  min-height: 36px;
-  color: var(--secondary);
-  font-size: 13px;
-  font-weight: 650;
-}
-
-.range-card strong {
-  margin-top: auto;
-  font-size: 28px;
-  letter-spacing: -0.04em;
-}
-
-.range-card strong small {
-  margin-left: 3px;
-  color: var(--secondary);
-  font-size: 11px;
-  letter-spacing: 0;
-}
-
-.range-meta {
-  margin-top: 5px;
-  color: var(--secondary);
-  font-size: 11px;
-}
-
-.mini-progress {
-  height: 3px;
-  margin-top: 12px;
 }
 
 .page-heading {
@@ -1838,57 +1679,6 @@ body.quiz-active .main-content { padding-bottom: 0; }
   letter-spacing: -0.05em;
 }
 
-.recommendation-card {
-  display: grid;
-  grid-template-columns: 54px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 18px;
-  margin-top: 16px;
-  padding: 22px;
-  color: #f8fafc;
-  background: linear-gradient(135deg, #161719, #30343a);
-  border-radius: var(--radius-lg);
-  text-align: left;
-}
-
-.recommendation-icon {
-  display: grid;
-  place-items: center;
-  width: 54px;
-  height: 54px;
-  color: #171719;
-  background: #f8df7b;
-  border-radius: 17px;
-  font-size: 24px;
-}
-
-.recommendation-card .eyebrow {
-  color: #b8bdc6;
-}
-
-.recommendation-card h2 {
-  margin: 0 0 6px;
-  font-size: 20px;
-}
-
-.recommendation-card p:not(.eyebrow) {
-  margin: 0 0 10px;
-  color: #c9cdd4;
-  font-size: 12px;
-}
-
-.recommendation-card .item-tag {
-  color: #e7e9ed;
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.recommendation-card .primary-button {
-  color: #171719;
-  background: #fff;
-  border-color: #fff;
-  white-space: nowrap;
-}
-
 .analysis-section {
   margin-top: 42px;
 }
@@ -2070,11 +1860,6 @@ body.quiz-active .main-content { padding-bottom: 0; }
   font-weight: 500;
 }
 
-.recommendation-result {
-  width: 100%;
-  text-align: left;
-}
-
 .result-actions {
   width: 100%;
 }
@@ -2097,7 +1882,6 @@ body.quiz-active .main-content { padding-bottom: 0; }
     padding: 62px 0 38px;
   }
 
-  .quick-grid,
   .setup-grid {
     grid-template-columns: 1fr;
   }
@@ -2133,15 +1917,6 @@ body.quiz-active .main-content { padding-bottom: 0; }
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .recommendation-card {
-    grid-template-columns: 54px minmax(0, 1fr);
-  }
-
-  .recommendation-card .primary-button {
-    grid-column: 1 / -1;
-    width: 100%;
-  }
-
   .analysis-row {
     grid-template-columns: minmax(0, 1fr) auto;
   }
@@ -2157,10 +1932,6 @@ body.quiz-active .main-content { padding-bottom: 0; }
 
   .cycle-performance-card { align-items: stretch; flex-direction: column; }
   .cycle-performance-actions { justify-content: flex-start; }
-
-  .range-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 
   .list-toolbar {
     grid-template-columns: 1fr;
@@ -2275,41 +2046,9 @@ body.quiz-active .main-content { padding-bottom: 0; }
     padding: 15px;
   }
 
-  .recommendation-card {
-    grid-template-columns: 44px minmax(0, 1fr);
-    gap: 12px;
-    padding: 18px;
-  }
-
-  .recommendation-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 13px;
-  }
-
   .hero-copy {
     padding: 0 12px;
     font-size: 14px;
-  }
-
-  .quick-grid {
-    gap: 9px;
-  }
-
-  .quick-card {
-    grid-template-columns: 40px minmax(0, 1fr) auto;
-    min-height: 80px;
-    padding: 13px;
-  }
-
-  .quick-icon {
-    width: 40px;
-    height: 40px;
-  }
-
-  .range-card {
-    min-height: 142px;
-    padding: 15px;
   }
 
   .page-heading {

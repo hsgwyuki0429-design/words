@@ -17,7 +17,6 @@ import {
   normalizeAnswer,
   slotTokensForQuestion,
   sortItems,
-  recommendStudy,
   normalizeStudySelection,
   studyCombinationKey,
   studyCyclePolicy,
@@ -26,7 +25,7 @@ import {
   summarizeByRange,
   summarizeHistory,
   summarizeSession,
-} from "./logic.js?v=phase7.10";
+} from "./logic.js?v=phase7.11";
 import { clearAllData, getMeta, loadHistory, recordAttempt, setMeta } from "./storage.js";
 
 const DEFAULT_SETTINGS = {
@@ -76,9 +75,6 @@ const elements = Object.fromEntries(
     "app-header",
     "header-status",
     "greeting",
-    "home-accuracy",
-    "home-progress",
-    "home-summary",
     "resume-study-card",
     "study-content-options",
     "study-method-heading",
@@ -93,8 +89,6 @@ const elements = Object.fromEntries(
     "confirm-study-importance",
     "study-sort-kind-options",
     "study-sort-other-options",
-    "quick-grid",
-    "range-grid",
     "cycle-performance-card",
     "question-count-options",
     "repeat-wrong",
@@ -161,17 +155,6 @@ const OTHER_SORT_OPTIONS = [
   ["registration", "登録順"],
   ["alpha-en", "A–Z"],
   ["alpha-ja", "あいうえお順"],
-];
-
-const QUICK_ACTIONS = [
-  { id: "weak", icon: "↘", title: "苦手だけ", detail: "ミスした語句を苦手順で", tone: "red" },
-  { id: "missed", icon: "×", title: "間違えた問題", detail: "一度でも間違えた項目", tone: "orange" },
-  { id: "sss", icon: "S", title: "SSSだけ", detail: "最重要語句を集中確認", tone: "violet" },
-  { id: "resume", icon: "↺", title: "前回の続き", detail: "前回と同じ学習条件", tone: "blue" },
-  { id: "recommended", icon: "✦", title: "おすすめ15問", detail: "履歴と重要度から優先", tone: "green" },
-  { id: "random", icon: "⌁", title: "ランダム20問", detail: "全範囲からバランスよく", tone: "gray" },
-  { id: "preposition", icon: "_", title: "前置詞だけ", detail: "前置詞を完全入力", tone: "cyan" },
-  { id: "spelling", icon: "Aa", title: "スペルだけ", detail: "日本語から英単語へ", tone: "yellow" },
 ];
 
 const MODE_META = {
@@ -615,13 +598,6 @@ function renderHome() {
   elements.greeting.textContent =
     hour < 11 ? "Good morning." : hour < 18 ? "Good afternoon." : "Good evening.";
 
-  const summary = summarizeHistory(state.items, state.history);
-  elements.homeAccuracy.textContent = formatPercent(summary.accuracy);
-  elements.homeProgress.style.width = `${Math.round((summary.accuracy ?? 0) * 100)}%`;
-  elements.homeSummary.textContent = summary.attempts
-    ? `${summary.answeredItems}語句を学習・苦手 ${summary.weakItems}語句`
-    : "まだ回答履歴がありません";
-
   if (state.activeStudy?.config?.selection) {
     const answered = Number(state.activeStudy.answeredCount) || 0;
     const total = Number(state.activeStudy.totalCount) || 0;
@@ -638,29 +614,6 @@ function renderHome() {
     elements.resumeStudyCard.innerHTML = "";
   }
 
-  elements.quickGrid.innerHTML = QUICK_ACTIONS.map(
-    (action) => `
-      <button class="quick-card" type="button" data-quick="${action.id}">
-        <span class="quick-icon tone-${action.tone}" aria-hidden="true">${action.icon}</span>
-        <span>
-          <strong>${action.title}</strong>
-          <small>${action.detail}</small>
-        </span>
-        <span class="card-arrow" aria-hidden="true">›</span>
-      </button>`,
-  ).join("");
-
-  elements.rangeGrid.innerHTML = RANGE_ORDER.map((range) => {
-    const items = state.items.filter((item) => item.range === range);
-    const stats = summarizeHistory(items, state.history);
-    return `
-      <button class="range-card" type="button" data-range-start="${escapeHtml(range)}">
-        <span class="range-name">${escapeHtml(range)}</span>
-        <strong>${items.length}<small>語句</small></strong>
-        <span class="range-meta">${stats.attempts ? `正答率 ${formatPercent(stats.accuracy)}` : "未学習"}</span>
-        <span class="mini-progress" aria-hidden="true"><i style="width:${Math.round((stats.accuracy ?? 0) * 100)}%"></i></span>
-      </button>`;
-  }).join("");
   renderHeader();
 }
 
@@ -908,53 +861,6 @@ function resetFilters() {
   };
   if (state.view === "setup") state.performanceExplicit = false;
   renderFilterForm();
-}
-
-async function quickStart(id) {
-  const base = {
-    ...state.filters,
-    ranges: [],
-    importance: [],
-    types: [],
-    tags: [],
-    performance: "all",
-    minimumWrong: 0,
-    search: "",
-  };
-  if (id === "resume") {
-    const previous = await getMeta("lastSessionConfig");
-    if (!previous) {
-      showToast("前回の学習条件はまだありません");
-      return;
-    }
-    startSession({ ...previous, mode: previous.mode ?? previous.modes?.[0] });
-    return;
-  }
-
-  const recommendation = recommendStudy(state.items, state.history);
-  const config = {
-    filters: base,
-    mode: state.selectedMode ?? recommendation.mode ?? "ja_to_en_input",
-    sortKey: "random",
-    count: 15,
-    repeatWrong: false,
-  };
-  if (id === "weak") {
-    config.filters.performance = "everMissed";
-    config.sortKey = "difficulty";
-  }
-  if (id === "missed") config.filters.performance = "everMissed";
-  if (id === "sss") config.filters.importance = ["SSS"];
-  if (id === "recommended") {
-    config.mode = recommendation.mode;
-    config.itemIds = recommendation.itemIds;
-    config.count = recommendation.count;
-    config.sortKey = "difficulty";
-  }
-  if (id === "random") config.count = 20;
-  if (id === "preposition") config.mode = "preposition_input";
-  if (id === "spelling") config.mode = "spelling_input";
-  startSession(config);
 }
 
 function startSession(overrides = {}) {
@@ -1339,6 +1245,7 @@ function renderSessionComplete() {
   const session = state.session;
   if (!session) return;
   const summary = summarizeSession(session.results);
+  const overall = summarizeHistory(state.items, state.history);
   if (session.combinationKey) {
     state.activeStudy = null;
     setMeta("activeStudy", null).catch(console.warn);
@@ -1362,7 +1269,6 @@ function renderSessionComplete() {
       </div>`;
     })
     .join("");
-  const recommendation = recommendStudy(state.items, state.history);
   elements.quizContent.innerHTML = `
     <div class="result-shell">
       <p class="eyebrow">SESSION COMPLETE</p>
@@ -1370,8 +1276,8 @@ function renderSessionComplete() {
       <h1>${summary.correct === summary.total ? "全問正解です。" : "学習を記録しました。"}</h1>
       <p>${escapeHtml(session.selection ? studySelectionLabel(session.selection) : MODE_LABELS[state.selectedMode])}</p>
       <div class="result-stat-grid">
-        <div><span>正答率</span><strong>${formatPercent(summary.accuracy)}</strong></div>
-        <div><span>連続正解</span><strong>${summary.bestStreak}</strong></div>
+        <div><span>2回連続達成</span><strong>${formatPercent(overall.twoCorrectStreakRate)}</strong></div>
+        <div><span>達成語句</span><strong>${overall.twoCorrectStreakItems} / ${state.items.length}</strong></div>
         <div><span>平均回答</span><strong>${formatSeconds(summary.averageDurationMs)}</strong></div>
         <div><span>学習時間</span><strong>${formatSeconds(summary.durationMs)}</strong></div>
       </div>
@@ -1391,7 +1297,6 @@ function renderSessionComplete() {
               .join("")}</div>`
           : ""
       }
-      ${renderRecommendationCard(recommendation, "result")}
       <div class="result-actions">
         ${wrongItems.length ? '<button class="secondary-button" type="button" data-retry-wrong>間違いだけ復習</button>' : ""}
         <button class="secondary-button" type="button" data-view-analysis>分析を見る</button>
@@ -1405,28 +1310,10 @@ function renderSessionComplete() {
   renderHeader();
 }
 
-function renderRecommendationCard(recommendation, context = "analysis") {
-  if (!recommendation.mode || !recommendation.count) return "";
-  return `
-    <section class="recommendation-card recommendation-${context}">
-      <div class="recommendation-icon" aria-hidden="true">✦</div>
-      <div class="recommendation-copy">
-        <p class="eyebrow">NEXT RECOMMENDATION</p>
-        <h2>次は「${escapeHtml(recommendation.title)}」</h2>
-        <p>${escapeHtml(recommendation.detail)}</p>
-        <div class="item-tags">${renderTags(MODE_META[recommendation.mode].tags)}</div>
-      </div>
-      <button class="primary-button" type="button" data-recommended-start="${context}">
-        おすすめ${recommendation.count}問をやる
-      </button>
-    </section>`;
-}
-
 function renderAnalysis() {
   const overall = summarizeHistory(state.items, state.history);
   const ranges = summarizeByRange(state.items, state.history);
   const modes = summarizeByMode(state.items, state.history);
-  const recommendation = recommendStudy(state.items, state.history);
   const rangeMarkup = ranges.map((stat) => `
     <article class="analysis-row">
       <div>
@@ -1460,7 +1347,6 @@ function renderAnalysis() {
       <div><span>学習済み</span><strong>${overall.answeredItems}</strong></div>
       <div><span>要復習</span><strong>${overall.weakItems}</strong></div>
     </section>
-    ${renderRecommendationCard(recommendation)}
     <section class="analysis-section">
       <div class="section-heading"><div><p class="eyebrow">BY RANGE</p><h2>範囲別分析</h2></div></div>
       <div class="analysis-table">${rangeMarkup}</div>
@@ -1644,21 +1530,6 @@ function bindEvents() {
       state.sortKey = target.dataset.studySort;
       setView("setup");
     }
-    if (target.dataset.quick) quickStart(target.dataset.quick);
-    if (target.dataset.rangeStart) {
-      state.filters = {
-        ranges: [target.dataset.rangeStart],
-        importance: [],
-        types: [],
-        tags: [],
-        performance: "all",
-        minimumWrong: 0,
-        search: "",
-      };
-      state.studySelection = { content: null, method: null, scope: null };
-      state.sortKey = "importance-desc";
-      setView("study-content");
-    }
     if (target.id === "open-filter" || target.id === "list-open-filter") openFilter();
     if (target.id === "close-filter") closeFilter();
     if (target.id === "reset-filter") resetFilters();
@@ -1694,24 +1565,6 @@ function bindEvents() {
       }
     }
     if (target.hasAttribute("data-retry-wrong")) retryWrongItems();
-    if (target.dataset.recommendedStart) {
-      const recommendation = recommendStudy(state.items, state.history);
-      startSession({
-        mode: recommendation.mode,
-        itemIds: recommendation.itemIds,
-        count: recommendation.count,
-        sortKey: "difficulty",
-        filters: {
-          ranges: [],
-          importance: [],
-          types: [],
-          tags: [],
-          performance: "all",
-          minimumWrong: 0,
-          search: "",
-        },
-      });
-    }
     if (target.hasAttribute("data-view-analysis")) {
       state.session = null;
       setView("analysis");

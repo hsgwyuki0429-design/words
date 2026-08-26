@@ -17,11 +17,11 @@ import {
   studyCombinationKey,
   studyCyclePolicy,
   studyModeForItem,
-  recommendStudy,
   slotTokensForQuestion,
   sortItems,
   summarizeByMode,
   summarizeByRange,
+  summarizeHistory,
   summarizeSession,
 } from "../src/logic.js";
 
@@ -176,26 +176,16 @@ test("phase 4 analytics aggregate history by range and by mode", () => {
   assert.equal(mode.averageDurationMs, 1500);
 });
 
-test("recommended study always returns one supported mode and at most 15 items", () => {
-  const target = items.find((item) => item.questionModes.includes("spelling_input"));
+test("overall two-correct streak rate counts mastered items", () => {
+  const sample = items.slice(0, 3);
   const history = new Map([
-    [
-      target.id,
-      mergeAttempt(emptyHistory(target.id), {
-        itemId: target.id,
-        mode: "spelling_input",
-        correct: false,
-      }),
-    ],
+    [sample[0].id, { ...emptyHistory(sample[0].id), currentCorrectStreak: 2 }],
+    [sample[1].id, { ...emptyHistory(sample[1].id), currentCorrectStreak: 1 }],
+    [sample[2].id, { ...emptyHistory(sample[2].id), currentCorrectStreak: 3 }],
   ]);
-  const recommendation = recommendStudy(items, history, "spelling_input", 15, 1000);
-  assert.equal(recommendation.mode, "spelling_input");
-  assert.ok(recommendation.itemIds.length <= 15);
-  assert.ok(
-    recommendation.itemIds.every((id) =>
-      items.find((item) => item.id === id).questionModes.includes(recommendation.mode),
-    ),
-  );
+  const summary = summarizeHistory(sample, history);
+  assert.equal(summary.twoCorrectStreakItems, 2);
+  assert.equal(summary.twoCorrectStreakRate, 2 / 3);
 });
 
 test("step-based study selection maps words and phrases to the requested writing scope", () => {

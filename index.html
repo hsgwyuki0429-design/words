@@ -15,7 +15,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icons/app-icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icons/app-icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=phase7.10" />
+    <link rel="stylesheet" href="./styles.css?v=phase7.11" />
   </head>
   <body>
     <div class="app-shell" id="app-shell" aria-busy="true">
@@ -34,42 +34,11 @@
             <p class="eyebrow" id="greeting">Good evening.</p>
             <h1>英コミを、書けるまで。</h1>
             <p class="hero-copy">意味・スペル・前置詞を、同じ語句で何度も確かめます。</p>
-            <div class="mastery-card">
-              <div>
-                <span class="subtle-label">これまでの正答率</span>
-                <strong id="home-accuracy">—</strong>
-              </div>
-              <div class="progress-track" aria-hidden="true">
-                <span id="home-progress"></span>
-              </div>
-              <p id="home-summary">まだ回答履歴がありません</p>
-            </div>
             <button class="primary-button hero-button" type="button" data-start-study>
               学習を始める
               <span aria-hidden="true">→</span>
             </button>
           </div>
-
-          <section class="content-section" aria-labelledby="quick-heading">
-            <div class="section-heading">
-              <div>
-                <p class="eyebrow">QUICK STUDY</p>
-                <h2 id="quick-heading">クイック学習</h2>
-              </div>
-            </div>
-            <div class="quick-grid" id="quick-grid"></div>
-          </section>
-
-          <section class="content-section" aria-labelledby="range-heading">
-            <div class="section-heading">
-              <div>
-                <p class="eyebrow">8 RANGES</p>
-                <h2 id="range-heading">範囲から選ぶ</h2>
-              </div>
-              <button class="text-button" type="button" data-view-target="list">一覧を見る</button>
-            </div>
-            <div class="range-grid" id="range-grid"></div>
-          </section>
         </section>
 
         <section class="view" id="view-study-content" data-view="study-content" hidden>
@@ -368,6 +337,6 @@
     </aside>
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-    <script type="module" src="./src/app.js?v=phase7.11"></script>
+    <script type="module" src="./src/app.js?v=phase7.12"></script>
   </body>
 </html>

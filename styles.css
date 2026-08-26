@@ -1631,6 +1631,58 @@ body.quiz-active .main-content { padding-bottom: 0; }
   margin: 0 auto 44px;
 }
 
+#study-range-kind-options,
+#study-importance-kind-options {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: min(100%, 720px);
+}
+
+.multi-select-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 11px;
+  width: min(100%, 820px);
+  margin: 0 auto 26px;
+}
+
+.importance-select-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+
+.multi-select-card {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-height: 86px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  text-align: left;
+}
+
+.multi-select-card.selected {
+  background: #f0f7ff;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 2px rgba(10, 102, 216, 0.12);
+}
+
+.multi-check {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  color: #fff;
+  background: #e5e5e9;
+  border-radius: 10px;
+  font-weight: 800;
+}
+
+.multi-select-card.selected .multi-check { background: var(--blue); }
+.multi-select-card strong,
+.multi-select-card small { display: block; }
+.multi-select-card strong { margin-bottom: 4px; font-size: 15px; }
+.multi-select-card small { color: var(--secondary); font-size: 11px; }
+
 .selection-card {
   display: grid;
   grid-template-columns: 54px minmax(0, 1fr) auto;
@@ -2044,6 +2096,19 @@ body.quiz-active .main-content { padding-bottom: 0; }
     grid-template-columns: 1fr;
   }
 
+  #study-range-kind-options,
+  #study-importance-kind-options {
+    grid-template-columns: 1fr;
+  }
+
+  .multi-select-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .importance-select-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .selection-card {
     min-height: 112px;
   }
@@ -2169,6 +2234,21 @@ body.quiz-active .main-content { padding-bottom: 0; }
     width: 46px;
     height: 46px;
     border-radius: 13px;
+  }
+
+  .importance-select-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .importance-select-grid .multi-select-card {
+    grid-template-columns: 32px minmax(0, 1fr);
+    min-height: 76px;
+    padding: 12px;
+  }
+
+  .importance-select-grid .multi-check {
+    width: 30px;
+    height: 30px;
   }
 
   .analysis-stat-grid,

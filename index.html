@@ -15,7 +15,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icons/app-icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icons/app-icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=phase7.5" />
+    <link rel="stylesheet" href="./styles.css?v=phase7.7" />
   </head>
   <body>
     <div class="app-shell" id="app-shell" aria-busy="true">
@@ -101,11 +101,57 @@
           <div class="selection-grid scope-selection-grid" id="study-scope-options"></div>
         </section>
 
+        <section class="view" id="view-study-range-kind" data-view="study-range-kind" hidden>
+          <div class="page-heading selection-page-heading">
+            <button class="text-button back-link" type="button" data-back-before-ranges>← 前の選択へ</button>
+            <p class="eyebrow">FILTER 1</p>
+            <h1>学習範囲を選ぶ</h1>
+            <p>すべての範囲を学習するか、範囲を指定するか選んでください。</p>
+          </div>
+          <div class="selection-grid" id="study-range-kind-options"></div>
+        </section>
+
+        <section class="view" id="view-study-range-select" data-view="study-range-select" hidden>
+          <div class="page-heading selection-page-heading">
+            <button class="text-button back-link" type="button" data-view-target="study-range-kind">← 選び直す</button>
+            <p class="eyebrow">FILTER 1 · MULTIPLE</p>
+            <h1>範囲を選択</h1>
+            <p>複数選択できます。学習したい範囲をすべて選んでください。</p>
+          </div>
+          <div class="multi-select-grid" id="study-range-options"></div>
+          <div class="sticky-action">
+            <button class="primary-button" id="confirm-study-ranges" type="button">次へ <span aria-hidden="true">→</span></button>
+          </div>
+        </section>
+
+        <section class="view" id="view-study-importance-kind" data-view="study-importance-kind" hidden>
+          <div class="page-heading selection-page-heading">
+            <button class="text-button back-link" type="button" data-back-before-importance>← 範囲を選び直す</button>
+            <p class="eyebrow">FILTER 2</p>
+            <h1>重要度を絞り込む</h1>
+            <p>すべての重要度を学習するか、重要度を指定するか選んでください。</p>
+          </div>
+          <div class="selection-grid" id="study-importance-kind-options"></div>
+        </section>
+
+        <section class="view" id="view-study-importance-select" data-view="study-importance-select" hidden>
+          <div class="page-heading selection-page-heading">
+            <button class="text-button back-link" type="button" data-view-target="study-importance-kind">← 選び直す</button>
+            <p class="eyebrow">FILTER 2 · MULTIPLE</p>
+            <h1>重要度を選択</h1>
+            <p>複数選択できます。学習したい重要度をすべて選んでください。</p>
+          </div>
+          <div class="multi-select-grid importance-select-grid" id="study-importance-options"></div>
+          <div class="sticky-action">
+            <button class="primary-button" id="confirm-study-importance" type="button">次へ <span aria-hidden="true">→</span></button>
+          </div>
+        </section>
+
         <section class="view" id="view-setup" data-view="setup" hidden>
           <div class="page-heading">
             <p class="eyebrow">STUDY SETUP</p>
-            <h1>学習範囲を絞り込む</h1>
-            <p>形式は選択済みです。範囲と重要度、周回に応じた成績条件を設定します。</p>
+            <h1>学習を始める</h1>
+            <p>選んだ内容を確認して、問題数を決めたらスタートします。</p>
           </div>
 
           <div class="setup-grid">
@@ -122,12 +168,10 @@
             <section class="panel-card setup-filter-card">
               <div class="panel-heading">
                 <div>
-                  <span class="subtle-label">絞り込み</span>
-                  <h2>学習範囲</h2>
+                  <span class="subtle-label">選択した絞り込み</span>
+                  <h2>範囲・重要度</h2>
                 </div>
-                <button class="secondary-button compact" id="open-filter" type="button">
-                  条件を編集
-                </button>
+                <button class="secondary-button compact" type="button" data-view-target="study-range-kind">選び直す</button>
               </div>
               <div class="active-filter-list" id="active-filter-list"></div>
               <div class="match-count">
@@ -351,6 +395,6 @@
     </aside>
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-    <script type="module" src="./src/app.js?v=phase7.5"></script>
+    <script type="module" src="./src/app.js?v=phase7.7"></script>
   </body>
 </html>

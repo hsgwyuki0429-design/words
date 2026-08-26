@@ -26,7 +26,7 @@ import {
   summarizeByRange,
   summarizeHistory,
   summarizeSession,
-} from "./logic.js?v=phase7.5";
+} from "./logic.js?v=phase7.7";
 import { clearAllData, getMeta, loadHistory, recordAttempt, setMeta } from "./storage.js";
 
 const DEFAULT_SETTINGS = {
@@ -66,6 +66,8 @@ const state = {
   activeStudy: null,
   performanceExplicit: false,
   cycleContextKey: null,
+  rangeFilterMode: null,
+  importanceFilterMode: null,
 };
 
 const elements = Object.fromEntries(
@@ -83,6 +85,12 @@ const elements = Object.fromEntries(
     "study-method-copy",
     "study-method-options",
     "study-scope-options",
+    "study-range-kind-options",
+    "study-range-options",
+    "confirm-study-ranges",
+    "study-importance-kind-options",
+    "study-importance-options",
+    "confirm-study-importance",
     "quick-grid",
     "range-grid",
     "selected-mode-label",
@@ -305,6 +313,56 @@ function renderStudyScope() {
   })).join("");
 }
 
+function renderStudyRangeKind() {
+  elements.studyRangeKindOptions.innerHTML = [
+    { mode: "all", icon: "∞", title: "全範囲", detail: "8範囲をすべて学習", tags: ["すべて"] },
+    { mode: "custom", icon: "✓", title: "その他", detail: "学習する範囲を複数選択", tags: ["複数選択可"] },
+  ].map((meta) => selectionCard({
+    ...meta,
+    dataAttribute: `data-range-filter-mode="${meta.mode}"`,
+  })).join("");
+}
+
+function renderStudyRangeSelect() {
+  elements.studyRangeOptions.innerHTML = RANGE_ORDER.map((range) => {
+    const selected = state.filters.ranges.includes(range);
+    const count = state.items.filter((item) => item.range === range && studyModeForItem(item, state.studySelection)).length;
+    return `<button class="multi-select-card${selected ? " selected" : ""}" type="button" data-study-range="${escapeHtml(range)}" aria-pressed="${selected}">
+      <span class="multi-check" aria-hidden="true">${selected ? "✓" : ""}</span>
+      <span><strong>${escapeHtml(range)}</strong><small>${count}語句</small></span>
+    </button>`;
+  }).join("");
+  elements.confirmStudyRanges.disabled = state.filters.ranges.length === 0;
+}
+
+function renderStudyImportanceKind() {
+  elements.studyImportanceKindOptions.innerHTML = [
+    { mode: "all", icon: "∞", title: "重要度全部", detail: "SSSからBまですべて学習", tags: ["すべて"] },
+    { mode: "custom", icon: "✓", title: "その他の重要度", detail: "重要度を複数選択", tags: ["複数選択可"] },
+  ].map((meta) => selectionCard({
+    ...meta,
+    dataAttribute: `data-importance-filter-mode="${meta.mode}"`,
+  })).join("");
+}
+
+function renderStudyImportanceSelect() {
+  elements.studyImportanceOptions.innerHTML = IMPORTANCE_ORDER.map((importance) => {
+    const selected = state.filters.importance.includes(importance);
+    const count = learningItems({ ...state.filters, importance: [importance] }).length;
+    return `<button class="multi-select-card importance-option${selected ? " selected" : ""}" type="button" data-study-importance="${importance}" aria-pressed="${selected}">
+      <span class="multi-check" aria-hidden="true">${selected ? "✓" : ""}</span>
+      <span><strong>${importance}</strong><small>${count}語句</small></span>
+    </button>`;
+  }).join("");
+  elements.confirmStudyImportance.disabled = state.filters.importance.length === 0;
+}
+
+function viewBeforeRangeSelection() {
+  return state.studySelection.method === "write" && state.studySelection.content !== "word"
+    ? "study-scope"
+    : "study-method";
+}
+
 function showToast(message) {
   elements.toast.textContent = message;
   elements.toast.hidden = false;
@@ -485,7 +543,7 @@ function setView(view) {
     button.classList.toggle(
       "active",
       button.dataset.viewTarget === view ||
-        (["study-content", "study-method", "study-scope", "setup"].includes(view) &&
+        (["study-content", "study-method", "study-scope", "study-range-kind", "study-range-select", "study-importance-kind", "study-importance-select", "setup"].includes(view) &&
           button.dataset.viewTarget === "study-content"),
     );
   });
@@ -498,6 +556,10 @@ function setView(view) {
   if (view === "study-content") renderStudyContent();
   if (view === "study-method") renderStudyMethod();
   if (view === "study-scope") renderStudyScope();
+  if (view === "study-range-kind") renderStudyRangeKind();
+  if (view === "study-range-select") renderStudyRangeSelect();
+  if (view === "study-importance-kind") renderStudyImportanceKind();
+  if (view === "study-importance-select") renderStudyImportanceSelect();
   if (view === "setup") renderSetup();
   if (view === "list") renderList(true);
   if (view === "analysis") renderAnalysis();
@@ -687,10 +749,14 @@ function renderSetup() {
           <button class="secondary-button compact${state.performanceExplicit && state.filters.performance === "all" ? " selected" : ""}" type="button" data-cycle-performance="all">全部</button>
           <button class="text-button" type="button" data-open-performance-detail>詳細を選ぶ</button>
         </div>`;
-  const labels = activeFilterLabels();
+  const labels = [
+    state.filters.ranges.length ? `範囲：${state.filters.ranges.join("・")}` : "全範囲",
+    state.filters.importance.length ? `重要度：${state.filters.importance.join("・")}` : "重要度全部",
+    ...(state.filters.performance !== "all" ? [PERFORMANCE_LABELS[state.filters.performance]] : []),
+  ];
   elements.activeFilterList.innerHTML = labels.length
     ? labels.map((label) => `<span class="filter-summary-chip">${escapeHtml(label)}</span>`).join("")
-    : '<span class="empty-filter">全範囲・全重要度</span>';
+    : '<span class="empty-filter">全範囲・重要度全部</span>';
   const eligible = learningItems();
   const remaining = remainingLearningItems();
   const completedCount = eligible.length - remaining.length;
@@ -1474,6 +1540,8 @@ function bindEvents() {
       };
       state.performanceExplicit = false;
       state.cycleContextKey = null;
+      state.rangeFilterMode = null;
+      state.importanceFilterMode = null;
       setView("study-content");
     }
     if (target.dataset.cyclePerformance) {
@@ -1501,11 +1569,55 @@ function bindEvents() {
         setView("study-scope");
       } else {
         state.studySelection.scope = "full";
-        setView("setup");
+        setView("study-range-kind");
       }
     }
     if (target.dataset.studyScope) {
       state.studySelection.scope = target.dataset.studyScope;
+      setView("study-range-kind");
+    }
+    if (target.hasAttribute("data-back-before-ranges")) setView(viewBeforeRangeSelection());
+    if (target.dataset.rangeFilterMode) {
+      state.rangeFilterMode = target.dataset.rangeFilterMode;
+      if (state.rangeFilterMode === "all") {
+        state.filters.ranges = [];
+        setView("study-importance-kind");
+      } else {
+        state.filters.ranges = [];
+        setView("study-range-select");
+      }
+    }
+    if (target.dataset.studyRange) {
+      const range = target.dataset.studyRange;
+      state.filters.ranges = state.filters.ranges.includes(range)
+        ? state.filters.ranges.filter((value) => value !== range)
+        : [...state.filters.ranges, range];
+      renderStudyRangeSelect();
+    }
+    if (target.id === "confirm-study-ranges" && state.filters.ranges.length) {
+      setView("study-importance-kind");
+    }
+    if (target.hasAttribute("data-back-before-importance")) {
+      setView(state.rangeFilterMode === "custom" ? "study-range-select" : "study-range-kind");
+    }
+    if (target.dataset.importanceFilterMode) {
+      state.importanceFilterMode = target.dataset.importanceFilterMode;
+      if (state.importanceFilterMode === "all") {
+        state.filters.importance = [];
+        setView("setup");
+      } else {
+        state.filters.importance = [];
+        setView("study-importance-select");
+      }
+    }
+    if (target.dataset.studyImportance) {
+      const importance = target.dataset.studyImportance;
+      state.filters.importance = state.filters.importance.includes(importance)
+        ? state.filters.importance.filter((value) => value !== importance)
+        : [...state.filters.importance, importance];
+      renderStudyImportanceSelect();
+    }
+    if (target.id === "confirm-study-importance" && state.filters.importance.length) {
       setView("setup");
     }
     if (target.dataset.quick) quickStart(target.dataset.quick);

@@ -125,6 +125,34 @@ test("choice questions contain four unique options and the correct answer", () =
   assert.ok(question.choices.includes(item.japanese));
 });
 
+test("structure choices hide grammar notes and avoid recent, nearby-range distractors", () => {
+  const target = {
+    id: "target",
+    type: "structure",
+    range: "OriHime",
+    importance: "S",
+    english: "target structure",
+    japanese: "正しい意味（関係代名詞 who）",
+    acceptedAnswers: ["target structure"],
+  };
+  const pool = [
+    target,
+    { ...target, id: "mars", range: "Mars", english: "mars structure", japanese: "火星の誤答（間接疑問）" },
+    { ...target, id: "snow", range: "Snow", english: "snow structure", japanese: "雪の誤答（受動態）" },
+    { ...target, id: "fomo", range: "FOMO", english: "fomo structure", japanese: "別範囲の誤答（分詞構文）" },
+    { ...target, id: "recent", range: "Plastic", english: "recent structure", japanese: "直近の答え（to不定詞）" },
+  ];
+  const question = buildQuestion(target, "en_to_ja_choice", pool, () => 0.42, ["recent"]);
+  assert.equal(question.choices.length, 4);
+  assert.equal(question.correctChoice, "正しい意味");
+  assert.ok(question.choices.every((choice) => !choice.includes("（")));
+  assert.ok(!question.choices.includes("直近の答え"));
+  assert.deepEqual(
+    new Set(question.choices),
+    new Set(["正しい意味", "火星の誤答", "雪の誤答", "別範囲の誤答"]),
+  );
+});
+
 test("sessions never repeat an item and only use supported modes", () => {
   const session = buildSession({
     items,
@@ -188,9 +216,10 @@ test("overall two-correct streak rate counts mastered items", () => {
   assert.equal(summary.twoCorrectStreakRate, 2 / 3);
 });
 
-test("step-based study selection maps words and phrases to the requested writing scope", () => {
+test("step-based study selection separates words, phrases, and structures", () => {
   const word = items.find((item) => item.type === "word" && item.questionModes.includes("spelling_input"));
-  const phrase = items.find((item) => item.type !== "word" && item.questionModes.includes("phrase_blank_input"));
+  const phrase = items.find((item) => item.type === "phrase" && item.questionModes.includes("phrase_blank_input"));
+  const structure = items.find((item) => item.type === "structure" && item.questionModes.includes("phrase_blank_input"));
   assert.equal(
     studyModeForItem(word, { content: "all", method: "write", scope: "partial" }),
     "spelling_input",
@@ -206,6 +235,14 @@ test("step-based study selection maps words and phrases to the requested writing
   assert.equal(
     studyModeForItem(phrase, { content: "word", method: "write", scope: "full" }),
     null,
+  );
+  assert.equal(
+    studyModeForItem(structure, { content: "phrase", method: "write", scope: "partial" }),
+    null,
+  );
+  assert.equal(
+    studyModeForItem(structure, { content: "structure", method: "write", scope: "partial" }),
+    "phrase_blank_input",
   );
 });
 
@@ -230,7 +267,7 @@ test("same study combination resumes after completed item ids", () => {
   assert.equal(first.length, 5);
   assert.equal(resumed.length, 5);
   assert.ok(resumed.every((entry) => !first.some((done) => done.item.id === entry.item.id)));
-  assert.ok(first.every((entry) => entry.item.type !== "word"));
+  assert.ok(first.every((entry) => entry.item.type === "phrase"));
 });
 
 test("study cycle performance is automatic twice and required from cycle three", () => {

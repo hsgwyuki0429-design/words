@@ -25,7 +25,7 @@ import {
   summarizeByRange,
   summarizeHistory,
   summarizeSession,
-} from "./logic.js?v=phase7.11";
+} from "./logic.js?v=phase7.12";
 import { clearAllData, getMeta, loadHistory, recordAttempt, setMeta } from "./storage.js";
 
 const DEFAULT_SETTINGS = {
@@ -168,8 +168,9 @@ const MODE_META = {
 
 const STUDY_CONTENT_META = {
   word: { icon: "Aa", title: "単語", detail: "英単語を中心に学習", tags: ["単語"] },
-  phrase: { icon: "…", title: "熟語・構文", detail: "熟語・構文・表現を学習", tags: ["熟語", "構文"] },
-  all: { icon: "＋", title: "どちらも", detail: "単語と熟語・構文を続けて学習", tags: ["単語", "熟語・構文"] },
+  phrase: { icon: "…", title: "熟語", detail: "熟語だけを学習", tags: ["熟語"] },
+  structure: { icon: "S V", title: "構文", detail: "構文だけを学習", tags: ["構文"] },
+  all: { icon: "＋", title: "すべて", detail: "単語・熟語・構文を続けて学習", tags: ["単語", "熟語", "構文"] },
 };
 
 const STUDY_METHOD_META = {
@@ -179,12 +180,13 @@ const STUDY_METHOD_META = {
 };
 
 const KNOWN_STUDY_SELECTIONS = [
-  ...["word", "phrase", "all"].flatMap((content) => [
+  ...["word", "phrase", "structure", "all"].flatMap((content) => [
     { content, method: "ja_to_en_choice", scope: "full" },
     { content, method: "en_to_ja_choice", scope: "full" },
     { content, method: "write", scope: "full" },
   ]),
   { content: "phrase", method: "write", scope: "partial" },
+  { content: "structure", method: "write", scope: "partial" },
   { content: "all", method: "write", scope: "partial" },
 ];
 
@@ -294,7 +296,7 @@ function renderStudyScope() {
       scope: "partial",
       icon: "＿",
       title: "一部を入力",
-      detail: "日本語訳を見ながら、熟語・構文の空欄部分だけを書く",
+      detail: "日本語訳を見ながら、英語の空欄部分だけを書く",
       tags: ["穴埋め"],
     },
     {
@@ -965,7 +967,8 @@ function startSession(overrides = {}) {
 function prepareQuestion() {
   const session = state.session;
   const entry = session.queue[session.cursor];
-  session.currentQuestion = buildQuestion(entry.item, entry.mode, state.items);
+  const recentItemIds = session.results.slice(-12).map((result) => result.itemId);
+  session.currentQuestion = buildQuestion(entry.item, entry.mode, state.items, Math.random, recentItemIds);
   session.currentAnswer = "";
   session.answered = false;
   session.questionStartedAt = performance.now();

@@ -31,8 +31,9 @@ export const ALL_MODES = Object.keys(MODE_LABELS);
 
 export const STUDY_CONTENT_LABELS = {
   word: "単語",
-  phrase: "熟語・構文",
-  all: "単語＋熟語・構文",
+  phrase: "熟語",
+  structure: "構文",
+  all: "単語＋熟語＋構文",
 };
 
 export const STUDY_METHOD_LABELS = {
@@ -310,14 +311,20 @@ export function sortItems(items, history, sortKey = "importance-desc", rng = Mat
   return sorted;
 }
 
-export function generateChoices(item, mode, pool, rng = Math.random) {
-  const englishMode = mode === "ja_to_en_choice";
-  const displayAnswer = (candidate) =>
-    englishMode ? candidate.english : candidate.japanese;
-  const correct = displayAnswer(item);
+function choiceAnswer(candidate, mode) {
+  if (mode === "ja_to_en_choice") return candidate.english;
+  if (candidate.type === "structure") {
+    return candidate.japanese.replace(/\s*（[^（）]*）\s*$/u, "").trim();
+  }
+  return candidate.japanese;
+}
+
+export function generateChoices(item, mode, pool, rng = Math.random, excludedItemIds = []) {
+  const correct = choiceAnswer(item, mode);
+  const excluded = new Set(excludedItemIds);
 
   const candidates = shuffle(
-    pool.filter((candidate) => candidate.id !== item.id),
+    pool.filter((candidate) => candidate.id !== item.id && !excluded.has(candidate.id)),
     rng,
   )
     .map((candidate) => {
@@ -325,29 +332,35 @@ export function generateChoices(item, mode, pool, rng = Math.random) {
         tokenizeAnswer(candidate.english).length - tokenizeAnswer(item.english).length,
       );
       const score =
-        (candidate.type === item.type ? 5 : 0) +
-        (candidate.range === item.range ? 3 : 0) +
-        (candidate.importance === item.importance ? 2 : 0) +
+        (candidate.type === item.type ? 8 : 0) +
+        (candidate.range !== item.range ? 3 : 0) +
+        (candidate.importance === item.importance ? 1 : 0) +
         Math.max(0, 2 - wordDifference);
       return { candidate, score };
     })
     .sort((a, b) => b.score - a.score);
 
   const seen = new Set([normalizeAnswer(correct)]);
+  const usedRanges = new Set([item.range]);
   const distractors = [];
-  for (const { candidate } of candidates) {
-    const value = displayAnswer(candidate);
-    const key = normalizeAnswer(value);
-    if (!seen.has(key)) {
-      seen.add(key);
-      distractors.push(value);
+  for (const requireNewRange of [true, false]) {
+    for (const { candidate } of candidates) {
+      if (requireNewRange && usedRanges.has(candidate.range)) continue;
+      const value = choiceAnswer(candidate, mode);
+      const key = normalizeAnswer(value);
+      if (!seen.has(key)) {
+        seen.add(key);
+        usedRanges.add(candidate.range);
+        distractors.push(value);
+      }
+      if (distractors.length === 3) break;
     }
     if (distractors.length === 3) break;
   }
   return shuffle([correct, ...distractors], rng);
 }
 
-export function buildQuestion(item, mode, pool, rng = Math.random) {
+export function buildQuestion(item, mode, pool, rng = Math.random, excludedChoiceItemIds = []) {
   const base = {
     item,
     mode,
@@ -360,15 +373,15 @@ export function buildQuestion(item, mode, pool, rng = Math.random) {
         ...base,
         prompt: item.english,
         instruction: "最も近い日本語を選んでください",
-        choices: generateChoices(item, mode, pool, rng),
-        correctChoice: item.japanese,
+        choices: generateChoices(item, mode, pool, rng, excludedChoiceItemIds),
+        correctChoice: choiceAnswer(item, mode),
       };
     case "ja_to_en_choice":
       return {
         ...base,
         prompt: item.japanese,
         instruction: "正しい英語を選んでください",
-        choices: generateChoices(item, mode, pool, rng),
+        choices: generateChoices(item, mode, pool, rng, excludedChoiceItemIds),
         correctChoice: item.english,
       };
     case "preposition_input":
@@ -430,7 +443,7 @@ export function buildSession({
 }
 
 export function normalizeStudySelection(selection = {}) {
-  const content = ["word", "phrase", "all"].includes(selection.content)
+  const content = ["word", "phrase", "structure", "all"].includes(selection.content)
     ? selection.content
     : null;
   const method = ["ja_to_en_choice", "en_to_ja_choice", "write"].includes(
@@ -465,8 +478,7 @@ export function studyModeForItem(item, selection) {
   const normalized = normalizeStudySelection(selection);
   if (!normalized.content || !normalized.method) return null;
   const isWord = item.type === "word";
-  if (normalized.content === "word" && !isWord) return null;
-  if (normalized.content === "phrase" && isWord) return null;
+  if (normalized.content !== "all" && item.type !== normalized.content) return null;
   if (normalized.method === "ja_to_en_choice") {
     return item.questionModes.includes("ja_to_en_choice") ? "ja_to_en_choice" : null;
   }

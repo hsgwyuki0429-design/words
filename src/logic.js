@@ -1,4 +1,5 @@
 export const IMPORTANCE_ORDER = ["SSS", "SS", "S", "A", "B"];
+export const DIFFICULTY_ORDER = ["4級", "3級", "準2級", "2級", "準1級", "1級", "専門"];
 export const RANGE_ORDER = [
   "OriHime",
   "Mars",
@@ -239,6 +240,7 @@ export function sortItems(items, history, sortKey = "importance-desc", rng = Mat
   if (sortKey === "random") return shuffle(items, rng);
   const sorted = [...items];
   const importanceIndex = (item) => IMPORTANCE_ORDER.indexOf(item.importance);
+  const difficultyIndex = (item) => DIFFICULTY_ORDER.indexOf(item.difficulty);
   const rangeIndex = (item) => RANGE_ORDER.indexOf(item.range);
   const record = (item) => getHistory(history, item.id);
   const accuracy = (item) => accuracyFor(record(item));
@@ -294,6 +296,9 @@ export function sortItems(items, history, sortKey = "importance-desc", rng = Mat
         result =
           difficultyScore(record(b), b.importance) -
           difficultyScore(record(a), a.importance);
+        break;
+      case "difficulty-level-desc":
+        result = difficultyIndex(b) - difficultyIndex(a);
         break;
       case "importance-desc":
       default:

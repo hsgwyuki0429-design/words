@@ -109,6 +109,14 @@ test("difficulty order prioritizes repeated mistakes", () => {
   );
 });
 
+test("workbook difficulty order starts with the hardest level", () => {
+  const sample = ["4級", "2級", "準1級", "専門"].map((difficulty) =>
+    items.find((item) => item.difficulty === difficulty),
+  );
+  const sorted = sortItems(sample, new Map(), "difficulty-level-desc");
+  assert.deepEqual(sorted.map((item) => item.difficulty), ["専門", "準1級", "2級", "4級"]);
+});
+
 test("choice questions contain four unique options and the correct answer", () => {
   const item = items.find((candidate) => candidate.english === "remarkable");
   const question = buildQuestion(item, "en_to_ja_choice", items, () => 0.42);

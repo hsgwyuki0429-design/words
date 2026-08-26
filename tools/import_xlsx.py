@@ -4,9 +4,10 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
-from collections import defaultdict
+from collections import OrderedDict
 from pathlib import Path
 
 from openpyxl import load_workbook
@@ -73,6 +74,59 @@ SOURCE_RE = re.compile(
     r"^(OriHime|Mars|Kakigori|Snow|Lesson [2-6])"
     r"(?:\s+p\.([^\s]+))?(?:\s+(?:¶(.+)|(.+)))?$"
 )
+NEW_SOURCE_RE = re.compile(
+    r"^Scan p\.(\d+) / (.+) / (textbook|book) pp\.([0-9]+(?:[–-][0-9]+)?)$"
+)
+NEW_SOURCE_MAP = {
+    "OriHime — A Vehicle of Your Heart": {
+        "range": "OriHime",
+        "slug": "orihime",
+        "lesson": "OriHime",
+        "title": "A Vehicle of Your Heart",
+    },
+    "Human Habitation on Mars": {
+        "range": "Mars",
+        "slug": "mars",
+        "lesson": "Mars",
+        "title": "Human Habitation on Mars",
+    },
+    "A Cool Food: Kakigori": {
+        "range": "Kakigori",
+        "slug": "kakigori",
+        "lesson": "Kakigori",
+        "title": "A Cool Food: Kakigori",
+    },
+    "Lesson 2: Plastic Pollution": {
+        "range": "Plastic",
+        "slug": "plastic",
+        "lesson": "Lesson 2",
+        "title": "Plastic Pollution",
+    },
+    "Lesson 3: FOMO": {
+        "range": "FOMO",
+        "slug": "fomo",
+        "lesson": "Lesson 3",
+        "title": "FOMO",
+    },
+    "Lesson 4: Snow": {
+        "range": "Snow",
+        "slug": "snow",
+        "lesson": "Lesson 4",
+        "title": "Snow",
+    },
+    "Lesson 5: 7-Minute Miracle": {
+        "range": "Shinkansen",
+        "slug": "shinkansen",
+        "lesson": "Lesson 5",
+        "title": "7-Minute Miracle",
+    },
+    "Lesson 6: Taste & Supertasters": {
+        "range": "Taste Buds",
+        "slug": "taste-buds",
+        "lesson": "Lesson 6",
+        "title": "Taste & Supertasters",
+    },
+}
 WORD_RE = re.compile(r"[A-Za-z]+(?:['’\-][A-Za-z]+)*")
 PLACEHOLDERS = {"a", "b", "s", "v"}
 PREPOSITIONS = {
@@ -130,7 +184,26 @@ def clean_text(value: object) -> str:
 
 
 def parse_source(label: str) -> dict[str, str]:
-    match = SOURCE_RE.match(clean_text(label))
+    cleaned = clean_text(label)
+    new_match = NEW_SOURCE_RE.match(cleaned)
+    if new_match:
+        scan_page, source_key, book_kind, page = new_match.groups()
+        if source_key not in NEW_SOURCE_MAP:
+            raise ValueError(f"Unrecognized source title: {source_key!r}")
+        source = NEW_SOURCE_MAP[source_key]
+        return {
+            "range": source["range"],
+            "lesson": source["lesson"],
+            "title": source["title"],
+            "page": page,
+            "paragraph": "",
+            "note": f"Scan p.{scan_page}",
+            "detail": f"Scan p.{scan_page} / {book_kind} pp.{page}",
+            "label": cleaned,
+            "slug": source["slug"],
+        }
+
+    match = SOURCE_RE.match(cleaned)
     if not match:
         raise ValueError(f"Unrecognized source label: {label!r}")
     source_key, page, paragraph, note = match.groups()
@@ -182,6 +255,8 @@ def classify_type(source_type: str, english: str) -> str:
         return "word"
     if source_type == "熟語":
         return "phrase"
+    if source_type == "構文":
+        return "structure"
     if re.search(r"\b(?:A|B|S|V)\b", english):
         return "structure"
     structural_patterns = (
@@ -269,20 +344,71 @@ def build_phrase_blank(answer: str) -> dict[str, str] | None:
 def convert(workbook_path: Path) -> list[dict[str, object]]:
     workbook = load_workbook(workbook_path, read_only=True, data_only=True)
     sheet = workbook["全一覧_重要度順"]
-    counters: defaultdict[str, int] = defaultdict(int)
-    items: list[dict[str, object]] = []
+    rows = sheet.iter_rows(values_only=True)
+    headers = [clean_text(value) for value in next(rows)]
+    modern_headers = {"重要度", "難易度", "種類", "英語", "日本語訳", "出典"}
+    is_modern = modern_headers.issubset(headers)
+    header_indexes = {header: index for index, header in enumerate(headers)}
 
-    for order, row in enumerate(sheet.iter_rows(min_row=2, values_only=True), start=1):
+    grouped: OrderedDict[str, dict[str, object]] = OrderedDict()
+
+    for source_order, row in enumerate(rows, start=1):
         if not any(value is not None for value in row):
             continue
-        importance, english_raw, japanese_raw, source_type_raw, source_raw = row[:5]
+
+        if is_modern:
+            importance_raw = row[header_indexes["重要度"]]
+            difficulty_raw = row[header_indexes["難易度"]]
+            source_type_raw = row[header_indexes["種類"]]
+            english_raw = row[header_indexes["英語"]]
+            japanese_raw = row[header_indexes["日本語訳"]]
+            source_raw = row[header_indexes["出典"]]
+            note_raw = row[header_indexes["備考"]] if "備考" in header_indexes else ""
+        else:
+            importance_raw, english_raw, japanese_raw, source_type_raw, source_raw = row[:5]
+            difficulty_raw = ""
+            note_raw = ""
+
         english = clean_text(english_raw)
         japanese = clean_text(japanese_raw)
         source_type = clean_text(source_type_raw)
-        sources = [parse_source(part) for part in clean_text(source_raw).split(";")]
+        source_label = clean_text(source_raw)
+        sources = [parse_source(part) for part in source_label.split(";")]
+        key = english.casefold()
+
+        if key not in grouped:
+            grouped[key] = {
+                "english": english,
+                "japanese": [japanese],
+                "source_type": source_type,
+                "importance": clean_text(importance_raw),
+                "difficulty": clean_text(difficulty_raw),
+                "notes": [clean_text(note_raw)] if clean_text(note_raw) else [],
+                "sources": sources,
+                "source_order": source_order,
+            }
+            continue
+
+        record = grouped[key]
+        if japanese not in record["japanese"]:
+            record["japanese"].append(japanese)
+        existing_labels = {source["label"] for source in record["sources"]}
+        record["sources"].extend(
+            source for source in sources if source["label"] not in existing_labels
+        )
+        note = clean_text(note_raw)
+        if note and note not in record["notes"]:
+            record["notes"].append(note)
+
+    items: list[dict[str, object]] = []
+    for order, record in enumerate(grouped.values(), start=1):
+        english = record["english"]
+        japanese = "／".join(record["japanese"])
+        source_type = record["source_type"]
+        sources = record["sources"]
         primary = sources[0]
-        counters[primary["slug"]] += 1
-        item_id = f"{primary['slug']}_{counters[primary['slug']]:03d}"
+        digest = hashlib.sha1(english.casefold().encode("utf-8")).hexdigest()[:10]
+        item_id = f"{primary['slug']}_{digest}"
 
         answers = accepted_answers(english)
         primary_answer = answers[0]
@@ -312,11 +438,12 @@ def convert(workbook_path: Path) -> list[dict[str, object]]:
             "japanese": japanese,
             "type": item_type,
             "sourceType": source_type,
-            "importance": clean_text(importance),
+            "importance": record["importance"],
+            "difficulty": record["difficulty"],
             "range": primary["range"],
             "lesson": primary["lesson"],
             "title": primary["title"],
-            "source": clean_text(source_raw),
+            "source": "; ".join(source["label"] for source in sources),
             "sourceDetail": primary["detail"],
             "sources": [
                 {key: value for key, value in source.items() if key != "slug"}
@@ -327,6 +454,8 @@ def convert(workbook_path: Path) -> list[dict[str, object]]:
             "questionModes": modes,
             "order": order,
         }
+        if record["notes"]:
+            item["note"] = "／".join(record["notes"])
         blanks: dict[str, dict[str, str]] = {}
         if preposition_blank:
             blanks["preposition"] = preposition_blank

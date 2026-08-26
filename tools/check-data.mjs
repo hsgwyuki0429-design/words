@@ -5,12 +5,27 @@ import { ALL_MODES, RANGE_ORDER, slotTokensForQuestion } from "../src/logic.js";
 
 const items = JSON.parse(fs.readFileSync(new URL("../data/items.json", import.meta.url), "utf8"));
 
-assert.equal(items.length, 423, "Workbook row count must remain 423");
+assert.equal(items.length, 641, "Workbook must contain 641 unique English entries");
 assert.equal(new Set(items.map((item) => item.id)).size, items.length, "IDs must be unique");
 assert.equal(
   new Set(items.map((item) => item.english.toLocaleLowerCase())).size,
   items.length,
   "English entries must be unique",
+);
+assert.equal(
+  items.reduce((sum, item) => sum + item.sources.length, 0),
+  654,
+  "All 654 workbook source rows must be preserved",
+);
+assert.deepEqual(
+  Object.fromEntries(
+    ["word", "phrase", "structure"].map((type) => [
+      type,
+      items.filter((item) => item.type === type).length,
+    ]),
+  ),
+  { word: 383, phrase: 197, structure: 61 },
+  "Workbook type counts must match the replacement lists",
 );
 
 for (const item of items) {
@@ -20,6 +35,7 @@ for (const item of items) {
     "japanese",
     "type",
     "importance",
+    "difficulty",
     "range",
     "lesson",
     "title",

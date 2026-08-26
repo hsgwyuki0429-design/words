@@ -26,7 +26,7 @@ import {
   summarizeByRange,
   summarizeHistory,
   summarizeSession,
-} from "./logic.js?v=phase7.9";
+} from "./logic.js?v=phase7.10";
 import { clearAllData, getMeta, loadHistory, recordAttempt, setMeta } from "./storage.js";
 
 const DEFAULT_SETTINGS = {
@@ -374,6 +374,7 @@ function renderStudyImportanceSelect() {
 function renderStudySortKind() {
   elements.studySortKindOptions.innerHTML = [
     { key: "importance-desc", icon: "S", title: "重要度順", detail: "重要度が高い問題から出題", tags: ["おすすめ"] },
+    { key: "difficulty-level-desc", icon: "級", title: "難易度順", detail: "難しい問題から出題", tags: ["専門 → 4級"] },
     { key: "difficulty", icon: "↘", title: "苦手順", detail: "間違いが多い問題から出題", tags: ["復習"] },
     { key: "other", icon: "…", title: "その他", detail: "ランダムや正答率順などから選択", tags: ["15種類"] },
   ].map((meta) => selectionCard({
@@ -1783,7 +1784,7 @@ async function boot() {
       }),
     );
     const [response, history, selectedMode, progressEntries, settings, bestCombo, activeStudy] = await Promise.all([
-      fetch("./data/items.json?v=phase3.1"),
+      fetch("./data/items.json?v=2026.08.26"),
       loadHistory(),
       getMeta("selectedMode"),
       progressPromise,

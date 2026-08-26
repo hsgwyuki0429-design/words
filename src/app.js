@@ -191,9 +191,9 @@ const STUDY_CONTENT_META = {
 };
 
 const PUBLIC_CONTENT_META = {
-  term: { icon: "語", title: "語句回答問題", detail: "用語・人物・制度名・年号など", tags: ["697問"] },
+  term: { icon: "語", title: "語句回答問題", detail: "用語・人物・制度名・年号など", tags: ["550問"] },
   short: { icon: "文", title: "短文回答問題", detail: "定義・理由・特徴・しくみなど", tags: ["168問"] },
-  all: { icon: "＋", title: "どっちとも", detail: "語句回答と短文回答をまとめて学習", tags: ["865問"] },
+  all: { icon: "＋", title: "どっちとも", detail: "語句回答と短文回答をまとめて学習", tags: ["718問"] },
 };
 
 const STUDY_METHOD_META = {

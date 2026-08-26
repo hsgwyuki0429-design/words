@@ -15,7 +15,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icons/app-icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icons/app-icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=phase7.8" />
+    <link rel="stylesheet" href="./styles.css?v=phase7.10" />
   </head>
   <body>
     <div class="app-shell" id="app-shell" aria-busy="true">
@@ -29,6 +29,7 @@
 
       <main class="main-content">
         <section class="view" id="view-home" data-view="home">
+          <div class="resume-study-card home-resume-top" id="resume-study-card" hidden></div>
           <div class="home-hero">
             <p class="eyebrow" id="greeting">Good evening.</p>
             <h1>英コミを、書けるまで。</h1>
@@ -47,7 +48,6 @@
               学習を始める
               <span aria-hidden="true">→</span>
             </button>
-            <div class="resume-study-card" id="resume-study-card" hidden></div>
           </div>
 
           <section class="content-section" aria-labelledby="quick-heading">

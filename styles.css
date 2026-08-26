@@ -188,6 +188,11 @@ h2 {
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.035);
 }
 
+.home-resume-top {
+  width: min(100%, 700px);
+  margin: 22px auto 0;
+}
+
 .resume-study-card strong,
 .resume-study-card small { display: block; }
 .resume-study-card strong { margin: 3px 0; font-size: 19px; }

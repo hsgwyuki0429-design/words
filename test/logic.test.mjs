@@ -4,6 +4,7 @@ import test from "node:test";
 
 import {
   ALL_MODES,
+  UNKNOWN_CHOICE,
   accuracyFor,
   applyFilters,
   buildQuestion,
@@ -117,12 +118,24 @@ test("workbook difficulty order starts with the hardest level", () => {
   assert.deepEqual(sorted.map((item) => item.difficulty), ["専門", "準1級", "2級", "4級"]);
 });
 
-test("choice questions contain four unique options and the correct answer", () => {
+test("choice questions contain four answer options, unknown, and the correct answer", () => {
   const item = items.find((candidate) => candidate.english === "remarkable");
   const question = buildQuestion(item, "en_to_ja_choice", items, () => 0.42);
-  assert.equal(question.choices.length, 4);
-  assert.equal(new Set(question.choices).size, 4);
+  assert.equal(question.choices.length, 5);
+  assert.equal(new Set(question.choices).size, 5);
   assert.ok(question.choices.includes(item.japanese));
+  assert.equal(question.choices.at(-1), UNKNOWN_CHOICE);
+});
+
+test("phrase distractors contain the same number of A and B placeholders", () => {
+  const item = items.find((candidate) => candidate.english === "pour A over B");
+  const question = buildQuestion(item, "ja_to_en_choice", items, () => 0.42);
+  const count = (value, placeholder) =>
+    (value.match(new RegExp(`(?<![A-Za-z])${placeholder}(?![A-Za-z])`, "g")) ?? []).length;
+  const answerChoices = question.choices.filter((choice) => choice !== UNKNOWN_CHOICE);
+  assert.equal(answerChoices.length, 4);
+  assert.ok(answerChoices.every((choice) => count(choice, "A") === 1));
+  assert.ok(answerChoices.every((choice) => count(choice, "B") === 1));
 });
 
 test("structure choices hide grammar notes and avoid recent, nearby-range distractors", () => {
@@ -143,13 +156,13 @@ test("structure choices hide grammar notes and avoid recent, nearby-range distra
     { ...target, id: "recent", range: "Plastic", english: "recent structure", japanese: "直近の答え（to不定詞）" },
   ];
   const question = buildQuestion(target, "en_to_ja_choice", pool, () => 0.42, ["recent"]);
-  assert.equal(question.choices.length, 4);
+  assert.equal(question.choices.length, 5);
   assert.equal(question.correctChoice, "正しい意味");
   assert.ok(question.choices.every((choice) => !choice.includes("（")));
   assert.ok(!question.choices.includes("直近の答え"));
   assert.deepEqual(
     new Set(question.choices),
-    new Set(["正しい意味", "火星の誤答", "雪の誤答", "別範囲の誤答"]),
+    new Set(["正しい意味", "火星の誤答", "雪の誤答", "別範囲の誤答", UNKNOWN_CHOICE]),
   );
 });
 

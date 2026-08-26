@@ -1163,6 +1163,13 @@ body.quiz-active .main-content { padding-bottom: 0; }
   line-height: 1.45;
 }
 
+.choice-button.choice-unknown {
+  margin-top: 4px;
+  color: var(--secondary);
+  background: transparent;
+  border-style: dashed;
+}
+
 .choice-button.correct {
   color: #05603a;
   background: #ecfdf3;

@@ -28,6 +28,7 @@ export const TYPE_LABELS = {
 };
 
 export const ALL_MODES = Object.keys(MODE_LABELS);
+export const UNKNOWN_CHOICE = "わからない";
 
 export const STUDY_CONTENT_LABELS = {
   word: "単語",
@@ -319,15 +320,26 @@ function choiceAnswer(candidate, mode) {
   return candidate.japanese;
 }
 
+function placeholderSignature(value) {
+  const text = String(value ?? "");
+  const count = (placeholder) =>
+    (text.match(new RegExp(`(?<![A-Za-z])${placeholder}(?![A-Za-z])`, "g")) ?? []).length;
+  return `${count("A")}:${count("B")}`;
+}
+
 export function generateChoices(item, mode, pool, rng = Math.random, excludedItemIds = []) {
   const correct = choiceAnswer(item, mode);
   const excluded = new Set(excludedItemIds);
+  const targetSignature = placeholderSignature(item.english);
+  const matchPlaceholderShape = item.type !== "word" && targetSignature !== "0:0";
+  const eligible = (candidate) =>
+    candidate.id !== item.id &&
+    (!matchPlaceholderShape || (
+      candidate.type !== "word" && placeholderSignature(candidate.english) === targetSignature
+    ));
 
-  const candidates = shuffle(
-    pool.filter((candidate) => candidate.id !== item.id && !excluded.has(candidate.id)),
-    rng,
-  )
-    .map((candidate) => {
+  const rankCandidates = (source) =>
+    shuffle(source, rng).map((candidate) => {
       const wordDifference = Math.abs(
         tokenizeAnswer(candidate.english).length - tokenizeAnswer(item.english).length,
       );
@@ -339,24 +351,33 @@ export function generateChoices(item, mode, pool, rng = Math.random, excludedIte
       return { candidate, score };
     })
     .sort((a, b) => b.score - a.score);
+  const candidates = rankCandidates(
+    pool.filter((candidate) => eligible(candidate) && !excluded.has(candidate.id)),
+  );
+  const fallbackCandidates = rankCandidates(
+    pool.filter((candidate) => eligible(candidate) && excluded.has(candidate.id)),
+  );
 
   const seen = new Set([normalizeAnswer(correct)]);
   const usedRanges = new Set([item.range]);
   const distractors = [];
-  for (const requireNewRange of [true, false]) {
-    for (const { candidate } of candidates) {
-      if (requireNewRange && usedRanges.has(candidate.range)) continue;
-      const value = choiceAnswer(candidate, mode);
-      const key = normalizeAnswer(value);
-      if (!seen.has(key)) {
-        seen.add(key);
-        usedRanges.add(candidate.range);
-        distractors.push(value);
+  const addDistractors = (source) => {
+    for (const requireNewRange of [true, false]) {
+      for (const { candidate } of source) {
+        if (requireNewRange && usedRanges.has(candidate.range)) continue;
+        const value = choiceAnswer(candidate, mode);
+        const key = normalizeAnswer(value);
+        if (!seen.has(key)) {
+          seen.add(key);
+          usedRanges.add(candidate.range);
+          distractors.push(value);
+        }
+        if (distractors.length === 3) return;
       }
-      if (distractors.length === 3) break;
     }
-    if (distractors.length === 3) break;
-  }
+  };
+  addDistractors(candidates);
+  if (distractors.length < 3) addDistractors(fallbackCandidates);
   return shuffle([correct, ...distractors], rng);
 }
 
@@ -373,7 +394,7 @@ export function buildQuestion(item, mode, pool, rng = Math.random, excludedChoic
         ...base,
         prompt: item.english,
         instruction: "最も近い日本語を選んでください",
-        choices: generateChoices(item, mode, pool, rng, excludedChoiceItemIds),
+        choices: [...generateChoices(item, mode, pool, rng, excludedChoiceItemIds), UNKNOWN_CHOICE],
         correctChoice: choiceAnswer(item, mode),
       };
     case "ja_to_en_choice":
@@ -381,7 +402,7 @@ export function buildQuestion(item, mode, pool, rng = Math.random, excludedChoic
         ...base,
         prompt: item.japanese,
         instruction: "正しい英語を選んでください",
-        choices: generateChoices(item, mode, pool, rng, excludedChoiceItemIds),
+        choices: [...generateChoices(item, mode, pool, rng, excludedChoiceItemIds), UNKNOWN_CHOICE],
         correctChoice: item.english,
       };
     case "preposition_input":

@@ -4,6 +4,7 @@ import {
   MODE_LABELS,
   RANGE_ORDER,
   TYPE_LABELS,
+  UNKNOWN_CHOICE,
   STUDY_CONTENT_LABELS,
   STUDY_METHOD_LABELS,
   accuracyFor,
@@ -25,7 +26,7 @@ import {
   summarizeByRange,
   summarizeHistory,
   summarizeSession,
-} from "./logic.js?v=phase7.12";
+} from "./logic.js?v=phase7.13";
 import { clearAllData, getMeta, loadHistory, recordAttempt, setMeta } from "./storage.js";
 
 const DEFAULT_SETTINGS = {
@@ -982,7 +983,7 @@ function sourceLine(item) {
 }
 
 function renderChoiceArea(question, answered, currentAnswer) {
-  const letters = ["A", "B", "C", "D"];
+  const letters = ["A", "B", "C", "D", "？"];
   return `<div class="choice-list">
     ${question.choices
       .map((choice, index) => {
@@ -995,7 +996,8 @@ function renderChoiceArea(question, answered, currentAnswer) {
               ? " wrong"
               : ""
           : "";
-        return `<button class="choice-button${resultClass}" type="button" data-choice="${escapeHtml(choice)}" ${answered ? "disabled" : ""}>
+        const unknownClass = choice === UNKNOWN_CHOICE ? " choice-unknown" : "";
+        return `<button class="choice-button${unknownClass}${resultClass}" type="button" data-choice="${escapeHtml(choice)}" ${answered ? "disabled" : ""}>
           <span>${letters[index]}</span><strong>${escapeHtml(choice)}</strong>
         </button>`;
       })

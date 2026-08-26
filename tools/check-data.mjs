@@ -70,15 +70,30 @@ assert.deepEqual([...ranges].sort(), [...RANGE_ORDER].sort(), "All eight ranges 
 
 console.log(`Data check passed: ${items.length} items across ${ranges.size} ranges.`);
 
-assert.equal(publicItems.length, 865, "Public workbook must contain all 865 reviewed questions");
-assert.equal(new Set(publicItems.map((item) => item.id)).size, 865, "Public IDs must be unique");
+assert.equal(publicItems.length, 718, "Public data must contain 718 unique reviewed questions");
+assert.equal(new Set(publicItems.map((item) => item.id)).size, 718, "Public IDs must be unique");
 assert.deepEqual(
   Object.fromEntries(["public-term", "public-short"].map((type) => [
     type,
     publicItems.filter((item) => item.type === type).length,
   ])),
-  { "public-term": 697, "public-short": 168 },
-  "Public answer format counts must match the workbook",
+  { "public-term": 550, "public-short": 168 },
+  "Public answer format counts must match the deduplicated workbook data",
+);
+
+const compactPublicText = (value) => value
+  .normalize("NFKC")
+  .replace(/[\s、。・,，.．！？!?「」『』（）()【】［］\[\]]/g, "");
+const canonicalPublicQuestion = (value) => compactPublicText(value)
+  .replace(/^次の説明に当てはまる用語を答えよ/, "")
+  .replace(/(を何というか|を答えよ|は何か|とは何か|を何と呼ぶか)$/, "");
+const publicKnowledgeKeys = publicItems.map((item) =>
+  `${compactPublicText(item.publicAnswer)}|${canonicalPublicQuestion(item.publicQuestion)}`,
+);
+assert.equal(
+  new Set(publicKnowledgeKeys).size,
+  publicKnowledgeKeys.length,
+  "Public data must not contain templated duplicate questions",
 );
 for (const item of publicItems) {
   for (const field of ["id", "number", "importance", "publicQuestion", "publicAnswer", "source", "range"]) {

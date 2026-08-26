@@ -26,7 +26,7 @@ import {
   summarizeByRange,
   summarizeHistory,
   summarizeSession,
-} from "./logic.js?v=phase7.7";
+} from "./logic.js?v=phase7.9";
 import { clearAllData, getMeta, loadHistory, recordAttempt, setMeta } from "./storage.js";
 
 const DEFAULT_SETTINGS = {
@@ -91,15 +91,11 @@ const elements = Object.fromEntries(
     "study-importance-kind-options",
     "study-importance-options",
     "confirm-study-importance",
+    "study-sort-kind-options",
+    "study-sort-other-options",
     "quick-grid",
     "range-grid",
-    "selected-mode-label",
-    "selected-mode-tags",
-    "active-filter-list",
-    "setup-match-count",
-    "setup-resume-note",
     "cycle-performance-card",
-    "sort-select",
     "question-count-options",
     "repeat-wrong",
     "start-session",
@@ -148,6 +144,24 @@ const PERFORMANCE_LABELS = {
   accuracyUnder80: "正答率80%未満",
   accuracyAtLeast90: "正答率90%以上",
 };
+
+const OTHER_SORT_OPTIONS = [
+  ["random", "ランダム"],
+  ["importance-asc", "重要度が低い順"],
+  ["wrong-desc", "間違い回数が多い順"],
+  ["wrong-asc", "間違い回数が少ない順"],
+  ["accuracy-asc", "正答率が低い順"],
+  ["accuracy-desc", "正答率が高い順"],
+  ["attempts-asc", "回答回数が少ない順"],
+  ["attempts-desc", "回答回数が多い順"],
+  ["recent-wrong", "最近間違えた順"],
+  ["recent-attempted", "最近回答した順"],
+  ["oldest-attempted", "古く回答した順"],
+  ["range", "範囲順"],
+  ["registration", "登録順"],
+  ["alpha-en", "A–Z"],
+  ["alpha-ja", "あいうえお順"],
+];
 
 const QUICK_ACTIONS = [
   { id: "weak", icon: "↘", title: "苦手だけ", detail: "ミスした語句を苦手順で", tone: "red" },
@@ -357,6 +371,25 @@ function renderStudyImportanceSelect() {
   elements.confirmStudyImportance.disabled = state.filters.importance.length === 0;
 }
 
+function renderStudySortKind() {
+  elements.studySortKindOptions.innerHTML = [
+    { key: "importance-desc", icon: "S", title: "重要度順", detail: "重要度が高い問題から出題", tags: ["おすすめ"] },
+    { key: "difficulty", icon: "↘", title: "苦手順", detail: "間違いが多い問題から出題", tags: ["復習"] },
+    { key: "other", icon: "…", title: "その他", detail: "ランダムや正答率順などから選択", tags: ["15種類"] },
+  ].map((meta) => selectionCard({
+    ...meta,
+    dataAttribute: `data-study-sort-kind="${meta.key}"`,
+  })).join("");
+}
+
+function renderStudySortOther() {
+  elements.studySortOtherOptions.innerHTML = OTHER_SORT_OPTIONS.map(([key, label]) => `
+    <button class="multi-select-card sort-option" type="button" data-study-sort="${key}">
+      <span class="multi-check sort-icon" aria-hidden="true">↕</span>
+      <span><strong>${label}</strong><small>この順番で出題</small></span>
+    </button>`).join("");
+}
+
 function viewBeforeRangeSelection() {
   return state.studySelection.method === "write" && state.studySelection.content !== "word"
     ? "study-scope"
@@ -543,7 +576,7 @@ function setView(view) {
     button.classList.toggle(
       "active",
       button.dataset.viewTarget === view ||
-        (["study-content", "study-method", "study-scope", "study-range-kind", "study-range-select", "study-importance-kind", "study-importance-select", "setup"].includes(view) &&
+        (["study-content", "study-method", "study-scope", "study-range-kind", "study-range-select", "study-importance-kind", "study-importance-select", "study-sort-kind", "study-sort-other", "setup"].includes(view) &&
           button.dataset.viewTarget === "study-content"),
     );
   });
@@ -560,6 +593,8 @@ function setView(view) {
   if (view === "study-range-select") renderStudyRangeSelect();
   if (view === "study-importance-kind") renderStudyImportanceKind();
   if (view === "study-importance-select") renderStudyImportanceSelect();
+  if (view === "study-sort-kind") renderStudySortKind();
+  if (view === "study-sort-other") renderStudySortOther();
   if (view === "setup") renderSetup();
   if (view === "list") renderList(true);
   if (view === "analysis") renderAnalysis();
@@ -727,47 +762,20 @@ function renderSetup() {
   }
   const selection = normalizeStudySelection(state.studySelection);
   const { cycle } = syncStudyCycle(selection);
-  elements.selectedModeLabel.textContent = studySelectionLabel(selection);
-  elements.selectedModeTags.innerHTML = renderTags([
-    STUDY_CONTENT_LABELS[selection.content],
-    STUDY_METHOD_LABELS[selection.method],
-    ...(selection.method === "write" && selection.content !== "word"
-      ? [selection.scope === "partial" ? "一部" : "全部"]
-      : []),
-  ]);
-  elements.cyclePerformanceCard.innerHTML = cycle === 1
-    ? `<div><span class="subtle-label">1周目</span><h2>成績の絞り込みなし</h2><p>最初は選んだ範囲の問題をすべて学習します。</p></div>`
-    : cycle === 2
-      ? `<div><span class="subtle-label">2周目</span><h2>一度でも間違えた問題</h2><p>1周目で間違えた問題だけを自動で出題します。</p></div>`
-      : `<div>
-          <span class="subtle-label">${cycle}周目・選択必須</span>
-          <h2>今回の成績条件</h2>
-          <p>${state.performanceExplicit ? PERFORMANCE_LABELS[state.filters.performance] : "どちらかを選んでください"}</p>
-        </div>
-        <div class="cycle-performance-actions">
-          <button class="secondary-button compact${state.performanceExplicit && state.filters.performance === "everMissed" ? " selected" : ""}" type="button" data-cycle-performance="everMissed">間違えた問題</button>
-          <button class="secondary-button compact${state.performanceExplicit && state.filters.performance === "all" ? " selected" : ""}" type="button" data-cycle-performance="all">全部</button>
-          <button class="text-button" type="button" data-open-performance-detail>詳細を選ぶ</button>
-        </div>`;
-  const labels = [
-    state.filters.ranges.length ? `範囲：${state.filters.ranges.join("・")}` : "全範囲",
-    state.filters.importance.length ? `重要度：${state.filters.importance.join("・")}` : "重要度全部",
-    ...(state.filters.performance !== "all" ? [PERFORMANCE_LABELS[state.filters.performance]] : []),
-  ];
-  elements.activeFilterList.innerHTML = labels.length
-    ? labels.map((label) => `<span class="filter-summary-chip">${escapeHtml(label)}</span>`).join("")
-    : '<span class="empty-filter">全範囲・重要度全部</span>';
+  elements.cyclePerformanceCard.hidden = cycle < 3;
+  elements.cyclePerformanceCard.innerHTML = cycle < 3 ? "" : `<div>
+      <span class="subtle-label">${cycle}周目・選択必須</span>
+      <h2>今回の成績条件</h2>
+      <p>${state.performanceExplicit ? PERFORMANCE_LABELS[state.filters.performance] : "どちらかを選んでください"}</p>
+    </div>
+    <div class="cycle-performance-actions">
+      <button class="secondary-button compact${state.performanceExplicit && state.filters.performance === "everMissed" ? " selected" : ""}" type="button" data-cycle-performance="everMissed">間違えた問題</button>
+      <button class="secondary-button compact${state.performanceExplicit && state.filters.performance === "all" ? " selected" : ""}" type="button" data-cycle-performance="all">全部</button>
+      <button class="text-button" type="button" data-open-performance-detail>詳細を選ぶ</button>
+    </div>`;
   const eligible = learningItems();
   const remaining = remainingLearningItems();
-  const completedCount = eligible.length - remaining.length;
   const count = remaining.length || eligible.length;
-  elements.setupMatchCount.textContent = eligible.length.toLocaleString();
-  elements.setupResumeNote.textContent = completedCount
-    ? remaining.length
-      ? `${completedCount}問まで回答済み。この組み合わせの続き ${remaining.length}問から始めます。`
-      : "この組み合わせは一周完了しています。次は最初から始めます。"
-    : "この組み合わせは最初から始まります。";
-  elements.sortSelect.value = state.sortKey;
   elements.repeatWrong.checked = state.repeatWrong;
   elements.questionCountOptions.querySelectorAll("button").forEach((button) => {
     button.classList.toggle("selected", String(state.questionCount) === button.dataset.count);
@@ -1604,7 +1612,7 @@ function bindEvents() {
       state.importanceFilterMode = target.dataset.importanceFilterMode;
       if (state.importanceFilterMode === "all") {
         state.filters.importance = [];
-        setView("setup");
+        setView("study-sort-kind");
       } else {
         state.filters.importance = [];
         setView("study-importance-select");
@@ -1618,6 +1626,21 @@ function bindEvents() {
       renderStudyImportanceSelect();
     }
     if (target.id === "confirm-study-importance" && state.filters.importance.length) {
+      setView("study-sort-kind");
+    }
+    if (target.hasAttribute("data-back-before-sort")) {
+      setView(state.importanceFilterMode === "custom" ? "study-importance-select" : "study-importance-kind");
+    }
+    if (target.dataset.studySortKind) {
+      if (target.dataset.studySortKind === "other") {
+        setView("study-sort-other");
+      } else {
+        state.sortKey = target.dataset.studySortKind;
+        setView("setup");
+      }
+    }
+    if (target.dataset.studySort) {
+      state.sortKey = target.dataset.studySort;
       setView("setup");
     }
     if (target.dataset.quick) quickStart(target.dataset.quick);
@@ -1698,9 +1721,6 @@ function bindEvents() {
     }
   });
 
-  elements.sortSelect.addEventListener("change", () => {
-    state.sortKey = elements.sortSelect.value;
-  });
   elements.repeatWrong.addEventListener("change", () => {
     state.repeatWrong = elements.repeatWrong.checked;
   });

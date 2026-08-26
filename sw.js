@@ -1,11 +1,11 @@
-const CACHE_NAME = "words-phase7-v8";
+const CACHE_NAME = "words-phase7-v10";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=phase7.7",
-  "./src/app.js?v=phase7.7",
+  "./styles.css?v=phase7.8",
+  "./src/app.js?v=phase7.9",
   "./src/logic.js",
-  "./src/logic.js?v=phase7.7",
+  "./src/logic.js?v=phase7.9",
   "./src/storage.js",
   "./data/items.json?v=phase3.1",
   "./manifest.webmanifest",

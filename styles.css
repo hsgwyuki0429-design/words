@@ -1647,6 +1647,11 @@ body.quiz-active .main-content { padding-bottom: 0; }
 
 .importance-select-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 
+.sort-kind-grid { width: min(100%, 960px); }
+.sort-other-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.sort-option { min-height: 82px; }
+.sort-icon { color: var(--secondary); background: #ededf1; }
+
 .multi-select-card {
   display: grid;
   grid-template-columns: 38px minmax(0, 1fr);
@@ -2107,6 +2112,10 @@ body.quiz-active .main-content { padding-bottom: 0; }
 
   .importance-select-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .sort-other-grid {
+    grid-template-columns: 1fr;
   }
 
   .selection-card {

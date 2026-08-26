@@ -15,7 +15,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icons/app-icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icons/app-icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=phase7.7" />
+    <link rel="stylesheet" href="./styles.css?v=phase7.8" />
   </head>
   <body>
     <div class="app-shell" id="app-shell" aria-busy="true">
@@ -147,64 +147,36 @@
           </div>
         </section>
 
+        <section class="view" id="view-study-sort-kind" data-view="study-sort-kind" hidden>
+          <div class="page-heading selection-page-heading">
+            <button class="text-button back-link" type="button" data-back-before-sort>← 重要度を選び直す</button>
+            <p class="eyebrow">SORT</p>
+            <h1>並び替えを選ぶ</h1>
+            <p>問題を出す順番を選んでください。</p>
+          </div>
+          <div class="selection-grid sort-kind-grid" id="study-sort-kind-options"></div>
+        </section>
+
+        <section class="view" id="view-study-sort-other" data-view="study-sort-other" hidden>
+          <div class="page-heading selection-page-heading">
+            <button class="text-button back-link" type="button" data-view-target="study-sort-kind">← 並び替えを選び直す</button>
+            <p class="eyebrow">SORT · OTHER</p>
+            <h1>その他の並び替え</h1>
+            <p>使いたい並び順を一つ選んでください。</p>
+          </div>
+          <div class="multi-select-grid sort-other-grid" id="study-sort-other-options"></div>
+        </section>
+
         <section class="view" id="view-setup" data-view="setup" hidden>
-          <div class="page-heading">
-            <p class="eyebrow">STUDY SETUP</p>
-            <h1>学習を始める</h1>
-            <p>選んだ内容を確認して、問題数を決めたらスタートします。</p>
+          <div class="page-heading selection-page-heading">
+            <button class="text-button back-link" type="button" data-view-target="study-sort-kind">← 並び替えを選び直す</button>
+            <p class="eyebrow">START</p>
+            <h1>スタート</h1>
+            <p>問題数を決めて学習を始めます。</p>
           </div>
 
           <div class="setup-grid">
-            <section class="panel-card selected-mode-card">
-              <div>
-                <span class="subtle-label">選択中の形式</span>
-                <h2 id="selected-mode-label">—</h2>
-                <div class="item-tags" id="selected-mode-tags"></div>
-              </div>
-              <button class="secondary-button compact" type="button" data-view-target="study-content">
-                選び直す
-              </button>
-            </section>
-            <section class="panel-card setup-filter-card">
-              <div class="panel-heading">
-                <div>
-                  <span class="subtle-label">選択した絞り込み</span>
-                  <h2>範囲・重要度</h2>
-                </div>
-                <button class="secondary-button compact" type="button" data-view-target="study-range-kind">選び直す</button>
-              </div>
-              <div class="active-filter-list" id="active-filter-list"></div>
-              <div class="match-count">
-                <strong id="setup-match-count">0</strong>
-                <span>項目が該当</span>
-              </div>
-              <p class="resume-note" id="setup-resume-note"></p>
-            </section>
-
             <section class="panel-card cycle-performance-card" id="cycle-performance-card"></section>
-
-            <section class="panel-card">
-              <label class="field-label" for="sort-select">並び替え</label>
-              <select class="select-control" id="sort-select">
-                <option value="importance-desc">重要度が高い順</option>
-                <option value="random">ランダム</option>
-                <option value="difficulty">苦手順</option>
-                <option value="importance-asc">重要度が低い順</option>
-                <option value="wrong-desc">間違い回数が多い順</option>
-                <option value="wrong-asc">間違い回数が少ない順</option>
-                <option value="accuracy-asc">正答率が低い順</option>
-                <option value="accuracy-desc">正答率が高い順</option>
-                <option value="attempts-asc">回答回数が少ない順</option>
-                <option value="attempts-desc">回答回数が多い順</option>
-                <option value="recent-wrong">最近間違えた順</option>
-                <option value="recent-attempted">最近回答した順</option>
-                <option value="oldest-attempted">古く回答した順</option>
-                <option value="range">範囲順</option>
-                <option value="registration">登録順</option>
-                <option value="alpha-en">A–Z</option>
-                <option value="alpha-ja">あいうえお順</option>
-              </select>
-            </section>
 
             <section class="panel-card">
               <span class="field-label">問題数</span>
@@ -395,6 +367,6 @@
     </aside>
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-    <script type="module" src="./src/app.js?v=phase7.7"></script>
+    <script type="module" src="./src/app.js?v=phase7.9"></script>
   </body>
 </html>

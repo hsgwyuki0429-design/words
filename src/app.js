@@ -2,9 +2,11 @@ import {
   ALL_MODES,
   IMPORTANCE_ORDER,
   MODE_LABELS,
+  PUBLIC_RANGE_ORDER,
   RANGE_ORDER,
   TYPE_LABELS,
   UNKNOWN_CHOICE,
+  WRONG_REVIEW_DELAY_MS,
   STUDY_CONTENT_LABELS,
   STUDY_METHOD_LABELS,
   accuracyFor,
@@ -26,7 +28,7 @@ import {
   summarizeByRange,
   summarizeHistory,
   summarizeSession,
-} from "./logic.js?v=phase7.13";
+} from "./logic.js?v=2026.2.2";
 import { clearAllData, getMeta, loadHistory, recordAttempt, setMeta } from "./storage.js";
 
 const DEFAULT_SETTINGS = {
@@ -40,10 +42,14 @@ const DEFAULT_SETTINGS = {
 
 const state = {
   items: [],
+  englishItems: [],
+  publicItems: [],
+  subject: null,
+  selectedPeriod: null,
   history: new Map(),
-  view: "home",
+  view: "period",
   selectedMode: null,
-  studySelection: { content: null, method: null, scope: null },
+  studySelection: { subject: "english", content: null, method: null, scope: null },
   progress: new Map(),
   filters: {
     ranges: [],
@@ -76,7 +82,11 @@ const elements = Object.fromEntries(
     "app-header",
     "header-status",
     "greeting",
+    "home-title",
+    "home-copy",
     "resume-study-card",
+    "study-content-heading",
+    "study-content-copy",
     "study-content-options",
     "study-method-heading",
     "study-method-copy",
@@ -88,6 +98,8 @@ const elements = Object.fromEntries(
     "study-importance-kind-options",
     "study-importance-options",
     "confirm-study-importance",
+    "study-performance-options",
+    "study-performance-copy",
     "study-sort-kind-options",
     "study-sort-other-options",
     "cycle-performance-card",
@@ -98,6 +110,9 @@ const elements = Object.fromEntries(
     "list-search",
     "list-sort",
     "list-count",
+    "list-eyebrow",
+    "list-title",
+    "nav-list-label",
     "word-list",
     "load-more",
     "quiz-content",
@@ -126,11 +141,11 @@ const elements = Object.fromEntries(
 );
 
 const PERFORMANCE_LABELS = {
-  all: "全ての成績",
+  all: "全部",
   unanswered: "未回答",
   answered: "回答済み",
   everCorrect: "正解したことがある",
-  everMissed: "一度でも間違えた",
+  everMissed: "間違えたことのある",
   neverMissed: "間違えたことがない",
   lastCorrect: "最後に正解",
   lastWrong: "最後に不正解",
@@ -165,6 +180,7 @@ const MODE_META = {
   spelling_input: { icon: "Aa", tags: ["完全入力", "スペル"] },
   preposition_input: { icon: "_", tags: ["穴埋め", "前置詞"] },
   phrase_blank_input: { icon: "…", tags: ["穴埋め", "熟語・構文"] },
+  public_recall: { icon: "公", tags: ["自己採点", "一問一答"] },
 };
 
 const STUDY_CONTENT_META = {
@@ -172,6 +188,12 @@ const STUDY_CONTENT_META = {
   phrase: { icon: "…", title: "熟語", detail: "熟語だけを学習", tags: ["熟語"] },
   structure: { icon: "S V", title: "構文", detail: "構文だけを学習", tags: ["構文"] },
   all: { icon: "＋", title: "すべて", detail: "単語・熟語・構文を続けて学習", tags: ["単語", "熟語", "構文"] },
+};
+
+const PUBLIC_CONTENT_META = {
+  term: { icon: "語", title: "語句回答問題", detail: "用語・人物・制度名・年号など", tags: ["697問"] },
+  short: { icon: "文", title: "短文回答問題", detail: "定義・理由・特徴・しくみなど", tags: ["168問"] },
+  all: { icon: "＋", title: "どっちとも", detail: "語句回答と短文回答をまとめて学習", tags: ["865問"] },
 };
 
 const STUDY_METHOD_META = {
@@ -189,6 +211,9 @@ const KNOWN_STUDY_SELECTIONS = [
   { content: "phrase", method: "write", scope: "partial" },
   { content: "structure", method: "write", scope: "partial" },
   { content: "all", method: "write", scope: "partial" },
+  { subject: "public", content: "term", method: "recall", scope: "full" },
+  { subject: "public", content: "short", method: "recall", scope: "full" },
+  { subject: "public", content: "all", method: "recall", scope: "full" },
 ];
 
 const TAG_LABELS = {
@@ -199,6 +224,8 @@ const TAG_LABELS = {
   preposition: "前置詞",
   spelling: "スペル",
   blank: "穴埋め",
+  語句: "語句回答",
+  短文: "短文回答",
 };
 
 function escapeHtml(value) {
@@ -231,6 +258,66 @@ function renderTags(tags = [], limit = 4) {
     .join("");
 }
 
+function isPublicSubject() {
+  return state.subject === "public";
+}
+
+function currentRangeOrder() {
+  return isPublicSubject() ? PUBLIC_RANGE_ORDER : RANGE_ORDER;
+}
+
+function currentImportanceOrder() {
+  const available = new Set(state.items.map((item) => item.importance));
+  return IMPORTANCE_ORDER.filter((importance) => available.has(importance));
+}
+
+function emptyFilters() {
+  return {
+    ranges: [],
+    importance: [],
+    types: [],
+    tags: [],
+    performance: "all",
+    minimumWrong: 0,
+    search: "",
+  };
+}
+
+function resetStudyFlow() {
+  state.studySelection = {
+    subject: isPublicSubject() ? "public" : "english",
+    content: null,
+    method: null,
+    scope: null,
+  };
+  state.sortKey = "importance-desc";
+  state.filters = emptyFilters();
+  state.performanceExplicit = false;
+  state.cycleContextKey = null;
+  state.rangeFilterMode = null;
+  state.importanceFilterMode = null;
+}
+
+function selectSubject(subject) {
+  state.subject = subject === "public" ? "public" : "english";
+  state.items = isPublicSubject() ? state.publicItems : state.englishItems;
+  resetStudyFlow();
+  elements.listSearch.value = "";
+  elements.listSearch.placeholder = isPublicSubject() ? "問題・答えで検索" : "英語・日本語で検索";
+  elements.listEyebrow.textContent = isPublicSubject() ? "QUESTION & ANSWER" : "WORD BOOK";
+  elements.listTitle.textContent = isPublicSubject() ? "一問一答" : "単語帳";
+  elements.navListLabel.textContent = isPublicSubject() ? "一問一答" : "単語帳";
+  const levelOption = elements.listSort.querySelector('option[value="difficulty-level-desc"]');
+  const englishOption = elements.listSort.querySelector('option[value="alpha-en"]');
+  const japaneseOption = elements.listSort.querySelector('option[value="alpha-ja"]');
+  levelOption.hidden = isPublicSubject();
+  englishOption.textContent = isPublicSubject() ? "問題順" : "A–Z";
+  japaneseOption.textContent = isPublicSubject() ? "答え順" : "あいうえお順";
+  if (isPublicSubject() && state.listSortKey === "difficulty-level-desc") state.listSortKey = "importance-desc";
+  setView("home");
+  if (!state.settings.effectsMode) elements.onboarding.hidden = false;
+}
+
 function selectionIsComplete(selection = state.studySelection) {
   const normalized = normalizeStudySelection(selection);
   return Boolean(normalized.content && normalized.method);
@@ -239,6 +326,9 @@ function selectionIsComplete(selection = state.studySelection) {
 function studySelectionLabel(selection = state.studySelection) {
   const normalized = normalizeStudySelection(selection);
   if (!normalized.content || !normalized.method) return "—";
+  if (normalized.subject === "public") {
+    return `${STUDY_CONTENT_LABELS[normalized.content]} / 答えを表示して自己採点`;
+  }
   const parts = [
     STUDY_CONTENT_LABELS[normalized.content],
     STUDY_METHOD_LABELS[normalized.method],
@@ -268,7 +358,14 @@ function selectionCard({ icon, title, detail, tags, dataAttribute }) {
 }
 
 function renderStudyContent() {
-  elements.studyContentOptions.innerHTML = Object.entries(STUDY_CONTENT_META)
+  const meta = isPublicSubject() ? PUBLIC_CONTENT_META : STUDY_CONTENT_META;
+  elements.studyContentHeading.textContent = isPublicSubject()
+    ? "どの問題を学習しますか？"
+    : "何を学習しますか？";
+  elements.studyContentCopy.textContent = isPublicSubject()
+    ? "語句回答、短文回答、または両方から選んでください。"
+    : "学習する教材の種類を選んでください。";
+  elements.studyContentOptions.innerHTML = Object.entries(meta)
     .map(([content, meta]) => selectionCard({
       ...meta,
       dataAttribute: `data-study-content="${content}"`,
@@ -314,8 +411,9 @@ function renderStudyScope() {
 }
 
 function renderStudyRangeKind() {
+  const count = currentRangeOrder().length;
   elements.studyRangeKindOptions.innerHTML = [
-    { mode: "all", icon: "∞", title: "全範囲", detail: "8範囲をすべて学習", tags: ["すべて"] },
+    { mode: "all", icon: "∞", title: "全範囲", detail: `${count}範囲をすべて学習`, tags: ["すべて"] },
     { mode: "custom", icon: "✓", title: "その他", detail: "学習する範囲を複数選択", tags: ["複数選択可"] },
   ].map((meta) => selectionCard({
     ...meta,
@@ -324,20 +422,21 @@ function renderStudyRangeKind() {
 }
 
 function renderStudyRangeSelect() {
-  elements.studyRangeOptions.innerHTML = RANGE_ORDER.map((range) => {
+  elements.studyRangeOptions.innerHTML = currentRangeOrder().map((range) => {
     const selected = state.filters.ranges.includes(range);
     const count = state.items.filter((item) => item.range === range && studyModeForItem(item, state.studySelection)).length;
     return `<button class="multi-select-card${selected ? " selected" : ""}" type="button" data-study-range="${escapeHtml(range)}" aria-pressed="${selected}">
       <span class="multi-check" aria-hidden="true">${selected ? "✓" : ""}</span>
-      <span><strong>${escapeHtml(range)}</strong><small>${count}語句</small></span>
+      <span><strong>${escapeHtml(range)}</strong><small>${count}${isPublicSubject() ? "問" : "語句"}</small></span>
     </button>`;
   }).join("");
   elements.confirmStudyRanges.disabled = state.filters.ranges.length === 0;
 }
 
 function renderStudyImportanceKind() {
+  const available = currentImportanceOrder();
   elements.studyImportanceKindOptions.innerHTML = [
-    { mode: "all", icon: "∞", title: "重要度全部", detail: "SSSからBまですべて学習", tags: ["すべて"] },
+    { mode: "all", icon: "∞", title: "重要度全部", detail: `${available[0]}から${available.at(-1)}まですべて学習`, tags: ["すべて"] },
     { mode: "custom", icon: "✓", title: "その他の重要度", detail: "重要度を複数選択", tags: ["複数選択可"] },
   ].map((meta) => selectionCard({
     ...meta,
@@ -346,23 +445,61 @@ function renderStudyImportanceKind() {
 }
 
 function renderStudyImportanceSelect() {
-  elements.studyImportanceOptions.innerHTML = IMPORTANCE_ORDER.map((importance) => {
+  elements.studyImportanceOptions.innerHTML = currentImportanceOrder().map((importance) => {
     const selected = state.filters.importance.includes(importance);
     const count = learningItems({ ...state.filters, importance: [importance] }).length;
     return `<button class="multi-select-card importance-option${selected ? " selected" : ""}" type="button" data-study-importance="${importance}" aria-pressed="${selected}">
       <span class="multi-check" aria-hidden="true">${selected ? "✓" : ""}</span>
-      <span><strong>${importance}</strong><small>${count}語句</small></span>
+      <span><strong>${importance}</strong><small>${count}${isPublicSubject() ? "問" : "語句"}</small></span>
     </button>`;
   }).join("");
   elements.confirmStudyImportance.disabled = state.filters.importance.length === 0;
 }
 
+function performanceBaseItems() {
+  return learningItems({ ...state.filters, performance: "all", minimumWrong: 0 });
+}
+
+function renderStudyPerformance() {
+  const base = performanceBaseItems();
+  const unanswered = base.filter((item) => getHistory(state.history, item.id).totalAttempts === 0).length;
+  const missed = base.filter((item) => getHistory(state.history, item.id).hasEverMissed).length;
+  const answered = base.length - unanswered;
+  const options = [];
+  if (unanswered === 0) {
+    options.push(["everMissed", "↺", "間違えたことのある", `${missed}問を復習`]);
+    options.push(["all", "∞", "全部", `${base.length}問すべて`]);
+  } else if (answered > 0) {
+    options.push(["unanswered", "○", "未回答", `${unanswered}問が未回答`]);
+    options.push(["all", "∞", "全部", `${base.length}問すべて`]);
+    options.push(["everMissed", "↺", "間違えたことのある", `${missed}問を復習`]);
+  } else {
+    options.push(["all", "∞", "全部", `${base.length}問すべて`]);
+    options.push(["unanswered", "○", "未回答", `${unanswered}問が未回答`]);
+    options.push(["everMissed", "↺", "間違えたことのある", "学習後に表示されます"]);
+  }
+  elements.studyPerformanceCopy.textContent = unanswered === 0
+    ? "未回答の問題がないため、復習を先頭にしました。"
+    : answered > 0
+      ? "続きから始めやすいよう、未回答を先頭にしました。"
+      : "今の条件に合う回答状況から選んでください。";
+  elements.studyPerformanceOptions.innerHTML = options
+    .map(([key, icon, title, detail], index) => selectionCard({
+      icon,
+      title,
+      detail,
+      tags: index === 0 ? ["おすすめ"] : [],
+      dataAttribute: `data-study-performance="${key}"${key === "everMissed" && missed === 0 ? " disabled aria-disabled=\"true\"" : ""}`,
+    }))
+    .join("");
+}
+
 function renderStudySortKind() {
   elements.studySortKindOptions.innerHTML = [
     { key: "importance-desc", icon: "S", title: "重要度順", detail: "重要度が高い問題から出題", tags: ["おすすめ"] },
-    { key: "difficulty-level-desc", icon: "級", title: "難易度順", detail: "難しい問題から出題", tags: ["専門 → 4級"] },
     { key: "difficulty", icon: "↘", title: "苦手順", detail: "間違いが多い問題から出題", tags: ["復習"] },
-    { key: "other", icon: "…", title: "その他", detail: "ランダムや正答率順などから選択", tags: ["15種類"] },
+    { key: "random", icon: "⇄", title: "ランダム", detail: "問題を毎回シャッフルして出題", tags: ["シャッフル"] },
+    { key: "other", icon: "…", title: "その他", detail: "正答率や範囲順などから選択", tags: ["詳細"] },
   ].map((meta) => selectionCard({
     ...meta,
     dataAttribute: `data-study-sort-kind="${meta.key}"`,
@@ -378,6 +515,7 @@ function renderStudySortOther() {
 }
 
 function viewBeforeRangeSelection() {
+  if (isPublicSubject()) return "study-content";
   return state.studySelection.method === "write" && state.studySelection.content !== "word"
     ? "study-scope"
     : "study-method";
@@ -555,6 +693,7 @@ function correctEffect(special = "") {
 
 function setView(view) {
   if (view === "setup" && !selectionIsComplete()) view = "study-content";
+  if (!["period", "subject"].includes(view) && !state.subject) view = state.selectedPeriod ? "subject" : "period";
   state.view = view;
   document.querySelectorAll("[data-view]").forEach((section) => {
     section.hidden = section.dataset.view !== view;
@@ -563,12 +702,12 @@ function setView(view) {
     button.classList.toggle(
       "active",
       button.dataset.viewTarget === view ||
-        (["study-content", "study-method", "study-scope", "study-range-kind", "study-range-select", "study-importance-kind", "study-importance-select", "study-sort-kind", "study-sort-other", "setup"].includes(view) &&
+        (["study-content", "study-method", "study-scope", "study-range-kind", "study-range-select", "study-importance-kind", "study-importance-select", "study-performance", "study-sort-kind", "study-sort-other", "setup"].includes(view) &&
           button.dataset.viewTarget === "study-content"),
     );
   });
-  elements.bottomNav.hidden = view === "quiz";
-  elements.appHeader.hidden = view === "quiz";
+  elements.bottomNav.hidden = ["quiz", "period", "subject"].includes(view);
+  elements.appHeader.hidden = ["quiz", "period", "subject"].includes(view);
   document.body.classList.toggle("quiz-active", view === "quiz");
   window.scrollTo({ top: 0, behavior: "auto" });
 
@@ -580,6 +719,7 @@ function setView(view) {
   if (view === "study-range-select") renderStudyRangeSelect();
   if (view === "study-importance-kind") renderStudyImportanceKind();
   if (view === "study-importance-select") renderStudyImportanceSelect();
+  if (view === "study-performance") renderStudyPerformance();
   if (view === "study-sort-kind") renderStudySortKind();
   if (view === "study-sort-other") renderStudySortOther();
   if (view === "setup") renderSetup();
@@ -593,15 +733,23 @@ function renderHeader() {
   const summary = summarizeHistory(state.items, state.history);
   elements.headerStatus.textContent = summary.attempts
     ? `${summary.correct.toLocaleString()} 正解 / ${summary.attempts.toLocaleString()} 回答`
-    : `${state.items.length}語句`;
+    : `${state.items.length}${isPublicSubject() ? "問" : "語句"}`;
 }
 
 function renderHome() {
   const hour = new Date().getHours();
-  elements.greeting.textContent =
-    hour < 11 ? "Good morning." : hour < 18 ? "Good afternoon." : "Good evening.";
+  elements.greeting.textContent = isPublicSubject()
+    ? "PUBLIC · 2026.2"
+    : hour < 11 ? "Good morning." : hour < 18 ? "Good afternoon." : "Good evening.";
+  elements.homeTitle.textContent = isPublicSubject() ? "公共を、思い出せるまで。" : "英コミを、書けるまで。";
+  elements.homeCopy.textContent = isPublicSubject()
+    ? "問題を見て答えを思い出し、左右のタップで自己採点します。"
+    : "意味・スペル・前置詞を、同じ語句で何度も確かめます。";
 
-  if (state.activeStudy?.config?.selection) {
+  const activeSubject = state.activeStudy?.config?.subject
+    ?? state.activeStudy?.config?.selection?.subject
+    ?? "english";
+  if (state.activeStudy?.config?.selection && activeSubject === state.subject) {
     const answered = Number(state.activeStudy.answeredCount) || 0;
     const total = Number(state.activeStudy.totalCount) || 0;
     elements.resumeStudyCard.hidden = false;
@@ -643,6 +791,7 @@ function learningItems(filters = state.filters, selection = state.studySelection
 }
 
 function remainingLearningItems(filters = state.filters, selection = state.studySelection) {
+  if ((filters.performance ?? "all") !== "all") return learningItems(filters, selection);
   const completed = new Set(progressForSelection(selection).completedItemIds ?? []);
   return learningItems(filters, selection).filter((item) => !completed.has(item.id));
 }
@@ -717,19 +866,8 @@ function renderSetup() {
     setView("study-content");
     return;
   }
-  const selection = normalizeStudySelection(state.studySelection);
-  const { cycle } = syncStudyCycle(selection);
-  elements.cyclePerformanceCard.hidden = cycle < 3;
-  elements.cyclePerformanceCard.innerHTML = cycle < 3 ? "" : `<div>
-      <span class="subtle-label">${cycle}周目・選択必須</span>
-      <h2>今回の成績条件</h2>
-      <p>${state.performanceExplicit ? PERFORMANCE_LABELS[state.filters.performance] : "どちらかを選んでください"}</p>
-    </div>
-    <div class="cycle-performance-actions">
-      <button class="secondary-button compact${state.performanceExplicit && state.filters.performance === "everMissed" ? " selected" : ""}" type="button" data-cycle-performance="everMissed">間違えた問題</button>
-      <button class="secondary-button compact${state.performanceExplicit && state.filters.performance === "all" ? " selected" : ""}" type="button" data-cycle-performance="all">全部</button>
-      <button class="text-button" type="button" data-open-performance-detail>詳細を選ぶ</button>
-    </div>`;
+  elements.cyclePerformanceCard.hidden = true;
+  elements.cyclePerformanceCard.innerHTML = "";
   const eligible = learningItems();
   const remaining = remainingLearningItems();
   const count = remaining.length || eligible.length;
@@ -743,7 +881,7 @@ function renderSetup() {
   });
   const actual = state.questionCount === "all" ? count : Math.min(count, state.questionCount);
   elements.startSessionLabel.textContent = `${pluralQuestions(actual)}をスタート`;
-  elements.startSession.disabled = eligible.length === 0 || (cycle >= 3 && !state.performanceExplicit);
+  elements.startSession.disabled = eligible.length === 0;
   renderHeader();
 }
 
@@ -755,11 +893,29 @@ function renderList(resetLimit = false) {
     state.history,
     state.listSortKey,
   );
-  elements.listCount.textContent = `${items.length.toLocaleString()}語句`;
+  elements.listCount.textContent = `${items.length.toLocaleString()}${isPublicSubject() ? "問" : "語句"}`;
   elements.listSort.value = state.listSortKey;
+  elements.wordList.classList.toggle("public-question-list", isPublicSubject());
   elements.wordList.innerHTML = items.slice(0, state.listLimit).map((item) => {
     const record = getHistory(state.history, item.id);
     const accuracy = accuracyFor(record);
+    if (isPublicSubject()) {
+      return `
+        <article class="public-question-card">
+          <div class="public-question-meta">
+            <span class="public-number">Q${item.number}</span>
+            <span class="importance-badge importance-${item.importance.toLowerCase()}">${item.importance}</span>
+            <span class="type-label">${TYPE_LABELS[item.type]}</span>
+            <span class="public-range">${escapeHtml(item.range)}</span>
+          </div>
+          <h2>${escapeHtml(item.publicQuestion)}</h2>
+          <div class="public-list-answer"><span>答え</span><strong>${escapeHtml(item.publicAnswer)}</strong></div>
+          <div class="public-list-footer">
+            <span>${escapeHtml(item.sourceDetail)}</span>
+            <span>${record.totalAttempts ? `${record.wrongCount}ミス・${formatPercent(accuracy)}` : "未回答"}</span>
+          </div>
+        </article>`;
+    }
     return `
       <article class="word-card">
         <div class="word-card-main">
@@ -792,10 +948,10 @@ function checkInput(name, value, label, checked) {
 }
 
 function renderFilterForm() {
-  elements.filterRanges.innerHTML = RANGE_ORDER.map((range) =>
+  elements.filterRanges.innerHTML = currentRangeOrder().map((range) =>
     checkInput("ranges", range, range, state.filters.ranges.includes(range)),
   ).join("");
-  elements.filterImportance.innerHTML = IMPORTANCE_ORDER.map((importance) =>
+  elements.filterImportance.innerHTML = currentImportanceOrder().map((importance) =>
     checkInput(
       "importance",
       importance,
@@ -805,10 +961,7 @@ function renderFilterForm() {
   ).join("");
   elements.filterTypes.innerHTML = "";
   elements.filterTags.innerHTML = "";
-  const cycle = state.view === "setup" && selectionIsComplete()
-    ? (progressForSelection().completedCycles ?? 0) + 1
-    : 3;
-  elements.filterPerformanceFieldset.hidden = state.view === "setup" && cycle < 3;
+  elements.filterPerformanceFieldset.hidden = false;
   elements.filterPerformance.value = state.filters.performance;
   elements.filterMinimumWrong.value = String(state.filters.minimumWrong);
   renderFilterPreview();
@@ -879,6 +1032,7 @@ function startSession(overrides = {}) {
     return;
   }
   const config = {
+    subject: overrides.subject ?? state.subject,
     filters: overrides.filters ?? { ...state.filters, search: "" },
     ...(usesSelection ? { selection } : { mode }),
     sortKey: overrides.sortKey ?? state.sortKey,
@@ -897,7 +1051,7 @@ function startSession(overrides = {}) {
         history: state.history,
         filters: config.filters,
         selection,
-        completedItemIds: progress.completedItemIds,
+        completedItemIds: config.filters.performance === "all" ? progress.completedItemIds : [],
         sortKey: config.sortKey,
         count: config.count,
       })
@@ -941,10 +1095,12 @@ function startSession(overrides = {}) {
     cursor: 0,
     results: [],
     repeatedIds: new Set(),
+    deferredReviews: [],
     repeatWrong: config.repeatWrong,
     currentQuestion: null,
     currentAnswer: "",
     answered: false,
+    revealed: false,
     questionStartedAt: 0,
     startedAt: Date.now(),
     complete: false,
@@ -972,6 +1128,7 @@ function prepareQuestion() {
   session.currentQuestion = buildQuestion(entry.item, entry.mode, state.items, Math.random, recentItemIds);
   session.currentAnswer = "";
   session.answered = false;
+  session.revealed = false;
   session.questionStartedAt = performance.now();
   renderQuiz();
 }
@@ -1072,6 +1229,47 @@ function renderFeedback(question, answer, correct) {
     </button>`;
 }
 
+function renderPublicQuiz() {
+  const session = state.session;
+  const question = session.currentQuestion;
+  const progress = Math.round((session.cursor / session.queue.length) * 100);
+  const revealed = session.revealed;
+  elements.quizContent.innerHTML = `
+    <div class="quiz-shell public-quiz${revealed ? " answer-revealed" : ""}">
+      <header class="quiz-header">
+        <button class="icon-button" type="button" data-quit-quiz aria-label="学習を終了">×</button>
+        <div class="quiz-progress-copy"><strong>${session.cursor + 1}</strong> / ${session.queue.length}</div>
+        <span class="mode-pill">${TYPE_LABELS[question.item.type]}</span>
+      </header>
+      <div class="quiz-progress"><span style="width:${progress}%"></span></div>
+      <article class="public-recall-card">
+        <div class="public-recall-meta">
+          <span class="importance-badge importance-${question.item.importance.toLowerCase()}">${question.item.importance}</span>
+          <span>${escapeHtml(question.item.range)}</span>
+          <span>Q${question.item.number}</span>
+        </div>
+        <p class="question-instruction">${revealed ? "答えを確認して自己採点" : "問題"}</p>
+        <h1>${escapeHtml(question.prompt)}</h1>
+        ${revealed ? `
+          <div class="public-recall-answer" aria-live="polite">
+            <span>答え</span>
+            <strong>${escapeHtml(question.answer)}</strong>
+          </div>
+          ${state.settings.showSources ? `<p class="public-recall-source">${escapeHtml(question.item.sourceDetail)}</p>` : ""}
+        ` : `
+          <div class="public-reveal-hint"><span aria-hidden="true">👆</span><strong>画面をタップして答えを表示</strong></div>
+        `}
+      </article>
+      ${revealed ? `
+        <div class="public-grade-guide" aria-label="自己採点">
+          <button type="button" data-public-grade="wrong"><span>左半分</span><strong>間違い</strong></button>
+          <button type="button" data-public-grade="correct"><span>右半分</span><strong>正解</strong></button>
+        </div>
+      ` : ""}
+    </div>`;
+  requestAnimationFrame(() => window.scrollTo(0, 0));
+}
+
 function renderQuiz() {
   const session = state.session;
   if (!session || session.complete) {
@@ -1079,6 +1277,10 @@ function renderQuiz() {
     return;
   }
   const question = session.currentQuestion;
+  if (question.mode === "public_recall") {
+    renderPublicQuiz();
+    return;
+  }
   const answered = session.answered;
   const lastResult = session.results.at(-1);
   const progress = Math.round(((session.cursor + (answered ? 1 : 0)) / session.queue.length) * 100);
@@ -1130,14 +1332,16 @@ function currentTypedAnswer() {
   return elements.quizContent.querySelector("#single-answer-input")?.value.trim() ?? "";
 }
 
-async function submitAnswer(answer) {
+async function submitAnswer(answer, selfGrade = null) {
   const session = state.session;
   if (!session || session.answered) return;
   const question = session.currentQuestion;
   const isChoice = question.mode.endsWith("choice");
-  const correct = isChoice
-    ? normalizeAnswer(answer) === normalizeAnswer(question.correctChoice)
-    : isAnswerCorrect(answer, question.acceptedAnswers);
+  const correct = typeof selfGrade === "boolean"
+    ? selfGrade
+    : isChoice
+      ? normalizeAnswer(answer) === normalizeAnswer(question.correctChoice)
+      : isAnswerCorrect(answer, question.acceptedAnswers);
   const durationMs = Math.round(performance.now() - session.questionStartedAt);
   session.currentAnswer = answer;
   session.answered = true;
@@ -1223,21 +1427,27 @@ async function submitAnswer(answer) {
     !session.repeatedIds.has(question.item.id)
   ) {
     session.repeatedIds.add(question.item.id);
-    const insertAt = Math.min(session.cursor + 6, session.queue.length);
-    session.queue.splice(insertAt, 0, {
-      item: question.item,
-      mode: question.mode,
-      review: true,
+    session.deferredReviews.push({
+      dueAt: Date.now() + WRONG_REVIEW_DELAY_MS,
+      entry: { item: question.item, mode: question.mode, review: true },
     });
   }
   renderQuiz();
   renderHeader();
 }
 
+function injectDueReviews(session) {
+  const now = Date.now();
+  const due = session.deferredReviews.filter((review) => review.dueAt <= now);
+  session.deferredReviews = session.deferredReviews.filter((review) => review.dueAt > now);
+  if (due.length) session.queue.splice(session.cursor, 0, ...due.map((review) => review.entry));
+}
+
 function nextQuestion() {
   const session = state.session;
   if (!session?.answered) return;
   session.cursor += 1;
+  injectDueReviews(session);
   if (session.cursor >= session.queue.length) {
     session.complete = true;
     renderSessionComplete();
@@ -1402,11 +1612,30 @@ function distributeSlotText(startInput, text) {
 function bindEvents() {
   document.addEventListener("click", (event) => {
     const target = event.target.closest("button");
+    const publicSession = state.view === "quiz" && state.session?.currentQuestion?.mode === "public_recall";
+    if (publicSession && !target?.hasAttribute("data-quit-quiz")) {
+      if (!state.session.revealed) {
+        state.session.revealed = true;
+        renderQuiz();
+      } else if (!state.session.answered) {
+        const grade = target?.dataset.publicGrade
+          ?? (event.clientX >= window.innerWidth / 2 ? "correct" : "wrong");
+        const answer = state.session.currentQuestion.answer;
+        submitAnswer(answer, grade === "correct").then(nextQuestion);
+      }
+      return;
+    }
     if (!target) {
       if (state.view === "quiz" && state.session?.answered) nextQuestion();
       return;
     }
     if (target.dataset.viewTarget) setView(target.dataset.viewTarget);
+    if (target.dataset.period) {
+      state.selectedPeriod = target.dataset.period;
+      setMeta("selectedPeriod", state.selectedPeriod).catch(console.warn);
+      setView("subject");
+    }
+    if (target.dataset.subject) selectSubject(target.dataset.subject);
     if (target.dataset.selectEffects) {
       state.settings.effectsMode = target.dataset.selectEffects;
       elements.onboarding.hidden = true;
@@ -1427,21 +1656,7 @@ function bindEvents() {
         .catch(() => showToast("データを削除できませんでした"));
     }
     if (target.hasAttribute("data-start-study")) {
-      state.studySelection = { content: null, method: null, scope: null };
-      state.sortKey = "importance-desc";
-      state.filters = {
-        ranges: [],
-        importance: [],
-        types: [],
-        tags: [],
-        performance: "all",
-        minimumWrong: 0,
-        search: "",
-      };
-      state.performanceExplicit = false;
-      state.cycleContextKey = null;
-      state.rangeFilterMode = null;
-      state.importanceFilterMode = null;
+      resetStudyFlow();
       setView("study-content");
     }
     if (target.dataset.cyclePerformance) {
@@ -1456,11 +1671,12 @@ function bindEvents() {
     }
     if (target.dataset.studyContent) {
       state.studySelection = {
+        subject: isPublicSubject() ? "public" : "english",
         content: target.dataset.studyContent,
-        method: null,
-        scope: null,
+        method: isPublicSubject() ? "recall" : null,
+        scope: isPublicSubject() ? "full" : null,
       };
-      setView("study-method");
+      setView(isPublicSubject() ? "study-range-kind" : "study-method");
     }
     if (target.dataset.studyMethod) {
       state.studySelection.method = target.dataset.studyMethod;
@@ -1504,7 +1720,7 @@ function bindEvents() {
       state.importanceFilterMode = target.dataset.importanceFilterMode;
       if (state.importanceFilterMode === "all") {
         state.filters.importance = [];
-        setView("study-sort-kind");
+        setView("study-performance");
       } else {
         state.filters.importance = [];
         setView("study-importance-select");
@@ -1518,10 +1734,19 @@ function bindEvents() {
       renderStudyImportanceSelect();
     }
     if (target.id === "confirm-study-importance" && state.filters.importance.length) {
+      setView("study-performance");
+    }
+    if (target.hasAttribute("data-back-before-performance")) {
+      setView(state.importanceFilterMode === "custom" ? "study-importance-select" : "study-importance-kind");
+    }
+    if (target.dataset.studyPerformance) {
+      state.filters.performance = target.dataset.studyPerformance;
+      state.filters.minimumWrong = 0;
+      state.performanceExplicit = true;
       setView("study-sort-kind");
     }
     if (target.hasAttribute("data-back-before-sort")) {
-      setView(state.importanceFilterMode === "custom" ? "study-importance-select" : "study-importance-kind");
+      setView("study-performance");
     }
     if (target.dataset.studySortKind) {
       if (target.dataset.studySortKind === "other") {
@@ -1540,10 +1765,7 @@ function bindEvents() {
     if (target.id === "reset-filter") resetFilters();
     if (target.id === "apply-filter") {
       state.filters = collectFilterForm();
-      if (state.view === "setup" && selectionIsComplete()) {
-        const cycle = (progressForSelection().completedCycles ?? 0) + 1;
-        if (cycle >= 3) state.performanceExplicit = true;
-      }
+      if (state.view === "setup" && selectionIsComplete()) state.performanceExplicit = true;
       closeFilter();
       state.view === "list" ? renderList(true) : renderSetup();
     }
@@ -1641,26 +1863,31 @@ async function boot() {
         return [key, await getMeta(`studyProgress:${key}`, { completedItemIds: [] })];
       }),
     );
-    const [response, history, selectedMode, progressEntries, settings, bestCombo, activeStudy] = await Promise.all([
+    const [response, publicResponse, history, selectedMode, progressEntries, settings, bestCombo, activeStudy, selectedPeriod] = await Promise.all([
       fetch("./data/items.json?v=2026.08.26"),
+      fetch("./data/public-items.json?v=2026.2.2"),
       loadHistory(),
       getMeta("selectedMode"),
       progressPromise,
       getMeta("settings", DEFAULT_SETTINGS),
       getMeta("bestCombo", 0),
       getMeta("activeStudy", null),
+      getMeta("selectedPeriod", null),
     ]);
     if (!response.ok) throw new Error(`教材データを読み込めませんでした (${response.status})`);
-    state.items = await response.json();
+    if (!publicResponse.ok) throw new Error(`公共データを読み込めませんでした (${publicResponse.status})`);
+    state.englishItems = await response.json();
+    state.publicItems = await publicResponse.json();
+    state.items = state.englishItems;
     state.history = history;
     state.selectedMode = ALL_MODES.includes(selectedMode) ? selectedMode : null;
     state.progress = new Map(progressEntries);
     state.settings = { ...DEFAULT_SETTINGS, ...(settings ?? {}) };
     state.bestCombo = Number(bestCombo) || 0;
     state.activeStudy = activeStudy?.config?.selection ? activeStudy : null;
+    state.selectedPeriod = selectedPeriod === "2026.2" ? selectedPeriod : null;
     elements.appShell.setAttribute("aria-busy", "false");
-    setView("home");
-    if (!state.settings.effectsMode) elements.onboarding.hidden = false;
+    setView(state.selectedPeriod ? "subject" : "period");
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("./sw.js").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }

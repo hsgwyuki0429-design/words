@@ -2146,3 +2146,229 @@ body.quiz-active .main-content { padding-bottom: 0; }
     transform: translateX(-50%);
   }
 }
+/* 2026.2 period and subject entry */
+.entry-view {
+  min-height: calc(100dvh - 2rem);
+  display: grid;
+  place-items: center;
+  padding: max(1.5rem, env(safe-area-inset-top)) 1rem max(1.5rem, env(safe-area-inset-bottom));
+}
+
+.entry-card {
+  width: min(100%, 720px);
+  padding: clamp(1.5rem, 5vw, 3.5rem);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 32px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.1);
+}
+
+.entry-card h1 {
+  margin: 0.35rem 0 0.75rem;
+  font-size: clamp(2rem, 6vw, 3.6rem);
+  letter-spacing: -0.05em;
+}
+
+.entry-card > p:not(.eyebrow) {
+  margin: 0 0 2rem;
+  color: var(--text-secondary);
+}
+
+.entry-mark {
+  display: grid;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 2rem;
+  place-items: center;
+  border-radius: 20px;
+  background: #111827;
+  color: white;
+  font-size: 1.65rem;
+  font-weight: 800;
+}
+
+.period-button,
+.subject-button {
+  width: 100%;
+  min-height: 92px;
+  border: 0;
+  border-radius: 24px;
+  color: #fff;
+  cursor: pointer;
+  text-align: left;
+}
+
+.period-button {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.2rem 1.4rem;
+  background: linear-gradient(135deg, #1d4ed8, #2563eb 55%, #60a5fa);
+  box-shadow: 0 18px 40px rgba(37, 99, 235, 0.25);
+}
+
+.period-button span { font-size: clamp(1.7rem, 5vw, 2.5rem); font-weight: 800; }
+.period-button small { opacity: 0.82; font-weight: 700; }
+.period-button strong { font-size: 1.6rem; }
+
+.subject-grid { display: grid; gap: 1rem; }
+.subject-button {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.2rem;
+}
+.subject-button.english { background: linear-gradient(135deg, #2563eb, #60a5fa); }
+.subject-button.public { background: linear-gradient(135deg, #0f766e, #14b8a6); }
+.subject-button .subject-icon {
+  display: grid;
+  width: 56px;
+  height: 56px;
+  place-items: center;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.18);
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+.subject-button strong,
+.subject-button small { display: block; }
+.subject-button strong { font-size: 1.35rem; }
+.subject-button small { margin-top: 0.25rem; opacity: 0.8; }
+.subject-button > span:last-child { font-size: 2rem; }
+
+/* Public question list */
+.public-question-list { display: grid; gap: 1rem; }
+.public-question-card {
+  padding: clamp(1rem, 3vw, 1.4rem);
+  border: 1px solid rgba(15, 118, 110, 0.14);
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.055);
+}
+.public-question-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.public-number,
+.public-range {
+  color: #0f766e;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+.public-range { margin-left: auto; }
+.public-question-card h2 {
+  margin: 1rem 0;
+  font-size: clamp(1rem, 3vw, 1.2rem);
+  line-height: 1.65;
+}
+.public-list-answer {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.75rem;
+  align-items: start;
+  padding: 1rem;
+  border-radius: 16px;
+  background: #ecfdf5;
+  color: #064e3b;
+  line-height: 1.65;
+}
+.public-list-answer span { font-size: 0.76rem; font-weight: 800; }
+.public-list-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.9rem;
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+}
+
+/* Public self-graded recall */
+.public-quiz {
+  min-height: 100dvh;
+  padding-bottom: calc(120px + env(safe-area-inset-bottom));
+}
+.public-quiz.answer-revealed {
+  background: linear-gradient(90deg, rgba(255, 59, 48, 0.045) 0 50%, rgba(52, 199, 89, 0.055) 50%);
+}
+.public-recall-card {
+  width: min(100%, 820px);
+  min-height: min(64dvh, 620px);
+  margin: clamp(1rem, 5vh, 3.5rem) auto 0;
+  padding: clamp(1.25rem, 5vw, 3.5rem);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 32px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.1);
+}
+.public-recall-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.public-recall-card h1 {
+  margin: 1rem 0 2rem;
+  font-size: clamp(1.55rem, 5vw, 2.8rem);
+  line-height: 1.55;
+  letter-spacing: -0.025em;
+}
+.public-reveal-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  min-height: 120px;
+  margin-top: 2rem;
+  border: 1px dashed rgba(15, 118, 110, 0.35);
+  border-radius: 22px;
+  background: #f0fdfa;
+  color: #0f766e;
+}
+.public-recall-answer {
+  margin-top: 2rem;
+  padding: clamp(1.2rem, 4vw, 2rem);
+  border-radius: 24px;
+  background: #ecfdf5;
+  color: #064e3b;
+}
+.public-recall-answer span,
+.public-recall-answer strong { display: block; }
+.public-recall-answer span { margin-bottom: 0.55rem; font-size: 0.78rem; font-weight: 800; }
+.public-recall-answer strong { font-size: clamp(1.2rem, 4vw, 1.9rem); line-height: 1.65; }
+.public-recall-source { margin: 1rem 0 0; color: var(--text-secondary); font-size: 0.82rem; }
+.public-grade-guide {
+  position: fixed;
+  z-index: 20;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding-bottom: env(safe-area-inset-bottom);
+  box-shadow: 0 -12px 40px rgba(15, 23, 42, 0.12);
+}
+.public-grade-guide button {
+  min-height: 92px;
+  border: 0;
+  color: #fff;
+  cursor: pointer;
+}
+.public-grade-guide button:first-child { background: #dc2626; }
+.public-grade-guide button:last-child { background: #16a34a; }
+.public-grade-guide span,
+.public-grade-guide strong { display: block; }
+.public-grade-guide span { opacity: 0.78; font-size: 0.72rem; }
+.public-grade-guide strong { margin-top: 0.2rem; font-size: 1.2rem; }
+.selection-card:disabled { cursor: not-allowed; opacity: 0.48; }
+.importance-c { color: #4b5563; background: #f3f4f6; }
+.importance-d { color: #6b7280; background: #f9fafb; border: 1px solid #e5e7eb; }
+
+@media (min-width: 680px) {
+  .subject-grid { grid-template-columns: 1fr 1fr; }
+}

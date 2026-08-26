@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 
-import { ALL_MODES, RANGE_ORDER, slotTokensForQuestion } from "../src/logic.js";
+import { ALL_MODES, PUBLIC_RANGE_ORDER, RANGE_ORDER, slotTokensForQuestion } from "../src/logic.js";
 
 const items = JSON.parse(fs.readFileSync(new URL("../data/items.json", import.meta.url), "utf8"));
+const publicItems = JSON.parse(fs.readFileSync(new URL("../data/public-items.json", import.meta.url), "utf8"));
 
 assert.equal(items.length, 641, "Workbook must contain 641 unique English entries");
 assert.equal(new Set(items.map((item) => item.id)).size, items.length, "IDs must be unique");
@@ -68,3 +69,23 @@ const ranges = new Set(items.map((item) => item.range));
 assert.deepEqual([...ranges].sort(), [...RANGE_ORDER].sort(), "All eight ranges are required");
 
 console.log(`Data check passed: ${items.length} items across ${ranges.size} ranges.`);
+
+assert.equal(publicItems.length, 865, "Public workbook must contain all 865 reviewed questions");
+assert.equal(new Set(publicItems.map((item) => item.id)).size, 865, "Public IDs must be unique");
+assert.deepEqual(
+  Object.fromEntries(["public-term", "public-short"].map((type) => [
+    type,
+    publicItems.filter((item) => item.type === type).length,
+  ])),
+  { "public-term": 697, "public-short": 168 },
+  "Public answer format counts must match the workbook",
+);
+for (const item of publicItems) {
+  for (const field of ["id", "number", "importance", "publicQuestion", "publicAnswer", "source", "range"]) {
+    assert.ok(item[field], `${item.id}: ${field} is required`);
+  }
+  assert.equal(item.subject, "public", `${item.id}: subject must be public`);
+  assert.deepEqual(item.questionModes, ["public_recall"], `${item.id}: public mode is required`);
+  assert.ok(PUBLIC_RANGE_ORDER.includes(item.range), `${item.id}: unknown public range ${item.range}`);
+}
+console.log(`Public data check passed: ${publicItems.length} questions across ${PUBLIC_RANGE_ORDER.length} ranges.`);

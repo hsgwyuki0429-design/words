@@ -5,6 +5,7 @@ import test from "node:test";
 import {
   ALL_MODES,
   UNKNOWN_CHOICE,
+  WRONG_REVIEW_DELAY_MS,
   accuracyFor,
   applyFilters,
   buildQuestion,
@@ -27,6 +28,11 @@ import {
 } from "../src/logic.js";
 
 const items = JSON.parse(fs.readFileSync(new URL("../data/items.json", import.meta.url), "utf8"));
+const publicItems = JSON.parse(fs.readFileSync(new URL("../data/public-items.json", import.meta.url), "utf8"));
+
+test("wrong answers become eligible for review after three minutes", () => {
+  assert.equal(WRONG_REVIEW_DELAY_MS, 180_000);
+});
 
 test("answer normalization ignores case and repeated spaces but not spelling", () => {
   assert.equal(normalizeAnswer("  Mistake   A For B  "), "mistake a for b");
@@ -300,4 +306,18 @@ test("study cycle performance is automatic twice and required from cycle three",
     performance: "accuracyUnder70",
     requiresChoice: false,
   });
+});
+
+test("public study selections keep answer formats separate and use self grading", () => {
+  const termSelection = { subject: "public", content: "term", method: "recall", scope: "full" };
+  const shortSelection = { subject: "public", content: "short", method: "recall", scope: "full" };
+  const term = publicItems.find((item) => item.type === "public-term");
+  const short = publicItems.find((item) => item.type === "public-short");
+  assert.equal(studyModeForItem(term, termSelection), "public_recall");
+  assert.equal(studyModeForItem(short, termSelection), null);
+  assert.equal(studyModeForItem(short, shortSelection), "public_recall");
+  assert.equal(studyCombinationKey(termSelection), "public:term:recall:full");
+  const question = buildQuestion(term, "public_recall", publicItems);
+  assert.equal(question.prompt, term.publicQuestion);
+  assert.equal(question.answer, term.publicAnswer);
 });

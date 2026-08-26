@@ -1,4 +1,4 @@
-export const IMPORTANCE_ORDER = ["SSS", "SS", "S", "A", "B"];
+export const IMPORTANCE_ORDER = ["SSS", "SS", "S", "A", "B", "C", "D"];
 export const DIFFICULTY_ORDER = ["4級", "3級", "準2級", "2級", "準1級", "1級", "専門"];
 export const RANGE_ORDER = [
   "OriHime",
@@ -10,6 +10,14 @@ export const RANGE_ORDER = [
   "Shinkansen",
   "Taste Buds",
 ];
+export const PUBLIC_RANGE_ORDER = [
+  "p.36–37",
+  "p.40–47",
+  "p.60–63",
+  "p.66–67",
+  "p.70–73",
+  "p.76–77",
+];
 
 export const MODE_LABELS = {
   en_to_ja_choice: "英語 → 日本語 4択",
@@ -18,6 +26,7 @@ export const MODE_LABELS = {
   spelling_input: "スペル完全入力",
   preposition_input: "前置詞穴埋め",
   phrase_blank_input: "熟語・構文穴埋め",
+  public_recall: "公共 一問一答",
 };
 
 export const TYPE_LABELS = {
@@ -25,22 +34,28 @@ export const TYPE_LABELS = {
   phrase: "熟語",
   structure: "構文",
   expression: "表現",
+  "public-term": "語句回答",
+  "public-short": "短文回答",
 };
 
 export const ALL_MODES = Object.keys(MODE_LABELS);
 export const UNKNOWN_CHOICE = "わからない";
+export const WRONG_REVIEW_DELAY_MS = 3 * 60 * 1000;
 
 export const STUDY_CONTENT_LABELS = {
   word: "単語",
   phrase: "熟語",
   structure: "構文",
   all: "単語＋熟語＋構文",
+  term: "語句回答問題",
+  short: "短文回答問題",
 };
 
 export const STUDY_METHOD_LABELS = {
   ja_to_en_choice: "日本語 → 英語 4択",
   en_to_ja_choice: "英語 → 日本語 4択",
   write: "日本語 → 英語 記述",
+  recall: "答えを表示して自己採点",
 };
 
 export function normalizeAnswer(value) {
@@ -153,7 +168,7 @@ export function accuracyFor(record) {
 }
 
 export function difficultyScore(record, importance = "B") {
-  const importanceWeight = 5 - Math.max(0, IMPORTANCE_ORDER.indexOf(importance));
+  const importanceWeight = IMPORTANCE_ORDER.length - Math.max(0, IMPORTANCE_ORDER.indexOf(importance));
   const accuracy = accuracyFor(record) ?? 0.5;
   const unseenBoost = record.totalAttempts === 0 ? 2 : 0;
   return record.wrongCount * 5 + (1 - accuracy) * 20 + importanceWeight + unseenBoost;
@@ -243,7 +258,12 @@ export function sortItems(items, history, sortKey = "importance-desc", rng = Mat
   const sorted = [...items];
   const importanceIndex = (item) => IMPORTANCE_ORDER.indexOf(item.importance);
   const difficultyIndex = (item) => DIFFICULTY_ORDER.indexOf(item.difficulty);
-  const rangeIndex = (item) => RANGE_ORDER.indexOf(item.range);
+  const rangeIndex = (item) => {
+    const order = item.subject === "public" ? PUBLIC_RANGE_ORDER : RANGE_ORDER;
+    const index = order.indexOf(item.range);
+    return index < 0 ? order.length : index;
+  };
+  const registrationIndex = (item) => Number(item.order ?? item.number ?? 0);
   const record = (item) => getHistory(history, item.id);
   const accuracy = (item) => accuracyFor(record(item));
 
@@ -286,7 +306,7 @@ export function sortItems(items, history, sortKey = "importance-desc", rng = Mat
         result = rangeIndex(a) - rangeIndex(b);
         break;
       case "registration":
-        result = a.order - b.order;
+        result = registrationIndex(a) - registrationIndex(b);
         break;
       case "alpha-en":
         result = a.english.localeCompare(b.english, "en", { sensitivity: "base" });
@@ -307,7 +327,7 @@ export function sortItems(items, history, sortKey = "importance-desc", rng = Mat
         result = importanceIndex(a) - importanceIndex(b);
         break;
     }
-    return result || a.order - b.order;
+    return result || registrationIndex(a) - registrationIndex(b);
   });
   return sorted;
 }
@@ -389,6 +409,13 @@ export function buildQuestion(item, mode, pool, rng = Math.random, excludedChoic
     acceptedAnswers: answersForMode(item, mode),
   };
   switch (mode) {
+    case "public_recall":
+      return {
+        ...base,
+        prompt: item.publicQuestion ?? item.english,
+        answer: item.publicAnswer ?? item.japanese,
+        instruction: "問題を確認し、画面をタップして答えを表示してください",
+      };
     case "en_to_ja_choice":
       return {
         ...base,
@@ -464,24 +491,26 @@ export function buildSession({
 }
 
 export function normalizeStudySelection(selection = {}) {
-  const content = ["word", "phrase", "structure", "all"].includes(selection.content)
-    ? selection.content
-    : null;
-  const method = ["ja_to_en_choice", "en_to_ja_choice", "write"].includes(
-    selection.method,
-  )
-    ? selection.method
-    : null;
+  const subject = selection.subject === "public" ? "public" : "english";
+  const contentOptions = subject === "public"
+    ? ["term", "short", "all"]
+    : ["word", "phrase", "structure", "all"];
+  const methodOptions = subject === "public"
+    ? ["recall"]
+    : ["ja_to_en_choice", "en_to_ja_choice", "write"];
+  const content = contentOptions.includes(selection.content) ? selection.content : null;
+  const method = methodOptions.includes(selection.method) ? selection.method : null;
   const scope = method === "write" && content !== "word"
     ? selection.scope === "partial" ? "partial" : "full"
     : "full";
-  return { content, method, scope };
+  return { subject, content, method, scope };
 }
 
 export function studyCombinationKey(selection) {
   const normalized = normalizeStudySelection(selection);
   if (!normalized.content || !normalized.method) return null;
-  return `${normalized.content}:${normalized.method}:${normalized.scope}`;
+  const key = `${normalized.content}:${normalized.method}:${normalized.scope}`;
+  return normalized.subject === "public" ? `public:${key}` : key;
 }
 
 export function studyCyclePolicy(cycleNumber, explicitPerformance = null) {
@@ -498,6 +527,13 @@ export function studyCyclePolicy(cycleNumber, explicitPerformance = null) {
 export function studyModeForItem(item, selection) {
   const normalized = normalizeStudySelection(selection);
   if (!normalized.content || !normalized.method) return null;
+  if (normalized.subject === "public") {
+    if (item.subject !== "public") return null;
+    const type = item.type === "public-term" ? "term" : "short";
+    if (normalized.content !== "all" && normalized.content !== type) return null;
+    return item.questionModes.includes("public_recall") ? "public_recall" : null;
+  }
+  if (item.subject === "public") return null;
   const isWord = item.type === "word";
   if (normalized.content !== "all" && item.type !== normalized.content) return null;
   if (normalized.method === "ja_to_en_choice") {
@@ -590,7 +626,10 @@ function masteryForRecord(record) {
 }
 
 export function summarizeByRange(items, history) {
-  return RANGE_ORDER.map((range) => {
+  const ranges = items.some((item) => item.subject === "public")
+    ? PUBLIC_RANGE_ORDER
+    : RANGE_ORDER;
+  return ranges.map((range) => {
     const rangeItems = items.filter((item) => item.range === range);
     const summary = summarizeHistory(rangeItems, history);
     const mastery = rangeItems.length
@@ -632,5 +671,5 @@ export function summarizeByMode(items, history) {
       accuracy: attempts ? correct / attempts : null,
       averageDurationMs: attempts ? durationMs / attempts : 0,
     };
-  });
+  }).filter((stat) => stat.supportedItems > 0);
 }

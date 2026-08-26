@@ -1,7 +1,7 @@
 {
-  "name": "Words — 英コミ定期テスト対策",
+  "name": "Words — 英語・公共 定期テスト対策",
   "short_name": "Words",
-  "description": "英単語・熟語・構文を、意味からスペルまで書けるようにする学習アプリ",
+  "description": "英語の語句学習と公共の一問一答に対応した定期テスト対策アプリ",
   "lang": "ja",
   "start_url": "./",
   "scope": "./",

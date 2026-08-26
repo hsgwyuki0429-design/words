@@ -1,13 +1,14 @@
-const CACHE_NAME = "words-phase7-v16";
+const CACHE_NAME = "words-2026-2-v2";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=phase7.12",
-  "./src/app.js?v=phase7.14",
+  "./styles.css?v=2026.2.2",
+  "./src/app.js?v=2026.2.2",
   "./src/logic.js",
-  "./src/logic.js?v=phase7.13",
+  "./src/logic.js?v=2026.2.2",
   "./src/storage.js",
   "./data/items.json?v=2026.08.26",
+  "./data/public-items.json?v=2026.2.2",
   "./manifest.webmanifest",
   "./icons/app-icon.svg"
 ];

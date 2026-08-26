@@ -9,18 +9,18 @@
     <meta name="apple-mobile-web-app-title" content="Words" />
     <meta
       name="description"
-      content="英コミ定期テスト対策用の単語・熟語・構文学習アプリ"
+      content="英語の語句学習と公共の一問一答に対応した定期テスト対策アプリ"
     />
-    <title>Words — 英コミ対策</title>
+    <title>Words — 英語・公共対策</title>
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icons/app-icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icons/app-icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=phase7.12" />
+    <link rel="stylesheet" href="./styles.css?v=2026.2.2" />
   </head>
   <body>
     <div class="app-shell" id="app-shell" aria-busy="true">
       <header class="app-header" id="app-header">
-        <button class="brand" type="button" data-view-target="home" aria-label="ホームへ">
+        <button class="brand" type="button" data-view-target="subject" aria-label="教科選択へ">
           <span class="brand-mark" aria-hidden="true">W</span>
           <span>Words</span>
         </button>
@@ -28,12 +28,44 @@
       </header>
 
       <main class="main-content">
-        <section class="view" id="view-home" data-view="home">
+        <section class="view entry-view" id="view-period" data-view="period">
+          <div class="entry-card period-card">
+            <span class="entry-mark" aria-hidden="true">W</span>
+            <p class="eyebrow">定期テスト対策</p>
+            <h1>学習する回を選ぶ</h1>
+            <p>最初に一度だけ選択します。次回からは自動で進みます。</p>
+            <button class="period-button" type="button" data-period="2026.2">
+              <span>2026.2</span><small>2学期</small><strong aria-hidden="true">→</strong>
+            </button>
+          </div>
+        </section>
+
+        <section class="view entry-view" id="view-subject" data-view="subject" hidden>
+          <div class="entry-card subject-card">
+            <p class="eyebrow">2026.2</p>
+            <h1>教科を選ぶ</h1>
+            <p>学習する教科を選んでください。</p>
+            <div class="subject-grid">
+              <button class="subject-button english" type="button" data-subject="english">
+                <span class="subject-icon" aria-hidden="true">Aa</span>
+                <span><strong>英語</strong><small>単語・熟語・構文</small></span>
+                <span aria-hidden="true">›</span>
+              </button>
+              <button class="subject-button public" type="button" data-subject="public">
+                <span class="subject-icon" aria-hidden="true">公</span>
+                <span><strong>公共</strong><small>一問一答 865問</small></span>
+                <span aria-hidden="true">›</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-home" data-view="home" hidden>
           <div class="resume-study-card home-resume-top" id="resume-study-card" hidden></div>
           <div class="home-hero">
             <p class="eyebrow" id="greeting">Good evening.</p>
-            <h1>英コミを、書けるまで。</h1>
-            <p class="hero-copy">意味・スペル・前置詞を、同じ語句で何度も確かめます。</p>
+            <h1 id="home-title">英コミを、書けるまで。</h1>
+            <p class="hero-copy" id="home-copy">意味・スペル・前置詞を、同じ語句で何度も確かめます。</p>
             <button class="primary-button hero-button" type="button" data-start-study>
               学習を始める
               <span aria-hidden="true">→</span>
@@ -44,8 +76,8 @@
         <section class="view" id="view-study-content" data-view="study-content" hidden>
           <div class="page-heading">
             <p class="eyebrow">STEP 1 OF 3</p>
-            <h1>何を学習しますか？</h1>
-            <p>学習する教材の種類を選んでください。</p>
+            <h1 id="study-content-heading">何を学習しますか？</h1>
+            <p id="study-content-copy">学習する教材の種類を選んでください。</p>
           </div>
           <div class="selection-grid content-selection-grid" id="study-content-options"></div>
         </section>
@@ -116,9 +148,19 @@
           </div>
         </section>
 
+        <section class="view" id="view-study-performance" data-view="study-performance" hidden>
+          <div class="page-heading selection-page-heading">
+            <button class="text-button back-link" type="button" data-back-before-performance>← 重要度を選び直す</button>
+            <p class="eyebrow">FILTER 3</p>
+            <h1>回答状況を絞り込む</h1>
+            <p id="study-performance-copy">今の条件に合う回答状況から選んでください。</p>
+          </div>
+          <div class="selection-grid" id="study-performance-options"></div>
+        </section>
+
         <section class="view" id="view-study-sort-kind" data-view="study-sort-kind" hidden>
           <div class="page-heading selection-page-heading">
-            <button class="text-button back-link" type="button" data-back-before-sort>← 重要度を選び直す</button>
+            <button class="text-button back-link" type="button" data-back-before-sort>← 回答状況を選び直す</button>
             <p class="eyebrow">SORT</p>
             <h1>並び替えを選ぶ</h1>
             <p>問題を出す順番を選んでください。</p>
@@ -163,7 +205,7 @@
             <section class="panel-card toggle-row">
               <div>
                 <span class="field-label">苦手再出題</span>
-                <p>間違えた項目を5問後にもう一度出します。</p>
+                <p>間違えた項目を3分後にもう一度出します。</p>
               </div>
               <label class="switch">
                 <input type="checkbox" id="repeat-wrong" />
@@ -184,8 +226,8 @@
         <section class="view" id="view-list" data-view="list" hidden>
           <div class="page-heading list-heading">
             <div>
-              <p class="eyebrow">WORD BOOK</p>
-              <h1>単語帳</h1>
+              <p class="eyebrow" id="list-eyebrow">WORD BOOK</p>
+              <h1 id="list-title">単語帳</h1>
             </div>
             <button class="secondary-button compact" id="list-open-filter" type="button">絞り込み</button>
           </div>
@@ -245,7 +287,7 @@
         </button>
         <button type="button" data-view-target="list">
           <span aria-hidden="true">▤</span>
-          <span>単語帳</span>
+          <span id="nav-list-label">単語帳</span>
         </button>
         <button type="button" data-view-target="analysis">
           <span aria-hidden="true">⌁</span>
@@ -265,7 +307,7 @@
       <section class="onboarding-card" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
         <div class="onboarding-logo" aria-hidden="true">W</div>
         <p class="eyebrow">WELCOME TO WORDS</p>
-        <h1 id="onboarding-title">英コミを攻略しよう</h1>
+        <h1 id="onboarding-title">学習を始めよう</h1>
         <p>正解したときの演出を選んでください。後から設定で変更できます。</p>
         <div class="onboarding-options">
           <button type="button" data-select-effects="simple">
@@ -337,6 +379,6 @@
     </aside>
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-    <script type="module" src="./src/app.js?v=phase7.14"></script>
+    <script type="module" src="./src/app.js?v=2026.2.2"></script>
   </body>
 </html>

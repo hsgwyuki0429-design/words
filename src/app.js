@@ -1,5 +1,6 @@
 import {
   ALL_MODES,
+  HEALTH_RANGE_ORDER,
   IMPORTANCE_ORDER,
   MODE_LABELS,
   PUBLIC_RANGE_ORDER,
@@ -28,7 +29,7 @@ import {
   summarizeByRange,
   summarizeHistory,
   summarizeSession,
-} from "./logic.js?v=2026.2.2";
+} from "./logic.js?v=2026.2.4";
 import { clearAllData, getMeta, loadHistory, recordAttempt, setMeta } from "./storage.js";
 
 const DEFAULT_SETTINGS = {
@@ -44,6 +45,7 @@ const state = {
   items: [],
   englishItems: [],
   publicItems: [],
+  healthItems: [],
   subject: null,
   selectedPeriod: null,
   history: new Map(),
@@ -181,6 +183,7 @@ const MODE_META = {
   preposition_input: { icon: "_", tags: ["穴埋め", "前置詞"] },
   phrase_blank_input: { icon: "…", tags: ["穴埋め", "熟語・構文"] },
   public_recall: { icon: "公", tags: ["自己採点", "一問一答"] },
+  health_recall: { icon: "保", tags: ["自己採点", "一問一答"] },
 };
 
 const STUDY_CONTENT_META = {
@@ -188,12 +191,6 @@ const STUDY_CONTENT_META = {
   phrase: { icon: "…", title: "熟語", detail: "熟語だけを学習", tags: ["熟語"] },
   structure: { icon: "S V", title: "構文", detail: "構文だけを学習", tags: ["構文"] },
   all: { icon: "＋", title: "すべて", detail: "単語・熟語・構文を続けて学習", tags: ["単語", "熟語", "構文"] },
-};
-
-const PUBLIC_CONTENT_META = {
-  term: { icon: "語", title: "語句回答問題", detail: "用語・人物・制度名・年号など", tags: ["550問"] },
-  short: { icon: "文", title: "短文回答問題", detail: "定義・理由・特徴・しくみなど", tags: ["168問"] },
-  all: { icon: "＋", title: "どっちとも", detail: "語句回答と短文回答をまとめて学習", tags: ["718問"] },
 };
 
 const STUDY_METHOD_META = {
@@ -214,6 +211,9 @@ const KNOWN_STUDY_SELECTIONS = [
   { subject: "public", content: "term", method: "recall", scope: "full" },
   { subject: "public", content: "short", method: "recall", scope: "full" },
   { subject: "public", content: "all", method: "recall", scope: "full" },
+  { subject: "health", content: "term", method: "recall", scope: "full" },
+  { subject: "health", content: "short", method: "recall", scope: "full" },
+  { subject: "health", content: "all", method: "recall", scope: "full" },
 ];
 
 const TAG_LABELS = {
@@ -262,8 +262,26 @@ function isPublicSubject() {
   return state.subject === "public";
 }
 
+function isHealthSubject() {
+  return state.subject === "health";
+}
+
+function isRecallSubject() {
+  return isPublicSubject() || isHealthSubject();
+}
+
+function recallQuestion(item) {
+  return item[`${item.subject}Question`] ?? item.recallQuestion ?? item.publicQuestion ?? item.english;
+}
+
+function recallAnswer(item) {
+  return item[`${item.subject}Answer`] ?? item.recallAnswer ?? item.publicAnswer ?? item.japanese;
+}
+
 function currentRangeOrder() {
-  return isPublicSubject() ? PUBLIC_RANGE_ORDER : RANGE_ORDER;
+  if (isPublicSubject()) return PUBLIC_RANGE_ORDER;
+  if (isHealthSubject()) return HEALTH_RANGE_ORDER;
+  return RANGE_ORDER;
 }
 
 function currentImportanceOrder() {
@@ -285,7 +303,7 @@ function emptyFilters() {
 
 function resetStudyFlow() {
   state.studySelection = {
-    subject: isPublicSubject() ? "public" : "english",
+    subject: isRecallSubject() ? state.subject : "english",
     content: null,
     method: null,
     scope: null,
@@ -299,21 +317,25 @@ function resetStudyFlow() {
 }
 
 function selectSubject(subject) {
-  state.subject = subject === "public" ? "public" : "english";
-  state.items = isPublicSubject() ? state.publicItems : state.englishItems;
+  state.subject = ["public", "health"].includes(subject) ? subject : "english";
+  state.items = isPublicSubject()
+    ? state.publicItems
+    : isHealthSubject()
+      ? state.healthItems
+      : state.englishItems;
   resetStudyFlow();
   elements.listSearch.value = "";
-  elements.listSearch.placeholder = isPublicSubject() ? "問題・答えで検索" : "英語・日本語で検索";
-  elements.listEyebrow.textContent = isPublicSubject() ? "QUESTION & ANSWER" : "WORD BOOK";
-  elements.listTitle.textContent = isPublicSubject() ? "一問一答" : "単語帳";
-  elements.navListLabel.textContent = isPublicSubject() ? "一問一答" : "単語帳";
+  elements.listSearch.placeholder = isRecallSubject() ? "問題・答えで検索" : "英語・日本語で検索";
+  elements.listEyebrow.textContent = isRecallSubject() ? "QUESTION & ANSWER" : "WORD BOOK";
+  elements.listTitle.textContent = isRecallSubject() ? "一問一答" : "単語帳";
+  elements.navListLabel.textContent = isRecallSubject() ? "一問一答" : "単語帳";
   const levelOption = elements.listSort.querySelector('option[value="difficulty-level-desc"]');
   const englishOption = elements.listSort.querySelector('option[value="alpha-en"]');
   const japaneseOption = elements.listSort.querySelector('option[value="alpha-ja"]');
-  levelOption.hidden = isPublicSubject();
-  englishOption.textContent = isPublicSubject() ? "問題順" : "A–Z";
-  japaneseOption.textContent = isPublicSubject() ? "答え順" : "あいうえお順";
-  if (isPublicSubject() && state.listSortKey === "difficulty-level-desc") state.listSortKey = "importance-desc";
+  levelOption.hidden = isRecallSubject();
+  englishOption.textContent = isRecallSubject() ? "問題順" : "A–Z";
+  japaneseOption.textContent = isRecallSubject() ? "答え順" : "あいうえお順";
+  if (isRecallSubject() && state.listSortKey === "difficulty-level-desc") state.listSortKey = "importance-desc";
   setView("home");
   if (!state.settings.effectsMode) elements.onboarding.hidden = false;
 }
@@ -326,7 +348,7 @@ function selectionIsComplete(selection = state.studySelection) {
 function studySelectionLabel(selection = state.studySelection) {
   const normalized = normalizeStudySelection(selection);
   if (!normalized.content || !normalized.method) return "—";
-  if (normalized.subject === "public") {
+  if (normalized.subject !== "english") {
     return `${STUDY_CONTENT_LABELS[normalized.content]} / 答えを表示して自己採点`;
   }
   const parts = [
@@ -357,12 +379,22 @@ function selectionCard({ icon, title, detail, tags, dataAttribute }) {
     </button>`;
 }
 
+function recallContentMeta() {
+  const termCount = state.items.filter((item) => item.answerFormat === "term").length;
+  const shortCount = state.items.filter((item) => item.answerFormat === "short").length;
+  return {
+    term: { icon: "語", title: "語句回答問題", detail: "用語・人物・制度名・年号など", tags: [`${termCount}問`] },
+    short: { icon: "文", title: "短文回答問題", detail: "定義・理由・特徴・しくみなど", tags: [`${shortCount}問`] },
+    all: { icon: "＋", title: "どっちとも", detail: "語句回答と短文回答をまとめて学習", tags: [`${termCount + shortCount}問`] },
+  };
+}
+
 function renderStudyContent() {
-  const meta = isPublicSubject() ? PUBLIC_CONTENT_META : STUDY_CONTENT_META;
-  elements.studyContentHeading.textContent = isPublicSubject()
+  const meta = isRecallSubject() ? recallContentMeta() : STUDY_CONTENT_META;
+  elements.studyContentHeading.textContent = isRecallSubject()
     ? "どの問題を学習しますか？"
     : "何を学習しますか？";
-  elements.studyContentCopy.textContent = isPublicSubject()
+  elements.studyContentCopy.textContent = isRecallSubject()
     ? "語句回答、短文回答、または両方から選んでください。"
     : "学習する教材の種類を選んでください。";
   elements.studyContentOptions.innerHTML = Object.entries(meta)
@@ -427,7 +459,7 @@ function renderStudyRangeSelect() {
     const count = state.items.filter((item) => item.range === range && studyModeForItem(item, state.studySelection)).length;
     return `<button class="multi-select-card${selected ? " selected" : ""}" type="button" data-study-range="${escapeHtml(range)}" aria-pressed="${selected}">
       <span class="multi-check" aria-hidden="true">${selected ? "✓" : ""}</span>
-      <span><strong>${escapeHtml(range)}</strong><small>${count}${isPublicSubject() ? "問" : "語句"}</small></span>
+      <span><strong>${escapeHtml(range)}</strong><small>${count}${isRecallSubject() ? "問" : "語句"}</small></span>
     </button>`;
   }).join("");
   elements.confirmStudyRanges.disabled = state.filters.ranges.length === 0;
@@ -450,7 +482,7 @@ function renderStudyImportanceSelect() {
     const count = learningItems({ ...state.filters, importance: [importance] }).length;
     return `<button class="multi-select-card importance-option${selected ? " selected" : ""}" type="button" data-study-importance="${importance}" aria-pressed="${selected}">
       <span class="multi-check" aria-hidden="true">${selected ? "✓" : ""}</span>
-      <span><strong>${importance}</strong><small>${count}${isPublicSubject() ? "問" : "語句"}</small></span>
+      <span><strong>${importance}</strong><small>${count}${isRecallSubject() ? "問" : "語句"}</small></span>
     </button>`;
   }).join("");
   elements.confirmStudyImportance.disabled = state.filters.importance.length === 0;
@@ -515,7 +547,7 @@ function renderStudySortOther() {
 }
 
 function viewBeforeRangeSelection() {
-  if (isPublicSubject()) return "study-content";
+  if (isRecallSubject()) return "study-content";
   return state.studySelection.method === "write" && state.studySelection.content !== "word"
     ? "study-scope"
     : "study-method";
@@ -733,16 +765,22 @@ function renderHeader() {
   const summary = summarizeHistory(state.items, state.history);
   elements.headerStatus.textContent = summary.attempts
     ? `${summary.correct.toLocaleString()} 正解 / ${summary.attempts.toLocaleString()} 回答`
-    : `${state.items.length}${isPublicSubject() ? "問" : "語句"}`;
+    : `${state.items.length}${isRecallSubject() ? "問" : "語句"}`;
 }
 
 function renderHome() {
   const hour = new Date().getHours();
   elements.greeting.textContent = isPublicSubject()
     ? "PUBLIC · 2026.2"
-    : hour < 11 ? "Good morning." : hour < 18 ? "Good afternoon." : "Good evening.";
-  elements.homeTitle.textContent = isPublicSubject() ? "公共を、思い出せるまで。" : "英コミを、書けるまで。";
-  elements.homeCopy.textContent = isPublicSubject()
+    : isHealthSubject()
+      ? "HEALTH · 2026.2"
+      : hour < 11 ? "Good morning." : hour < 18 ? "Good afternoon." : "Good evening.";
+  elements.homeTitle.textContent = isPublicSubject()
+    ? "公共を、思い出せるまで。"
+    : isHealthSubject()
+      ? "保健を、思い出せるまで。"
+      : "英コミを、書けるまで。";
+  elements.homeCopy.textContent = isRecallSubject()
     ? "問題を見て答えを思い出し、左右のタップで自己採点します。"
     : "意味・スペル・前置詞を、同じ語句で何度も確かめます。";
 
@@ -893,13 +931,13 @@ function renderList(resetLimit = false) {
     state.history,
     state.listSortKey,
   );
-  elements.listCount.textContent = `${items.length.toLocaleString()}${isPublicSubject() ? "問" : "語句"}`;
+  elements.listCount.textContent = `${items.length.toLocaleString()}${isRecallSubject() ? "問" : "語句"}`;
   elements.listSort.value = state.listSortKey;
-  elements.wordList.classList.toggle("public-question-list", isPublicSubject());
+  elements.wordList.classList.toggle("public-question-list", isRecallSubject());
   elements.wordList.innerHTML = items.slice(0, state.listLimit).map((item) => {
     const record = getHistory(state.history, item.id);
     const accuracy = accuracyFor(record);
-    if (isPublicSubject()) {
+    if (isRecallSubject()) {
       return `
         <article class="public-question-card">
           <div class="public-question-meta">
@@ -908,8 +946,8 @@ function renderList(resetLimit = false) {
             <span class="type-label">${TYPE_LABELS[item.type]}</span>
             <span class="public-range">${escapeHtml(item.range)}</span>
           </div>
-          <h2>${escapeHtml(item.publicQuestion)}</h2>
-          <div class="public-list-answer"><span>答え</span><strong>${escapeHtml(item.publicAnswer)}</strong></div>
+          <h2>${escapeHtml(recallQuestion(item))}</h2>
+          <div class="public-list-answer"><span>答え</span><strong>${escapeHtml(recallAnswer(item))}</strong></div>
           <div class="public-list-footer">
             <span>${escapeHtml(item.sourceDetail)}</span>
             <span>${record.totalAttempts ? `${record.wrongCount}ミス・${formatPercent(accuracy)}` : "未回答"}</span>
@@ -1229,7 +1267,7 @@ function renderFeedback(question, answer, correct) {
     </button>`;
 }
 
-function renderPublicQuiz() {
+function renderRecallQuiz() {
   const session = state.session;
   const question = session.currentQuestion;
   const progress = Math.round((session.cursor / session.queue.length) * 100);
@@ -1277,8 +1315,8 @@ function renderQuiz() {
     return;
   }
   const question = session.currentQuestion;
-  if (question.mode === "public_recall") {
-    renderPublicQuiz();
+  if (question.mode.endsWith("_recall")) {
+    renderRecallQuiz();
     return;
   }
   const answered = session.answered;
@@ -1461,6 +1499,7 @@ function renderSessionComplete() {
   if (!session) return;
   const summary = summarizeSession(session.results);
   const overall = summarizeHistory(state.items, state.history);
+  const itemUnit = isRecallSubject() ? "問" : "語句";
   if (session.combinationKey) {
     state.activeStudy = null;
     setMeta("activeStudy", null).catch(console.warn);
@@ -1492,17 +1531,17 @@ function renderSessionComplete() {
       <p>${escapeHtml(session.selection ? studySelectionLabel(session.selection) : MODE_LABELS[state.selectedMode])}</p>
       <div class="result-stat-grid">
         <div><span>2回連続達成</span><strong>${formatPercent(overall.twoCorrectStreakRate)}</strong></div>
-        <div><span>達成語句</span><strong>${overall.twoCorrectStreakItems} / ${state.items.length}</strong></div>
+        <div><span>達成${itemUnit}</span><strong>${overall.twoCorrectStreakItems} / ${state.items.length}</strong></div>
         <div><span>平均回答</span><strong>${formatSeconds(summary.averageDurationMs)}</strong></div>
         <div><span>学習時間</span><strong>${formatSeconds(summary.durationMs)}</strong></div>
       </div>
       <section class="result-breakdown">
-        <div class="result-section-heading"><h2>範囲別</h2><span>${summary.uniqueItems}語句</span></div>
+        <div class="result-section-heading"><h2>範囲別</h2><span>${summary.uniqueItems}${itemUnit}</span></div>
         ${rangeRows}
       </section>
       ${
         wrongItems.length
-          ? `<div class="result-wrong-list"><h2>今回間違えた語句</h2>${wrongItems
+          ? `<div class="result-wrong-list"><h2>今回間違えた${itemUnit}</h2>${wrongItems
               .map(
                 (result) => `<div>
                   <span class="result-word-copy"><strong>${escapeHtml(result.item.english)}</strong><small>${escapeHtml(result.item.japanese)}</small></span>
@@ -1529,11 +1568,12 @@ function renderAnalysis() {
   const overall = summarizeHistory(state.items, state.history);
   const ranges = summarizeByRange(state.items, state.history);
   const modes = summarizeByMode(state.items, state.history);
+  const itemUnit = isRecallSubject() ? "問" : "語句";
   const rangeMarkup = ranges.map((stat) => `
     <article class="analysis-row">
       <div>
         <strong>${escapeHtml(stat.range)}</strong>
-        <small>${stat.answeredItems} / ${stat.itemCount}語句を学習</small>
+        <small>${stat.answeredItems} / ${stat.itemCount}${itemUnit}を学習</small>
       </div>
       <div class="analysis-progress" aria-label="定着度 ${formatPercent(stat.mastery)}">
         <span style="width:${Math.round(stat.mastery * 100)}%"></span>
@@ -1612,8 +1652,8 @@ function distributeSlotText(startInput, text) {
 function bindEvents() {
   document.addEventListener("click", (event) => {
     const target = event.target.closest("button");
-    const publicSession = state.view === "quiz" && state.session?.currentQuestion?.mode === "public_recall";
-    if (publicSession && !target?.hasAttribute("data-quit-quiz")) {
+    const recallSession = state.view === "quiz" && state.session?.currentQuestion?.mode.endsWith("_recall");
+    if (recallSession && !target?.hasAttribute("data-quit-quiz")) {
       if (!state.session.revealed) {
         state.session.revealed = true;
         renderQuiz();
@@ -1671,12 +1711,12 @@ function bindEvents() {
     }
     if (target.dataset.studyContent) {
       state.studySelection = {
-        subject: isPublicSubject() ? "public" : "english",
+        subject: isRecallSubject() ? state.subject : "english",
         content: target.dataset.studyContent,
-        method: isPublicSubject() ? "recall" : null,
-        scope: isPublicSubject() ? "full" : null,
+        method: isRecallSubject() ? "recall" : null,
+        scope: isRecallSubject() ? "full" : null,
       };
-      setView(isPublicSubject() ? "study-range-kind" : "study-method");
+      setView(isRecallSubject() ? "study-range-kind" : "study-method");
     }
     if (target.dataset.studyMethod) {
       state.studySelection.method = target.dataset.studyMethod;
@@ -1863,9 +1903,10 @@ async function boot() {
         return [key, await getMeta(`studyProgress:${key}`, { completedItemIds: [] })];
       }),
     );
-    const [response, publicResponse, history, selectedMode, progressEntries, settings, bestCombo, activeStudy, selectedPeriod] = await Promise.all([
+    const [response, publicResponse, healthResponse, history, selectedMode, progressEntries, settings, bestCombo, activeStudy, selectedPeriod] = await Promise.all([
       fetch("./data/items.json?v=2026.08.26"),
-      fetch("./data/public-items.json?v=2026.2.2"),
+      fetch("./data/public-items.json?v=2026.2.4"),
+      fetch("./data/health-items.json?v=2026.2.4"),
       loadHistory(),
       getMeta("selectedMode"),
       progressPromise,
@@ -1876,8 +1917,10 @@ async function boot() {
     ]);
     if (!response.ok) throw new Error(`教材データを読み込めませんでした (${response.status})`);
     if (!publicResponse.ok) throw new Error(`公共データを読み込めませんでした (${publicResponse.status})`);
+    if (!healthResponse.ok) throw new Error(`保健データを読み込めませんでした (${healthResponse.status})`);
     state.englishItems = await response.json();
     state.publicItems = await publicResponse.json();
+    state.healthItems = await healthResponse.json();
     state.items = state.englishItems;
     state.history = history;
     state.selectedMode = ALL_MODES.includes(selectedMode) ? selectedMode : null;

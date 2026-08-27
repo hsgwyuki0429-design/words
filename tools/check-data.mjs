@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 
-import { ALL_MODES, PUBLIC_RANGE_ORDER, RANGE_ORDER, slotTokensForQuestion } from "../src/logic.js";
+import { ALL_MODES, HEALTH_RANGE_ORDER, PUBLIC_RANGE_ORDER, RANGE_ORDER, slotTokensForQuestion } from "../src/logic.js";
 
 const items = JSON.parse(fs.readFileSync(new URL("../data/items.json", import.meta.url), "utf8"));
 const publicItems = JSON.parse(fs.readFileSync(new URL("../data/public-items.json", import.meta.url), "utf8"));
+const healthItems = JSON.parse(fs.readFileSync(new URL("../data/health-items.json", import.meta.url), "utf8"));
 
 assert.equal(items.length, 641, "Workbook must contain 641 unique English entries");
 assert.equal(new Set(items.map((item) => item.id)).size, items.length, "IDs must be unique");
@@ -104,3 +105,37 @@ for (const item of publicItems) {
   assert.ok(PUBLIC_RANGE_ORDER.includes(item.range), `${item.id}: unknown public range ${item.range}`);
 }
 console.log(`Public data check passed: ${publicItems.length} questions across ${PUBLIC_RANGE_ORDER.length} ranges.`);
+
+assert.equal(healthItems.length, 1036, "Health data must contain 1036 unique reviewed questions");
+assert.equal(new Set(healthItems.map((item) => item.id)).size, healthItems.length, "Health IDs must be unique");
+assert.deepEqual(
+  Object.fromEntries(["health-term", "health-short"].map((type) => [
+    type,
+    healthItems.filter((item) => item.type === type).length,
+  ])),
+  { "health-term": 982, "health-short": 54 },
+  "Health answer format counts must match the deduplicated workbook data",
+);
+
+const healthKnowledgeKeys = healthItems.map((item) =>
+  `${compactPublicText(item.healthAnswer)}|${canonicalPublicQuestion(item.healthQuestion)}`,
+);
+assert.equal(
+  new Set(healthKnowledgeKeys).size,
+  healthKnowledgeKeys.length,
+  "Health data must not contain templated duplicate questions",
+);
+for (const item of healthItems) {
+  for (const field of ["id", "number", "importance", "healthQuestion", "healthAnswer", "source", "range"]) {
+    assert.ok(item[field], `${item.id}: ${field} is required`);
+  }
+  assert.equal(item.subject, "health", `${item.id}: subject must be health`);
+  assert.deepEqual(item.questionModes, ["health_recall"], `${item.id}: health mode is required`);
+  assert.ok(HEALTH_RANGE_ORDER.includes(item.range), `${item.id}: unknown health range ${item.range}`);
+}
+assert.deepEqual(
+  [...new Set(healthItems.map((item) => item.range))],
+  HEALTH_RANGE_ORDER,
+  "All eight health ranges are required in textbook order",
+);
+console.log(`Health data check passed: ${healthItems.length} questions across ${HEALTH_RANGE_ORDER.length} ranges.`);

@@ -2222,6 +2222,7 @@ body.quiz-active .main-content { padding-bottom: 0; }
 }
 .subject-button.english { background: linear-gradient(135deg, #2563eb, #60a5fa); }
 .subject-button.public { background: linear-gradient(135deg, #0f766e, #14b8a6); }
+.subject-button.health { background: linear-gradient(135deg, #c2410c, #fb923c); }
 .subject-button .subject-icon {
   display: grid;
   width: 56px;
@@ -2370,5 +2371,6 @@ body.quiz-active .main-content { padding-bottom: 0; }
 .importance-d { color: #6b7280; background: #f9fafb; border: 1px solid #e5e7eb; }
 
 @media (min-width: 680px) {
-  .subject-grid { grid-template-columns: 1fr 1fr; }
+  .subject-grid { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+  .subject-button.health { grid-column: 1 / -1; }
 }

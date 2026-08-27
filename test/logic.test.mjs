@@ -29,6 +29,7 @@ import {
 
 const items = JSON.parse(fs.readFileSync(new URL("../data/items.json", import.meta.url), "utf8"));
 const publicItems = JSON.parse(fs.readFileSync(new URL("../data/public-items.json", import.meta.url), "utf8"));
+const healthItems = JSON.parse(fs.readFileSync(new URL("../data/health-items.json", import.meta.url), "utf8"));
 
 test("wrong answers become eligible for review after three minutes", () => {
   assert.equal(WRONG_REVIEW_DELAY_MS, 180_000);
@@ -320,4 +321,19 @@ test("public study selections keep answer formats separate and use self grading"
   const question = buildQuestion(term, "public_recall", publicItems);
   assert.equal(question.prompt, term.publicQuestion);
   assert.equal(question.answer, term.publicAnswer);
+});
+
+test("health study selections match the public self-grading flow", () => {
+  const termSelection = { subject: "health", content: "term", method: "recall", scope: "full" };
+  const shortSelection = { subject: "health", content: "short", method: "recall", scope: "full" };
+  const term = healthItems.find((item) => item.type === "health-term");
+  const short = healthItems.find((item) => item.type === "health-short");
+  assert.equal(studyModeForItem(term, termSelection), "health_recall");
+  assert.equal(studyModeForItem(short, termSelection), null);
+  assert.equal(studyModeForItem(short, shortSelection), "health_recall");
+  assert.equal(studyCombinationKey(termSelection), "health:term:recall:full");
+  const question = buildQuestion(term, "health_recall", healthItems);
+  assert.equal(question.prompt, term.healthQuestion);
+  assert.equal(question.answer, term.healthAnswer);
+  assert.equal(summarizeByRange(healthItems, new Map()).length, 8);
 });

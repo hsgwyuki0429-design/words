@@ -18,6 +18,16 @@ export const PUBLIC_RANGE_ORDER = [
   "p.70–73",
   "p.76–77",
 ];
+export const HEALTH_RANGE_ORDER = [
+  "p.12–13",
+  "p.14–15",
+  "p.16–17",
+  "p.20–21",
+  "p.24–25",
+  "p.26–27",
+  "p.30–31",
+  "p.34–35",
+];
 
 export const MODE_LABELS = {
   en_to_ja_choice: "英語 → 日本語 4択",
@@ -27,6 +37,7 @@ export const MODE_LABELS = {
   preposition_input: "前置詞穴埋め",
   phrase_blank_input: "熟語・構文穴埋め",
   public_recall: "公共 一問一答",
+  health_recall: "保健 一問一答",
 };
 
 export const TYPE_LABELS = {
@@ -36,6 +47,8 @@ export const TYPE_LABELS = {
   expression: "表現",
   "public-term": "語句回答",
   "public-short": "短文回答",
+  "health-term": "語句回答",
+  "health-short": "短文回答",
 };
 
 export const ALL_MODES = Object.keys(MODE_LABELS);
@@ -259,7 +272,11 @@ export function sortItems(items, history, sortKey = "importance-desc", rng = Mat
   const importanceIndex = (item) => IMPORTANCE_ORDER.indexOf(item.importance);
   const difficultyIndex = (item) => DIFFICULTY_ORDER.indexOf(item.difficulty);
   const rangeIndex = (item) => {
-    const order = item.subject === "public" ? PUBLIC_RANGE_ORDER : RANGE_ORDER;
+    const order = item.subject === "public"
+      ? PUBLIC_RANGE_ORDER
+      : item.subject === "health"
+        ? HEALTH_RANGE_ORDER
+        : RANGE_ORDER;
     const index = order.indexOf(item.range);
     return index < 0 ? order.length : index;
   };
@@ -410,10 +427,11 @@ export function buildQuestion(item, mode, pool, rng = Math.random, excludedChoic
   };
   switch (mode) {
     case "public_recall":
+    case "health_recall":
       return {
         ...base,
-        prompt: item.publicQuestion ?? item.english,
-        answer: item.publicAnswer ?? item.japanese,
+        prompt: item[`${item.subject}Question`] ?? item.recallQuestion ?? item.publicQuestion ?? item.english,
+        answer: item[`${item.subject}Answer`] ?? item.recallAnswer ?? item.publicAnswer ?? item.japanese,
         instruction: "問題を確認し、画面をタップして答えを表示してください",
       };
     case "en_to_ja_choice":
@@ -491,11 +509,12 @@ export function buildSession({
 }
 
 export function normalizeStudySelection(selection = {}) {
-  const subject = selection.subject === "public" ? "public" : "english";
-  const contentOptions = subject === "public"
+  const subject = ["public", "health"].includes(selection.subject) ? selection.subject : "english";
+  const recallSubject = subject !== "english";
+  const contentOptions = recallSubject
     ? ["term", "short", "all"]
     : ["word", "phrase", "structure", "all"];
-  const methodOptions = subject === "public"
+  const methodOptions = recallSubject
     ? ["recall"]
     : ["ja_to_en_choice", "en_to_ja_choice", "write"];
   const content = contentOptions.includes(selection.content) ? selection.content : null;
@@ -510,7 +529,7 @@ export function studyCombinationKey(selection) {
   const normalized = normalizeStudySelection(selection);
   if (!normalized.content || !normalized.method) return null;
   const key = `${normalized.content}:${normalized.method}:${normalized.scope}`;
-  return normalized.subject === "public" ? `public:${key}` : key;
+  return normalized.subject === "english" ? key : `${normalized.subject}:${key}`;
 }
 
 export function studyCyclePolicy(cycleNumber, explicitPerformance = null) {
@@ -527,13 +546,14 @@ export function studyCyclePolicy(cycleNumber, explicitPerformance = null) {
 export function studyModeForItem(item, selection) {
   const normalized = normalizeStudySelection(selection);
   if (!normalized.content || !normalized.method) return null;
-  if (normalized.subject === "public") {
-    if (item.subject !== "public") return null;
-    const type = item.type === "public-term" ? "term" : "short";
+  if (normalized.subject !== "english") {
+    if (item.subject !== normalized.subject) return null;
+    const type = item.type === `${normalized.subject}-term` ? "term" : "short";
     if (normalized.content !== "all" && normalized.content !== type) return null;
-    return item.questionModes.includes("public_recall") ? "public_recall" : null;
+    const mode = `${normalized.subject}_recall`;
+    return item.questionModes.includes(mode) ? mode : null;
   }
-  if (item.subject === "public") return null;
+  if (item.subject && item.subject !== "english") return null;
   const isWord = item.type === "word";
   if (normalized.content !== "all" && item.type !== normalized.content) return null;
   if (normalized.method === "ja_to_en_choice") {
@@ -626,9 +646,12 @@ function masteryForRecord(record) {
 }
 
 export function summarizeByRange(items, history) {
-  const ranges = items.some((item) => item.subject === "public")
+  const subject = items.find((item) => item.subject)?.subject;
+  const ranges = subject === "public"
     ? PUBLIC_RANGE_ORDER
-    : RANGE_ORDER;
+    : subject === "health"
+      ? HEALTH_RANGE_ORDER
+      : RANGE_ORDER;
   return ranges.map((range) => {
     const rangeItems = items.filter((item) => item.range === range);
     const summary = summarizeHistory(rangeItems, history);

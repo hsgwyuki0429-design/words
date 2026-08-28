@@ -15,7 +15,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icons/app-icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icons/app-icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=2026.2.4" />
+    <link rel="stylesheet" href="./styles.css?v=2026.2.7" />
   </head>
   <body>
     <div class="app-shell" id="app-shell" aria-busy="true">
@@ -78,9 +78,23 @@
           </div>
         </section>
 
+        <section class="view compact-range-view" id="view-study-range-select" data-view="study-range-select" hidden>
+          <div class="page-heading selection-page-heading">
+            <button class="text-button back-link" type="button" data-view-target="home">← ホームへ戻る</button>
+            <p class="eyebrow">STEP 1 · MULTIPLE</p>
+            <h1>学習範囲を選ぶ</h1>
+            <p>複数選択できます。学習したい範囲をすべて選んでください。</p>
+          </div>
+          <div class="multi-select-grid range-select-grid" id="study-range-options"></div>
+          <div class="sticky-action compact-range-action">
+            <button class="primary-button" id="confirm-study-ranges" type="button">次へ <span aria-hidden="true">→</span></button>
+          </div>
+        </section>
+
         <section class="view" id="view-study-content" data-view="study-content" hidden>
-          <div class="page-heading">
-            <p class="eyebrow">STEP 1 OF 3</p>
+          <div class="page-heading selection-page-heading">
+            <button class="text-button back-link" type="button" data-view-target="study-range-select">← 範囲を選び直す</button>
+            <p class="eyebrow">STEP 2</p>
             <h1 id="study-content-heading">何を学習しますか？</h1>
             <p id="study-content-copy">学習する教材の種類を選んでください。</p>
           </div>
@@ -90,7 +104,7 @@
         <section class="view" id="view-study-method" data-view="study-method" hidden>
           <div class="page-heading selection-page-heading">
             <button class="text-button back-link" type="button" data-view-target="study-content">← 教材を選び直す</button>
-            <p class="eyebrow">STEP 2 OF 3</p>
+            <p class="eyebrow">STEP 3</p>
             <h1 id="study-method-heading">出題方法を選ぶ</h1>
             <p id="study-method-copy">一回の学習では一つの方法に集中します。</p>
           </div>
@@ -100,39 +114,16 @@
         <section class="view" id="view-study-scope" data-view="study-scope" hidden>
           <div class="page-heading selection-page-heading">
             <button class="text-button back-link" type="button" data-view-target="study-method">← 出題方法を選び直す</button>
-            <p class="eyebrow">STEP 3 OF 3</p>
+            <p class="eyebrow">STEP 4</p>
             <h1>どこまで書きますか？</h1>
             <p>英語の一部だけを穴埋めするか、全部書くか選べます。</p>
           </div>
           <div class="selection-grid scope-selection-grid" id="study-scope-options"></div>
         </section>
 
-        <section class="view" id="view-study-range-kind" data-view="study-range-kind" hidden>
-          <div class="page-heading selection-page-heading">
-            <button class="text-button back-link" type="button" data-back-before-ranges>← 前の選択へ</button>
-            <p class="eyebrow">FILTER 1</p>
-            <h1>学習範囲を選ぶ</h1>
-            <p>すべての範囲を学習するか、範囲を指定するか選んでください。</p>
-          </div>
-          <div class="selection-grid" id="study-range-kind-options"></div>
-        </section>
-
-        <section class="view" id="view-study-range-select" data-view="study-range-select" hidden>
-          <div class="page-heading selection-page-heading">
-            <button class="text-button back-link" type="button" data-view-target="study-range-kind">← 選び直す</button>
-            <p class="eyebrow">FILTER 1 · MULTIPLE</p>
-            <h1>範囲を選択</h1>
-            <p>複数選択できます。学習したい範囲をすべて選んでください。</p>
-          </div>
-          <div class="multi-select-grid" id="study-range-options"></div>
-          <div class="sticky-action">
-            <button class="primary-button" id="confirm-study-ranges" type="button">次へ <span aria-hidden="true">→</span></button>
-          </div>
-        </section>
-
         <section class="view" id="view-study-importance-kind" data-view="study-importance-kind" hidden>
           <div class="page-heading selection-page-heading">
-            <button class="text-button back-link" type="button" data-back-before-importance>← 範囲を選び直す</button>
+            <button class="text-button back-link" type="button" data-back-before-importance>← 前の選択へ</button>
             <p class="eyebrow">FILTER 2</p>
             <h1>重要度を絞り込む</h1>
             <p>すべての重要度を学習するか、重要度を指定するか選んでください。</p>
@@ -181,51 +172,6 @@
             <p>使いたい並び順を一つ選んでください。</p>
           </div>
           <div class="multi-select-grid sort-other-grid" id="study-sort-other-options"></div>
-        </section>
-
-        <section class="view" id="view-setup" data-view="setup" hidden>
-          <div class="page-heading selection-page-heading">
-            <button class="text-button back-link" type="button" data-view-target="study-sort-kind">← 並び替えを選び直す</button>
-            <p class="eyebrow">START</p>
-            <h1>スタート</h1>
-            <p>問題数を決めて学習を始めます。</p>
-          </div>
-
-          <div class="setup-grid">
-            <section class="panel-card cycle-performance-card" id="cycle-performance-card"></section>
-
-            <section class="panel-card">
-              <span class="field-label">問題数</span>
-              <div class="segmented-options" id="question-count-options" role="radiogroup" aria-label="問題数">
-                <button type="button" data-count="5">5</button>
-                <button type="button" data-count="10">10</button>
-                <button type="button" data-count="15" class="selected">15</button>
-                <button type="button" data-count="20">20</button>
-                <button type="button" data-count="30">30</button>
-                <button type="button" data-count="50">50</button>
-                <button type="button" data-count="all">全問</button>
-              </div>
-            </section>
-
-            <section class="panel-card toggle-row">
-              <div>
-                <span class="field-label">苦手再出題</span>
-                <p>間違えた項目を3分後にもう一度出します。</p>
-              </div>
-              <label class="switch">
-                <input type="checkbox" id="repeat-wrong" />
-                <span aria-hidden="true"></span>
-                <span class="sr-only">苦手再出題を有効にする</span>
-              </label>
-            </section>
-          </div>
-
-          <div class="sticky-action">
-            <button class="primary-button" id="start-session" type="button">
-              <span id="start-session-label">15問をスタート</span>
-              <span aria-hidden="true">→</span>
-            </button>
-          </div>
         </section>
 
         <section class="view" id="view-list" data-view="list" hidden>
@@ -384,6 +330,6 @@
     </aside>
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-    <script type="module" src="./src/app.js?v=2026.2.4"></script>
+    <script type="module" src="./src/app.js?v=2026.2.7"></script>
   </body>
 </html>

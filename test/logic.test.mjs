@@ -4,6 +4,7 @@ import test from "node:test";
 
 import {
   ALL_MODES,
+  ONE_HOUR_REVIEW_DELAY_MS,
   UNKNOWN_CHOICE,
   WRONG_REVIEW_DELAY_MS,
   accuracyFor,
@@ -16,6 +17,7 @@ import {
   isAnswerCorrect,
   mergeAttempt,
   normalizeAnswer,
+  reviewDelayForAnswer,
   studyCombinationKey,
   studyCyclePolicy,
   studyModeForItem,
@@ -33,6 +35,14 @@ const healthItems = JSON.parse(fs.readFileSync(new URL("../data/health-items.jso
 
 test("wrong answers become eligible for review after three minutes", () => {
   assert.equal(WRONG_REVIEW_DELAY_MS, 180_000);
+  assert.equal(ONE_HOUR_REVIEW_DELAY_MS, 3_600_000);
+  assert.equal(reviewDelayForAnswer("en_to_ja_choice", false), WRONG_REVIEW_DELAY_MS);
+  assert.equal(reviewDelayForAnswer("ja_to_en_choice", true), null);
+  assert.equal(reviewDelayForAnswer("spelling_input", false), null);
+  assert.equal(
+    reviewDelayForAnswer("public_recall", false, ONE_HOUR_REVIEW_DELAY_MS),
+    ONE_HOUR_REVIEW_DELAY_MS,
+  );
 });
 
 test("answer normalization ignores case and repeated spaces but not spelling", () => {

@@ -54,6 +54,13 @@ export const TYPE_LABELS = {
 export const ALL_MODES = Object.keys(MODE_LABELS);
 export const UNKNOWN_CHOICE = "わからない";
 export const WRONG_REVIEW_DELAY_MS = 3 * 60 * 1000;
+export const ONE_HOUR_REVIEW_DELAY_MS = 60 * 60 * 1000;
+
+export function reviewDelayForAnswer(mode, correct, requestedDelayMs = null) {
+  const requested = Math.max(0, Number(requestedDelayMs) || 0);
+  if (requested) return requested;
+  return !correct && String(mode).endsWith("choice") ? WRONG_REVIEW_DELAY_MS : null;
+}
 
 export const STUDY_CONTENT_LABELS = {
   word: "単語",

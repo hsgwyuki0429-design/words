@@ -8,6 +8,7 @@ import {
   TYPE_LABELS,
   UNKNOWN_CHOICE,
   WRONG_REVIEW_DELAY_MS,
+  ONE_HOUR_REVIEW_DELAY_MS,
   STUDY_CONTENT_LABELS,
   STUDY_METHOD_LABELS,
   accuracyFor,
@@ -19,17 +20,17 @@ import {
   getHistory,
   isAnswerCorrect,
   normalizeAnswer,
+  reviewDelayForAnswer,
   slotTokensForQuestion,
   sortItems,
   normalizeStudySelection,
   studyCombinationKey,
-  studyCyclePolicy,
   studyModeForItem,
   summarizeByMode,
   summarizeByRange,
   summarizeHistory,
   summarizeSession,
-} from "./logic.js?v=2026.2.4";
+} from "./logic.js?v=2026.2.7";
 import { clearAllData, getMeta, loadHistory, recordAttempt, setMeta } from "./storage.js";
 
 const DEFAULT_SETTINGS = {
@@ -64,17 +65,12 @@ const state = {
   },
   sortKey: "importance-desc",
   listSortKey: "importance-desc",
-  questionCount: 15,
-  repeatWrong: false,
   listLimit: 60,
   session: null,
   settings: { ...DEFAULT_SETTINGS },
   combo: 0,
   bestCombo: 0,
   activeStudy: null,
-  performanceExplicit: false,
-  cycleContextKey: null,
-  rangeFilterMode: null,
   importanceFilterMode: null,
 };
 
@@ -94,7 +90,6 @@ const elements = Object.fromEntries(
     "study-method-copy",
     "study-method-options",
     "study-scope-options",
-    "study-range-kind-options",
     "study-range-options",
     "confirm-study-ranges",
     "study-importance-kind-options",
@@ -104,11 +99,6 @@ const elements = Object.fromEntries(
     "study-performance-copy",
     "study-sort-kind-options",
     "study-sort-other-options",
-    "cycle-performance-card",
-    "question-count-options",
-    "repeat-wrong",
-    "start-session",
-    "start-session-label",
     "list-search",
     "list-sort",
     "list-count",
@@ -241,10 +231,6 @@ function formatPercent(value) {
   return value === null || Number.isNaN(value) ? "—" : `${Math.round(value * 100)}%`;
 }
 
-function pluralQuestions(value) {
-  return value === "all" ? "全問" : `${value}問`;
-}
-
 function formatSeconds(milliseconds) {
   const seconds = Math.max(0, Math.round(Number(milliseconds ?? 0) / 1000));
   if (seconds < 60) return `${seconds}秒`;
@@ -310,9 +296,7 @@ function resetStudyFlow() {
   };
   state.sortKey = "importance-desc";
   state.filters = emptyFilters();
-  state.performanceExplicit = false;
-  state.cycleContextKey = null;
-  state.rangeFilterMode = null;
+  state.filters.ranges = [];
   state.importanceFilterMode = null;
 }
 
@@ -442,21 +426,10 @@ function renderStudyScope() {
   })).join("");
 }
 
-function renderStudyRangeKind() {
-  const count = currentRangeOrder().length;
-  elements.studyRangeKindOptions.innerHTML = [
-    { mode: "all", icon: "∞", title: "全範囲", detail: `${count}範囲をすべて学習`, tags: ["すべて"] },
-    { mode: "custom", icon: "✓", title: "その他", detail: "学習する範囲を複数選択", tags: ["複数選択可"] },
-  ].map((meta) => selectionCard({
-    ...meta,
-    dataAttribute: `data-range-filter-mode="${meta.mode}"`,
-  })).join("");
-}
-
 function renderStudyRangeSelect() {
   elements.studyRangeOptions.innerHTML = currentRangeOrder().map((range) => {
     const selected = state.filters.ranges.includes(range);
-    const count = state.items.filter((item) => item.range === range && studyModeForItem(item, state.studySelection)).length;
+    const count = state.items.filter((item) => item.range === range).length;
     return `<button class="multi-select-card${selected ? " selected" : ""}" type="button" data-study-range="${escapeHtml(range)}" aria-pressed="${selected}">
       <span class="multi-check" aria-hidden="true">${selected ? "✓" : ""}</span>
       <span><strong>${escapeHtml(range)}</strong><small>${count}${isRecallSubject() ? "問" : "語句"}</small></span>
@@ -546,7 +519,7 @@ function renderStudySortOther() {
     </button>`).join("");
 }
 
-function viewBeforeRangeSelection() {
+function viewBeforeImportanceSelection() {
   if (isRecallSubject()) return "study-content";
   return state.studySelection.method === "write" && state.studySelection.content !== "word"
     ? "study-scope"
@@ -724,8 +697,11 @@ function correctEffect(special = "") {
 }
 
 function setView(view) {
-  if (view === "setup" && !selectionIsComplete()) view = "study-content";
   if (!["period", "subject"].includes(view) && !state.subject) view = state.selectedPeriod ? "subject" : "period";
+  if (view !== "quiz" && state.session?.reviewTimer) {
+    clearTimeout(state.session.reviewTimer);
+    state.session.reviewTimer = null;
+  }
   state.view = view;
   document.querySelectorAll("[data-view]").forEach((section) => {
     section.hidden = section.dataset.view !== view;
@@ -734,7 +710,7 @@ function setView(view) {
     button.classList.toggle(
       "active",
       button.dataset.viewTarget === view ||
-        (["study-content", "study-method", "study-scope", "study-range-kind", "study-range-select", "study-importance-kind", "study-importance-select", "study-performance", "study-sort-kind", "study-sort-other", "setup"].includes(view) &&
+        (["study-content", "study-method", "study-scope", "study-range-select", "study-importance-kind", "study-importance-select", "study-performance", "study-sort-kind", "study-sort-other"].includes(view) &&
           button.dataset.viewTarget === "study-content"),
     );
   });
@@ -747,14 +723,12 @@ function setView(view) {
   if (view === "study-content") renderStudyContent();
   if (view === "study-method") renderStudyMethod();
   if (view === "study-scope") renderStudyScope();
-  if (view === "study-range-kind") renderStudyRangeKind();
   if (view === "study-range-select") renderStudyRangeSelect();
   if (view === "study-importance-kind") renderStudyImportanceKind();
   if (view === "study-importance-select") renderStudyImportanceSelect();
   if (view === "study-performance") renderStudyPerformance();
   if (view === "study-sort-kind") renderStudySortKind();
   if (view === "study-sort-other") renderStudySortOther();
-  if (view === "setup") renderSetup();
   if (view === "list") renderList(true);
   if (view === "analysis") renderAnalysis();
   if (view === "settings") renderSettings();
@@ -826,101 +800,6 @@ function learningItems(filters = state.filters, selection = state.studySelection
   if (!selectionIsComplete(selection)) return [];
   return applyFilters(state.items, state.history, { ...filters, modes: [] })
     .filter((item) => studyModeForItem(item, selection));
-}
-
-function remainingLearningItems(filters = state.filters, selection = state.studySelection) {
-  if ((filters.performance ?? "all") !== "all") return learningItems(filters, selection);
-  const completed = new Set(progressForSelection(selection).completedItemIds ?? []);
-  return learningItems(filters, selection).filter((item) => !completed.has(item.id));
-}
-
-function cycleItems(selection, performance, minimumWrong = 0) {
-  return applyFilters(state.items, state.history, {
-    ...state.filters,
-    types: [],
-    tags: [],
-    performance,
-    minimumWrong,
-    modes: [],
-  }).filter((item) => studyModeForItem(item, selection));
-}
-
-function syncStudyCycle(selection) {
-  const key = studyCombinationKey(selection);
-  let progress = progressForSelection(selection);
-  let cycle = (progress.completedCycles ?? 0) + 1;
-  const completed = new Set(progress.completedItemIds ?? []);
-  const policy = studyCyclePolicy(cycle, state.performanceExplicit ? state.filters.performance : null);
-  const performance = policy.performance ?? "all";
-  const minimumWrong = cycle <= 2 ? 0 : state.filters.minimumWrong;
-  const target = cycleItems(selection, performance, minimumWrong);
-  const completedTarget = target.length > 0 && target.every((item) => completed.has(item.id));
-  const emptySecondCycle = cycle === 2 && target.length === 0;
-
-  if (completedTarget || emptySecondCycle) {
-    progress = {
-      ...progress,
-      completedItemIds: [],
-      completedCycles: (progress.completedCycles ?? 0) + 1,
-    };
-    state.progress.set(key, progress);
-    setMeta(`studyProgress:${key}`, progress).catch(console.warn);
-    cycle = (progress.completedCycles ?? 0) + 1;
-  }
-
-  if (cycle === 2 && cycleItems(selection, "everMissed", 0).length === 0) {
-    progress = {
-      ...progress,
-      completedItemIds: [],
-      completedCycles: (progress.completedCycles ?? 0) + 1,
-    };
-    state.progress.set(key, progress);
-    setMeta(`studyProgress:${key}`, progress).catch(console.warn);
-    cycle = (progress.completedCycles ?? 0) + 1;
-  }
-
-  const contextKey = `${key}:${cycle}`;
-  if (state.cycleContextKey !== contextKey) {
-    state.cycleContextKey = contextKey;
-    state.performanceExplicit = false;
-    state.filters.types = [];
-    state.filters.tags = [];
-    state.filters.minimumWrong = 0;
-    state.filters.performance = cycle === 2 ? "everMissed" : "all";
-  }
-
-  if (cycle === 1) {
-    state.filters.performance = "all";
-    state.filters.minimumWrong = 0;
-  } else if (cycle === 2) {
-    state.filters.performance = "everMissed";
-    state.filters.minimumWrong = 0;
-  }
-  return { cycle, progress };
-}
-
-function renderSetup() {
-  if (!selectionIsComplete()) {
-    setView("study-content");
-    return;
-  }
-  elements.cyclePerformanceCard.hidden = true;
-  elements.cyclePerformanceCard.innerHTML = "";
-  const eligible = learningItems();
-  const remaining = remainingLearningItems();
-  const count = remaining.length || eligible.length;
-  elements.repeatWrong.checked = state.repeatWrong;
-  elements.questionCountOptions.querySelectorAll("button").forEach((button) => {
-    button.classList.toggle("selected", String(state.questionCount) === button.dataset.count);
-    button.setAttribute(
-      "aria-checked",
-      String(String(state.questionCount) === button.dataset.count),
-    );
-  });
-  const actual = state.questionCount === "all" ? count : Math.min(count, state.questionCount);
-  elements.startSessionLabel.textContent = `${pluralQuestions(actual)}をスタート`;
-  elements.startSession.disabled = eligible.length === 0;
-  renderHeader();
 }
 
 function renderList(resetLimit = false) {
@@ -1025,7 +904,7 @@ function collectFilterForm() {
 
 function renderFilterPreview() {
   const draft = collectFilterForm();
-  const items = state.view === "setup" ? learningItems(draft) : filteredItems(draft);
+  const items = filteredItems(draft);
   elements.filterPreviewCount.textContent = items.length.toLocaleString();
 }
 
@@ -1053,7 +932,6 @@ function resetFilters() {
     performance: "all",
     minimumWrong: 0,
   };
-  if (state.view === "setup") state.performanceExplicit = false;
   renderFilterForm();
 }
 
@@ -1074,8 +952,7 @@ function startSession(overrides = {}) {
     filters: overrides.filters ?? { ...state.filters, search: "" },
     ...(usesSelection ? { selection } : { mode }),
     sortKey: overrides.sortKey ?? state.sortKey,
-    count: overrides.count ?? state.questionCount,
-    repeatWrong: overrides.repeatWrong ?? state.repeatWrong,
+    count: overrides.itemIds ? (overrides.count ?? "all") : "all",
     itemIds: overrides.itemIds ?? null,
   };
   const sessionItems = config.itemIds
@@ -1132,9 +1009,8 @@ function startSession(overrides = {}) {
     queue,
     cursor: 0,
     results: [],
-    repeatedIds: new Set(),
     deferredReviews: [],
-    repeatWrong: config.repeatWrong,
+    reviewTimer: null,
     currentQuestion: null,
     currentAnswer: "",
     answered: false,
@@ -1167,6 +1043,7 @@ function prepareQuestion() {
   session.currentAnswer = "";
   session.answered = false;
   session.revealed = false;
+  session.lastReviewDelayMs = null;
   session.questionStartedAt = performance.now();
   renderQuiz();
 }
@@ -1252,6 +1129,7 @@ function renderFeedback(question, answer, correct) {
         <span aria-hidden="true">${correct ? "✓" : "×"}</span>
         <strong>${correct ? "正解" : "不正解"}</strong>
       </div>
+      ${state.session.lastReviewDelayMs === WRONG_REVIEW_DELAY_MS ? '<p class="review-scheduled-note">3分後にもう一度出題します</p>' : ""}
       ${!correct && !isChoice ? `<p class="input-correct-answer"><span>正解</span><strong>${escapeHtml(correctAnswer)}</strong></p>` : ""}
       ${state.settings.showSources ? `<div class="source-box">
         <span class="importance-badge importance-${question.item.importance.toLowerCase()}">${question.item.importance}</span>
@@ -1300,8 +1178,9 @@ function renderRecallQuiz() {
       </article>
       ${revealed ? `
         <div class="public-grade-guide" aria-label="自己採点">
-          <button type="button" data-public-grade="wrong"><span>左半分</span><strong>間違い</strong></button>
-          <button type="button" data-public-grade="correct"><span>右半分</span><strong>正解</strong></button>
+          <button type="button" data-public-grade="three-minutes"><span>もう一度</span><strong>3分後</strong></button>
+          <button type="button" data-public-grade="one-hour"><span>あとで復習</span><strong>1時間後</strong></button>
+          <button type="button" data-public-grade="mastered"><span>覚えた</span><strong>習得</strong></button>
         </div>
       ` : ""}
     </div>`;
@@ -1370,7 +1249,7 @@ function currentTypedAnswer() {
   return elements.quizContent.querySelector("#single-answer-input")?.value.trim() ?? "";
 }
 
-async function submitAnswer(answer, selfGrade = null) {
+async function submitAnswer(answer, selfGrade = null, reviewDelayMs = null) {
   const session = state.session;
   if (!session || session.answered) return;
   const question = session.currentQuestion;
@@ -1459,16 +1338,14 @@ async function submitAnswer(answer, selfGrade = null) {
     });
   }
 
-  if (
-    !correct &&
-    session.repeatWrong &&
-    !session.repeatedIds.has(question.item.id)
-  ) {
-    session.repeatedIds.add(question.item.id);
+  const scheduledDelay = reviewDelayForAnswer(question.mode, correct, reviewDelayMs);
+  session.lastReviewDelayMs = scheduledDelay;
+  if (scheduledDelay) {
     session.deferredReviews.push({
-      dueAt: Date.now() + WRONG_REVIEW_DELAY_MS,
+      dueAt: Date.now() + scheduledDelay,
       entry: { item: question.item, mode: question.mode, review: true },
     });
+    session.deferredReviews.sort((a, b) => a.dueAt - b.dueAt);
   }
   renderQuiz();
   renderHeader();
@@ -1481,12 +1358,58 @@ function injectDueReviews(session) {
   if (due.length) session.queue.splice(session.cursor, 0, ...due.map((review) => review.entry));
 }
 
+function formatReviewCountdown(milliseconds) {
+  const totalSeconds = Math.max(0, Math.ceil(milliseconds / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return hours
+    ? `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
+    : `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+function renderReviewWait() {
+  const session = state.session;
+  if (!session || !session.deferredReviews.length) return;
+  injectDueReviews(session);
+  if (session.cursor < session.queue.length) {
+    prepareQuestion();
+    return;
+  }
+  const nextDueAt = session.deferredReviews[0].dueAt;
+  const remainingMs = Math.max(0, nextDueAt - Date.now());
+  elements.quizContent.innerHTML = `
+    <div class="quiz-shell review-wait-shell">
+      <header class="quiz-header">
+        <button class="icon-button" type="button" data-quit-quiz aria-label="学習を終了">×</button>
+        <div class="quiz-progress-copy">復習待ち</div>
+        <span class="mode-pill">${session.deferredReviews.length}問</span>
+      </header>
+      <article class="review-wait-card" aria-live="polite">
+        <span class="review-wait-icon" aria-hidden="true">↻</span>
+        <p class="eyebrow">NEXT REVIEW</p>
+        <h1>${formatReviewCountdown(remainingMs)}</h1>
+        <p>時間になったら、この画面のまま自動で次の問題を出します。</p>
+        <button class="secondary-button" type="button" data-quit-quiz>ここで学習を終了</button>
+      </article>
+    </div>`;
+  clearTimeout(session.reviewTimer);
+  session.reviewTimer = setTimeout(() => {
+    session.reviewTimer = null;
+    if (state.session === session && state.view === "quiz") renderReviewWait();
+  }, Math.min(1000, Math.max(100, remainingMs)));
+}
+
 function nextQuestion() {
   const session = state.session;
   if (!session?.answered) return;
   session.cursor += 1;
   injectDueReviews(session);
   if (session.cursor >= session.queue.length) {
+    if (session.deferredReviews.length) {
+      renderReviewWait();
+      return;
+    }
     session.complete = true;
     renderSessionComplete();
     return;
@@ -1627,11 +1550,12 @@ function retryWrongItems() {
     queue: wrong,
     cursor: 0,
     results: [],
-    repeatedIds: new Set(),
-    repeatWrong: false,
+    deferredReviews: [],
+    reviewTimer: null,
     currentQuestion: null,
     currentAnswer: "",
     answered: false,
+    revealed: false,
     questionStartedAt: 0,
     startedAt: Date.now(),
     complete: false,
@@ -1658,10 +1582,20 @@ function bindEvents() {
         state.session.revealed = true;
         renderQuiz();
       } else if (!state.session.answered) {
+        const horizontalPosition = event.clientX / window.innerWidth;
         const grade = target?.dataset.publicGrade
-          ?? (event.clientX >= window.innerWidth / 2 ? "correct" : "wrong");
+          ?? (horizontalPosition < 1 / 3
+            ? "three-minutes"
+            : horizontalPosition < 2 / 3
+              ? "one-hour"
+              : "mastered");
         const answer = state.session.currentQuestion.answer;
-        submitAnswer(answer, grade === "correct").then(nextQuestion);
+        const delay = grade === "three-minutes"
+          ? WRONG_REVIEW_DELAY_MS
+          : grade === "one-hour"
+            ? ONE_HOUR_REVIEW_DELAY_MS
+            : null;
+        submitAnswer(answer, grade === "mastered", delay).then(nextQuestion);
       }
       return;
     }
@@ -1697,13 +1631,7 @@ function bindEvents() {
     }
     if (target.hasAttribute("data-start-study")) {
       resetStudyFlow();
-      setView("study-content");
-    }
-    if (target.dataset.cyclePerformance) {
-      state.filters.performance = target.dataset.cyclePerformance;
-      state.filters.minimumWrong = 0;
-      state.performanceExplicit = true;
-      renderSetup();
+      setView("study-range-select");
     }
     if (target.hasAttribute("data-open-performance-detail")) openFilter();
     if (target.hasAttribute("data-resume-active") && state.activeStudy?.config) {
@@ -1716,7 +1644,7 @@ function bindEvents() {
         method: isRecallSubject() ? "recall" : null,
         scope: isRecallSubject() ? "full" : null,
       };
-      setView(isRecallSubject() ? "study-range-kind" : "study-method");
+      setView(isRecallSubject() ? "study-importance-kind" : "study-method");
     }
     if (target.dataset.studyMethod) {
       state.studySelection.method = target.dataset.studyMethod;
@@ -1725,23 +1653,12 @@ function bindEvents() {
         setView("study-scope");
       } else {
         state.studySelection.scope = "full";
-        setView("study-range-kind");
+        setView("study-importance-kind");
       }
     }
     if (target.dataset.studyScope) {
       state.studySelection.scope = target.dataset.studyScope;
-      setView("study-range-kind");
-    }
-    if (target.hasAttribute("data-back-before-ranges")) setView(viewBeforeRangeSelection());
-    if (target.dataset.rangeFilterMode) {
-      state.rangeFilterMode = target.dataset.rangeFilterMode;
-      if (state.rangeFilterMode === "all") {
-        state.filters.ranges = [];
-        setView("study-importance-kind");
-      } else {
-        state.filters.ranges = [];
-        setView("study-range-select");
-      }
+      setView("study-importance-kind");
     }
     if (target.dataset.studyRange) {
       const range = target.dataset.studyRange;
@@ -1751,10 +1668,10 @@ function bindEvents() {
       renderStudyRangeSelect();
     }
     if (target.id === "confirm-study-ranges" && state.filters.ranges.length) {
-      setView("study-importance-kind");
+      setView("study-content");
     }
     if (target.hasAttribute("data-back-before-importance")) {
-      setView(state.rangeFilterMode === "custom" ? "study-range-select" : "study-range-kind");
+      setView(viewBeforeImportanceSelection());
     }
     if (target.dataset.importanceFilterMode) {
       state.importanceFilterMode = target.dataset.importanceFilterMode;
@@ -1782,7 +1699,6 @@ function bindEvents() {
     if (target.dataset.studyPerformance) {
       state.filters.performance = target.dataset.studyPerformance;
       state.filters.minimumWrong = 0;
-      state.performanceExplicit = true;
       setView("study-sort-kind");
     }
     if (target.hasAttribute("data-back-before-sort")) {
@@ -1793,27 +1709,21 @@ function bindEvents() {
         setView("study-sort-other");
       } else {
         state.sortKey = target.dataset.studySortKind;
-        setView("setup");
+        startSession();
       }
     }
     if (target.dataset.studySort) {
       state.sortKey = target.dataset.studySort;
-      setView("setup");
+      startSession();
     }
     if (target.id === "open-filter" || target.id === "list-open-filter") openFilter();
     if (target.id === "close-filter") closeFilter();
     if (target.id === "reset-filter") resetFilters();
     if (target.id === "apply-filter") {
       state.filters = collectFilterForm();
-      if (state.view === "setup" && selectionIsComplete()) state.performanceExplicit = true;
       closeFilter();
-      state.view === "list" ? renderList(true) : renderSetup();
+      state.view === "list" ? renderList(true) : renderHeader();
     }
-    if (target.dataset.count) {
-      state.questionCount = target.dataset.count === "all" ? "all" : Number(target.dataset.count);
-      renderSetup();
-    }
-    if (target.id === "start-session") startSession();
     if (target.id === "load-more") {
       state.listLimit += 60;
       renderList(false);
@@ -1823,6 +1733,7 @@ function bindEvents() {
     if (target.hasAttribute("data-next-question")) nextQuestion();
     if (target.hasAttribute("data-quit-quiz")) {
       if (!state.session.results.length || window.confirm("この学習を終了しますか？")) {
+        if (state.session.reviewTimer) clearTimeout(state.session.reviewTimer);
         if (state.session.combinationKey) {
           state.activeStudy = null;
           setMeta("activeStudy", null).catch(console.warn);
@@ -1842,9 +1753,6 @@ function bindEvents() {
     }
   });
 
-  elements.repeatWrong.addEventListener("change", () => {
-    state.repeatWrong = elements.repeatWrong.checked;
-  });
   elements.listSort.addEventListener("change", () => {
     state.listSortKey = elements.listSort.value;
     renderList(true);

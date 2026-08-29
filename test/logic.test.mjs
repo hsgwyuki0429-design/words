@@ -18,6 +18,7 @@ import {
   isAnswerCorrect,
   mergeAttempt,
   normalizeAnswer,
+  normalizeStudySelection,
   reviewDelayForAnswer,
   studyCombinationKey,
   studyCyclePolicy,
@@ -290,6 +291,24 @@ test("step-based English study selection supports choice and flashcards in both 
     null,
   );
   assert.equal(studyModeForItem(word, { content: "word", method: "write" }), null);
+});
+
+test("English content selection supports multiple types and keeps a stable progress key", () => {
+  const selection = {
+    contents: ["word", "phrase"],
+    method: "en_to_ja_flashcard",
+  };
+  const normalized = normalizeStudySelection(selection);
+  assert.deepEqual(normalized.contents, ["word", "phrase"]);
+  assert.equal(normalized.content, null);
+  assert.equal(studyCombinationKey(selection), "word+phrase:en_to_ja_flashcard:full");
+  assert.equal(
+    studyCombinationKey({ ...selection, contents: ["phrase", "word"] }),
+    "word+phrase:en_to_ja_flashcard:full",
+  );
+  assert.ok(studyModeForItem(items.find((item) => item.type === "word"), selection));
+  assert.ok(studyModeForItem(items.find((item) => item.type === "phrase"), selection));
+  assert.equal(studyModeForItem(items.find((item) => item.type === "structure"), selection), null);
 });
 
 test("same study combination resumes after completed item ids", () => {

@@ -15,7 +15,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icons/app-icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icons/app-icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=2026.2.8" />
+    <link rel="stylesheet" href="./styles.css?v=2026.2.12" />
   </head>
   <body>
     <div class="app-shell" id="app-shell" aria-busy="true">
@@ -86,7 +86,8 @@
             <p>複数選択できます。学習したい範囲をすべて選んでください。</p>
           </div>
           <div class="multi-select-grid range-select-grid" id="study-range-options"></div>
-          <div class="sticky-action compact-range-action">
+          <div class="sticky-action compact-range-action selection-next-action">
+            <p class="selection-ready-copy" id="study-range-action-copy" hidden></p>
             <button class="primary-button" id="confirm-study-ranges" type="button">次へ <span aria-hidden="true">→</span></button>
           </div>
         </section>
@@ -98,7 +99,11 @@
             <h1 id="study-content-heading">何を学習しますか？</h1>
             <p id="study-content-copy">学習する教材の種類を選んでください。</p>
           </div>
-          <div class="selection-grid content-selection-grid" id="study-content-options"></div>
+          <div class="multi-select-grid content-select-grid" id="study-content-options"></div>
+          <div class="sticky-action selection-next-action">
+            <p class="selection-ready-copy" id="study-content-action-copy" hidden></p>
+            <button class="primary-button" id="confirm-study-content" type="button" disabled>次へ <span aria-hidden="true">→</span></button>
+          </div>
         </section>
 
         <section class="view" id="view-study-method" data-view="study-method" hidden>
@@ -339,6 +344,6 @@
     </aside>
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-    <script type="module" src="./src/app.js?v=2026.2.10"></script>
+    <script type="module" src="./src/app.js?v=2026.2.12"></script>
   </body>
 </html>

@@ -81,6 +81,8 @@ export const STUDY_METHOD_LABELS = {
   recall: "答えを表示して自己採点",
 };
 
+export const ENGLISH_CONTENT_TYPES = ["word", "phrase", "structure"];
+
 export function itemSupportsMode(item, mode) {
   if (item.questionModes.includes(mode)) return true;
   if (mode === "en_to_ja_flashcard") return item.questionModes.includes("en_to_ja_choice");
@@ -548,7 +550,22 @@ export function normalizeStudySelection(selection = {}) {
   const methodOptions = recallSubject
     ? ["recall"]
     : ["ja_to_en_choice", "en_to_ja_choice", "ja_to_en_flashcard", "en_to_ja_flashcard"];
-  const content = contentOptions.includes(selection.content) ? selection.content : null;
+  const selectedContents = recallSubject
+    ? []
+    : Array.isArray(selection.contents)
+      ? ENGLISH_CONTENT_TYPES.filter((content) => new Set(selection.contents).has(content))
+      : selection.content === "all"
+        ? [...ENGLISH_CONTENT_TYPES]
+        : ENGLISH_CONTENT_TYPES.includes(selection.content)
+          ? [selection.content]
+          : [];
+  const content = recallSubject
+    ? contentOptions.includes(selection.content) ? selection.content : null
+    : selectedContents.length === ENGLISH_CONTENT_TYPES.length
+      ? "all"
+      : selectedContents.length === 1
+        ? selectedContents[0]
+        : null;
   const method = methodOptions.includes(selection.method) ? selection.method : null;
   const direction = ["en_to_ja", "ja_to_en"].includes(selection.direction)
     ? selection.direction
@@ -557,13 +574,18 @@ export function normalizeStudySelection(selection = {}) {
       : method?.startsWith("ja_to_en")
         ? "ja_to_en"
         : null;
-  return { subject, content, direction, method, scope: "full" };
+  return { subject, content, contents: selectedContents, direction, method, scope: "full" };
 }
 
 export function studyCombinationKey(selection) {
   const normalized = normalizeStudySelection(selection);
-  if (!normalized.content || !normalized.method) return null;
-  const key = `${normalized.content}:${normalized.method}:${normalized.scope}`;
+  const contentKey = normalized.subject === "english"
+    ? normalized.contents.length === ENGLISH_CONTENT_TYPES.length
+      ? "all"
+      : normalized.contents.join("+")
+    : normalized.content;
+  if (!contentKey || !normalized.method) return null;
+  const key = `${contentKey}:${normalized.method}:${normalized.scope}`;
   return normalized.subject === "english" ? key : `${normalized.subject}:${key}`;
 }
 
@@ -580,7 +602,7 @@ export function studyCyclePolicy(cycleNumber, explicitPerformance = null) {
 
 export function studyModeForItem(item, selection) {
   const normalized = normalizeStudySelection(selection);
-  if (!normalized.content || !normalized.method) return null;
+  if (!(normalized.content || normalized.contents.length) || !normalized.method) return null;
   if (normalized.subject !== "english") {
     if (item.subject !== normalized.subject) return null;
     const type = item.type === `${normalized.subject}-term` ? "term" : "short";
@@ -589,7 +611,7 @@ export function studyModeForItem(item, selection) {
     return item.questionModes.includes(mode) ? mode : null;
   }
   if (item.subject && item.subject !== "english") return null;
-  if (normalized.content !== "all" && item.type !== normalized.content) return null;
+  if (!normalized.contents.includes(item.type)) return null;
   return itemSupportsMode(item, normalized.method) ? normalized.method : null;
 }
 

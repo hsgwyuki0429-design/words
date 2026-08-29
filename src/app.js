@@ -1,5 +1,6 @@
 import {
   ALL_MODES,
+  ENGLISH_CONTENT_TYPES,
   HEALTH_RANGE_ORDER,
   IMPORTANCE_ORDER,
   MODE_LABELS,
@@ -30,7 +31,7 @@ import {
   summarizeByRange,
   summarizeHistory,
   summarizeSession,
-} from "./logic.js?v=2026.2.10";
+} from "./logic.js?v=2026.2.12";
 import { clearAllData, getMeta, loadHistory, recordAttempt, setMeta } from "./storage.js";
 
 const DEFAULT_SETTINGS = {
@@ -52,7 +53,7 @@ const state = {
   history: new Map(),
   view: "period",
   selectedMode: null,
-  studySelection: { subject: "english", content: null, direction: null, method: null, scope: "full" },
+  studySelection: { subject: "english", content: null, contents: [], direction: null, method: null, scope: "full" },
   progress: new Map(),
   filters: {
     ranges: [],
@@ -72,6 +73,8 @@ const state = {
   bestCombo: 0,
   activeStudy: null,
   importanceFilterMode: null,
+  rangeSelectionMode: null,
+  contentSelectionMode: null,
 };
 
 const elements = Object.fromEntries(
@@ -86,12 +89,15 @@ const elements = Object.fromEntries(
     "study-content-heading",
     "study-content-copy",
     "study-content-options",
+    "confirm-study-content",
+    "study-content-action-copy",
     "study-method-heading",
     "study-method-copy",
     "study-method-options",
     "study-scope-options",
     "study-range-options",
     "confirm-study-ranges",
+    "study-range-action-copy",
     "study-importance-kind-options",
     "study-importance-options",
     "confirm-study-importance",
@@ -203,12 +209,22 @@ const STUDY_FORMAT_META = {
   flashcard: { icon: "▣", title: "フラッシュカード", detail: "画面を押して答えを表示し、自分で採点する", tags: ["自己採点"] },
 };
 
+const ENGLISH_CONTENT_COMBINATIONS = [
+  ["word"],
+  ["phrase"],
+  ["structure"],
+  ["word", "phrase"],
+  ["word", "structure"],
+  ["phrase", "structure"],
+  [...ENGLISH_CONTENT_TYPES],
+];
+
 const KNOWN_STUDY_SELECTIONS = [
-  ...["word", "phrase", "structure", "all"].flatMap((content) => [
-    { content, method: "ja_to_en_choice", scope: "full" },
-    { content, method: "en_to_ja_choice", scope: "full" },
-    { content, method: "ja_to_en_flashcard", scope: "full" },
-    { content, method: "en_to_ja_flashcard", scope: "full" },
+  ...ENGLISH_CONTENT_COMBINATIONS.flatMap((contents) => [
+    { contents, method: "ja_to_en_choice", scope: "full" },
+    { contents, method: "en_to_ja_choice", scope: "full" },
+    { contents, method: "ja_to_en_flashcard", scope: "full" },
+    { contents, method: "en_to_ja_flashcard", scope: "full" },
   ]),
   { subject: "public", content: "term", method: "recall", scope: "full" },
   { subject: "public", content: "short", method: "recall", scope: "full" },
@@ -303,6 +319,7 @@ function resetStudyFlow() {
   state.studySelection = {
     subject: isRecallSubject() ? state.subject : "english",
     content: null,
+    contents: [],
     direction: null,
     method: null,
     scope: "full",
@@ -311,6 +328,8 @@ function resetStudyFlow() {
   state.filters = emptyFilters();
   state.filters.ranges = [];
   state.importanceFilterMode = null;
+  state.rangeSelectionMode = null;
+  state.contentSelectionMode = null;
 }
 
 function selectSubject(subject) {
@@ -344,17 +363,26 @@ function selectSubject(subject) {
 
 function selectionIsComplete(selection = state.studySelection) {
   const normalized = normalizeStudySelection(selection);
-  return Boolean(normalized.content && normalized.method);
+  return Boolean(
+    normalized.method && (normalized.subject === "english" ? normalized.contents.length : normalized.content),
+  );
+}
+
+function studyContentLabel(selection = state.studySelection) {
+  const normalized = normalizeStudySelection(selection);
+  if (normalized.subject !== "english") return STUDY_CONTENT_LABELS[normalized.content] ?? "教材";
+  if (normalized.contents.length === ENGLISH_CONTENT_TYPES.length) return STUDY_CONTENT_LABELS.all;
+  return normalized.contents.map((content) => STUDY_CONTENT_LABELS[content]).join("＋") || "教材";
 }
 
 function studySelectionLabel(selection = state.studySelection) {
   const normalized = normalizeStudySelection(selection);
-  if (!normalized.content || !normalized.method) return "—";
+  if (!selectionIsComplete(normalized)) return "—";
   if (normalized.subject !== "english") {
     return `${STUDY_CONTENT_LABELS[normalized.content]} / 答えを表示して自己採点`;
   }
   const parts = [
-    STUDY_CONTENT_LABELS[normalized.content],
+    studyContentLabel(normalized),
     STUDY_METHOD_LABELS[normalized.method],
   ];
   return parts.join(" / ");
@@ -389,23 +417,61 @@ function recallContentMeta() {
 }
 
 function renderStudyContent() {
-  const meta = isRecallSubject() ? recallContentMeta() : STUDY_CONTENT_META;
   elements.studyContentHeading.textContent = isRecallSubject()
     ? "どの問題を学習しますか？"
     : "何を学習しますか？";
   elements.studyContentCopy.textContent = isRecallSubject()
     ? "語句回答、短文回答、または両方から選んでください。"
-    : "学習する教材の種類を選んでください。";
-  elements.studyContentOptions.innerHTML = Object.entries(meta)
-    .map(([content, meta]) => selectionCard({
-      ...meta,
-      dataAttribute: `data-study-content="${content}"`,
-    }))
-    .join("");
+    : "複数選択できます。すべて学ぶ場合は「全選択」を選んでください。";
+  const action = elements.confirmStudyContent.closest(".sticky-action");
+  if (isRecallSubject()) {
+    action.hidden = true;
+    elements.studyContentOptions.className = "selection-grid content-selection-grid";
+    elements.studyContentOptions.innerHTML = Object.entries(recallContentMeta())
+      .map(([content, meta]) => selectionCard({
+        ...meta,
+        dataAttribute: `data-study-content="${content}"`,
+      }))
+      .join("");
+    return;
+  }
+
+  action.hidden = false;
+  elements.studyContentOptions.className = "multi-select-grid content-select-grid";
+  const selectedContents = state.studySelection.contents ?? [];
+  const allSelected = state.contentSelectionMode === "all";
+  const baseItems = applyFilters(state.items, state.history, {
+    ...state.filters,
+    performance: "all",
+    minimumWrong: 0,
+    modes: [],
+  });
+  const allCard = `<button class="multi-select-card select-all-card${allSelected ? " selected" : ""}" type="button" data-study-content-all aria-pressed="${allSelected}">
+    <span class="multi-check" aria-hidden="true">${allSelected ? "✓" : ""}</span>
+    <span><strong>全選択</strong><small>単語・熟語・構文のすべて（${baseItems.length}語句）</small></span>
+  </button>`;
+  const contentCards = ENGLISH_CONTENT_TYPES.map((content) => {
+    const selected = !allSelected && selectedContents.includes(content);
+    const meta = STUDY_CONTENT_META[content];
+    const count = baseItems.filter((item) => item.type === content).length;
+    return `<button class="multi-select-card${selected ? " selected" : ""}${allSelected ? " disabled-by-all" : ""}" type="button" data-study-content="${content}" aria-pressed="${selected}" ${allSelected ? "disabled aria-disabled=\"true\"" : ""}>
+      <span class="multi-check" aria-hidden="true">${selected ? "✓" : ""}</span>
+      <span><strong>${escapeHtml(meta.title)}</strong><small>${count}語句</small></span>
+    </button>`;
+  }).join("");
+  elements.studyContentOptions.innerHTML = allCard + contentCards;
+  const ready = selectedContents.length > 0;
+  elements.confirmStudyContent.disabled = !ready;
+  elements.confirmStudyContent.classList.toggle("ready-to-continue", ready);
+  elements.confirmStudyContent.innerHTML = `${allSelected ? "すべてを学習して次へ" : "選択した教材で次へ"} <span aria-hidden="true">→</span>`;
+  elements.studyContentActionCopy.hidden = !ready;
+  elements.studyContentActionCopy.textContent = allSelected
+    ? "すべて選択しました。次へ進めます"
+    : `${selectedContents.length}種類を選択中。次へ進めます`;
 }
 
 function renderStudyMethod() {
-  const contentLabel = STUDY_CONTENT_LABELS[state.studySelection.content] ?? "教材";
+  const contentLabel = studyContentLabel();
   elements.studyMethodHeading.textContent = `${contentLabel}の出題方向`;
   elements.studyMethodCopy.textContent = "問題と答えの向きを選んでください。";
   elements.studyMethodOptions.innerHTML = Object.entries(STUDY_DIRECTION_META)
@@ -426,15 +492,29 @@ function renderStudyScope() {
 }
 
 function renderStudyRangeSelect() {
-  elements.studyRangeOptions.innerHTML = currentRangeOrder().map((range) => {
-    const selected = state.filters.ranges.includes(range);
+  const ranges = currentRangeOrder();
+  const allSelected = state.rangeSelectionMode === "all";
+  const allCard = `<button class="multi-select-card select-all-card${allSelected ? " selected" : ""}" type="button" data-study-range-all aria-pressed="${allSelected}">
+    <span class="multi-check" aria-hidden="true">${allSelected ? "✓" : ""}</span>
+    <span><strong>全選択</strong><small>すべての範囲（${state.items.length}${isRecallSubject() ? "問" : "語句"}）</small></span>
+  </button>`;
+  const rangeCards = ranges.map((range) => {
+    const selected = !allSelected && state.filters.ranges.includes(range);
     const count = state.items.filter((item) => item.range === range).length;
-    return `<button class="multi-select-card${selected ? " selected" : ""}" type="button" data-study-range="${escapeHtml(range)}" aria-pressed="${selected}">
+    return `<button class="multi-select-card${selected ? " selected" : ""}${allSelected ? " disabled-by-all" : ""}" type="button" data-study-range="${escapeHtml(range)}" aria-pressed="${selected}" ${allSelected ? "disabled aria-disabled=\"true\"" : ""}>
       <span class="multi-check" aria-hidden="true">${selected ? "✓" : ""}</span>
       <span><strong>${escapeHtml(range)}</strong><small>${count}${isRecallSubject() ? "問" : "語句"}</small></span>
     </button>`;
   }).join("");
-  elements.confirmStudyRanges.disabled = state.filters.ranges.length === 0;
+  elements.studyRangeOptions.innerHTML = allCard + rangeCards;
+  const ready = state.filters.ranges.length > 0;
+  elements.confirmStudyRanges.disabled = !ready;
+  elements.confirmStudyRanges.classList.toggle("ready-to-continue", ready);
+  elements.confirmStudyRanges.innerHTML = `${allSelected ? "全範囲で次へ" : "選択した範囲で次へ"} <span aria-hidden="true">→</span>`;
+  elements.studyRangeActionCopy.hidden = !ready;
+  elements.studyRangeActionCopy.textContent = allSelected
+    ? "全範囲を選択しました。次へ進めます"
+    : `${state.filters.ranges.length}範囲を選択中。次へ進めます`;
 }
 
 function renderStudyImportanceKind() {
@@ -941,7 +1021,12 @@ function startSession(overrides = {}) {
     : null;
   const mode = overrides.mode ?? overrides.modes?.[0] ?? state.selectedMode;
   const selection = normalizeStudySelection(overrides.selection ?? state.studySelection);
-  const usesSelection = Boolean(selection.content && selection.method && !overrides.mode && !overrides.modes);
+  const usesSelection = Boolean(
+    selection.method
+      && (selection.subject === "english" ? selection.contents.length : selection.content)
+      && !overrides.mode
+      && !overrides.modes,
+  );
   if (!usesSelection && (!mode || !ALL_MODES.includes(mode))) {
     showToast("先に学習内容と出題方法を選んでください");
     setView("study-content");
@@ -1639,15 +1724,54 @@ function bindEvents() {
     if (target.hasAttribute("data-resume-active") && state.activeStudy?.config) {
       startSession(state.activeStudy.config);
     }
-    if (target.dataset.studyContent) {
+    if (target.hasAttribute("data-study-content-all") && !isRecallSubject()) {
+      const clearing = state.contentSelectionMode === "all";
+      state.contentSelectionMode = clearing ? null : "all";
       state.studySelection = {
-        subject: isRecallSubject() ? state.subject : "english",
-        content: target.dataset.studyContent,
+        subject: "english",
+        content: clearing ? null : "all",
+        contents: clearing ? [] : [...ENGLISH_CONTENT_TYPES],
         direction: null,
-        method: isRecallSubject() ? "recall" : null,
+        method: null,
         scope: "full",
       };
-      setView(isRecallSubject() ? "study-importance-kind" : "study-method");
+      renderStudyContent();
+    }
+    if (target.dataset.studyContent) {
+      if (isRecallSubject()) {
+        state.studySelection = {
+          subject: state.subject,
+          content: target.dataset.studyContent,
+          contents: [],
+          direction: null,
+          method: "recall",
+          scope: "full",
+        };
+        setView("study-importance-kind");
+      } else {
+        const content = target.dataset.studyContent;
+        const current = state.studySelection.contents ?? [];
+        const contents = current.includes(content)
+          ? current.filter((value) => value !== content)
+          : [...current, content];
+        state.contentSelectionMode = contents.length ? "custom" : null;
+        state.studySelection = {
+          subject: "english",
+          content: contents.length === ENGLISH_CONTENT_TYPES.length
+            ? "all"
+            : contents.length === 1
+              ? contents[0]
+              : null,
+          contents,
+          direction: null,
+          method: null,
+          scope: "full",
+        };
+        renderStudyContent();
+      }
+    }
+    if (target.id === "confirm-study-content" && state.studySelection.contents?.length) {
+      setView("study-method");
     }
     if (target.dataset.studyDirection) {
       state.studySelection.direction = target.dataset.studyDirection;
@@ -1659,11 +1783,19 @@ function bindEvents() {
       state.studySelection.scope = "full";
       setView("study-importance-kind");
     }
+    if (target.hasAttribute("data-study-range-all")) {
+      const clearing = state.rangeSelectionMode === "all";
+      state.rangeSelectionMode = clearing ? null : "all";
+      state.filters.ranges = clearing ? [] : [...currentRangeOrder()];
+      renderStudyRangeSelect();
+    }
     if (target.dataset.studyRange) {
       const range = target.dataset.studyRange;
+      state.rangeSelectionMode = "custom";
       state.filters.ranges = state.filters.ranges.includes(range)
         ? state.filters.ranges.filter((value) => value !== range)
         : [...state.filters.ranges, range];
+      if (!state.filters.ranges.length) state.rangeSelectionMode = null;
       renderStudyRangeSelect();
     }
     if (target.id === "confirm-study-ranges" && state.filters.ranges.length) {

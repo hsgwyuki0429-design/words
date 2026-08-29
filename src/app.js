@@ -121,6 +121,10 @@ const elements = Object.fromEntries(
     "settings-content",
     "bottom-nav",
     "effects-canvas",
+    "fx-backdrop",
+    "fx-vignette",
+    "fx-invert",
+    "fx-flash",
     "max-callout",
     "onboarding",
     "filter-backdrop",
@@ -632,6 +636,7 @@ function applySettings() {
     "content",
     isMaxMode() && state.view === "quiz" ? "#090a12" : "#f5f5f7",
   );
+  syncMaxAmbience();
 }
 
 function saveSettings() {
@@ -670,14 +675,411 @@ function renderSettings() {
     </section>`;
 }
 
-let effectFrame = 0;
+/* ---------------------------------------------------------------------------
+   MAX演出レイヤー
+   background : #fx-backdrop（MAX中の背景エネルギー）
+   world      : zoom punch / screen shake / invert / flash / vignette
+   particles  : #effects-canvas（粒子・衝撃波・スピードライン／単一のrAF）
+   ui         : #max-callout / .combo-pill
+   --------------------------------------------------------------------------- */
+
+const REDUCED_MOTION_QUERY = matchMedia("(prefers-reduced-motion: reduce)");
+const COMBO_INTENSITY_CAP = 12;
+const PARTICLE_COLORS = ["#70d7ff", "#ffffff", "#9b7cff", "#ffd86b", "#ff5db1"];
+
+const fx = {
+  context: null,
+  frame: 0,
+  running: false,
+  frozen: false,
+  previous: 0,
+  width: 0,
+  height: 0,
+  scale: 1,
+  needsResize: true,
+  particles: [],
+  rings: [],
+  rays: [],
+  timers: [],
+  animations: new Set(),
+  ambient: false,
+};
+
+let audioContext = null;
 let calloutTimer = 0;
+
+function prefersReducedMotion() {
+  return REDUCED_MOTION_QUERY.matches;
+}
+
+function isLowPowerDevice() {
+  return (navigator.hardwareConcurrency ?? 8) <= 4;
+}
+
+/** "off" = MAX以外, "reduced" = 動きを減らす設定, "full" = 全部入り。 */
+function effectsLevel() {
+  if (!isMaxMode()) return "off";
+  return prefersReducedMotion() ? "reduced" : "full";
+}
+
+function canvasEffectsEnabled() {
+  return state.settings.particles && effectsLevel() === "full";
+}
+
+function shakeEnabled() {
+  return state.settings.shake && effectsLevel() === "full";
+}
+
+function fxTimeout(callback, delay) {
+  const id = setTimeout(() => {
+    fx.timers = fx.timers.filter((timer) => timer !== id);
+    callback();
+  }, delay);
+  fx.timers.push(id);
+  return id;
+}
+
+function clearFxTimers() {
+  fx.timers.forEach(clearTimeout);
+  fx.timers = [];
+}
+
+function fxAnimate(element, keyframes, options) {
+  if (!element?.animate) return null;
+  let animation = null;
+  try {
+    animation = element.animate(keyframes, { fill: "none", easing: "ease-out", ...options });
+  } catch {
+    return null;
+  }
+  fx.animations.add(animation);
+  const forget = () => fx.animations.delete(animation);
+  animation.addEventListener("finish", forget, { once: true });
+  animation.addEventListener("cancel", forget, { once: true });
+  return animation;
+}
+
+function cancelFxAnimations() {
+  fx.animations.forEach((animation) => animation.cancel());
+  fx.animations.clear();
+}
+
+function markFxResize() {
+  fx.needsResize = true;
+}
+
+function ensureFxCanvas() {
+  const canvas = elements.effectsCanvas;
+  if (!canvas) return null;
+  if (!fx.context) fx.context = canvas.getContext("2d", { alpha: true });
+  if (!fx.context) return null;
+  if (fx.needsResize) {
+    fx.scale = Math.min(devicePixelRatio || 1, 2);
+    fx.width = innerWidth;
+    fx.height = innerHeight;
+    canvas.width = Math.round(fx.width * fx.scale);
+    canvas.height = Math.round(fx.height * fx.scale);
+    fx.context.setTransform(fx.scale, 0, 0, fx.scale, 0, 0);
+    fx.needsResize = false;
+  }
+  return fx.context;
+}
+
+function fxOrigin() {
+  return { x: fx.width / 2, y: fx.height * 0.42 };
+}
+
+function startFxLoop() {
+  if (fx.running) return;
+  fx.running = true;
+  fx.previous = performance.now();
+  fx.frame = requestAnimationFrame(stepFx);
+}
+
+function stopFxLoop() {
+  if (fx.frame) cancelAnimationFrame(fx.frame);
+  fx.frame = 0;
+  fx.running = false;
+}
+
+function stepFx(now) {
+  const context = ensureFxCanvas();
+  if (!context) {
+    stopFxLoop();
+    return;
+  }
+  const elapsed = now - fx.previous;
+  fx.previous = now;
+  const step = fx.frozen ? 0 : Math.max(0, Math.min(2.2, elapsed / 16.67));
+  if (elapsed > 34 && fx.particles.length > 90) {
+    fx.particles.length = Math.max(90, Math.ceil(fx.particles.length * 0.7));
+  }
+  context.clearRect(0, 0, fx.width, fx.height);
+  drawRays(context, step);
+  drawRings(context, step);
+  drawParticles(context, step);
+  context.globalAlpha = 1;
+  if (fx.particles.length || fx.rings.length || fx.rays.length) {
+    fx.frame = requestAnimationFrame(stepFx);
+    return;
+  }
+  context.clearRect(0, 0, fx.width, fx.height);
+  fx.frame = 0;
+  fx.running = false;
+}
+
+function drawParticles(context, step) {
+  if (!fx.particles.length) return;
+  const alive = [];
+  for (const particle of fx.particles) {
+    particle.life -= particle.decay * step;
+    if (particle.life <= 0) continue;
+    particle.x += particle.vx * step;
+    particle.y += particle.vy * step;
+    particle.vy += particle.gravity * step;
+    particle.vx *= 1 - 0.008 * step;
+    particle.rotation += particle.spin * step;
+    context.globalAlpha = Math.min(1, particle.life * 1.7);
+    context.fillStyle = particle.color;
+    if (particle.shard) {
+      context.save();
+      context.translate(particle.x, particle.y);
+      context.rotate(particle.rotation);
+      context.fillRect(-particle.size, -particle.size * 0.3, particle.size * 2, particle.size * 0.6);
+      context.restore();
+    } else {
+      context.beginPath();
+      context.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+      context.fill();
+    }
+    alive.push(particle);
+  }
+  fx.particles = alive;
+}
+
+function drawRings(context, step) {
+  if (!fx.rings.length) return;
+  const alive = [];
+  for (const ring of fx.rings) {
+    ring.life -= ring.decay * step;
+    if (ring.life <= 0) continue;
+    ring.radius = Math.max(0, ring.radius + ring.speed * step);
+    ring.speed *= 1 - 0.055 * step;
+    context.globalAlpha = Math.max(0, ring.life) * ring.alpha;
+    context.lineWidth = Math.max(0.6, ring.width * ring.life);
+    context.strokeStyle = ring.color;
+    context.beginPath();
+    context.arc(ring.x, ring.y, ring.radius, 0, Math.PI * 2);
+    context.stroke();
+    alive.push(ring);
+  }
+  fx.rings = alive;
+}
+
+function drawRays(context, step) {
+  if (!fx.rays.length) return;
+  const alive = [];
+  for (const ray of fx.rays) {
+    ray.life -= ray.decay * step;
+    if (ray.life <= 0) continue;
+    ray.distance = Math.max(0, ray.distance + ray.speed * step);
+    ray.speed *= 1 - 0.03 * step;
+    const cos = Math.cos(ray.angle);
+    const sin = Math.sin(ray.angle);
+    context.globalAlpha = Math.max(0, ray.life) * 0.5;
+    context.strokeStyle = ray.color;
+    context.lineWidth = ray.width;
+    context.beginPath();
+    context.moveTo(ray.x + cos * ray.distance, ray.y + sin * ray.distance);
+    context.lineTo(ray.x + cos * (ray.distance + ray.length), ray.y + sin * (ray.distance + ray.length));
+    context.stroke();
+    alive.push(ray);
+  }
+  fx.rays = alive;
+}
+
+function particleBudget() {
+  return isLowPowerDevice() ? 130 : 340;
+}
+
+function spawnParticleBurst({ count = 90, power = 1, origin = null, speed = 1, shards = false } = {}) {
+  if (!canvasEffectsEnabled()) return;
+  const context = ensureFxCanvas();
+  if (!context) return;
+  const center = origin ?? fxOrigin();
+  const total = Math.min(Math.round(count), particleBudget() - fx.particles.length);
+  if (total <= 0) return;
+  for (let index = 0; index < total; index += 1) {
+    const angle = (Math.PI * 2 * index) / total + Math.random() * 0.4;
+    const velocity = (1.8 + Math.random() * (4.4 + power)) * speed;
+    fx.particles.push({
+      x: center.x,
+      y: center.y,
+      vx: Math.cos(angle) * velocity,
+      vy: Math.sin(angle) * velocity - 1.4,
+      size: 1.1 + Math.random() * (2.2 + power * 0.7),
+      gravity: 0.045 + Math.random() * 0.06,
+      decay: 0.015 + Math.random() * 0.018,
+      rotation: Math.random() * Math.PI,
+      spin: (Math.random() - 0.5) * 0.26,
+      shard: shards && index % 3 === 0,
+      color: PARTICLE_COLORS[index % PARTICLE_COLORS.length],
+      life: 1,
+    });
+  }
+  startFxLoop();
+}
+
+function triggerShockwave({
+  origin = null,
+  radius = 8,
+  speed = 18,
+  width = 9,
+  color = "rgba(255,255,255,.92)",
+  decay = 0.03,
+  alpha = 1,
+} = {}) {
+  if (!canvasEffectsEnabled()) return;
+  const context = ensureFxCanvas();
+  if (!context) return;
+  if (fx.rings.length > 6) return;
+  const center = origin ?? fxOrigin();
+  fx.rings.push({ x: center.x, y: center.y, radius, speed, width, color, decay, alpha, life: 1 });
+  startFxLoop();
+}
+
+function spawnSpeedLines({ origin = null, count = 24, power = 1 } = {}) {
+  if (!canvasEffectsEnabled()) return;
+  const context = ensureFxCanvas();
+  if (!context) return;
+  if (fx.rays.length > 60) return;
+  const center = origin ?? fxOrigin();
+  const total = isLowPowerDevice() ? Math.ceil(count / 2) : count;
+  for (let index = 0; index < total; index += 1) {
+    const angle = (Math.PI * 2 * index) / total + Math.random() * 0.25;
+    fx.rays.push({
+      x: center.x,
+      y: center.y,
+      angle,
+      distance: 40 + Math.random() * 90,
+      length: 90 + Math.random() * (140 + power * 40),
+      speed: 16 + Math.random() * (12 + power * 6),
+      width: 1 + Math.random() * 2.2,
+      decay: 0.035 + Math.random() * 0.02,
+      color: index % 4 === 0 ? "#9b7cff" : "#c9f1ff",
+      life: 1,
+    });
+  }
+  startFxLoop();
+}
+
+/* --- world layer ---------------------------------------------------------- */
+
+/**
+ * transformを載せてよい要素だけを返す。
+ * position:fixed の子（.next-button / .public-grade-guide / .bottom-nav）を
+ * 内包する要素は含めない（含めると固定配置の基準がずれて回答UIが飛ぶ）。
+ */
+function worldStageElements() {
+  const nodes = [];
+  if (state.view === "quiz") {
+    const shell = elements.quizContent?.querySelector(".quiz-shell, .result-shell");
+    if (shell) nodes.push(shell);
+    return nodes;
+  }
+  const view = document.querySelector(`.view[data-view="${state.view}"]`);
+  if (view && !view.hidden) nodes.push(view);
+  if (elements.appHeader && !elements.appHeader.hidden) nodes.push(elements.appHeader);
+  if (elements.bottomNav && !elements.bottomNav.hidden) nodes.push(elements.bottomNav);
+  return nodes;
+}
+
+function triggerWorldImpact({ zoom = 0.04, shake = 0, duration = 360 } = {}) {
+  if (effectsLevel() !== "full") return;
+  const amplitude = shakeEnabled() ? shake : 0;
+  if (!zoom && !amplitude) return;
+  const jitter = (weight = 1) => (amplitude ? ((Math.random() * 2 - 1) * amplitude * weight).toFixed(1) : "0");
+  const frame = (scale, weight) => `translate3d(${jitter(weight)}px, ${jitter(weight)}px, 0) scale(${scale.toFixed(4)})`;
+  const keyframes = [
+    { transform: "translate3d(0,0,0) scale(1)" },
+    { offset: 0.12, transform: frame(1 + zoom, 1) },
+    { offset: 0.28, transform: frame(1 - zoom * 0.45, 0.85) },
+    { offset: 0.44, transform: frame(1 + zoom * 0.3, 0.55) },
+    { offset: 0.62, transform: frame(1 - zoom * 0.12, 0.28) },
+    { offset: 0.8, transform: frame(1 + zoom * 0.05, 0.12) },
+    { transform: "translate3d(0,0,0) scale(1)" },
+  ];
+  for (const node of worldStageElements()) {
+    fxAnimate(node, keyframes, { duration, easing: "cubic-bezier(.22,.9,.26,1)" });
+  }
+}
+
+function triggerScreenFlash(strength = 0.9, duration = 300) {
+  const level = effectsLevel();
+  if (level === "off" || !elements.fxFlash) return;
+  const peak = level === "reduced" ? Math.min(0.3, strength * 0.4) : strength;
+  fxAnimate(elements.fxFlash, [
+    { opacity: 0 },
+    { opacity: peak, offset: 0.14 },
+    { opacity: 0 },
+  ], { duration, easing: "cubic-bezier(.12,.7,.3,1)" });
+}
+
+function triggerScreenInvert(duration = 60) {
+  if (effectsLevel() !== "full" || !elements.fxInvert) return;
+  fxAnimate(elements.fxInvert, [
+    { opacity: 0 },
+    { opacity: 1, offset: 0.2 },
+    { opacity: 1, offset: 0.8 },
+    { opacity: 0 },
+  ], { duration, easing: "linear" });
+}
+
+function triggerScreenPulse(strength = 0.45, duration = 420) {
+  if (effectsLevel() !== "full" || !elements.fxVignette) return;
+  fxAnimate(elements.fxVignette, [
+    { opacity: 0 },
+    { opacity: strength, offset: 0.22 },
+    { opacity: 0 },
+  ], { duration, easing: "ease-out" });
+}
+
+/** 一瞬だけ時間が止まったように見せる「溜め」。JSの処理自体は止めない。 */
+function triggerImpactFreeze(duration = 80) {
+  if (effectsLevel() !== "full") return;
+  document.body.classList.add("fx-freeze");
+  fx.frozen = true;
+  fxTimeout(() => {
+    document.body.classList.remove("fx-freeze");
+    fx.frozen = false;
+    fx.previous = performance.now();
+  }, duration);
+}
+
+function triggerRgbSplit(duration = 160) {
+  if (effectsLevel() !== "full") return;
+  document.body.classList.add("fx-rgb");
+  fxTimeout(() => document.body.classList.remove("fx-rgb"), duration);
+}
+
+function pulseVibration(power = 1) {
+  if (!state.settings.vibration || !navigator.vibrate) return;
+  navigator.vibrate(power >= 4 ? [35, 30, 55] : power >= 2 ? 35 : 15);
+}
+
+function effectAudioContext() {
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return null;
+  if (!audioContext) audioContext = new AudioContextClass();
+  if (audioContext.state === "suspended") audioContext.resume().catch(() => {});
+  return audioContext;
+}
 
 function playEffectSound(power = 1) {
   if (!state.settings.sound) return;
   try {
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    const context = new AudioContext();
+    const context = effectAudioContext();
+    if (!context) return;
     const oscillator = context.createOscillator();
     const gain = context.createGain();
     oscillator.type = "sine";
@@ -688,80 +1090,207 @@ function playEffectSound(power = 1) {
     oscillator.connect(gain).connect(context.destination);
     oscillator.start();
     oscillator.stop(context.currentTime + 0.15);
-    oscillator.onended = () => context.close();
+    oscillator.onended = () => {
+      oscillator.disconnect();
+      gain.disconnect();
+    };
   } catch { /* Audio is an optional enhancement. */ }
 }
 
-function drawParticles(power = 1) {
-  if (!state.settings.particles || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  const canvas = elements.effectsCanvas;
-  const context = canvas.getContext("2d", { alpha: true });
-  const scale = Math.min(devicePixelRatio || 1, 2);
-  canvas.width = Math.round(innerWidth * scale);
-  canvas.height = Math.round(innerHeight * scale);
-  context.setTransform(scale, 0, 0, scale, 0, 0);
-  const lowPower = (navigator.hardwareConcurrency ?? 8) <= 4;
-  const count = Math.min(lowPower ? 90 : 300, power >= 4 ? 300 : power >= 2 ? 150 : 80);
-  const colors = ["#70d7ff", "#ffffff", "#9b7cff", "#ffd86b", "#ff5db1"];
-  const particles = Array.from({ length: count }, (_, index) => {
-    const angle = (Math.PI * 2 * index) / count + Math.random() * 0.3;
-    const speed = 2.5 + Math.random() * (5 + power);
-    return {
-      x: innerWidth / 2,
-      y: innerHeight * 0.42,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed - 1.5,
-      size: 1.5 + Math.random() * 3.5,
-      color: colors[index % colors.length],
-      life: 1,
-    };
-  });
-  cancelAnimationFrame(effectFrame);
-  let previous = performance.now();
-  const animate = (now) => {
-    const frameDuration = now - previous;
-    const frameScale = Math.min(2, frameDuration / 16.67);
-    if (frameDuration > 30 && particles.length > 80) {
-      particles.length = Math.max(80, Math.ceil(particles.length * 0.6));
-    }
-    previous = now;
-    context.clearRect(0, 0, innerWidth, innerHeight);
-    let alive = false;
-    for (const particle of particles) {
-      if (particle.life <= 0) continue;
-      alive = true;
-      particle.x += particle.vx * frameScale;
-      particle.y += particle.vy * frameScale;
-      particle.vy += 0.08 * frameScale;
-      particle.life -= 0.022 * frameScale;
-      context.globalAlpha = Math.max(0, particle.life);
-      context.fillStyle = particle.color;
-      context.beginPath();
-      context.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
-      context.fill();
-    }
-    context.globalAlpha = 1;
-    if (alive) effectFrame = requestAnimationFrame(animate);
-    else context.clearRect(0, 0, innerWidth, innerHeight);
-  };
-  effectFrame = requestAnimationFrame(animate);
+/* --- UI layer ------------------------------------------------------------- */
+
+function renderMaxCallout(label, detail = "", variant = "pop") {
+  const callout = elements.maxCallout;
+  if (!callout) return 0;
+  clearTimeout(calloutTimer);
+  const calm = prefersReducedMotion();
+  const duration = calm ? 700 : variant === "slam" ? 1000 : 680;
+  callout.className = `max-callout max-callout--${calm ? "calm" : variant}`;
+  callout.innerHTML = `
+    <div class="max-callout-inner" data-label="${escapeHtml(label)}">
+      <span class="max-callout-label">${escapeHtml(label)}</span>
+      ${detail ? `<small>${escapeHtml(detail)}</small>` : ""}
+    </div>`;
+  callout.hidden = false;
+  if (calm) {
+    // reduce設定ではCSS animationが実質無効化されるため、WAAPIで最小限の表示を行う。
+    fxAnimate(callout.firstElementChild, [
+      { opacity: 0 },
+      { opacity: 1, offset: 0.16 },
+      { opacity: 1, offset: 0.72 },
+      { opacity: 0 },
+    ], { duration, easing: "ease-out", fill: "forwards" });
+  }
+  calloutTimer = setTimeout(() => {
+    callout.hidden = true;
+    callout.innerHTML = "";
+  }, duration);
+  return duration;
+}
+
+/** 既存呼び出し（PERFECT / SSS MASTER など）と同じ強度の複合演出。 */
+function triggerMaxImpact(power = 1) {
+  const level = effectsLevel();
+  if (level === "off") return;
+  playEffectSound(power);
+  pulseVibration(power);
+  if (level === "reduced") {
+    triggerScreenFlash(0.5, 280);
+    return;
+  }
+  triggerScreenFlash(power >= 4 ? 0.85 : 0.42, power >= 4 ? 340 : 240);
+  triggerWorldImpact({ zoom: 0.016 + power * 0.008, shake: power >= 2 ? 2 + power : 0, duration: 300 + power * 20 });
+  spawnParticleBurst({ count: power >= 4 ? 190 : power >= 2 ? 120 : 70, power, shards: power >= 3 });
+  triggerShockwave({ speed: 14 + power * 3, width: 5 + power * 1.6 });
+  if (power >= 3) {
+    triggerShockwave({ speed: 9 + power * 2, width: 2.4, color: "rgba(130,220,255,.72)", decay: 0.022, alpha: 0.8 });
+  }
+  if (power >= 4) {
+    spawnSpeedLines({ count: 24, power });
+    triggerRgbSplit(150);
+    triggerScreenPulse(0.45, 460);
+  }
 }
 
 function showMaxCallout(label, detail = "", power = 1) {
-  if (!isMaxMode() || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  clearTimeout(calloutTimer);
-  elements.maxCallout.innerHTML = `${escapeHtml(label)}${detail ? `<small>${escapeHtml(detail)}</small>` : ""}`;
-  elements.maxCallout.hidden = false;
-  elements.maxCallout.style.animation = "none";
-  requestAnimationFrame(() => { elements.maxCallout.style.animation = ""; });
-  calloutTimer = setTimeout(() => { elements.maxCallout.hidden = true; }, 650);
-  drawParticles(power);
+  if (!isMaxMode()) return;
+  renderMaxCallout(label, detail, power >= 4 ? "slam" : "pop");
+  triggerMaxImpact(power);
+}
+
+/* --- sequences ------------------------------------------------------------ */
+
+/** MAX突入：静止 → 反転 → 閃光 → MAX文字の着弾（衝撃を全部同期） → 余韻。 */
+function triggerMaxEntrance(detail = "READY") {
+  if (!isMaxMode()) return;
+  resetMaxEffects({ keepAmbience: true });
+  syncMaxAmbience();
+  if (effectsLevel() === "reduced") {
+    renderMaxCallout("MAX MODE", detail);
+    triggerScreenFlash(0.4, 320);
+    playEffectSound(4);
+    pulseVibration(4);
+    return;
+  }
+  document.body.classList.add("fx-max-entrance");
+  // Phase A — IMPACT FREEZE（溜め）
+  triggerImpactFreeze(80);
+  pulseVibration(2);
+  // Phase B — ネガポジ反転
+  fxTimeout(() => triggerScreenInvert(60), 72);
+  // Phase C — WHITE FLASH ＋ MAX文字の射出
+  fxTimeout(() => {
+    triggerScreenFlash(0.95, 300);
+    renderMaxCallout("MAX MODE", detail, "slam");
+  }, 132);
+  // Phase D — TEXT IMPACT（文字が最大になる瞬間に全レイヤーを同期）
+  fxTimeout(() => {
+    triggerWorldImpact({ zoom: 0.055, shake: 7, duration: 420 });
+    triggerRgbSplit(170);
+    triggerScreenPulse(0.55, 480);
+    triggerShockwave({ speed: 30, width: 12 });
+    spawnParticleBurst({ count: 200, power: 4, shards: true });
+    spawnSpeedLines({ count: 30, power: 4 });
+    playEffectSound(4);
+    pulseVibration(4);
+  }, 300);
+  // Phase E — 第2波（少し遅れて薄いリング）
+  fxTimeout(() => {
+    triggerShockwave({ speed: 20, width: 3.4, color: "rgba(140,205,255,.7)", decay: 0.02, alpha: 0.75 });
+    spawnParticleBurst({ count: 80, power: 2, speed: 0.7 });
+  }, 392);
+  // Phase F — MAX状態へ定着
+  fxTimeout(() => document.body.classList.remove("fx-max-entrance"), 1000);
+}
+
+/** MAX中の正解：コンボが伸びるほど各レイヤーの出力を上げる（上限あり）。 */
+function triggerMaxCorrect(power = 1, combo = 0) {
+  const level = effectsLevel();
+  if (level === "off") return;
   playEffectSound(power);
-  if (state.settings.vibration && navigator.vibrate) navigator.vibrate(power >= 4 ? [35, 30, 55] : power >= 2 ? 35 : 15);
-  if (state.settings.shake && power >= 2 && (navigator.hardwareConcurrency ?? 8) > 4) {
-    document.body.classList.remove("screen-shake");
-    requestAnimationFrame(() => document.body.classList.add("screen-shake"));
-    setTimeout(() => document.body.classList.remove("screen-shake"), 280);
+  pulseVibration(power);
+  if (level === "reduced") {
+    triggerScreenFlash(0.24, 240);
+    return;
+  }
+  const intensity = Math.min(1, combo / COMBO_INTENSITY_CAP);
+  document.body.classList.add("fx-answer");
+  fxTimeout(() => document.body.classList.remove("fx-answer"), 340);
+  triggerScreenFlash(0.2 + intensity * 0.42, 220 + intensity * 120);
+  triggerWorldImpact({
+    zoom: 0.014 + intensity * 0.032,
+    shake: combo >= 3 ? 2 + intensity * 6 : 0,
+    duration: 260 + intensity * 150,
+  });
+  spawnParticleBurst({ count: 34 + intensity * 150, power: 1 + intensity * 3, shards: combo >= 8 });
+  if (combo >= 3) triggerShockwave({ speed: 10 + intensity * 18, width: 3 + intensity * 8 });
+  if (combo >= 5) {
+    triggerShockwave({ speed: 7 + intensity * 10, width: 2, color: "rgba(130,220,255,.6)", decay: 0.024, alpha: 0.7 });
+  }
+  if (combo >= 8) {
+    triggerScreenPulse(0.28 + intensity * 0.26, 420);
+    spawnSpeedLines({ count: 14 + Math.round(intensity * 14), power: 2 + intensity * 2 });
+  }
+  if (combo >= 10) triggerRgbSplit(120);
+}
+
+/** MAX終了：突入の逆再生。エネルギーが抜けて通常世界へ戻る。 */
+function triggerMaxExit() {
+  clearFxTimers();
+  clearTimeout(calloutTimer);
+  document.body.classList.remove("fx-freeze", "fx-rgb", "fx-answer", "fx-max-entrance");
+  fx.frozen = false;
+  fx.rays = [];
+  if (elements.maxCallout) {
+    elements.maxCallout.hidden = true;
+    elements.maxCallout.innerHTML = "";
+  }
+  document.body.classList.add("fx-max-exit");
+  if (!prefersReducedMotion()) {
+    const keyframes = [
+      { transform: "translate3d(0,0,0) scale(1)", filter: "saturate(1)" },
+      { offset: 0.4, transform: "translate3d(0,0,0) scale(.988)", filter: "saturate(.7)" },
+      { transform: "translate3d(0,0,0) scale(1)", filter: "saturate(1)" },
+    ];
+    for (const node of worldStageElements()) {
+      fxAnimate(node, keyframes, { duration: 460, easing: "cubic-bezier(.3,.7,.3,1)" });
+    }
+    triggerScreenPulse(0.3, 440);
+  }
+  fxTimeout(() => document.body.classList.remove("fx-max-exit"), 520);
+}
+
+/** MAX中だけ背景そのものにエネルギーを持たせる。 */
+function syncMaxAmbience() {
+  const backdrop = elements.fxBackdrop;
+  if (!backdrop) return;
+  const shouldRun = isMaxMode();
+  backdrop.classList.toggle("is-quiz", shouldRun && state.view === "quiz");
+  if (shouldRun === fx.ambient) return;
+  fx.ambient = shouldRun;
+  backdrop.classList.toggle("is-on", shouldRun);
+  if (!shouldRun) triggerMaxExit();
+}
+
+/** overlay・class・transform・rAFの残骸を残さないための共通後始末。 */
+function resetMaxEffects({ keepAmbience = false } = {}) {
+  clearFxTimers();
+  clearTimeout(calloutTimer);
+  cancelFxAnimations();
+  fx.frozen = false;
+  fx.particles = [];
+  fx.rings = [];
+  fx.rays = [];
+  stopFxLoop();
+  if (fx.context && fx.width) fx.context.clearRect(0, 0, fx.width, fx.height);
+  document.body.classList.remove("fx-freeze", "fx-rgb", "fx-answer", "fx-max-entrance", "fx-max-exit");
+  if (elements.maxCallout) {
+    elements.maxCallout.hidden = true;
+    elements.maxCallout.innerHTML = "";
+  }
+  if (!keepAmbience && elements.fxBackdrop) {
+    elements.fxBackdrop.classList.remove("is-on", "is-quiz");
+    fx.ambient = false;
   }
 }
 
@@ -780,7 +1309,8 @@ function correctEffect(special = "") {
     detail = special === "NEW RECORD" ? `${state.combo} COMBO` : "";
     power = 4;
   }
-  showMaxCallout(label, detail, power);
+  renderMaxCallout(label, detail, power >= 4 ? "slam" : "pop");
+  triggerMaxCorrect(power, state.combo);
 }
 
 function setView(view) {
@@ -1237,11 +1767,27 @@ function renderFeedback(question, answer, correct) {
           <p>${escapeHtml(sourceLine(question.item))}</p>
         </div>
       </div>` : ""}
-    </section>
+    </section>`;
+}
+
+// .next-button は position:fixed のため、transformがかかる .quiz-shell の外に置く。
+function renderNextButton() {
+  if (!state.session?.answered) return "";
+  return `
     <button class="primary-button next-button" type="button" data-next-question>
       ${state.session.cursor + 1 >= state.session.queue.length ? "結果を見る" : "次の問題へ"}
       <span aria-hidden="true">→</span>
     </button>`;
+}
+
+let lastRenderedCombo = 0;
+
+function renderComboPill(changed) {
+  const combo = state.combo;
+  const heat = combo >= 10 ? " combo-pill--blaze" : combo >= 5 ? " combo-pill--hot" : "";
+  const pop = changed ? " combo-pill--pop" : "";
+  const text = `🔥 ${combo} COMBO`;
+  return `<div class="combo-pill${heat}${pop}"><span class="combo-pill-text" data-text="${escapeHtml(text)}">${escapeHtml(text)}</span></div>`;
 }
 
 function renderRecallQuiz() {
@@ -1275,14 +1821,14 @@ function renderRecallQuiz() {
           <div class="public-reveal-hint"><span aria-hidden="true">👆</span><strong>画面をタップして答えを表示</strong></div>
         `}
       </article>
-      ${revealed ? `
-        <div class="public-grade-guide" aria-label="自己採点">
-          <button type="button" data-public-grade="three-minutes"><span>もう一度</span><strong>3分後</strong></button>
-          <button type="button" data-public-grade="one-hour"><span>あとで復習</span><strong>1時間後</strong></button>
-          <button type="button" data-public-grade="mastered"><span>覚えた</span><strong>習得</strong></button>
-        </div>
-      ` : ""}
-    </div>`;
+    </div>
+    ${revealed ? `
+      <div class="public-grade-guide" aria-label="自己採点">
+        <button type="button" data-public-grade="three-minutes"><span>もう一度</span><strong>3分後</strong></button>
+        <button type="button" data-public-grade="one-hour"><span>あとで復習</span><strong>1時間後</strong></button>
+        <button type="button" data-public-grade="mastered"><span>覚えた</span><strong>習得</strong></button>
+      </div>
+    ` : ""}`;
   requestAnimationFrame(() => window.scrollTo(0, 0));
 }
 
@@ -1298,6 +1844,8 @@ function renderQuiz() {
     return;
   }
   const answered = session.answered;
+  const comboChanged = state.combo !== lastRenderedCombo;
+  lastRenderedCombo = state.combo;
   const lastResult = session.results.at(-1);
   const progress = Math.round(((session.cursor + (answered ? 1 : 0)) / session.queue.length) * 100);
   const isChoice = question.mode.endsWith("choice");
@@ -1318,7 +1866,7 @@ function renderQuiz() {
         <div class="quiz-progress-copy"><strong>${session.cursor + 1}</strong> / ${session.queue.length}</div>
         <span class="mode-pill">${escapeHtml(question.label)}</span>
       </header>
-      ${isMaxMode() && state.combo ? `<div class="combo-pill">🔥 ${state.combo} COMBO</div>` : ""}
+      ${isMaxMode() && state.combo ? renderComboPill(comboChanged) : ""}
       <div class="quiz-progress"><span style="width:${progress}%"></span></div>
       <article class="question-card">
         <p class="question-instruction">${escapeHtml(question.instruction)}</p>
@@ -1327,7 +1875,8 @@ function renderQuiz() {
         <div class="answer-area">${answerArea}</div>
       </article>
       ${answered ? renderFeedback(question, session.currentAnswer, lastResult.correct) : ""}
-    </div>`;
+    </div>
+    ${answered ? renderNextButton() : ""}`;
 
   if (!answered) {
     requestAnimationFrame(() => {
@@ -1395,6 +1944,7 @@ async function submitAnswer(answer, selfGrade = null, reviewDelayMs = null) {
     setMeta("activeStudy", state.activeStudy).catch(console.warn);
   }
 
+  let pendingCorrectEffect = null;
   if (correct) {
     state.combo += 1;
     let special = previousHistory.wrongCount >= 3 && (savedHistory?.currentCorrectStreak ?? 0) >= 3
@@ -1405,7 +1955,7 @@ async function submitAnswer(answer, selfGrade = null, reviewDelayMs = null) {
       setMeta("bestCombo", state.bestCombo).catch(console.warn);
       if (state.combo >= 3) special = "NEW RECORD";
     }
-    correctEffect(special);
+    pendingCorrectEffect = special;
   } else {
     state.combo = 0;
   }
@@ -1448,6 +1998,12 @@ async function submitAnswer(answer, selfGrade = null, reviewDelayMs = null) {
   }
   renderQuiz();
   renderHeader();
+  // 描画が終わってから演出を出す。フラッシュカードは直後に nextQuestion() が
+  // 再描画するため、rAF に載せて「今表示されている画面」に衝撃を当てる。
+  if (pendingCorrectEffect !== null) {
+    const special = pendingCorrectEffect;
+    requestAnimationFrame(() => correctEffect(special));
+  }
 }
 
 function injectDueReviews(session) {
@@ -1674,6 +2230,13 @@ function distributeSlotText(startInput, text) {
 }
 
 function bindEvents() {
+  addEventListener("resize", markFxResize, { passive: true });
+  addEventListener("orientationchange", markFxResize, { passive: true });
+  document.addEventListener("visibilitychange", () => {
+    document.body.classList.toggle("fx-hidden", document.hidden);
+    if (document.hidden) resetMaxEffects({ keepAmbience: true });
+  });
+
   document.addEventListener("click", (event) => {
     const target = event.target.closest("button");
     const recallSession = state.view === "quiz" && ["_recall", "_flashcard"]
@@ -1715,13 +2278,13 @@ function bindEvents() {
       state.settings.effectsMode = target.dataset.selectEffects;
       elements.onboarding.hidden = true;
       saveSettings();
-      if (isMaxMode()) showMaxCallout("MAX MODE", "READY", 3);
+      if (isMaxMode()) triggerMaxEntrance("READY");
     }
     if (target.dataset.effectsMode) {
       state.settings.effectsMode = target.dataset.effectsMode;
       saveSettings();
       renderSettings();
-      if (isMaxMode()) showMaxCallout("MAX MODE", "ON", 3);
+      if (isMaxMode()) triggerMaxEntrance("ON");
     }
     if (target.hasAttribute("data-reset-data")) {
       if (!window.confirm("本当に学習履歴を削除しますか？")) return;

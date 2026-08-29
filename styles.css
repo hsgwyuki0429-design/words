@@ -83,6 +83,8 @@ select:focus-visible {
 }
 
 .app-shell {
+  position: relative;
+  z-index: 1;
   min-height: 100vh;
   min-height: 100dvh;
 }
@@ -819,6 +821,118 @@ h2 {
 .onboarding-options strong { font-size: 20px; letter-spacing: 0.06em; }
 .onboarding-options small { color: inherit; opacity: 0.7; }
 
+/* ---------------------------------------------------------------------------
+   MAX演出レイヤー
+   background : .fx-backdrop  （MAX中の背景エネルギー / app-shellの下に敷く）
+   world      : .fx-vignette / .fx-invert / .fx-flash + body.fx-* クラス
+   particles  : .effects-canvas
+   ui         : .max-callout / .combo-pill
+   animationは transform と opacity のみを対象にする。
+   --------------------------------------------------------------------------- */
+
+.fx-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 460ms ease;
+}
+.fx-backdrop.is-on { opacity: 1; }
+.fx-backdrop > span {
+  position: absolute;
+  display: block;
+  opacity: 0;
+  transition: opacity 340ms ease;
+}
+.fx-aurora {
+  inset: -12%;
+  background:
+    radial-gradient(40% 32% at 22% 22%, rgba(112, 215, 255, 0.62), transparent 70%),
+    radial-gradient(44% 36% at 78% 32%, rgba(155, 124, 255, 0.58), transparent 72%),
+    radial-gradient(50% 40% at 50% 86%, rgba(255, 93, 177, 0.4), transparent 74%);
+}
+.fx-orbit {
+  top: 50%;
+  left: 50%;
+  width: 120vmin;
+  height: 120vmin;
+  margin: -60vmin 0 0 -60vmin;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(112, 215, 255, 0.55) 40deg,
+    transparent 98deg,
+    rgba(155, 124, 255, 0.5) 166deg,
+    transparent 226deg,
+    rgba(255, 216, 107, 0.34) 300deg,
+    transparent 360deg
+  );
+  mask-image: radial-gradient(circle, transparent 4%, #000 30%, transparent 76%);
+  -webkit-mask-image: radial-gradient(circle, transparent 4%, #000 30%, transparent 76%);
+}
+.fx-motes {
+  inset: 0;
+  background:
+    radial-gradient(2px 2px at 18% 12%, rgba(255, 255, 255, 0.95), transparent 62%),
+    radial-gradient(1.6px 1.6px at 74% 8%, rgba(150, 225, 255, 0.9), transparent 62%),
+    radial-gradient(2.2px 2.2px at 62% 26%, rgba(255, 255, 255, 0.8), transparent 62%),
+    radial-gradient(1.5px 1.5px at 33% 34%, rgba(190, 165, 255, 0.9), transparent 62%),
+    radial-gradient(1.8px 1.8px at 88% 22%, rgba(255, 216, 107, 0.8), transparent 62%),
+    radial-gradient(1.7px 1.7px at 9% 52%, rgba(150, 225, 255, 0.85), transparent 62%),
+    radial-gradient(2.1px 2.1px at 92% 46%, rgba(255, 255, 255, 0.8), transparent 62%),
+    radial-gradient(1.5px 1.5px at 46% 62%, rgba(190, 165, 255, 0.8), transparent 62%),
+    radial-gradient(1.9px 1.9px at 24% 76%, rgba(255, 255, 255, 0.85), transparent 62%),
+    radial-gradient(1.6px 1.6px at 78% 84%, rgba(150, 225, 255, 0.85), transparent 62%),
+    radial-gradient(2px 2px at 55% 92%, rgba(255, 216, 107, 0.7), transparent 62%),
+    radial-gradient(1.4px 1.4px at 12% 92%, rgba(255, 255, 255, 0.75), transparent 62%);
+}
+
+body.max-mode .fx-backdrop.is-on .fx-aurora {
+  opacity: 0.3;
+  animation: fx-aurora-drift 19s ease-in-out infinite alternate;
+}
+body.max-mode .fx-backdrop.is-on .fx-orbit {
+  opacity: 0.34;
+  animation: fx-orbit-spin 34s linear infinite;
+}
+body.max-mode .fx-backdrop.is-on .fx-motes {
+  opacity: 0.35;
+  animation: fx-motes-float 13s ease-in-out infinite alternate;
+}
+/* 学習中は背景そのものがエネルギーを持っている状態にする。 */
+body.max-mode .fx-backdrop.is-on.is-quiz .fx-aurora { opacity: 0.72; }
+body.max-mode .fx-backdrop.is-on.is-quiz .fx-orbit { opacity: 0.62; }
+body.max-mode .fx-backdrop.is-on.is-quiz .fx-motes { opacity: 0.7; }
+body.max-mode.fx-answer .fx-backdrop.is-on .fx-aurora { opacity: 0.92; }
+body.max-mode.fx-max-entrance .fx-backdrop.is-on .fx-aurora { opacity: 0.82; }
+body.max-mode.fx-max-entrance .fx-backdrop.is-on .fx-orbit { opacity: 0.7; }
+body.fx-max-exit .fx-backdrop > span { opacity: 0 !important; }
+
+/* IMPACT FREEZE：一瞬だけ背景の動きを止めて「溜め」を作る。 */
+body.fx-freeze .fx-backdrop > span,
+body.fx-freeze .max-callout-inner,
+body.fx-freeze .max-callout-inner::before,
+body.fx-freeze .max-callout-inner::after,
+body.fx-hidden .fx-backdrop > span {
+  animation-play-state: paused;
+}
+
+@keyframes fx-aurora-drift {
+  0% { transform: translate3d(-2%, -1.5%, 0) scale(1); }
+  100% { transform: translate3d(2%, 1.5%, 0) scale(1.08); }
+}
+@keyframes fx-orbit-spin {
+  0% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(180deg) scale(1.12); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+@keyframes fx-motes-float {
+  0% { transform: translate3d(-1%, 2%, 0); }
+  100% { transform: translate3d(1%, -2%, 0); }
+}
+
 .effects-canvas {
   position: fixed;
   inset: 0;
@@ -827,6 +941,34 @@ h2 {
   height: 100%;
   pointer-events: none;
 }
+
+.fx-vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 148;
+  opacity: 0;
+  background: radial-gradient(circle at 50% 42%, transparent 26%, rgba(8, 10, 24, 0.68) 100%);
+  pointer-events: none;
+}
+/* ネガポジ反転：difference合成で下のレイヤーをそのまま反転させる（filter多層化を避ける）。 */
+.fx-invert {
+  position: fixed;
+  inset: 0;
+  z-index: 152;
+  opacity: 0;
+  background: #fff;
+  pointer-events: none;
+}
+body.fx-max-entrance .fx-invert { mix-blend-mode: difference; }
+.fx-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 156;
+  opacity: 0;
+  background: radial-gradient(circle at 50% 42%, #fff 0%, rgba(255, 255, 255, 0.78) 42%, rgba(176, 226, 255, 0.4) 68%, transparent 100%);
+  pointer-events: none;
+}
+
 .max-callout {
   position: fixed;
   inset: 0;
@@ -839,33 +981,198 @@ h2 {
   font-weight: 900;
   letter-spacing: -0.06em;
   text-align: center;
-  text-shadow: 0 0 18px #fff, 0 0 46px #6bdcff, 0 0 90px #865dff;
+  text-shadow: 0 0 18px #fff, 0 0 46px #6bdcff, 0 0 90px #865dff, 0 2px 12px rgba(6, 8, 24, .55);
   pointer-events: none;
-  animation: max-callout 620ms cubic-bezier(.16,.9,.2,1) both;
 }
-.max-callout small { display: block; margin-top: 10px; font-size: .28em; letter-spacing: .1em; }
-@keyframes max-callout {
-  0% { opacity: 0; transform: scale(.35); }
-  35% { opacity: 1; transform: scale(1.1); }
-  100% { opacity: 0; transform: scale(.96); }
+/* 明るい画面でも巨大文字が読めるように、演出の間だけ中央を沈める。 */
+.max-callout::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(6, 8, 26, .62), rgba(6, 8, 26, .28) 42%, transparent 72%);
+  pointer-events: none;
 }
+.max-callout--pop::before { animation: max-scrim 680ms ease-out both; }
+.max-callout--slam::before { animation: max-scrim-slam 1000ms ease-out both; }
+.max-callout--calm::before { opacity: .45; }
+@keyframes max-scrim {
+  0% { opacity: 0; }
+  18% { opacity: .38; }
+  62% { opacity: .24; }
+  100% { opacity: 0; }
+}
+@keyframes max-scrim-slam {
+  0% { opacity: 0; }
+  13% { opacity: 1; }
+  80% { opacity: .8; }
+  100% { opacity: 0; }
+}
+.max-callout-inner {
+  position: relative;
+  display: block;
+  will-change: transform, opacity, filter;
+  z-index: 1;
+}
+.max-callout-label { display: block; }
+.max-callout small {
+  display: block;
+  margin-top: 10px;
+  font-size: 0.28em;
+  letter-spacing: 0.1em;
+}
+/* AFTERIMAGE ＋ RGB SPLIT：DOMを増やさず擬似要素2枚で残像とチャンネルずれを作る。 */
+.max-callout-inner::before,
+.max-callout-inner::after {
+  content: attr(data-label);
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  opacity: 0;
+  text-shadow: none;
+  pointer-events: none;
+}
+.max-callout--pop .max-callout-inner { animation: max-callout-pop 680ms cubic-bezier(.16,.9,.2,1) both; }
+.max-callout--pop .max-callout-inner::before {
+  color: #ff2d6f;
+  mix-blend-mode: screen;
+  animation: max-ghost-left 300ms ease-out both;
+}
+.max-callout--pop .max-callout-inner::after {
+  color: #26e4ff;
+  mix-blend-mode: screen;
+  animation: max-ghost-right 300ms ease-out both;
+}
+.max-callout--slam .max-callout-inner { animation: max-callout-slam 1000ms cubic-bezier(.16,.86,.2,1) both; }
+.max-callout--slam .max-callout-inner::before {
+  color: #ff2d6f;
+  mix-blend-mode: screen;
+  animation: max-ghost-left 420ms 150ms ease-out both;
+}
+.max-callout--slam .max-callout-inner::after {
+  color: #26e4ff;
+  mix-blend-mode: screen;
+  animation: max-ghost-right 420ms 150ms ease-out both;
+}
+.max-callout--calm .max-callout-inner,
+.max-callout--calm .max-callout-inner::before,
+.max-callout--calm .max-callout-inner::after { animation: none; }
+.max-callout--calm .max-callout-inner::before,
+.max-callout--calm .max-callout-inner::after { content: none; }
+
+@keyframes max-callout-pop {
+  0% { opacity: 0; transform: scale(.42) translate3d(0, 8px, 0); filter: blur(6px); }
+  26% { opacity: 1; transform: scale(1.16); filter: blur(0); }
+  44% { transform: scale(.95); }
+  60% { transform: scale(1.02); }
+  78% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(.98); }
+}
+/* 文字が画面へ叩きつけられる動き：0.2 → 1.35 → 0.92 → 1.0 */
+@keyframes max-callout-slam {
+  0% { opacity: 0; transform: scale(.2) rotate(-7deg); filter: blur(16px); letter-spacing: .5em; }
+  6% { opacity: 1; }
+  17% { opacity: 1; transform: scale(1.35) rotate(1.6deg); filter: blur(0); letter-spacing: -.06em; }
+  28% { transform: scale(.92) rotate(-.8deg); }
+  38% { transform: scale(1.08) rotate(.3deg); }
+  50% { transform: scale(.98) rotate(0deg); }
+  60% { transform: scale(1) rotate(0deg); }
+  86% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.06); filter: blur(3px); }
+}
+@keyframes max-ghost-left {
+  0% { opacity: .9; transform: translate3d(-14px, -7px, 0) scale(1.06); }
+  55% { opacity: .45; transform: translate3d(-4px, -2px, 0) scale(1.01); }
+  100% { opacity: 0; transform: translate3d(0, 0, 0) scale(1); }
+}
+@keyframes max-ghost-right {
+  0% { opacity: .9; transform: translate3d(14px, 7px, 0) scale(1.06); }
+  55% { opacity: .45; transform: translate3d(4px, 2px, 0) scale(1.01); }
+  100% { opacity: 0; transform: translate3d(0, 0, 0) scale(1); }
+}
+
+/* MAX中の画面そのものの状態 */
 body.max-mode.quiz-active { background: radial-gradient(circle at 50% 15%, #182243, #090a12 58%); }
-body.max-mode.quiz-active .question-card { box-shadow: 0 0 0 1px rgba(112,215,255,.35), 0 20px 70px rgba(75,55,210,.23); }
+body.max-mode.quiz-active .question-card {
+  box-shadow: 0 0 0 1px rgba(112, 215, 255, .35), 0 20px 70px rgba(75, 55, 210, .23);
+  transition: box-shadow 260ms ease;
+}
 body.max-mode.quiz-active .quiz-progress-copy,
 body.max-mode.quiz-active .quiz-progress-copy strong { color: #fff; }
-body.screen-shake .quiz-shell { animation: screen-shake 260ms linear; }
-@keyframes screen-shake {
-  0%,100% { transform: translate3d(0,0,0); }
-  25% { transform: translate3d(-4px,2px,0); }
-  50% { transform: translate3d(4px,-2px,0); }
-  75% { transform: translate3d(-2px,-1px,0); }
+body.max-mode.fx-answer.quiz-active .question-card {
+  box-shadow: 0 0 0 1px rgba(150, 235, 255, .75), 0 0 46px rgba(112, 215, 255, .5), 0 24px 80px rgba(120, 90, 255, .4);
 }
+body.max-mode.fx-max-entrance.quiz-active .question-card {
+  box-shadow: 0 0 0 2px rgba(190, 245, 255, .9), 0 0 70px rgba(112, 215, 255, .65), 0 26px 90px rgba(140, 100, 255, .5);
+}
+/* RGB SPLIT は最重要の一瞬だけ。常時は適用しない。 */
+body.fx-rgb .question-card h1,
+body.fx-rgb .combo-pill-text {
+  text-shadow: -3px 0 rgba(255, 45, 111, .85), 3px 0 rgba(38, 228, 255, .85);
+}
+
+/* COMBO表示：数字が増えた瞬間のオーバーシュートと残像 */
 .combo-pill {
   justify-self: center;
   color: #8a4b00;
   font-size: 12px;
   font-weight: 850;
   letter-spacing: .06em;
+}
+.combo-pill-text { position: relative; display: inline-block; }
+body.max-mode .combo-pill {
+  color: #ffe6a8;
+  text-shadow: 0 0 10px rgba(255, 190, 90, .8), 0 0 26px rgba(255, 120, 60, .5);
+}
+body.max-mode .combo-pill--hot { font-size: 13px; color: #ffd06a; }
+body.max-mode .combo-pill--blaze {
+  font-size: 15px;
+  color: #fff;
+  text-shadow: 0 0 12px #ffd06a, 0 0 32px #ff6a3d, 0 0 60px rgba(255, 90, 40, .7);
+}
+body.max-mode .combo-pill--pop .combo-pill-text { animation: combo-overshoot 460ms cubic-bezier(.2,.9,.24,1) both; }
+body.max-mode .combo-pill-text::before,
+body.max-mode .combo-pill-text::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  white-space: nowrap;
+  pointer-events: none;
+}
+body.max-mode .combo-pill--pop .combo-pill-text::before { animation: combo-ghost-a 380ms ease-out both; }
+body.max-mode .combo-pill--pop .combo-pill-text::after { animation: combo-ghost-b 380ms 60ms ease-out both; }
+
+@keyframes combo-overshoot {
+  0% { transform: scale(1); }
+  22% { transform: scale(1.45); }
+  46% { transform: scale(.9); }
+  68% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+@keyframes combo-ghost-a {
+  0% { opacity: .55; transform: scale(1.5); }
+  100% { opacity: 0; transform: scale(1.9); }
+}
+@keyframes combo-ghost-b {
+  0% { opacity: .35; transform: scale(1.3); }
+  100% { opacity: 0; transform: scale(1.7); }
+}
+
+/* prefers-reduced-motion：MAXになったこと自体は伝えつつ、強い動きだけを止める。 */
+@media (prefers-reduced-motion: reduce) {
+  .fx-backdrop > span { animation: none !important; }
+  .max-callout-inner,
+  .max-callout-inner::before,
+  .max-callout-inner::after,
+  .combo-pill-text,
+  .combo-pill-text::before,
+  .combo-pill-text::after { animation: none !important; }
+  .max-callout-inner::before,
+  .max-callout-inner::after { content: none !important; }
+  body.fx-rgb .question-card h1,
+  body.fx-rgb .combo-pill-text { text-shadow: none; }
 }
 
 .bottom-nav button {

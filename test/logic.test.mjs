@@ -32,6 +32,14 @@ import {
 const items = JSON.parse(fs.readFileSync(new URL("../data/items.json", import.meta.url), "utf8"));
 const publicItems = JSON.parse(fs.readFileSync(new URL("../data/public-items.json", import.meta.url), "utf8"));
 const healthItems = JSON.parse(fs.readFileSync(new URL("../data/health-items.json", import.meta.url), "utf8"));
+const healthNotesHtml = fs.readFileSync(new URL("../health-notes.html", import.meta.url), "utf8");
+
+test("health notebook includes the lower-half red sheet controls", () => {
+  assert.match(healthNotesHtml, /id="red-sheet-toggle"/);
+  assert.match(healthNotesHtml, /height:50dvh/);
+  assert.match(healthNotesHtml, /\.term\.red-sheet-masked/);
+  assert.match(healthNotesHtml, /text-decoration-line:none!important/);
+});
 
 test("wrong answers become eligible for review after three minutes", () => {
   assert.equal(WRONG_REVIEW_DELAY_MS, 180_000);

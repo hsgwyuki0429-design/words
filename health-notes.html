@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>健康｜要点まとめ・知識つながりノート［赤シート下線版］</title>
+<style>
+:root{
+  --bg:#f6f8fb; --card:#fff; --ink:#1f2937; --muted:#64748b; --line:#dbe3ef;
+  --red:#d64545; --red2:#fff1f1; --sheet:#ff4b3e; --blue:#2563eb; --blue2:#eff6ff;
+  --green:#15803d; --green2:#f0fdf4; --amber:#b45309; --amber2:#fffbeb;
+  --purple:#7c3aed; --purple2:#f5f3ff; --shadow:0 8px 30px rgba(15,23,42,.07);
+}
+*{box-sizing:border-box} html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;line-height:1.75}
+a{color:inherit}.wrap{max-width:1120px;margin:auto;padding:24px}
+.hero{background:linear-gradient(135deg,#fff 0%,#fff7f7 100%);border:1px solid #f0dada;border-radius:24px;padding:30px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.hero:after{content:"HEALTH";position:absolute;right:-8px;top:-38px;font-size:100px;font-weight:900;color:rgba(214,69,69,.055);letter-spacing:.05em}
+.eyebrow{display:inline-flex;gap:8px;align-items:center;font-size:12px;font-weight:800;color:var(--red);letter-spacing:.08em;text-transform:uppercase}
+h1{margin:.25em 0 .2em;font-size:clamp(30px,5vw,52px);line-height:1.15}.lead{max-width:860px;color:#475569;font-size:16px}
+.badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}.badge{padding:6px 10px;border-radius:999px;background:#fff;border:1px solid var(--line);font-size:12px;font-weight:700}
+.layout{display:grid;grid-template-columns:240px minmax(0,1fr);gap:22px;margin-top:22px}
+.nav{position:sticky;top:14px;align-self:start;background:#fff;border:1px solid var(--line);border-radius:18px;padding:14px;box-shadow:var(--shadow)}
+.nav b{display:block;font-size:13px;margin:4px 8px 10px}.nav a{display:block;text-decoration:none;padding:8px 10px;border-radius:10px;font-size:13px;color:#475569}.nav a:hover{background:#f1f5f9;color:#111827}
+main{min-width:0}.section{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px;margin-bottom:18px;box-shadow:var(--shadow)}
+.section h2{margin:0 0 12px;font-size:23px;display:flex;gap:10px;align-items:center}.num{width:32px;height:32px;display:inline-grid;place-items:center;border-radius:50%;background:var(--red);color:#fff;font-size:15px;flex:0 0 auto}
+.source{font-size:11px;color:#94a3b8;margin-left:auto;font-weight:600}.summary{background:#f8fafc;border-left:4px solid var(--red);padding:12px 14px;border-radius:10px;margin:12px 0 16px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.card{border:1px solid var(--line);border-radius:14px;padding:14px;background:#fff}.card h3{margin:0 0 7px;font-size:16px}.card p{margin:4px 0;color:#475569;font-size:14px}
+.term{color:var(--sheet);font-weight:850;text-decoration-line:underline;text-decoration-thickness:2px;text-underline-offset:3px;text-decoration-color:currentColor}.term.small{font-weight:800}.term::selection{background:#fecaca;color:#7f1d1d}
+.k{font-weight:800;color:#0f172a;background:linear-gradient(transparent 65%,#fde7e7 65%)}
+.chain{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:14px 0}.node{padding:8px 11px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:13px;font-weight:700}.arr{color:#94a3b8;font-weight:900}
+.note{font-size:13px;color:#475569;background:var(--blue2);border:1px solid #bfdbfe;border-radius:12px;padding:12px 14px}.warn{background:var(--amber2);border-color:#fde68a}.green{background:var(--green2);border-color:#bbf7d0}.purple{background:var(--purple2);border-color:#ddd6fe}
+.tablewrap{overflow:auto;border:1px solid var(--line);border-radius:14px;margin:12px 0}table{border-collapse:collapse;width:100%;min-width:650px;background:#fff}th,td{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top;font-size:13px}th{background:#f8fafc;text-align:left;color:#334155}.tag{display:inline-block;padding:2px 7px;border-radius:999px;font-size:11px;font-weight:800;background:#eef2ff;color:#4338ca;margin-right:4px}
+ul{margin:8px 0 0;padding-left:1.25em}li{margin:.24em 0}
+details{border:1px dashed #cbd5e1;border-radius:12px;padding:10px 12px;margin-top:10px}summary{cursor:pointer;font-weight:800;font-size:14px}
+.bigmap{background:linear-gradient(180deg,#fff,#fbfdff);border:2px solid #dce5f0;border-radius:20px;padding:18px;margin:12px 0}.maprow{display:grid;grid-template-columns:1fr 42px 1fr 42px 1fr;align-items:center;gap:6px}.mapbox{padding:14px;border-radius:14px;text-align:center;font-weight:800;border:1px solid}.m1{background:#fff1f1;border-color:#fecaca}.m2{background:#eff6ff;border-color:#bfdbfe}.m3{background:#f0fdf4;border-color:#bbf7d0}.maparr{text-align:center;font-size:22px;color:#94a3b8}
+.exam{border-left:4px solid var(--purple);background:#faf8ff;padding:12px 14px;border-radius:10px;margin-top:12px}.exam b{color:#5b21b6}
+.termbox{margin:16px 0;border:1px solid #fecaca;background:#fffafa;border-radius:16px;padding:14px}.termbox h3{font-size:14px;margin:0 0 10px;color:#7f1d1d}.termgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px 16px}.termitem{font-size:12.5px;line-height:1.55;padding:3px 0;border-bottom:1px dotted #f1d4d4}.termitem .def{color:#475569}.termitem .term{display:inline}.hint{font-size:11px;color:#94a3b8;margin-left:4px}
+.footer{color:#64748b;text-align:center;font-size:12px;padding:10px 0 40px}
+.red-sheet-toggle{position:fixed;top:max(12px,env(safe-area-inset-top));right:max(12px,env(safe-area-inset-right));z-index:1002;min-height:44px;padding:0 16px;border:1px solid rgba(153,27,27,.22);border-radius:999px;color:#fff;background:linear-gradient(135deg,#ef4444,#f97316);box-shadow:0 10px 26px rgba(185,28,28,.28);font:800 13px/1 -apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;cursor:pointer}
+.red-sheet-toggle[aria-pressed="true"]{color:#9f1239;background:#fff;border-color:#fecdd3}
+.red-sheet-overlay{position:fixed;right:0;bottom:0;left:0;z-index:1000;height:50vh;height:50dvh;pointer-events:none;background:rgba(244,63,45,.86);border-top:2px solid rgba(127,29,29,.35);box-shadow:0 -10px 35px rgba(127,29,29,.2)}
+.red-sheet-overlay[hidden]{display:none}
+.term.red-sheet-masked{color:transparent!important;text-decoration-line:none!important;text-decoration-color:transparent!important;text-shadow:none!important;background-image:none!important}
+@media(max-width:820px){.wrap{padding:12px}.layout{grid-template-columns:1fr}.nav{position:relative;top:auto}.nav .links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.grid2,.termgrid{grid-template-columns:1fr}.section{padding:18px}.maprow{grid-template-columns:1fr}.maparr{transform:rotate(90deg)}.hero{padding:22px}.hero:after{font-size:70px}.source{display:none}}
+@media print{
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  body{background:#fff}.nav{display:none}.layout{display:block}.hero,.section{box-shadow:none}.wrap{max-width:none;padding:0}.section{page-break-inside:auto}.hero:after{display:none}.term{color:#ff4b3e!important}
+}
+</style>
+</head>
+<body>
+<button class="red-sheet-toggle" id="red-sheet-toggle" type="button" aria-pressed="false" aria-controls="red-sheet-overlay">赤シート表示</button>
+<div class="red-sheet-overlay" id="red-sheet-overlay" aria-hidden="true" hidden></div>
+<div class="wrap" id="page">
+<header class="hero">
+  <div class="eyebrow">保健｜現代社会と健康</div>
+  <h1>要点まとめ × 知識つながりノート</h1>
+  <p class="lead">教科書8テーマの因果関係を一本につなぎながら、<b>基本語句をできるだけ落とさず回収</b>した版。<span class="term">赤橙色＋アンダーラインの語句</span>が、赤シートで隠して覚える基本語句。</p>
+  <div class="badges"><span class="badge">健康課題の変遷</span><span class="badge">健康の考え方</span><span class="badge">ヘルスプロモーション</span><span class="badge">意思決定・行動選択</span><span class="badge">感染症</span><span class="badge">性感染症・エイズ</span><span class="badge">生活習慣病</span></div>
+</header>
+
+<div class="layout">
+<aside class="nav"><b>目次</b><div class="links">
+<a href="#map">0. 全体のつながり</a><a href="#s1">1. 健康課題の変遷</a><a href="#s2">2. 健康の考え方</a><a href="#s3">3. ヘルスプロモーション</a><a href="#s4">4. 意思決定・行動選択</a><a href="#s5">5. 現代の感染症</a><a href="#s6">6. 感染症の予防</a><a href="#s7">7. 性感染症・エイズ</a><a href="#s8">8. 生活習慣病</a><a href="#cross">9. 横断整理</a>
+</div></aside>
+<main>
+
+<section id="map" class="section">
+<h2><span class="num">0</span>まず、この8単元を1本にする</h2>
+<div class="bigmap"><div class="maprow">
+<div class="mapbox m1"><span class="term">疾病構造</span>が変化する<br><small>感染症中心 → 生活習慣病などへ</small></div><div class="maparr">→</div>
+<div class="mapbox m2"><span class="term">健康</span>を広く捉える<br><small>身体・精神・社会面／QOL</small></div><div class="maparr">→</div>
+<div class="mapbox m3">個人＋環境の両方から守る<br><small><span class="term">ヘルスプロモーション</span></small></div>
+</div></div>
+<div class="chain"><span class="node"><span class="term">意思決定・行動選択</span></span><span class="arr">＋</span><span class="node"><span class="term">環境づくり</span></span><span class="arr">→</span><span class="node">感染症予防</span><span class="arr">／</span><span class="node">生活習慣病予防</span><span class="arr">→</span><span class="node"><span class="term">健康寿命</span>・<span class="term">QOL</span>を高める</span></div>
+<p class="note"><b>共通構造：</b>健康は本人の努力だけで決まるのではなく、個人側の<span class="term">主体要因</span>と、周囲の<span class="term">環境要因</span>が影響し合って成り立つ。だから予防でも「個人の取り組み＋社会環境の整備」をセットで考える。</p>
+</section>
+
+<section id="s1" class="section">
+<h2><span class="num">1</span>日本における健康課題の変遷 <span class="source">教科書 p.12–13</span></h2>
+<div class="summary"><b>核：</b>日本では<span class="term">平均寿命</span>が大きく延びた一方、現在は「何年生きるか」だけでなく、日常生活動作が自立して健康に暮らせる期間＝<span class="term">健康寿命</span>を延ばすことが課題。</div>
+<div class="grid2">
+<div class="card"><h3>健康水準を表す指標</h3><p>教科書は、<span class="term">平均寿命</span>・<span class="term">健康寿命</span>・<span class="term">乳児死亡率</span>などを健康水準を示す<span class="term">健康指標</span>として挙げている。健康寿命は、日常生活動作（<span class="term">ADL</span>）が自立した健康な期間を示す。</p></div>
+<div class="card"><h3>疾病構造の変化</h3><p>1950年代の<span class="term">結核</span>などの<span class="term">感染症</span>中心から、1960～70年代の<span class="term">脳血管疾患</span>、その後の<span class="term">がん（悪性新生物）</span>などへ主要な死因が変化。現在は<span class="term">生活習慣病</span>が大きな健康課題。</p></div>
+</div>
+<div class="chain"><span class="node">医療技術・治療法の進歩</span><span class="arr">＋</span><span class="node">衛生環境の改善</span><span class="arr">→</span><span class="node">感染症死亡の減少</span><span class="arr">→</span><span class="node">長寿化</span><span class="arr">→</span><span class="node">慢性疾患・介護の課題</span></div>
+<p class="note warn"><b>つなげる：</b>長生きだけでなく「どんな状態で生きるか」が重要になる → 次の<span class="term">QOL（生活の質）</span>や<span class="term">生きがい</span>につながる。</p>
+<div class="termbox"><h3>基本語句チェック｜p.12–13</h3><div class="termgrid">
+<div class="termitem"><span class="term">健康指標</span> <span class="def">：健康水準を数量的に示す指標。</span></div>
+<div class="termitem"><span class="term">平均寿命</span> <span class="def">：ある年齢の人が平均してあと何年生きるかを示す。</span></div>
+<div class="termitem"><span class="term">健康寿命</span> <span class="def">：日常生活動作が自立した健康な期間。</span></div>
+<div class="termitem"><span class="term">乳児死亡率</span> <span class="def">：生後1年未満の死亡の割合を示す健康指標。</span></div>
+<div class="termitem"><span class="term">死亡率</span> <span class="def">：人口に対する死亡者の割合。</span></div>
+<div class="termitem"><span class="term">ADL（日常生活動作）</span> <span class="def">：日常生活を送るうえで基本となる動作。</span></div>
+<div class="termitem"><span class="term">生活習慣病</span> <span class="def">：生活習慣が発症・進行に関わる疾患群。</span></div>
+<div class="termitem"><span class="term">糖尿病</span> <span class="def">：生活習慣病の一つ。医療を受ける人も多い。</span></div>
+<div class="termitem"><span class="term">認知症</span> <span class="def">：認知機能が低下し、日常生活で介護が必要になることがある。</span></div>
+<div class="termitem"><span class="term">疾病構造</span> <span class="def">：社会で多い病気・死因の構成やその変化。</span></div>
+<div class="termitem"><span class="term">感染症</span> <span class="def">：病原体の感染により起こる疾患。</span></div>
+<div class="termitem"><span class="term">結核</span> <span class="def">：1950年代には日本の主要死因の一つだった感染症。</span></div>
+<div class="termitem"><span class="term">脳血管疾患</span> <span class="def">：脳の血管に関わる疾患。</span></div>
+<div class="termitem"><span class="term">がん（悪性新生物）</span> <span class="def">：現在の主要死因の一つ。</span></div>
+<div class="termitem"><span class="term">心疾患</span> <span class="def">：心臓に関わる疾患。主要死因の一つ。</span></div>
+<div class="termitem"><span class="term">精神疾患</span> <span class="def">：長期入院を要する場合があり、患者数増加も課題。</span></div>
+<div class="termitem"><span class="term">入院受療率</span> <span class="def">：人口に対する入院患者の割合を示す指標。</span></div>
+<div class="termitem"><span class="term">循環器疾患</span> <span class="def">：心疾患・脳血管疾患など、循環器に関わる疾患。</span></div>
+</div></div>
+</section>
+
+<section id="s2" class="section">
+<h2><span class="num">2</span>健康の考え方と成り立ち <span class="source">教科書 p.14–15</span></h2>
+<div class="summary"><b>核：</b>健康は「病気でない」だけではなく、<span class="term">身体的</span>・<span class="term">精神的</span>・<span class="term">社会的</span>な面を含む。健康状態は<span class="term">主体要因</span>と<span class="term">環境要因</span>の相互作用で変化する。</div>
+<div class="grid2">
+<div class="card"><h3>健康の捉え方</h3><p><span class="term">WHO（世界保健機関）</span>の1946年の憲章に基づく考え方では、健康は身体的・精神的・社会的に良好な状態を含む。現在は、病気や症状の有無だけでなく、<span class="term">QOL（生活の質）</span>や<span class="term">生きがい</span>も重視される。</p></div>
+<div class="card"><h3>健康に影響を与える要因</h3><p><span class="term">主体要因</span>には年齢・性別・免疫・遺伝、身体活動・運動、食事、喫煙、飲酒など。<span class="term">環境要因</span>には大気・水・土壌などの<span class="term">自然環境</span>、所得・教育・人間関係・保健医療サービスなどの<span class="term">社会環境</span>が含まれる。</p></div>
+</div>
+<div class="chain"><span class="node"><span class="term">主体要因</span></span><span class="arr">⇄</span><span class="node"><span class="term">環境要因</span></span><span class="arr">→</span><span class="node">健康状態・疾病リスク</span></div>
+<p class="note"><b>例：</b>同じ病気でも、遺伝や免疫などの主体要因だけでなく、所得・医療機関へのアクセスなどの環境要因が重なることで発症・進行のしやすさが変わる。</p>
+<div class="termbox"><h3>基本語句チェック｜p.14–15</h3><div class="termgrid">
+<div class="termitem"><span class="term">健康</span> <span class="def">：病気や症状の有無だけでなく、身体・精神・社会面を含めて捉える。</span></div>
+<div class="termitem"><span class="term">慢性疾患</span> <span class="def">：長期にわたり経過する疾患。</span></div>
+<div class="termitem"><span class="term">WHO（世界保健機関）</span> <span class="def">：1946年の憲章で健康を多面的に捉える考え方を示した。</span></div>
+<div class="termitem"><span class="term">身体的・精神的・社会的</span> <span class="def">：健康を捉える代表的な三つの側面。</span></div>
+<div class="termitem"><span class="term">QOL（生活の質）</span> <span class="def">：人間らしく生活するうえでの質を表す考え方。</span></div>
+<div class="termitem"><span class="term">生きがい</span> <span class="def">：人生を生きる支えとなる目標や心の張り合い。</span></div>
+<div class="termitem"><span class="term">ライフステージ</span> <span class="def">：乳幼児期・学童期・思春期・青年期・成人期・老年期など人生の段階。</span></div>
+<div class="termitem"><span class="term">主体要因</span> <span class="def">：個人の体内や生活習慣に関わる健康要因。</span></div>
+<div class="termitem"><span class="term">環境要因</span> <span class="def">：個人の外側にあり健康に影響する要因。</span></div>
+<div class="termitem"><span class="term">自然環境</span> <span class="def">：大気・水・土壌など。</span></div>
+<div class="termitem"><span class="term">社会環境</span> <span class="def">：所得・教育・人間関係・制度・文化・医療など。</span></div>
+<div class="termitem"><span class="term">免疫</span> <span class="def">：病原体などから体を守る仕組み。</span></div>
+<div class="termitem"><span class="term">遺伝</span> <span class="def">：主体要因の一つで、病気へのかかりやすさに関わる場合がある。</span></div>
+<div class="termitem"><span class="term">保健・医療サービス</span> <span class="def">：健康診断や病気・けがの治療など、健康を支える社会的サービス。</span></div>
+</div></div>
+</section>
+
+<section id="s3" class="section">
+<h2><span class="num">3</span>ヘルスプロモーションと健康に関わる環境づくり <span class="source">教科書 p.16–17</span></h2>
+<div class="summary"><b>核：</b><span class="term">ヘルスプロモーション</span>は、人々が健康に生活できるように、国・自治体・学校・職場・地域の自治会やボランティアなどが協力し、環境を整えていく考え方。個人の能力だけでなく、環境・制度・つながりを重視する。</div>
+<div class="grid2">
+<div class="card"><h3>個人の力を高める</h3><p>自分の健康に必要な情報を入手し、理解し、評価し、活用する<span class="term">ヘルスリテラシー</span>を高める。健康的な生活を続けやすくする支援も重要。</p></div>
+<div class="card"><h3>地域・社会を変える</h3><p>学校・地域・職場などの<span class="term">コミュニティ</span>の力を高め、住民が環境づくりや仕組みづくりに<span class="term">主体的に参加</span>する。人とのつながりも健康を守る要素になる。</p></div>
+</div>
+<div class="chain"><span class="node"><span class="term">ヘルスリテラシー</span></span><span class="arr">＋</span><span class="node"><span class="term">コミュニティ</span>の支援</span><span class="arr">＋</span><span class="node"><span class="term">自然環境・社会環境</span>の整備</span><span class="arr">→</span><span class="node">健康に生活しやすい社会</span></div>
+<p class="note green"><b>健康格差へ：</b>経済的に苦しい、地域社会とのつながりが少ないなど、置かれた社会環境の違いが<span class="term">健康格差</span>を生みうる。そこで公的制度や住民同士の助け合いが必要になる。</p>
+<div class="termbox"><h3>基本語句チェック｜p.16–17</h3><div class="termgrid">
+<div class="termitem"><span class="term">ヘルスプロモーション</span> <span class="def">：人々が健康に生活できるよう、環境を整えながら健康づくりを進める考え方。</span></div>
+<div class="termitem"><span class="term">環境を整える</span> <span class="def">：健康的な行動を選びやすくする制度・物理環境・社会環境をつくること。</span></div>
+<div class="termitem"><span class="term">ヘルスリテラシー</span> <span class="def">：健康情報を入手・理解・評価・活用する力。</span></div>
+<div class="termitem"><span class="term">コミュニティ</span> <span class="def">：地域・学校・職場など、人々が所属し関わるまとまり。</span></div>
+<div class="termitem"><span class="term">主体的な参加</span> <span class="def">：住民自身が健康な環境づくりや仕組みづくりに関わること。</span></div>
+<div class="termitem"><span class="term">社会参加</span> <span class="def">：地域活動などに参加し、人とのつながりをもつこと。</span></div>
+<div class="termitem"><span class="term">自然環境</span> <span class="def">：気候・森林・緑地・水環境など、健康に影響する自然条件。</span></div>
+<div class="termitem"><span class="term">社会環境</span> <span class="def">：文化・制度・人とのつながりなど、社会的な健康条件。</span></div>
+<div class="termitem"><span class="term">健康格差</span> <span class="def">：所得や人間関係など、置かれた環境の違いから生じる健康状態の差。</span></div>
+<div class="termitem"><span class="term">公的な仕組み</span> <span class="def">：医療保険や生活保護など、社会全体で助け合う制度。</span></div>
+<div class="termitem"><span class="term">医療保険</span> <span class="def">：必要な医療を受けることを支える公的制度。</span></div>
+<div class="termitem"><span class="term">生活保護</span> <span class="def">：生活を支える公的な福祉制度の一つ。</span></div>
+<div class="termitem"><span class="term">ボランティア</span> <span class="def">：地域の困りごと解決などを支える自主的な活動。</span></div>
+<div class="termitem"><span class="term">住民同士の助け合い</span> <span class="def">：地域内で互いに支え合う取り組み。</span></div>
+</div></div>
+</section>
+
+<section id="s4" class="section">
+<h2><span class="num">4</span>健康に関する意思決定・行動選択 <span class="source">教科書 p.20–21</span></h2>
+<div class="summary"><b>核：</b>健康に関する<span class="term">意思決定・行動選択</span>は、知識だけでなく、価値観・感情・周囲の人・人間関係・マスメディア・SNS・社会制度・文化・社会的資源など、多くの要因の影響を受ける。</div>
+<div class="grid2">
+<div class="card"><h3>影響する要因</h3><p>個人の<span class="term">知識</span>・<span class="term">価値観</span>・<span class="term">感情</span>、友人・家族の意見や行動、<span class="term">人間関係</span>、<span class="term">マスメディア</span>や<span class="term">SNS</span>、社会の制度・文化など。</p></div>
+<div class="card"><h3>よりよい意思決定のステップ</h3><p><span class="term">情報の収集</span> → <span class="term">選択肢の列挙</span> → <span class="term">結果の予測</span> → <span class="term">実行計画の検討</span> → <span class="term">実行</span> → <span class="term">評価</span>。評価結果は次の意思決定に生かす。</p></div>
+</div>
+<p class="note purple"><b>情報の信頼性：</b>「誰が発信したか」「違う情報と比べたか」「元ネタは何か」「何のための情報か」「いつの情報か」を確認する。これは<span class="term">ヘルスリテラシー</span>そのもの。</p>
+<details><summary>意思決定と行動選択の違い</summary><p><span class="term">意思決定</span>＝選択肢を考え、その中からどうするかを決めること。<span class="term">行動選択</span>＝決定を実際の行動として選び実行すること。</p></details>
+<div class="termbox"><h3>基本語句チェック｜p.20–21</h3><div class="termgrid">
+<div class="termitem"><span class="term">意思決定</span> <span class="def">：選択肢を考え、その中から選び決定すること。</span></div>
+<div class="termitem"><span class="term">行動選択</span> <span class="def">：決めた内容を実際の行動として選び実行すること。</span></div>
+<div class="termitem"><span class="term">価値観</span> <span class="def">：自分が何を大切にするかという判断の基準。</span></div>
+<div class="termitem"><span class="term">SNS（Social Networking Service）</span> <span class="def">：利用者同士が交流できるインターネット上の会員制サービス。</span></div>
+<div class="termitem"><span class="term">社会的資源</span> <span class="def">：意思決定や行動を支える制度・支援・人・サービスなど。</span></div>
+<div class="termitem"><span class="term">情報の収集</span> <span class="def">：必要な情報を幅広く集める。</span></div>
+<div class="termitem"><span class="term">選択肢の列挙</span> <span class="def">：できるだけ多くの選択肢を挙げる。</span></div>
+<div class="termitem"><span class="term">結果の予測</span> <span class="def">：各選択肢を実行した場合の結果を考える。</span></div>
+<div class="termitem"><span class="term">実行計画</span> <span class="def">：いつ・どのように実行するか具体的に考える。</span></div>
+<div class="termitem"><span class="term">評価</span> <span class="def">：実行後に結果を振り返り、次の意思決定へ生かす。</span></div>
+<div class="termitem"><span class="term">ヘルスリテラシー</span> <span class="def">：健康情報を評価し、適切な意思決定に活用する力。</span></div>
+<div class="termitem"><span class="term">コミュニケーション</span> <span class="def">：周囲と考えを伝え合い、支援を得るための重要な手段。</span></div>
+<div class="termitem"><span class="term">アサーション</span> <span class="def">：相手を尊重しつつ、自分の気持ちや考えもはっきり伝えるコミュニケーション。</span></div>
+<div class="termitem"><span class="term">直感的な意思決定・行動選択</span> <span class="def">：経験や感情などに基づいて直感的に判断すること。</span></div>
+</div></div>
+</section>
+
+<section id="s5" class="section">
+<h2><span class="num">5</span>現代における感染症の問題 <span class="source">教科書 p.24–25</span></h2>
+<div class="summary"><b>核：</b><span class="term">感染症</span>は、<span class="term">病原体</span>が人の体内に入り増殖して起こる。現代では、新たに問題となる<span class="term">新興感染症</span>、一度減少した後に再び増える<span class="term">再興感染症</span>、そして<span class="term">グローバル化</span>による世界的拡大が課題。</div>
+<div class="grid2">
+<div class="card"><h3>新興感染症</h3><p>最近新たに認知されたり、局地的だったものが感染拡大したりする感染症。病原体の<span class="term">変異</span>、熱帯林伐採などによる自然環境の変化、人と野生動物の接触増加などが背景になる。</p></div>
+<div class="card"><h3>再興感染症</h3><p><span class="term">結核</span>や<span class="term">マラリア</span>のように、いったん発生が減少した後、再び増加し問題となる感染症。予防接種率の低下、<span class="term">薬剤耐性菌</span>なども関係する。</p></div>
+</div>
+<div class="chain"><span class="node">交通網の発達</span><span class="arr">＋</span><span class="node"><span class="term">グローバル化</span></span><span class="arr">→</span><span class="node">短期間で世界的流行</span><span class="arr">→</span><span class="node"><span class="term">検疫</span>・情報共有・早期対策</span></div>
+<p class="note warn"><b>COVID-19：</b>2019年末に出現した<span class="term">新型コロナウイルス感染症（COVID-19）</span>は、世界的流行＝<span class="term">パンデミック</span>となった。日本では「密閉・密集・密接」の<span class="term">3密</span>を避けることなどが対策として示された。</p>
+<div class="termbox"><h3>基本語句チェック｜p.24–25</h3><div class="termgrid">
+<div class="termitem"><span class="term">病原体</span> <span class="def">：感染症を起こす微生物など。</span></div>
+<div class="termitem"><span class="term">感染症</span> <span class="def">：病原体が体内に入り増殖することで起こる疾患。</span></div>
+<div class="termitem"><span class="term">新興感染症</span> <span class="def">：新たに認知されたり、最近急速に広がって問題になる感染症。</span></div>
+<div class="termitem"><span class="term">再興感染症</span> <span class="def">：一度減少した後に再び増加し、問題となる感染症。</span></div>
+<div class="termitem"><span class="term">変異</span> <span class="def">：病原体の性質が変化すること。新興感染症の背景になりうる。</span></div>
+<div class="termitem"><span class="term">感染経路</span> <span class="def">：病原体が人の体内へ入る経路。</span></div>
+<div class="termitem"><span class="term">免疫</span> <span class="def">：病原体に対する体の防御機能。</span></div>
+<div class="termitem"><span class="term">結核</span> <span class="def">：代表的な再興感染症。</span></div>
+<div class="termitem"><span class="term">マラリア</span> <span class="def">：代表的な再興感染症。蚊が媒介する。</span></div>
+<div class="termitem"><span class="term">予防接種率</span> <span class="def">：対象者のうち予防接種を受けた人の割合。</span></div>
+<div class="termitem"><span class="term">薬剤耐性菌</span> <span class="def">：薬が効きにくくなった細菌。治療を難しくする。</span></div>
+<div class="termitem"><span class="term">グローバル化</span> <span class="def">：人・物が国境を越え短時間で移動し、感染症も広域化しやすくなること。</span></div>
+<div class="termitem"><span class="term">検疫</span> <span class="def">：国境を越えて病原体が侵入するのを防ぐ対策。</span></div>
+<div class="termitem"><span class="term">パンデミック</span> <span class="def">：感染症が世界的規模で流行すること。</span></div>
+<div class="termitem"><span class="term">COVID-19</span> <span class="def">：新型コロナウイルス感染症。</span></div>
+<div class="termitem"><span class="term">3密</span> <span class="def">：密閉・密集・密接。</span></div>
+</div></div>
+</section>
+
+<section id="s6" class="section">
+<h2><span class="num">6</span>感染症の予防 <span class="source">教科書 p.26–27</span></h2>
+<div class="summary"><b>核：</b><span class="term">感染症予防の三原則</span>は、<span class="term">感染源対策</span>・<span class="term">感染経路対策</span>・<span class="term">感受性者対策</span>。どこを断つ対策なのかで整理すると覚えやすい。</div>
+<div class="tablewrap"><table><thead><tr><th>三原則</th><th>ねらい</th><th>教科書の具体例</th></tr></thead><tbody>
+<tr><td><span class="term">感染源対策</span></td><td>病原体を出す「もと」を除く・減らす</td><td>感染源を特定、消毒・殺菌、患者への適切な治療</td></tr>
+<tr><td><span class="term">感染経路対策</span></td><td>病原体が体内に入る「道」を断つ</td><td>手洗い、換気、人混みを避ける、食品の衛生管理、媒介生物への対策</td></tr>
+<tr><td><span class="term">感受性者対策</span></td><td>人側の抵抗力・免疫を高める</td><td><span class="term">予防接種</span>、食事・休養などで免疫の働きを保つ</td></tr>
+</tbody></table></div>
+<div class="grid2">
+<div class="card"><h3>社会全体の取り組み</h3><p>上下水道や空調の整備、媒介動物の駆除、<span class="term">検疫</span>、予防接種、法に基づく出席停止・臨時休業、感染症の<span class="term">常時監視</span>、調査・研究、正確な情報発信など。</p></div>
+<div class="card"><h3>個人の取り組み</h3><p>発熱時に無理に登校しない、マスクや<span class="term">咳エチケット</span>、新興・再興感染症が疑われるときは適切に相談・受診する。過剰な反応や混乱・人権問題を避けるため、正しい情報に基づき冷静に対応する。</p></div>
+</div>
+<p class="note"><b>免疫の仕組み：</b>生まれつき備わる<span class="term">自然免疫</span>と、感染や予防接種などによって獲得する<span class="term">獲得免疫</span>がある。予防接種は獲得免疫を利用した予防法。</p>
+<div class="termbox"><h3>基本語句チェック｜p.26–27</h3><div class="termgrid">
+<div class="termitem"><span class="term">感染症予防の三原則</span> <span class="def">：感染源対策・感染経路対策・感受性者対策。</span></div>
+<div class="termitem"><span class="term">感染源</span> <span class="def">：病原体を外へ出し、感染のもとになる人・物など。</span></div>
+<div class="termitem"><span class="term">感染源対策</span> <span class="def">：感染源の特定、消毒・殺菌、治療などで病原体を除く。</span></div>
+<div class="termitem"><span class="term">感染経路</span> <span class="def">：病原体が人の体内に入る経路。</span></div>
+<div class="termitem"><span class="term">感染経路対策</span> <span class="def">：手洗い・換気・食品衛生などで病原体の移動経路を断つ。</span></div>
+<div class="termitem"><span class="term">媒介生物</span> <span class="def">：病原体を運び、人へ感染させる生物。例：蚊など。</span></div>
+<div class="termitem"><span class="term">抵抗力</span> <span class="def">：病原体に抵抗する体の力。</span></div>
+<div class="termitem"><span class="term">免疫</span> <span class="def">：病原体に抵抗する体の仕組み。</span></div>
+<div class="termitem"><span class="term">感受性者</span> <span class="def">：病原体に対する免疫が十分でなく、感染しやすい人。</span></div>
+<div class="termitem"><span class="term">感受性者対策</span> <span class="def">：予防接種などで感染しにくい状態をつくる。</span></div>
+<div class="termitem"><span class="term">自然免疫</span> <span class="def">：生まれつき備わる免疫。</span></div>
+<div class="termitem"><span class="term">獲得免疫</span> <span class="def">：感染や予防接種などをきっかけに得られる免疫。</span></div>
+<div class="termitem"><span class="term">予防接種</span> <span class="def">：免疫の仕組みを利用して感染・重症化を防ぐ方法。</span></div>
+<div class="termitem"><span class="term">検疫</span> <span class="def">：病原体の国内侵入を防ぐため国境などで行う対策。</span></div>
+<div class="termitem"><span class="term">常時監視</span> <span class="def">：感染症がどこでどれくらい発生しているか継続的に把握すること。</span></div>
+<div class="termitem"><span class="term">咳エチケット</span> <span class="def">：咳やくしゃみによる感染拡大を防ぐ行動。</span></div>
+<div class="termitem"><span class="term">集団免疫</span> <span class="def">：集団内で免疫をもつ人が増え、感染が広がりにくくなる効果。</span></div>
+<div class="termitem"><span class="term">集団免疫閾値</span> <span class="def">：集団免疫が成立するために必要な免疫保有者の割合。</span></div>
+<div class="termitem"><span class="term">基本再生産数（R₀）</span> <span class="def">：免疫のない集団で、1人の感染者が平均何人に感染させるかを示す指標。</span></div>
+</div></div>
+</section>
+
+<section id="s7" class="section">
+<h2><span class="num">7</span>性感染症・エイズとその予防 <span class="source">教科書 p.30–31</span></h2>
+<div class="summary"><b>核：</b><span class="term">性感染症</span>は主に<span class="term">性行為</span>を介して広がる。症状がない場合もあり、気づかないまま感染を広げることがある。<span class="term">HIV</span>感染と<span class="term">エイズ（AIDS）</span>は同じ意味ではない。</div>
+<div class="grid2">
+<div class="card"><h3>性感染症</h3><p>治療せずに放置すると<span class="term">不妊症</span>や<span class="term">子宮外妊娠</span>などの合併症につながる場合がある。感染が疑われたら検査・治療を受けることが重要。</p></div>
+<div class="card"><h3>HIVとエイズ</h3><p><span class="term">HIV（ヒト免疫不全ウイルス）</span>に感染し、免疫が低下して<span class="term">日和見感染症</span>や悪性腫瘍などが現れた状態を<span class="term">エイズ（AIDS）</span>という。治療の進歩により早期治療で長期間通常に近い生活が可能。</p></div>
+</div>
+<div class="tablewrap"><table><thead><tr><th>個人でできる対策</th><th>社会における対策</th></tr></thead><tbody><tr><td><span class="term">コンドーム</span>を正しく使う／不特定多数との性行為を避ける／感染を疑ったら早期に受診・検査／必要に応じ治療／パートナーと一緒に受診</td><td>発生状況の調査・公表／啓発／治療拠点の整備／保健所などで<span class="term">HIV検査</span>・相談を無料・匿名で行う</td></tr></tbody></table></div>
+<p class="note purple"><b>現在の課題：</b>教科書のグラフでは日本の<span class="term">梅毒</span>報告数が近年急増している。性感染症は「昔の問題」ではなく、現在も対策が必要。</p>
+<div class="termbox"><h3>基本語句チェック｜p.30–31</h3><div class="termgrid">
+<div class="termitem"><span class="term">性感染症</span> <span class="def">：主に性行為を介して広がる感染症。</span></div>
+<div class="termitem"><span class="term">性行為</span> <span class="def">：性感染症の主な感染機会。</span></div>
+<div class="termitem"><span class="term">不妊症</span> <span class="def">：性感染症を放置した場合に起こりうる合併症の一つ。</span></div>
+<div class="termitem"><span class="term">子宮外妊娠</span> <span class="def">：性感染症を放置した場合に起こりうる合併症の一つ。</span></div>
+<div class="termitem"><span class="term">エイズ（AIDS）</span> <span class="def">：HIV感染により免疫が低下し、日和見感染症などが現れた状態。</span></div>
+<div class="termitem"><span class="term">HIV</span> <span class="def">：ヒト免疫不全ウイルス。エイズの原因となる。</span></div>
+<div class="termitem"><span class="term">日和見感染症</span> <span class="def">：免疫が低下した人に起こりやすい感染症。</span></div>
+<div class="termitem"><span class="term">HIV抗体検査</span> <span class="def">：血液中のHIV抗体の有無を調べる検査。</span></div>
+<div class="termitem"><span class="term">抗HIV薬</span> <span class="def">：HIVの増殖を抑える治療薬。</span></div>
+<div class="termitem"><span class="term">HIV検査</span> <span class="def">：HIV感染の有無を確認する検査。</span></div>
+<div class="termitem"><span class="term">コンドーム</span> <span class="def">：性感染症予防に有効な方法の一つ。</span></div>
+<div class="termitem"><span class="term">梅毒</span> <span class="def">：性感染症の一つ。日本では近年報告数が増加。</span></div>
+<div class="termitem"><span class="term">ヒトパピローマウイルス感染症（HPV）</span> <span class="def">：主な性感染症の一つ。</span></div>
+<div class="termitem"><span class="term">性器クラミジア感染症</span> <span class="def">：主な性感染症の一つ。</span></div>
+<div class="termitem"><span class="term">淋菌感染症</span> <span class="def">：主な性感染症の一つ。</span></div>
+<div class="termitem"><span class="term">性器ヘルペスウイルス感染症</span> <span class="def">：主な性感染症の一つ。</span></div>
+</div></div>
+</section>
+
+<section id="s8" class="section">
+<h2><span class="num">8</span>生活習慣病の予防と回復 <span class="source">教科書 p.34–35</span></h2>
+<div class="summary"><b>核：</b><span class="term">生活習慣病</span>は、年齢や遺伝だけでなく、子どもの頃からの身体活動・運動、食事、休養・睡眠、喫煙・飲酒などの生活習慣や社会環境が発症・進行に関係する。予防は<span class="term">一次予防</span>・<span class="term">二次予防</span>・<span class="term">三次予防</span>で整理する。</div>
+<div class="grid2">
+<div class="card"><h3>主な生活習慣病</h3><p><span class="term">がん</span>、<span class="term">虚血性心疾患</span>、<span class="term">脳血管疾患</span>、<span class="term">高血圧症</span>、<span class="term">脂質異常症</span>、<span class="term">糖尿病</span>、<span class="term">腎臓病</span>、<span class="term">歯周病</span>など。</p></div>
+<div class="card"><h3>血管病とのつながり</h3><p>高血圧症・脂質異常症・糖尿病などの進行は<span class="term">動脈硬化</span>と関係し、<span class="term">心筋梗塞</span>・<span class="term">脳梗塞</span>・<span class="term">脳出血</span>などにつながることがある。</p></div>
+</div>
+<div class="tablewrap"><table><thead><tr><th>段階</th><th>目的</th><th>具体例</th></tr></thead><tbody>
+<tr><td><span class="term">一次予防</span></td><td>病気になる前に発症を予防</td><td>運動・食事・休養など健康的な生活習慣、禁煙など</td></tr>
+<tr><td><span class="term">二次予防</span></td><td>早期発見・早期治療</td><td><span class="term">健康診断</span>・<span class="term">がん検診</span>を定期的に受ける</td></tr>
+<tr><td><span class="term">三次予防</span></td><td>再発・重症化を予防し、機能の維持・回復を図る</td><td>治療継続、生活習慣改善、<span class="term">リハビリテーション</span></td></tr>
+</tbody></table></div>
+<p class="note green"><b>社会環境の整備：</b><span class="term">健康増進活動</span>、健康診断とがん検診を同時実施するなど受診しやすい仕組み、無料受診クーポンなどの<span class="term">経済的支援</span>、啓発活動、働きやすい職場環境などが個人の取り組みを支える。</p>
+<div class="termbox"><h3>基本語句チェック｜p.34–35</h3><div class="termgrid">
+<div class="termitem"><span class="term">生活習慣病</span> <span class="def">：生活習慣や社会環境などが発症・進行に関わる疾患。</span></div>
+<div class="termitem"><span class="term">NCDs（非感染性疾患）</span> <span class="def">：Noncommunicable Diseases。生活習慣病を含む、感染によらない慢性疾患群。</span></div>
+<div class="termitem"><span class="term">虚血性心疾患</span> <span class="def">：心臓の血流が不足することで起こる疾患。</span></div>
+<div class="termitem"><span class="term">脳血管疾患</span> <span class="def">：脳の血管に関わる疾患。</span></div>
+<div class="termitem"><span class="term">高血圧症</span> <span class="def">：血圧が正常値より高い状態が続く疾患。</span></div>
+<div class="termitem"><span class="term">脂質異常症</span> <span class="def">：血液中の脂質の値に異常がみられる状態。</span></div>
+<div class="termitem"><span class="term">糖尿病</span> <span class="def">：血糖値を調節する働きが不十分になり、高血糖が続く疾患。</span></div>
+<div class="termitem"><span class="term">腎臓病</span> <span class="def">：腎臓の働きが低下する疾患。</span></div>
+<div class="termitem"><span class="term">歯周病</span> <span class="def">：歯を支える組織に炎症が起こる疾患。</span></div>
+<div class="termitem"><span class="term">循環器疾患</span> <span class="def">：心臓や血管に関わる疾患の総称。</span></div>
+<div class="termitem"><span class="term">動脈硬化</span> <span class="def">：動脈の壁が硬くなり、血流が悪くなる状態。</span></div>
+<div class="termitem"><span class="term">心筋梗塞</span> <span class="def">：心臓の血流が途絶え、心筋が壊死する疾患。</span></div>
+<div class="termitem"><span class="term">脳梗塞</span> <span class="def">：脳の血管が詰まり、血流が途絶える疾患。</span></div>
+<div class="termitem"><span class="term">脳出血</span> <span class="def">：脳の血管が破れ出血する疾患。</span></div>
+<div class="termitem"><span class="term">メタボリックシンドローム</span> <span class="def">：内臓脂肪型肥満に高血圧・高血糖・脂質異常などが重なる状態。</span></div>
+<div class="termitem"><span class="term">一次予防</span> <span class="def">：健康づくりにより発症そのものを防ぐ。</span></div>
+<div class="termitem"><span class="term">二次予防</span> <span class="def">：健康診断・検診で早期発見し、早期治療につなげる。</span></div>
+<div class="termitem"><span class="term">三次予防</span> <span class="def">：再発・重症化を防ぎ、機能の維持・回復を図る。</span></div>
+<div class="termitem"><span class="term">健康診断</span> <span class="def">：病気やリスクを早く発見するための検査。</span></div>
+<div class="termitem"><span class="term">がん検診</span> <span class="def">：がんの早期発見を目的とする検診。</span></div>
+<div class="termitem"><span class="term">リハビリテーション</span> <span class="def">：機能の維持・回復や社会復帰を目指す取り組み。</span></div>
+<div class="termitem"><span class="term">健康増進活動</span> <span class="def">：地域のつながりなどを生かし、住民の健康づくりを支える活動。</span></div>
+<div class="termitem"><span class="term">経済的支援</span> <span class="def">：無料受診クーポンなど、受診の経済的負担を軽くする支援。</span></div>
+</div></div>
+</section>
+
+<section id="cross" class="section">
+<h2><span class="num">9</span>横断整理｜知識をつなげて覚える</h2>
+<div class="tablewrap"><table><thead><tr><th>共通テーマ</th><th>感染症での形</th><th>生活習慣病での形</th><th>上位概念</th></tr></thead><tbody>
+<tr><td><b>個人の行動</b></td><td>手洗い・換気・予防接種・受診</td><td>食事・運動・休養・禁煙・健診</td><td><span class="term">意思決定・行動選択</span></td></tr>
+<tr><td><b>社会環境</b></td><td>検疫、情報発信、予防接種体制、安全な環境</td><td>健診制度、経済的支援、運動・食環境</td><td><span class="term">ヘルスプロモーション</span></td></tr>
+<tr><td><b>早期発見</b></td><td>検査・診断で早く治療へ</td><td>健康診断・がん検診</td><td><span class="term">二次予防</span>の考え方</td></tr>
+<tr><td><b>情報</b></td><td>流行状況・予防法の正確な情報</td><td>健康情報をもとに行動を選ぶ</td><td><span class="term">ヘルスリテラシー</span></td></tr>
+</tbody></table></div>
+<div class="exam"><b>最終的に一本で言えるようにする</b><br>
+<span class="term">疾病構造</span>が変化する → 健康の目標が<span class="term">QOL</span>・<span class="term">健康寿命</span>まで広がる → 健康は<span class="term">主体要因</span>と<span class="term">環境要因</span>で成り立つ → だから<span class="term">ヘルスプロモーション</span>として個人の力と環境づくりを両立させる → 正しい情報をもとに<span class="term">意思決定・行動選択</span>する → 感染症は<span class="term">三原則</span>、生活習慣病は<span class="term">一次・二次・三次予防</span>で予防・回復を考える。
+</div>
+<details><summary>直前チェック：8テーマを20秒で言う</summary><ol>
+<li>日本：<span class="term">疾病構造</span>が変化し、<span class="term">健康寿命</span>が課題。</li>
+<li>健康：身体・精神・社会面。<span class="term">主体要因</span>×<span class="term">環境要因</span>。</li>
+<li><span class="term">ヘルスプロモーション</span>：個人の力＋健康的な環境。</li>
+<li><span class="term">意思決定・行動選択</span>：情報・価値観・周囲・環境の影響を受ける。</li>
+<li>感染症：<span class="term">新興感染症</span>・<span class="term">再興感染症</span>＋<span class="term">グローバル化</span>。</li>
+<li>予防：<span class="term">感染源対策</span>・<span class="term">感染経路対策</span>・<span class="term">感受性者対策</span>。</li>
+<li>性感染症・エイズ：無症状もある。検査・予防・早期治療。</li>
+<li>生活習慣病：<span class="term">一次予防</span>・<span class="term">二次予防</span>・<span class="term">三次予防</span>＋社会環境。</li>
+</ol></details>
+</section>
+
+</main></div>
+<div class="footer">出典：添付された保健教科書スキャン（p.12–17、20–21、24–27、30–31、34–35）。教科書の用語・構成を基準に再整理。</div>
+</div>
+<script>
+(() => {
+  const button = document.getElementById("red-sheet-toggle");
+  const overlay = document.getElementById("red-sheet-overlay");
+  const terms = [...document.querySelectorAll(".term")];
+  let sheetVisible = false;
+  let framePending = false;
+
+  function updateMaskedTerms() {
+    framePending = false;
+    const sheetTop = window.innerHeight / 2;
+    for (const term of terms) {
+      const rect = term.getBoundingClientRect();
+      const covered = sheetVisible && rect.bottom > sheetTop && rect.top < window.innerHeight;
+      term.classList.toggle("red-sheet-masked", covered);
+    }
+  }
+
+  function scheduleMaskUpdate() {
+    if (framePending) return;
+    framePending = true;
+    requestAnimationFrame(updateMaskedTerms);
+  }
+
+  button.addEventListener("click", () => {
+    sheetVisible = !sheetVisible;
+    overlay.hidden = !sheetVisible;
+    button.setAttribute("aria-pressed", String(sheetVisible));
+    button.textContent = sheetVisible ? "赤シートを隠す" : "赤シート表示";
+    scheduleMaskUpdate();
+  });
+  addEventListener("scroll", scheduleMaskUpdate, { passive: true });
+  addEventListener("resize", scheduleMaskUpdate);
+})();
+</script>
+</body>
+</html>

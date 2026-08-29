@@ -1,12 +1,13 @@
-const CACHE_NAME = "words-2026-2-v7";
+const CACHE_NAME = "words-2026-2-v8";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=2026.2.7",
-  "./src/app.js?v=2026.2.7",
+  "./styles.css?v=2026.2.8",
+  "./src/app.js?v=2026.2.8",
   "./src/logic.js",
-  "./src/logic.js?v=2026.2.7",
+  "./src/logic.js?v=2026.2.8",
   "./src/storage.js",
+  "./health-notes.html?v=2026.2.8",
   "./data/items.json?v=2026.08.26",
   "./data/public-items.json?v=2026.2.4",
   "./data/health-items.json?v=2026.2.4",

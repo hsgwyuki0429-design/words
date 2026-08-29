@@ -30,7 +30,7 @@ import {
   summarizeByRange,
   summarizeHistory,
   summarizeSession,
-} from "./logic.js?v=2026.2.7";
+} from "./logic.js?v=2026.2.8";
 import { clearAllData, getMeta, loadHistory, recordAttempt, setMeta } from "./storage.js";
 
 const DEFAULT_SETTINGS = {
@@ -104,6 +104,7 @@ const elements = Object.fromEntries(
     "list-count",
     "list-eyebrow",
     "list-title",
+    "nav-list-button",
     "nav-list-label",
     "word-list",
     "load-more",
@@ -312,7 +313,12 @@ function selectSubject(subject) {
   elements.listSearch.placeholder = isRecallSubject() ? "問題・答えで検索" : "英語・日本語で検索";
   elements.listEyebrow.textContent = isRecallSubject() ? "QUESTION & ANSWER" : "WORD BOOK";
   elements.listTitle.textContent = isRecallSubject() ? "一問一答" : "単語帳";
-  elements.navListLabel.textContent = isRecallSubject() ? "一問一答" : "単語帳";
+  elements.navListButton.dataset.viewTarget = isHealthSubject() ? "health-notes" : "list";
+  elements.navListLabel.textContent = isHealthSubject()
+    ? "まとめノート"
+    : isPublicSubject()
+      ? "一問一答"
+      : "単語帳";
   const levelOption = elements.listSort.querySelector('option[value="difficulty-level-desc"]');
   const englishOption = elements.listSort.querySelector('option[value="alpha-en"]');
   const japaneseOption = elements.listSort.querySelector('option[value="alpha-ja"]');
@@ -697,6 +703,8 @@ function correctEffect(special = "") {
 }
 
 function setView(view) {
+  if (view === "list" && isHealthSubject()) view = "health-notes";
+  if (view === "health-notes" && !isHealthSubject()) view = "list";
   if (!["period", "subject"].includes(view) && !state.subject) view = state.selectedPeriod ? "subject" : "period";
   if (view !== "quiz" && state.session?.reviewTimer) {
     clearTimeout(state.session.reviewTimer);
@@ -717,6 +725,7 @@ function setView(view) {
   elements.bottomNav.hidden = ["quiz", "period", "subject"].includes(view);
   elements.appHeader.hidden = ["quiz", "period", "subject"].includes(view);
   document.body.classList.toggle("quiz-active", view === "quiz");
+  document.body.classList.toggle("health-notes-active", view === "health-notes");
   window.scrollTo({ top: 0, behavior: "auto" });
 
   if (view === "home") renderHome();

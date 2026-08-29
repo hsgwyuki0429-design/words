@@ -15,7 +15,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icons/app-icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icons/app-icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=2026.2.7" />
+    <link rel="stylesheet" href="./styles.css?v=2026.2.8" />
   </head>
   <body>
     <div class="app-shell" id="app-shell" aria-busy="true">
@@ -204,6 +204,15 @@
           <button class="secondary-button load-more" id="load-more" type="button" hidden>さらに表示</button>
         </section>
 
+        <section class="view health-notes-view" id="view-health-notes" data-view="health-notes" hidden>
+          <iframe
+            class="health-notes-frame"
+            id="health-notes-frame"
+            src="./health-notes.html?v=2026.2.8"
+            title="保健 要点まとめ・知識つながりノート"
+          ></iframe>
+        </section>
+
         <section class="view" id="view-analysis" data-view="analysis" hidden>
           <div class="page-heading">
             <p class="eyebrow">PHASE 4 · ANALYSIS</p>
@@ -236,7 +245,7 @@
           <span aria-hidden="true">✎</span>
           <span>学習</span>
         </button>
-        <button type="button" data-view-target="list">
+        <button id="nav-list-button" type="button" data-view-target="list">
           <span aria-hidden="true">▤</span>
           <span id="nav-list-label">単語帳</span>
         </button>
@@ -330,6 +339,6 @@
     </aside>
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-    <script type="module" src="./src/app.js?v=2026.2.7"></script>
+    <script type="module" src="./src/app.js?v=2026.2.8"></script>
   </body>
 </html>

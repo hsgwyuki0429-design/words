@@ -617,6 +617,77 @@ export function studyPerformanceModes(selection = {}) {
   return [normalized.method];
 }
 
+export function normalizeRecentStudyConfig(config = {}) {
+  const selection = normalizeStudySelection({
+    ...(config.selection ?? {}),
+    subject: config.selection?.subject ?? config.subject,
+  });
+  if (!selection.method || (selection.subject === "english" ? !selection.contents.length : !selection.content)) {
+    return null;
+  }
+  const filters = config.filters ?? {};
+  const stringList = (values) => [...new Set(Array.isArray(values) ? values.filter(Boolean).map(String) : [])];
+  return {
+    subject: selection.subject,
+    selection,
+    filters: {
+      ranges: stringList(filters.ranges),
+      importance: stringList(filters.importance),
+      types: stringList(filters.types),
+      tags: stringList(filters.tags),
+      performance: typeof filters.performance === "string" ? filters.performance : "all",
+      minimumWrong: Math.max(0, Number(filters.minimumWrong) || 0),
+      search: "",
+    },
+    sortKey: typeof config.sortKey === "string" ? config.sortKey : "importance-desc",
+    count: "all",
+    itemIds: null,
+  };
+}
+
+export function recentStudyConfigKey(config = {}) {
+  const normalized = normalizeRecentStudyConfig(config);
+  if (!normalized) return null;
+  const sorted = (values) => [...values].sort((left, right) => left.localeCompare(right, "ja"));
+  return JSON.stringify({
+    subject: normalized.subject,
+    selection: normalized.selection,
+    filters: {
+      ...normalized.filters,
+      ranges: sorted(normalized.filters.ranges),
+      importance: sorted(normalized.filters.importance),
+      types: sorted(normalized.filters.types),
+      tags: sorted(normalized.filters.tags),
+    },
+    sortKey: normalized.sortKey,
+  });
+}
+
+export function normalizeRecentStudies(entries = [], limit = 4) {
+  const unique = new Map();
+  const normalizedEntries = (Array.isArray(entries) ? entries : [])
+    .map((entry) => ({
+      config: normalizeRecentStudyConfig(entry?.config ?? entry),
+      lastUsedAt: Math.max(0, Number(entry?.lastUsedAt) || 0),
+    }))
+    .filter((entry) => entry.config)
+    .sort((left, right) => right.lastUsedAt - left.lastUsedAt);
+  normalizedEntries.forEach((entry) => {
+    const key = recentStudyConfigKey(entry.config);
+    if (key && !unique.has(key)) unique.set(key, entry);
+  });
+  return [...unique.values()].slice(0, Math.max(0, Number(limit) || 0));
+}
+
+export function addRecentStudy(entries, config, lastUsedAt = Date.now(), limit = 4) {
+  const normalized = normalizeRecentStudyConfig(config);
+  if (!normalized) return normalizeRecentStudies(entries, limit);
+  return normalizeRecentStudies([
+    { config: normalized, lastUsedAt },
+    ...(Array.isArray(entries) ? entries : []),
+  ], limit);
+}
+
 export function studyCombinationKey(selection) {
   const normalized = normalizeStudySelection(selection);
   const contentKey = normalized.subject === "english"

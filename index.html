@@ -15,7 +15,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icons/app-icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icons/app-icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=2026.2.14" />
+    <link rel="stylesheet" href="./styles.css?v=2026.2.15" />
   </head>
   <body>
     <div class="fx-backdrop" id="fx-backdrop" aria-hidden="true">
@@ -81,6 +81,16 @@
               学習を始める
               <span aria-hidden="true">→</span>
             </button>
+            <section class="recent-study-section" id="recent-study-section" aria-labelledby="recent-study-title" hidden>
+              <div class="recent-study-heading">
+                <div>
+                  <p class="eyebrow">HISTORY</p>
+                  <h2 id="recent-study-title">最近の学習条件</h2>
+                </div>
+                <small>ワンタップですぐ開始</small>
+              </div>
+              <div class="recent-study-list" id="recent-study-list"></div>
+            </section>
           </div>
         </section>
 
@@ -353,6 +363,6 @@
     </aside>
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-    <script type="module" src="./src/app.js?v=2026.2.14"></script>
+    <script type="module" src="./src/app.js?v=2026.2.15"></script>
   </body>
 </html>

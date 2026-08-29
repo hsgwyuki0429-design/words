@@ -12,6 +12,7 @@ import {
   ONE_HOUR_REVIEW_DELAY_MS,
   STUDY_CONTENT_LABELS,
   STUDY_METHOD_LABELS,
+  addRecentStudy,
   accuracyFor,
   answersForMode,
   applyFilters,
@@ -26,6 +27,7 @@ import {
   slotTokensForQuestion,
   sortItems,
   normalizeStudySelection,
+  normalizeRecentStudies,
   studyCombinationKey,
   studyModeForItem,
   studyPerformanceModes,
@@ -33,7 +35,7 @@ import {
   summarizeByRange,
   summarizeHistory,
   summarizeSession,
-} from "./logic.js?v=2026.2.13";
+} from "./logic.js?v=2026.2.15";
 import { clearAllData, getMeta, loadHistory, recordAttempt, setMeta } from "./storage.js";
 
 const DEFAULT_SETTINGS = {
@@ -74,6 +76,7 @@ const state = {
   combo: 0,
   bestCombo: 0,
   activeStudy: null,
+  recentStudies: [],
   importanceFilterMode: null,
   rangeSelectionMode: null,
   contentSelectionMode: null,
@@ -88,6 +91,8 @@ const elements = Object.fromEntries(
     "home-title",
     "home-copy",
     "resume-study-card",
+    "recent-study-section",
+    "recent-study-list",
     "study-content-heading",
     "study-content-copy",
     "study-content-options",
@@ -177,6 +182,18 @@ const OTHER_SORT_OPTIONS = [
   ["alpha-en", "A–Z"],
   ["alpha-ja", "あいうえお順"],
 ];
+
+const STUDY_SORT_LABELS = {
+  "importance-desc": "重要度順",
+  difficulty: "苦手順",
+  ...Object.fromEntries(OTHER_SORT_OPTIONS),
+};
+
+const SUBJECT_LABELS = {
+  english: "英語",
+  public: "公共",
+  health: "保健",
+};
 
 const MODE_META = {
   en_to_ja_choice: { icon: "英→日", tags: ["4択", "意味"] },
@@ -376,7 +393,11 @@ function selectionIsComplete(selection = state.studySelection) {
 
 function studyContentLabel(selection = state.studySelection) {
   const normalized = normalizeStudySelection(selection);
-  if (normalized.subject !== "english") return STUDY_CONTENT_LABELS[normalized.content] ?? "教材";
+  if (normalized.subject !== "english") {
+    return normalized.content === "all"
+      ? "語句回答＋短文回答"
+      : STUDY_CONTENT_LABELS[normalized.content] ?? "教材";
+  }
   if (normalized.contents.length === ENGLISH_CONTENT_TYPES.length) return STUDY_CONTENT_LABELS.all;
   return normalized.contents.map((content) => STUDY_CONTENT_LABELS[content]).join("＋") || "教材";
 }
@@ -385,13 +406,63 @@ function studySelectionLabel(selection = state.studySelection) {
   const normalized = normalizeStudySelection(selection);
   if (!selectionIsComplete(normalized)) return "—";
   if (normalized.subject !== "english") {
-    return `${STUDY_CONTENT_LABELS[normalized.content]} / 答えを表示して自己採点`;
+    return `${studyContentLabel(normalized)} / 答えを表示して自己採点`;
   }
   const parts = [
     studyContentLabel(normalized),
     STUDY_METHOD_LABELS[normalized.method],
   ];
   return parts.join(" / ");
+}
+
+function recentStudyRangeLabel(config) {
+  const ranges = config.filters?.ranges ?? [];
+  const allRanges = config.subject === "public"
+    ? PUBLIC_RANGE_ORDER
+    : config.subject === "health"
+      ? HEALTH_RANGE_ORDER
+      : RANGE_ORDER;
+  if (!ranges.length || allRanges.every((range) => ranges.includes(range))) return "全範囲";
+  if (ranges.length <= 2) return ranges.join("・");
+  return `${ranges.slice(0, 2).join("・")}＋ほか${ranges.length - 2}`;
+}
+
+function recentStudyTimeLabel(lastUsedAt) {
+  if (!lastUsedAt) return "前回";
+  return new Intl.DateTimeFormat("ja-JP", {
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(lastUsedAt));
+}
+
+function renderRecentStudies() {
+  const entries = state.recentStudies.slice(0, 4);
+  elements.recentStudySection.hidden = entries.length === 0;
+  if (!entries.length) {
+    elements.recentStudyList.innerHTML = "";
+    return;
+  }
+  elements.recentStudyList.innerHTML = entries.map((entry, index) => {
+    const config = entry.config;
+    const importance = config.filters.importance.length
+      ? `重要度：${config.filters.importance.join("・")}`
+      : "重要度：全部";
+    const performance = `回答：${PERFORMANCE_LABELS[config.filters.performance] ?? "全部"}`;
+    const sort = STUDY_SORT_LABELS[config.sortKey] ?? "選択した順番";
+    return `
+      <button class="recent-study-button subject-${escapeHtml(config.subject)}" type="button" data-recent-study-index="${index}">
+        <span class="recent-study-meta">
+          <span class="recent-subject">${escapeHtml(SUBJECT_LABELS[config.subject] ?? "英語")}</span>
+          <time>${escapeHtml(recentStudyTimeLabel(entry.lastUsedAt))}</time>
+        </span>
+        <strong>${escapeHtml(studyContentLabel(config.selection))}</strong>
+        <span class="recent-study-method">${escapeHtml(STUDY_METHOD_LABELS[config.selection.method])}</span>
+        <small>${escapeHtml([recentStudyRangeLabel(config), importance, performance, sort].join(" · "))}</small>
+        <span class="recent-study-action">この条件で始める <span aria-hidden="true">→</span></span>
+      </button>`;
+  }).join("");
 }
 
 function progressForSelection(selection = state.studySelection) {
@@ -1397,6 +1468,7 @@ function renderHome() {
     elements.resumeStudyCard.innerHTML = "";
   }
 
+  renderRecentStudies();
   renderHeader();
 }
 
@@ -1629,6 +1701,10 @@ function startSession(overrides = {}) {
   if (!queue.length) {
     showToast("この条件に合う問題がありません");
     return;
+  }
+  if (usesSelection) {
+    state.recentStudies = addRecentStudy(state.recentStudies, config);
+    setMeta("recentStudies", state.recentStudies).catch(console.warn);
   }
   if (usesSelection) state.studySelection = selection;
   state.selectedMode = queue[0].mode;
@@ -2301,6 +2377,13 @@ function bindEvents() {
     if (target.hasAttribute("data-resume-active") && state.activeStudy?.config) {
       startSession(state.activeStudy.config);
     }
+    if (target.dataset.recentStudyIndex !== undefined) {
+      const entry = state.recentStudies[Number(target.dataset.recentStudyIndex)];
+      if (entry?.config) {
+        if (entry.config.subject !== state.subject) selectSubject(entry.config.subject);
+        startSession(entry.config);
+      }
+    }
     if (target.hasAttribute("data-study-content-all") && !isRecallSubject()) {
       const clearing = state.contentSelectionMode === "all";
       state.contentSelectionMode = clearing ? null : "all";
@@ -2519,7 +2602,7 @@ async function boot() {
         return [key, await getMeta(`studyProgress:${key}`, { completedItemIds: [] })];
       }),
     );
-    const [response, publicResponse, healthResponse, history, selectedMode, progressEntries, settings, bestCombo, activeStudy, selectedPeriod] = await Promise.all([
+    const [response, publicResponse, healthResponse, history, selectedMode, progressEntries, settings, bestCombo, activeStudy, selectedPeriod, recentStudies, lastSessionConfig] = await Promise.all([
       fetch("./data/items.json?v=2026.08.26"),
       fetch("./data/public-items.json?v=2026.2.4"),
       fetch("./data/health-items.json?v=2026.2.4"),
@@ -2530,6 +2613,8 @@ async function boot() {
       getMeta("bestCombo", 0),
       getMeta("activeStudy", null),
       getMeta("selectedPeriod", null),
+      getMeta("recentStudies", []),
+      getMeta("lastSessionConfig", null),
     ]);
     if (!response.ok) throw new Error(`教材データを読み込めませんでした (${response.status})`);
     if (!publicResponse.ok) throw new Error(`公共データを読み込めませんでした (${publicResponse.status})`);
@@ -2546,6 +2631,11 @@ async function boot() {
     state.activeStudy = activeStudy?.config?.selection && selectionIsComplete(activeStudy.config.selection)
       ? activeStudy
       : null;
+    state.recentStudies = normalizeRecentStudies([
+      ...(Array.isArray(recentStudies) ? recentStudies : []),
+      ...(state.activeStudy ? [{ config: state.activeStudy.config, lastUsedAt: state.activeStudy.startedAt }] : []),
+      ...(lastSessionConfig ? [{ config: lastSessionConfig, lastUsedAt: 0 }] : []),
+    ]);
     state.selectedPeriod = selectedPeriod === "2026.2" ? selectedPeriod : null;
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");

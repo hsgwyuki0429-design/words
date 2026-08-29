@@ -199,6 +199,32 @@ export function accuracyFor(record) {
     : null;
 }
 
+export function historyForModes(record, modes = []) {
+  const selectedModes = [...new Set(modes)].filter(Boolean);
+  if (!selectedModes.length) return record;
+  const stats = selectedModes
+    .map((mode) => ({ mode, ...(record.modeStats?.[mode] ?? {}) }))
+    .filter((stat) => (stat.attempts ?? 0) > 0);
+  const latest = stats.reduce(
+    (current, stat) => !current || (stat.lastAttemptAt ?? 0) > (current.lastAttemptAt ?? 0) ? stat : current,
+    null,
+  );
+  const totalAttempts = stats.reduce((sum, stat) => sum + (stat.attempts ?? 0), 0);
+  const correctCount = stats.reduce((sum, stat) => sum + (stat.correct ?? 0), 0);
+  const wrongCount = stats.reduce((sum, stat) => sum + (stat.wrong ?? 0), 0);
+  return {
+    ...emptyHistory(record.itemId),
+    totalAttempts,
+    correctCount,
+    wrongCount,
+    hasEverMissed: wrongCount > 0,
+    lastResult: latest?.lastResult ?? null,
+    lastAttemptAt: latest?.lastAttemptAt ?? null,
+    totalAnswerTimeMs: stats.reduce((sum, stat) => sum + (stat.totalAnswerTimeMs ?? 0), 0),
+    modeStats: Object.fromEntries(stats.map((stat) => [stat.mode, record.modeStats[stat.mode]])),
+  };
+}
+
 export function difficultyScore(record, importance = "B") {
   const importanceWeight = IMPORTANCE_ORDER.length - Math.max(0, IMPORTANCE_ORDER.indexOf(importance));
   const accuracy = accuracyFor(record) ?? 0.5;
@@ -254,11 +280,12 @@ export function applyFilters(items, history, filters = {}) {
   const importance = new Set(filters.importance ?? []);
   const types = new Set(filters.types ?? []);
   const modes = new Set(filters.modes ?? []);
+  const performanceModes = [...new Set(filters.performanceModes ?? [])];
   const tags = new Set(filters.tags ?? []);
   const minimumWrong = Number(filters.minimumWrong ?? 0);
 
   return items.filter((item) => {
-    const record = getHistory(history, item.id);
+    const record = historyForModes(getHistory(history, item.id), performanceModes);
     if (ranges.size && !ranges.has(item.range)) return false;
     if (importance.size && !importance.has(item.importance)) return false;
     if (types.size && !types.has(item.type)) return false;
@@ -577,6 +604,19 @@ export function normalizeStudySelection(selection = {}) {
   return { subject, content, contents: selectedContents, direction, method, scope: "full" };
 }
 
+export function studyPerformanceModes(selection = {}) {
+  const normalized = normalizeStudySelection(selection);
+  if (!normalized.method) return [];
+  if (normalized.subject !== "english") return [`${normalized.subject}_recall`];
+  if (normalized.method.endsWith("_flashcard")) {
+    return ["en_to_ja_flashcard", "ja_to_en_flashcard"];
+  }
+  if (normalized.method.endsWith("_choice")) {
+    return ["en_to_ja_choice", "ja_to_en_choice"];
+  }
+  return [normalized.method];
+}
+
 export function studyCombinationKey(selection) {
   const normalized = normalizeStudySelection(selection);
   const contentKey = normalized.subject === "english"
@@ -626,9 +666,13 @@ export function buildStudySession({
   rng = Math.random,
 }) {
   const completed = new Set(completedItemIds);
+  const performanceModes = studyPerformanceModes(selection);
+  const scopedHistory = new Map(
+    items.map((item) => [item.id, historyForModes(getHistory(history, item.id), performanceModes)]),
+  );
   const candidates = sortItems(
-    applyFilters(items, history, { ...filters, modes: [] }),
-    history,
+    applyFilters(items, history, { ...filters, modes: [], performanceModes }),
+    scopedHistory,
     sortKey,
     rng,
   )

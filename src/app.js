@@ -19,6 +19,7 @@ import {
   buildSession,
   buildStudySession,
   getHistory,
+  historyForModes,
   isAnswerCorrect,
   normalizeAnswer,
   reviewDelayForAnswer,
@@ -27,11 +28,12 @@ import {
   normalizeStudySelection,
   studyCombinationKey,
   studyModeForItem,
+  studyPerformanceModes,
   summarizeByMode,
   summarizeByRange,
   summarizeHistory,
   summarizeSession,
-} from "./logic.js?v=2026.2.12";
+} from "./logic.js?v=2026.2.13";
 import { clearAllData, getMeta, loadHistory, recordAttempt, setMeta } from "./storage.js";
 
 const DEFAULT_SETTINGS = {
@@ -546,27 +548,35 @@ function performanceBaseItems() {
 
 function renderStudyPerformance() {
   const base = performanceBaseItems();
-  const unanswered = base.filter((item) => getHistory(state.history, item.id).totalAttempts === 0).length;
-  const missed = base.filter((item) => getHistory(state.history, item.id).hasEverMissed).length;
+  const performanceModes = studyPerformanceModes(state.studySelection);
+  const scopedHistory = (item) => historyForModes(getHistory(state.history, item.id), performanceModes);
+  const unanswered = base.filter((item) => scopedHistory(item).totalAttempts === 0).length;
+  const missed = base.filter((item) => scopedHistory(item).hasEverMissed).length;
   const answered = base.length - unanswered;
+  const formatLabel = isRecallSubject()
+    ? "一問一答"
+    : state.studySelection.method?.endsWith("_flashcard")
+      ? "フラッシュカード"
+      : "4択";
   const options = [];
   if (unanswered === 0) {
-    options.push(["everMissed", "↺", "間違えたことのある", `${missed}問を復習`]);
+    options.push(["everMissed", "↺", `${formatLabel}で間違えたことのある`, `${missed}問を復習`]);
     options.push(["all", "∞", "全部", `${base.length}問すべて`]);
   } else if (answered > 0) {
-    options.push(["unanswered", "○", "未回答", `${unanswered}問が未回答`]);
+    options.push(["unanswered", "○", `${formatLabel}で未回答`, `${unanswered}問が未回答`]);
     options.push(["all", "∞", "全部", `${base.length}問すべて`]);
-    options.push(["everMissed", "↺", "間違えたことのある", `${missed}問を復習`]);
+    options.push(["everMissed", "↺", `${formatLabel}で間違えたことのある`, `${missed}問を復習`]);
   } else {
     options.push(["all", "∞", "全部", `${base.length}問すべて`]);
-    options.push(["unanswered", "○", "未回答", `${unanswered}問が未回答`]);
-    options.push(["everMissed", "↺", "間違えたことのある", "学習後に表示されます"]);
+    options.push(["unanswered", "○", `${formatLabel}で未回答`, `${unanswered}問が未回答`]);
+    options.push(["everMissed", "↺", `${formatLabel}で間違えたことのある`, "学習後に表示されます"]);
   }
-  elements.studyPerformanceCopy.textContent = unanswered === 0
+  const statusCopy = unanswered === 0
     ? "未回答の問題がないため、復習を先頭にしました。"
     : answered > 0
       ? "続きから始めやすいよう、未回答を先頭にしました。"
       : "今の条件に合う回答状況から選んでください。";
+  elements.studyPerformanceCopy.textContent = `${formatLabel}の履歴だけで集計します。${statusCopy}`;
   elements.studyPerformanceOptions.innerHTML = options
     .map(([key, icon, title, detail], index) => selectionCard({
       icon,
@@ -878,7 +888,11 @@ function filteredItems(filters = state.filters) {
 
 function learningItems(filters = state.filters, selection = state.studySelection) {
   if (!selectionIsComplete(selection)) return [];
-  return applyFilters(state.items, state.history, { ...filters, modes: [] })
+  return applyFilters(state.items, state.history, {
+    ...filters,
+    modes: [],
+    performanceModes: studyPerformanceModes(selection),
+  })
     .filter((item) => studyModeForItem(item, selection));
 }
 

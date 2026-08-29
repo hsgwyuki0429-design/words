@@ -14,6 +14,7 @@ import {
   buildStudySession,
   difficultyScore,
   emptyHistory,
+  historyForModes,
   itemSupportsMode,
   isAnswerCorrect,
   mergeAttempt,
@@ -23,6 +24,7 @@ import {
   studyCombinationKey,
   studyCyclePolicy,
   studyModeForItem,
+  studyPerformanceModes,
   slotTokensForQuestion,
   sortItems,
   summarizeByMode,
@@ -91,6 +93,58 @@ test("history records overall and per-mode results", () => {
   assert.equal(second.modeStats.ja_to_en_input.wrong, 1);
   assert.equal(second.totalAnswerTimeMs, 2000);
   assert.equal(accuracyFor(second), 0.5);
+});
+
+test("choice and flashcard performance histories stay separate", () => {
+  const item = items.find((candidate) => candidate.type === "word");
+  let record = mergeAttempt(null, {
+    itemId: item.id,
+    mode: "en_to_ja_choice",
+    correct: false,
+    answeredAt: 100,
+  });
+  record = mergeAttempt(record, {
+    itemId: item.id,
+    mode: "ja_to_en_flashcard",
+    correct: true,
+    answeredAt: 200,
+  });
+  const history = new Map([[item.id, record]]);
+  const choiceModes = studyPerformanceModes({
+    subject: "english",
+    content: "word",
+    method: "ja_to_en_choice",
+  });
+  const flashcardModes = studyPerformanceModes({
+    subject: "english",
+    content: "word",
+    method: "en_to_ja_flashcard",
+  });
+  const choiceHistory = historyForModes(record, choiceModes);
+  const flashcardHistory = historyForModes(record, flashcardModes);
+
+  assert.deepEqual(choiceModes, ["en_to_ja_choice", "ja_to_en_choice"]);
+  assert.deepEqual(flashcardModes, ["en_to_ja_flashcard", "ja_to_en_flashcard"]);
+  assert.equal(choiceHistory.totalAttempts, 1);
+  assert.equal(choiceHistory.wrongCount, 1);
+  assert.equal(choiceHistory.hasEverMissed, true);
+  assert.equal(flashcardHistory.totalAttempts, 1);
+  assert.equal(flashcardHistory.wrongCount, 0);
+  assert.equal(flashcardHistory.hasEverMissed, false);
+  assert.deepEqual(
+    applyFilters([item], history, {
+      performance: "everMissed",
+      performanceModes: choiceModes,
+    }),
+    [item],
+  );
+  assert.deepEqual(
+    applyFilters([item], history, {
+      performance: "everMissed",
+      performanceModes: flashcardModes,
+    }),
+    [],
+  );
 });
 
 test("multiple filter categories combine while values inside a category OR together", () => {

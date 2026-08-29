@@ -14,6 +14,7 @@ import {
   buildStudySession,
   difficultyScore,
   emptyHistory,
+  itemSupportsMode,
   isAnswerCorrect,
   mergeAttempt,
   normalizeAnswer,
@@ -152,6 +153,16 @@ test("choice questions contain four answer options, unknown, and the correct ans
   assert.equal(question.choices.at(-1), UNKNOWN_CHOICE);
 });
 
+test("English flashcards support both directions and reveal the matching answer", () => {
+  const item = items.find((candidate) => candidate.english === "remarkable");
+  const englishFirst = buildQuestion(item, "en_to_ja_flashcard", items);
+  const japaneseFirst = buildQuestion(item, "ja_to_en_flashcard", items);
+  assert.equal(englishFirst.prompt, item.english);
+  assert.equal(englishFirst.answer, item.japanese);
+  assert.equal(japaneseFirst.prompt, item.japanese);
+  assert.equal(japaneseFirst.answer, item.english);
+});
+
 test("phrase distractors contain the same number of A and B placeholders", () => {
   const item = items.find((candidate) => candidate.english === "pour A over B");
   const question = buildQuestion(item, "ja_to_en_choice", items, () => 0.42);
@@ -204,7 +215,7 @@ test("sessions never repeat an item and only use supported modes", () => {
   assert.equal(session.length, 30);
   assert.equal(new Set(session.map((entry) => entry.item.id)).size, 30);
   assert.ok(session.every((entry) => entry.item.range === "Mars"));
-  assert.ok(session.every((entry) => entry.item.questionModes.includes(entry.mode)));
+  assert.ok(session.every((entry) => itemSupportsMode(entry.item, entry.mode)));
 });
 
 test("session summary reports streak, speed, and unique items", () => {
@@ -254,34 +265,31 @@ test("overall two-correct streak rate counts mastered items", () => {
   assert.equal(summary.twoCorrectStreakRate, 2 / 3);
 });
 
-test("step-based study selection separates words, phrases, and structures", () => {
-  const word = items.find((item) => item.type === "word" && item.questionModes.includes("spelling_input"));
-  const phrase = items.find((item) => item.type === "phrase" && item.questionModes.includes("phrase_blank_input"));
-  const structure = items.find((item) => item.type === "structure" && item.questionModes.includes("phrase_blank_input"));
+test("step-based English study selection supports choice and flashcards in both directions", () => {
+  const word = items.find((item) => item.type === "word");
+  const phrase = items.find((item) => item.type === "phrase");
+  const structure = items.find((item) => item.type === "structure");
   assert.equal(
-    studyModeForItem(word, { content: "all", method: "write", scope: "partial" }),
-    "spelling_input",
+    studyModeForItem(word, { content: "all", method: "en_to_ja_choice" }),
+    "en_to_ja_choice",
   );
   assert.equal(
-    studyModeForItem(phrase, { content: "phrase", method: "write", scope: "partial" }),
-    "phrase_blank_input",
+    studyModeForItem(phrase, { content: "phrase", method: "en_to_ja_flashcard" }),
+    "en_to_ja_flashcard",
   );
   assert.equal(
-    studyModeForItem(phrase, { content: "phrase", method: "write", scope: "full" }),
-    "ja_to_en_input",
+    studyModeForItem(structure, { content: "structure", method: "ja_to_en_choice" }),
+    "ja_to_en_choice",
   );
   assert.equal(
-    studyModeForItem(phrase, { content: "word", method: "write", scope: "full" }),
+    studyModeForItem(structure, { content: "structure", method: "ja_to_en_flashcard" }),
+    "ja_to_en_flashcard",
+  );
+  assert.equal(
+    studyModeForItem(phrase, { content: "word", method: "en_to_ja_flashcard" }),
     null,
   );
-  assert.equal(
-    studyModeForItem(structure, { content: "phrase", method: "write", scope: "partial" }),
-    null,
-  );
-  assert.equal(
-    studyModeForItem(structure, { content: "structure", method: "write", scope: "partial" }),
-    "phrase_blank_input",
-  );
+  assert.equal(studyModeForItem(word, { content: "word", method: "write" }), null);
 });
 
 test("same study combination resumes after completed item ids", () => {

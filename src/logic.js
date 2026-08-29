@@ -32,6 +32,8 @@ export const HEALTH_RANGE_ORDER = [
 export const MODE_LABELS = {
   en_to_ja_choice: "英語 → 日本語 4択",
   ja_to_en_choice: "日本語 → 英語 4択",
+  en_to_ja_flashcard: "英語 → 日本語 フラッシュカード",
+  ja_to_en_flashcard: "日本語 → 英語 フラッシュカード",
   ja_to_en_input: "日本語 → 英語 入力",
   spelling_input: "スペル完全入力",
   preposition_input: "前置詞穴埋め",
@@ -74,9 +76,17 @@ export const STUDY_CONTENT_LABELS = {
 export const STUDY_METHOD_LABELS = {
   ja_to_en_choice: "日本語 → 英語 4択",
   en_to_ja_choice: "英語 → 日本語 4択",
-  write: "日本語 → 英語 記述",
+  ja_to_en_flashcard: "日本語 → 英語 フラッシュカード",
+  en_to_ja_flashcard: "英語 → 日本語 フラッシュカード",
   recall: "答えを表示して自己採点",
 };
+
+export function itemSupportsMode(item, mode) {
+  if (item.questionModes.includes(mode)) return true;
+  if (mode === "en_to_ja_flashcard") return item.questionModes.includes("en_to_ja_choice");
+  if (mode === "ja_to_en_flashcard") return item.questionModes.includes("ja_to_en_choice");
+  return false;
+}
 
 export function normalizeAnswer(value) {
   return String(value ?? "")
@@ -250,7 +260,7 @@ export function applyFilters(items, history, filters = {}) {
     if (ranges.size && !ranges.has(item.range)) return false;
     if (importance.size && !importance.has(item.importance)) return false;
     if (types.size && !types.has(item.type)) return false;
-    if (modes.size && !item.questionModes.some((mode) => modes.has(mode))) {
+    if (modes.size && ![...modes].some((mode) => itemSupportsMode(item, mode))) {
       return false;
     }
     if (tags.size && !item.tags.some((tag) => tags.has(tag))) return false;
@@ -441,6 +451,20 @@ export function buildQuestion(item, mode, pool, rng = Math.random, excludedChoic
         answer: item[`${item.subject}Answer`] ?? item.recallAnswer ?? item.publicAnswer ?? item.japanese,
         instruction: "問題を確認し、画面をタップして答えを表示してください",
       };
+    case "en_to_ja_flashcard":
+      return {
+        ...base,
+        prompt: item.english,
+        answer: item.japanese,
+        instruction: "英語の意味を考え、画面をタップして答えを表示してください",
+      };
+    case "ja_to_en_flashcard":
+      return {
+        ...base,
+        prompt: item.japanese,
+        answer: item.english,
+        instruction: "対応する英語を考え、画面をタップして答えを表示してください",
+      };
     case "en_to_ja_choice":
       return {
         ...base,
@@ -500,13 +524,13 @@ export function buildSession({
     history,
     sortKey,
     rng,
-  ).filter((item) => item.questionModes.some((mode) => modes.includes(mode)));
+  ).filter((item) => modes.some((mode) => itemSupportsMode(item, mode)));
   const limit = count === "all" ? candidates.length : Math.max(0, Number(count));
   const chosen = candidates.slice(0, limit);
   const usage = new Map(modes.map((mode) => [mode, 0]));
 
   return chosen.map((item) => {
-    const supported = item.questionModes.filter((mode) => modes.includes(mode));
+    const supported = modes.filter((mode) => itemSupportsMode(item, mode));
     const leastUsed = Math.min(...supported.map((mode) => usage.get(mode) ?? 0));
     const balanced = supported.filter((mode) => (usage.get(mode) ?? 0) === leastUsed);
     const mode = balanced[Math.floor(rng() * balanced.length)];
@@ -523,13 +547,17 @@ export function normalizeStudySelection(selection = {}) {
     : ["word", "phrase", "structure", "all"];
   const methodOptions = recallSubject
     ? ["recall"]
-    : ["ja_to_en_choice", "en_to_ja_choice", "write"];
+    : ["ja_to_en_choice", "en_to_ja_choice", "ja_to_en_flashcard", "en_to_ja_flashcard"];
   const content = contentOptions.includes(selection.content) ? selection.content : null;
   const method = methodOptions.includes(selection.method) ? selection.method : null;
-  const scope = method === "write" && content !== "word"
-    ? selection.scope === "partial" ? "partial" : "full"
-    : "full";
-  return { subject, content, method, scope };
+  const direction = ["en_to_ja", "ja_to_en"].includes(selection.direction)
+    ? selection.direction
+    : method?.startsWith("en_to_ja")
+      ? "en_to_ja"
+      : method?.startsWith("ja_to_en")
+        ? "ja_to_en"
+        : null;
+  return { subject, content, direction, method, scope: "full" };
 }
 
 export function studyCombinationKey(selection) {
@@ -561,19 +589,8 @@ export function studyModeForItem(item, selection) {
     return item.questionModes.includes(mode) ? mode : null;
   }
   if (item.subject && item.subject !== "english") return null;
-  const isWord = item.type === "word";
   if (normalized.content !== "all" && item.type !== normalized.content) return null;
-  if (normalized.method === "ja_to_en_choice") {
-    return item.questionModes.includes("ja_to_en_choice") ? "ja_to_en_choice" : null;
-  }
-  if (normalized.method === "en_to_ja_choice") {
-    return item.questionModes.includes("en_to_ja_choice") ? "en_to_ja_choice" : null;
-  }
-  if (isWord) {
-    return item.questionModes.includes("spelling_input") ? "spelling_input" : null;
-  }
-  const mode = normalized.scope === "partial" ? "phrase_blank_input" : "ja_to_en_input";
-  return item.questionModes.includes(mode) ? mode : null;
+  return itemSupportsMode(item, normalized.method) ? normalized.method : null;
 }
 
 export function buildStudySession({
@@ -680,7 +697,7 @@ export function summarizeByRange(items, history) {
 
 export function summarizeByMode(items, history) {
   return ALL_MODES.map((mode) => {
-    const supported = items.filter((item) => item.questionModes.includes(mode));
+    const supported = items.filter((item) => itemSupportsMode(item, mode));
     const records = supported.map((item) => getHistory(history, item.id).modeStats?.[mode]);
     const attempts = records.reduce((sum, record) => sum + (record?.attempts ?? 0), 0);
     const correct = records.reduce((sum, record) => sum + (record?.correct ?? 0), 0);

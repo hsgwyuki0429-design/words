@@ -30,7 +30,7 @@ import {
   summarizeByRange,
   summarizeHistory,
   summarizeSession,
-} from "./logic.js?v=2026.2.8";
+} from "./logic.js?v=2026.2.10";
 import { clearAllData, getMeta, loadHistory, recordAttempt, setMeta } from "./storage.js";
 
 const DEFAULT_SETTINGS = {
@@ -52,7 +52,7 @@ const state = {
   history: new Map(),
   view: "period",
   selectedMode: null,
-  studySelection: { subject: "english", content: null, method: null, scope: null },
+  studySelection: { subject: "english", content: null, direction: null, method: null, scope: "full" },
   progress: new Map(),
   filters: {
     ranges: [],
@@ -169,6 +169,8 @@ const OTHER_SORT_OPTIONS = [
 const MODE_META = {
   en_to_ja_choice: { icon: "英→日", tags: ["4択", "意味"] },
   ja_to_en_choice: { icon: "日→英", tags: ["4択", "英語"] },
+  en_to_ja_flashcard: { icon: "英→日", tags: ["自己採点", "フラッシュカード"] },
+  ja_to_en_flashcard: { icon: "日→英", tags: ["自己採点", "フラッシュカード"] },
   ja_to_en_input: { icon: "日→英", tags: ["完全入力", "語句"] },
   spelling_input: { icon: "Aa", tags: ["完全入力", "スペル"] },
   preposition_input: { icon: "_", tags: ["穴埋め", "前置詞"] },
@@ -177,6 +179,13 @@ const MODE_META = {
   health_recall: { icon: "保", tags: ["自己採点", "一問一答"] },
 };
 
+const ACTIVE_ENGLISH_STUDY_MODES = [
+  "en_to_ja_choice",
+  "ja_to_en_choice",
+  "en_to_ja_flashcard",
+  "ja_to_en_flashcard",
+];
+
 const STUDY_CONTENT_META = {
   word: { icon: "Aa", title: "単語", detail: "英単語を中心に学習", tags: ["単語"] },
   phrase: { icon: "…", title: "熟語", detail: "熟語だけを学習", tags: ["熟語"] },
@@ -184,21 +193,23 @@ const STUDY_CONTENT_META = {
   all: { icon: "＋", title: "すべて", detail: "単語・熟語・構文を続けて学習", tags: ["単語", "熟語", "構文"] },
 };
 
-const STUDY_METHOD_META = {
-  ja_to_en_choice: { icon: "日→英", detail: "日本語に合う英語を4つから選ぶ", tags: ["4択"] },
-  en_to_ja_choice: { icon: "英→日", detail: "英語に合う日本語を4つから選ぶ", tags: ["4択"] },
-  write: { icon: "✎", detail: "日本語を見て英語を正しく書く", tags: ["記述"] },
+const STUDY_DIRECTION_META = {
+  en_to_ja: { icon: "英→日", title: "英語 → 日本語", detail: "英語を見て日本語の意味を答える", tags: ["英語から"] },
+  ja_to_en: { icon: "日→英", title: "日本語 → 英語", detail: "日本語を見て対応する英語を答える", tags: ["日本語から"] },
+};
+
+const STUDY_FORMAT_META = {
+  choice: { icon: "4", title: "4択問題", detail: "4つの候補から正しい答えを選ぶ", tags: ["選択式"] },
+  flashcard: { icon: "▣", title: "フラッシュカード", detail: "画面を押して答えを表示し、自分で採点する", tags: ["自己採点"] },
 };
 
 const KNOWN_STUDY_SELECTIONS = [
   ...["word", "phrase", "structure", "all"].flatMap((content) => [
     { content, method: "ja_to_en_choice", scope: "full" },
     { content, method: "en_to_ja_choice", scope: "full" },
-    { content, method: "write", scope: "full" },
+    { content, method: "ja_to_en_flashcard", scope: "full" },
+    { content, method: "en_to_ja_flashcard", scope: "full" },
   ]),
-  { content: "phrase", method: "write", scope: "partial" },
-  { content: "structure", method: "write", scope: "partial" },
-  { content: "all", method: "write", scope: "partial" },
   { subject: "public", content: "term", method: "recall", scope: "full" },
   { subject: "public", content: "short", method: "recall", scope: "full" },
   { subject: "public", content: "all", method: "recall", scope: "full" },
@@ -292,8 +303,9 @@ function resetStudyFlow() {
   state.studySelection = {
     subject: isRecallSubject() ? state.subject : "english",
     content: null,
+    direction: null,
     method: null,
-    scope: null,
+    scope: "full",
   };
   state.sortKey = "importance-desc";
   state.filters = emptyFilters();
@@ -345,9 +357,6 @@ function studySelectionLabel(selection = state.studySelection) {
     STUDY_CONTENT_LABELS[normalized.content],
     STUDY_METHOD_LABELS[normalized.method],
   ];
-  if (normalized.method === "write" && normalized.content !== "word") {
-    parts.push(normalized.scope === "partial" ? "一部を穴埋め" : "全部を書く");
-  }
   return parts.join(" / ");
 }
 
@@ -397,39 +406,23 @@ function renderStudyContent() {
 
 function renderStudyMethod() {
   const contentLabel = STUDY_CONTENT_LABELS[state.studySelection.content] ?? "教材";
-  elements.studyMethodHeading.textContent = `${contentLabel}の出題方法`;
-  elements.studyMethodCopy.textContent = "4択または記述から一つ選んでください。";
-  elements.studyMethodOptions.innerHTML = Object.entries(STUDY_METHOD_META)
-    .map(([method, meta]) => selectionCard({
-      icon: meta.icon,
-      title: STUDY_METHOD_LABELS[method],
-      detail: meta.detail,
-      tags: meta.tags,
-      dataAttribute: `data-study-method="${method}"`,
+  elements.studyMethodHeading.textContent = `${contentLabel}の出題方向`;
+  elements.studyMethodCopy.textContent = "問題と答えの向きを選んでください。";
+  elements.studyMethodOptions.innerHTML = Object.entries(STUDY_DIRECTION_META)
+    .map(([direction, meta]) => selectionCard({
+      ...meta,
+      dataAttribute: `data-study-direction="${direction}"`,
     }))
     .join("");
 }
 
 function renderStudyScope() {
-  elements.studyScopeOptions.innerHTML = [
-    {
-      scope: "partial",
-      icon: "＿",
-      title: "一部を入力",
-      detail: "日本語訳を見ながら、英語の空欄部分だけを書く",
-      tags: ["穴埋め"],
-    },
-    {
-      scope: "full",
-      icon: "ABC",
-      title: "全部を書く",
-      detail: "日本語訳を見て、英語を最初から最後まで書く",
-      tags: ["完全入力"],
-    },
-  ].map((meta) => selectionCard({
-    ...meta,
-    dataAttribute: `data-study-scope="${meta.scope}"`,
-  })).join("");
+  elements.studyScopeOptions.innerHTML = Object.entries(STUDY_FORMAT_META)
+    .map(([format, meta]) => selectionCard({
+      ...meta,
+      dataAttribute: `data-study-format="${format}"`,
+    }))
+    .join("");
 }
 
 function renderStudyRangeSelect() {
@@ -527,9 +520,7 @@ function renderStudySortOther() {
 
 function viewBeforeImportanceSelection() {
   if (isRecallSubject()) return "study-content";
-  return state.studySelection.method === "write" && state.studySelection.content !== "word"
-    ? "study-scope"
-    : "study-method";
+  return "study-scope";
 }
 
 function showToast(message) {
@@ -762,10 +753,10 @@ function renderHome() {
     ? "公共を、思い出せるまで。"
     : isHealthSubject()
       ? "保健を、思い出せるまで。"
-      : "英コミを、書けるまで。";
+      : "英コミを、思い出せるまで。";
   elements.homeCopy.textContent = isRecallSubject()
     ? "問題を見て答えを思い出し、左右のタップで自己採点します。"
-    : "意味・スペル・前置詞を、同じ語句で何度も確かめます。";
+    : "英語と日本語を行き来しながら、4択とフラッシュカードで確かめます。";
 
   const activeSubject = state.activeStudy?.config?.subject
     ?? state.activeStudy?.config?.selection?.subject
@@ -1171,7 +1162,7 @@ function renderRecallQuiz() {
         <div class="public-recall-meta">
           <span class="importance-badge importance-${question.item.importance.toLowerCase()}">${question.item.importance}</span>
           <span>${escapeHtml(question.item.range)}</span>
-          <span>Q${question.item.number}</span>
+          ${question.item.number ? `<span>Q${question.item.number}</span>` : ""}
         </div>
         <p class="question-instruction">${revealed ? "答えを確認して自己採点" : "問題"}</p>
         <h1>${escapeHtml(question.prompt)}</h1>
@@ -1203,7 +1194,7 @@ function renderQuiz() {
     return;
   }
   const question = session.currentQuestion;
-  if (question.mode.endsWith("_recall")) {
+  if (question.mode.endsWith("_recall") || question.mode.endsWith("_flashcard")) {
     renderRecallQuiz();
     return;
   }
@@ -1499,7 +1490,8 @@ function renderSessionComplete() {
 function renderAnalysis() {
   const overall = summarizeHistory(state.items, state.history);
   const ranges = summarizeByRange(state.items, state.history);
-  const modes = summarizeByMode(state.items, state.history);
+  const modes = summarizeByMode(state.items, state.history)
+    .filter((stat) => isRecallSubject() || ACTIVE_ENGLISH_STUDY_MODES.includes(stat.mode));
   const itemUnit = isRecallSubject() ? "問" : "語句";
   const rangeMarkup = ranges.map((stat) => `
     <article class="analysis-row">
@@ -1585,7 +1577,8 @@ function distributeSlotText(startInput, text) {
 function bindEvents() {
   document.addEventListener("click", (event) => {
     const target = event.target.closest("button");
-    const recallSession = state.view === "quiz" && state.session?.currentQuestion?.mode.endsWith("_recall");
+    const recallSession = state.view === "quiz" && ["_recall", "_flashcard"]
+      .some((suffix) => state.session?.currentQuestion?.mode.endsWith(suffix));
     if (recallSession && !target?.hasAttribute("data-quit-quiz")) {
       if (!state.session.revealed) {
         state.session.revealed = true;
@@ -1650,23 +1643,20 @@ function bindEvents() {
       state.studySelection = {
         subject: isRecallSubject() ? state.subject : "english",
         content: target.dataset.studyContent,
+        direction: null,
         method: isRecallSubject() ? "recall" : null,
-        scope: isRecallSubject() ? "full" : null,
+        scope: "full",
       };
       setView(isRecallSubject() ? "study-importance-kind" : "study-method");
     }
-    if (target.dataset.studyMethod) {
-      state.studySelection.method = target.dataset.studyMethod;
-      if (target.dataset.studyMethod === "write" && state.studySelection.content !== "word") {
-        state.studySelection.scope = null;
-        setView("study-scope");
-      } else {
-        state.studySelection.scope = "full";
-        setView("study-importance-kind");
-      }
+    if (target.dataset.studyDirection) {
+      state.studySelection.direction = target.dataset.studyDirection;
+      state.studySelection.method = null;
+      setView("study-scope");
     }
-    if (target.dataset.studyScope) {
-      state.studySelection.scope = target.dataset.studyScope;
+    if (target.dataset.studyFormat && state.studySelection.direction) {
+      state.studySelection.method = `${state.studySelection.direction}_${target.dataset.studyFormat}`;
+      state.studySelection.scope = "full";
       setView("study-importance-kind");
     }
     if (target.dataset.studyRange) {
@@ -1844,7 +1834,9 @@ async function boot() {
     state.progress = new Map(progressEntries);
     state.settings = { ...DEFAULT_SETTINGS, ...(settings ?? {}) };
     state.bestCombo = Number(bestCombo) || 0;
-    state.activeStudy = activeStudy?.config?.selection ? activeStudy : null;
+    state.activeStudy = activeStudy?.config?.selection && selectionIsComplete(activeStudy.config.selection)
+      ? activeStudy
+      : null;
     state.selectedPeriod = selectedPeriod === "2026.2" ? selectedPeriod : null;
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");

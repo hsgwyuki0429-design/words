@@ -53,8 +53,9 @@ python -m http.server 8000
 - 形式選択、単語帳、回答フィードバック、リザルト、分析でのタグ表示
 - Apple純正アプリに近いSIMPLE UIと、iPhone・iPad・PC向けレスポンシブ表示
 - 初回起動時のSIMPLE／MAX選択と、後から変更できる設定画面
-- MAX MODEのCanvasパーティクル、コンボ、画面シェイク、効果音・振動の個別設定
-- `CORRECT`、3／5／10／20／30コンボ、`PERFECT`、`SSS MASTER`、`WEAKNESS DESTROYED`、`NEW RECORD`演出
+- MAX MODEの単一Canvasタイムライン、コンボ、画面シェイク、Web Audio効果音・振動の個別設定
+- `CORRECT`、3／5／10／20／30コンボ、`PERFECT`、`SSS MASTER`、`WEAKNESS DESTROYED`、`NEW RECORD`を音・光・文字・振動で同期する固有演出
+- Cメジャー・ペンタトニックに沿ってコンボごとに音程と厚みが上がるオリジナル合成音、マスター圧縮、ボイス数制限、控えめ／フル設定
 - `prefers-reduced-motion`と低性能端末を考慮した演出量の自動抑制
 - Web App Manifest、Service Worker、ホーム画面追加、読み込み後のオフライン利用
 - Dynamic Island／Home Indicatorを考慮したセーフエリアと44px以上のタップ領域
@@ -69,6 +70,12 @@ npm test
 ```
 
 教材データの件数・必須項目・出題形式を検証した後、回答判定、履歴、複合フィルター、苦手順、選択肢、セッション構築、2回連続正解率を含む集計をテストします。
+
+MAX演出を順番に目視・試聴するときはローカルHTTPサーバーで配信し、`?max-effects-lab`を付けて開きます。コントローラーはlocalhostでこのクエリを明示した場合だけ表示され、本番UIには表示されません。
+
+```text
+http://localhost:8000/?max-effects-lab
+```
 
 ## 教材データの再生成
 

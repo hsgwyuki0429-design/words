@@ -39,12 +39,22 @@ import {
   summarizeByRange,
   summarizeHistory,
   summarizeSession,
-} from "./logic.js?v=2026.2.16";
+} from "./logic.js?v=2026.2.17";
+import { createMaxAudioEngine } from "./audio.js?v=2026.2.17";
+import {
+  MAX_TIMELINE_PHASES,
+  maxCueForAnswer,
+  maxCueForFinale,
+  resolveMaxCue,
+  scaledVisualPlan,
+  shouldPlayMaxSound,
+} from "./max-cues.js?v=2026.2.17";
 import { clearAllData, getMeta, loadHistory, recordAttempt, setMeta } from "./storage.js";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
   sound: false,
+  soundIntensity: "gentle",
   vibration: true,
   particles: true,
   shake: true,
@@ -134,6 +144,11 @@ const elements = Object.fromEntries(
     "fx-vignette",
     "fx-invert",
     "fx-flash",
+    "fx-stage",
+    "fx-energy-core",
+    "fx-light-column",
+    "fx-gold-frame",
+    "fx-crack",
     "max-callout",
     "onboarding",
     "filter-backdrop",
@@ -726,6 +741,8 @@ function applySettings() {
     "content",
     isMaxMode() && state.view === "quiz" ? "#090a12" : "#f5f5f7",
   );
+  if (!isMaxMode() || !state.settings.sound) maxAudio.stopAll();
+  else maxAudio.setIntensity(state.settings.soundIntensity);
   syncMaxAmbience();
 }
 
@@ -753,6 +770,13 @@ function renderSettings() {
       ${toggle("particles", "パーティクル", "正解時にCanvasの光を表示")}
       ${toggle("shake", "画面シェイク", "コンボ時に画面を短く揺らす")}
       ${toggle("sound", "効果音", "初期設定はオフ")}
+      <div class="settings-row sound-intensity-row">
+        <span><strong>効果音の強さ</strong><small>音量ではなくレイヤーと余韻を調整</small></span>
+        <div class="segmented-options compact-segments" role="radiogroup" aria-label="効果音の強さ">
+          <button type="button" data-sound-intensity="gentle" class="${state.settings.soundIntensity === "full" ? "" : "selected"}">控えめ</button>
+          <button type="button" data-sound-intensity="full" class="${state.settings.soundIntensity === "full" ? "selected" : ""}">フル</button>
+        </div>
+      </div>
       ${toggle("vibration", "振動", "対応端末のみ短く振動")}
     </section>
     <section class="settings-card">
@@ -774,7 +798,6 @@ function renderSettings() {
    --------------------------------------------------------------------------- */
 
 const REDUCED_MOTION_QUERY = matchMedia("(prefers-reduced-motion: reduce)");
-const COMBO_INTENSITY_CAP = 12;
 const PARTICLE_COLORS = ["#70d7ff", "#ffffff", "#9b7cff", "#ffd86b", "#ff5db1"];
 
 const fx = {
@@ -791,11 +814,13 @@ const fx = {
   rings: [],
   rays: [],
   timers: [],
+  timelineTimers: [],
   animations: new Set(),
   ambient: false,
+  cueClass: "",
 };
 
-let audioContext = null;
+const maxAudio = createMaxAudioEngine();
 let calloutTimer = 0;
 
 function prefersReducedMotion() {
@@ -803,7 +828,9 @@ function prefersReducedMotion() {
 }
 
 function isLowPowerDevice() {
-  return (navigator.hardwareConcurrency ?? 8) <= 4;
+  return (navigator.hardwareConcurrency ?? 8) <= 4
+    || (navigator.deviceMemory ?? 8) <= 4
+    || navigator.connection?.saveData === true;
 }
 
 /** "off" = MAX以外, "reduced" = 動きを減らす設定, "full" = 全部入り。 */
@@ -829,9 +856,28 @@ function fxTimeout(callback, delay) {
   return id;
 }
 
+function cueTimeout(callback, delay) {
+  if (delay <= 0) {
+    callback();
+    return 0;
+  }
+  const id = setTimeout(() => {
+    fx.timelineTimers = fx.timelineTimers.filter((timer) => timer !== id);
+    callback();
+  }, delay);
+  fx.timelineTimers.push(id);
+  return id;
+}
+
+function clearCueTimeline() {
+  fx.timelineTimers.forEach(clearTimeout);
+  fx.timelineTimers = [];
+}
+
 function clearFxTimers() {
   fx.timers.forEach(clearTimeout);
   fx.timers = [];
+  clearCueTimeline();
 }
 
 function fxAnimate(element, keyframes, options) {
@@ -921,29 +967,57 @@ function stepFx(now) {
 function drawParticles(context, step) {
   if (!fx.particles.length) return;
   const alive = [];
+  context.save();
+  context.globalCompositeOperation = "lighter";
   for (const particle of fx.particles) {
     particle.life -= particle.decay * step;
     if (particle.life <= 0) continue;
     particle.x += particle.vx * step;
     particle.y += particle.vy * step;
     particle.vy += particle.gravity * step;
-    particle.vx *= 1 - 0.008 * step;
+    particle.vx *= 1 - particle.drag * step;
     particle.rotation += particle.spin * step;
-    context.globalAlpha = Math.min(1, particle.life * 1.7);
+    context.globalAlpha = Math.min(1, particle.life * 1.7) * particle.alpha;
     context.fillStyle = particle.color;
-    if (particle.shard) {
-      context.save();
-      context.translate(particle.x, particle.y);
-      context.rotate(particle.rotation);
+    context.save();
+    context.translate(particle.x, particle.y);
+    context.rotate(particle.rotation);
+    if (particle.kind === "prism") {
+      context.beginPath();
+      context.moveTo(0, -particle.size * 1.4);
+      context.lineTo(particle.size, particle.size);
+      context.lineTo(-particle.size * 0.8, particle.size * 0.55);
+      context.closePath();
+      context.fill();
+    } else if (particle.kind === "shard") {
       context.fillRect(-particle.size, -particle.size * 0.3, particle.size * 2, particle.size * 0.6);
-      context.restore();
+    } else if (particle.kind === "coin") {
+      context.strokeStyle = particle.color;
+      context.lineWidth = Math.max(1, particle.size * 0.24);
+      context.beginPath();
+      context.ellipse(0, 0, particle.size, particle.size * Math.max(0.18, Math.abs(Math.cos(particle.rotation))), 0, 0, Math.PI * 2);
+      context.stroke();
+    } else if (particle.kind === "star") {
+      context.beginPath();
+      for (let point = 0; point < 8; point += 1) {
+        const radius = point % 2 === 0 ? particle.size * 1.6 : particle.size * 0.42;
+        const angle = -Math.PI / 2 + point * Math.PI / 4;
+        const x = Math.cos(angle) * radius;
+        const y = Math.sin(angle) * radius;
+        if (point === 0) context.moveTo(x, y);
+        else context.lineTo(x, y);
+      }
+      context.closePath();
+      context.fill();
     } else {
       context.beginPath();
-      context.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+      context.arc(0, 0, particle.size, 0, Math.PI * 2);
       context.fill();
     }
+    context.restore();
     alive.push(particle);
   }
+  context.restore();
   fx.particles = alive;
 }
 
@@ -956,6 +1030,7 @@ function drawRings(context, step) {
     ring.radius = Math.max(0, ring.radius + ring.speed * step);
     ring.speed *= 1 - 0.055 * step;
     context.globalAlpha = Math.max(0, ring.life) * ring.alpha;
+    context.globalCompositeOperation = "lighter";
     context.lineWidth = Math.max(0.6, ring.width * ring.life);
     context.strokeStyle = ring.color;
     context.beginPath();
@@ -963,6 +1038,7 @@ function drawRings(context, step) {
     context.stroke();
     alive.push(ring);
   }
+  context.globalCompositeOperation = "source-over";
   fx.rings = alive;
 }
 
@@ -976,7 +1052,8 @@ function drawRays(context, step) {
     ray.speed *= 1 - 0.03 * step;
     const cos = Math.cos(ray.angle);
     const sin = Math.sin(ray.angle);
-    context.globalAlpha = Math.max(0, ray.life) * 0.5;
+    context.globalAlpha = Math.max(0, ray.life) * ray.alpha;
+    context.globalCompositeOperation = "lighter";
     context.strokeStyle = ray.color;
     context.lineWidth = ray.width;
     context.beginPath();
@@ -985,35 +1062,121 @@ function drawRays(context, step) {
     context.stroke();
     alive.push(ray);
   }
+  context.globalCompositeOperation = "source-over";
   fx.rays = alive;
 }
 
 function particleBudget() {
-  return isLowPowerDevice() ? 130 : 340;
+  return isLowPowerDevice() ? 170 : 460;
 }
 
-function spawnParticleBurst({ count = 90, power = 1, origin = null, speed = 1, shards = false } = {}) {
+function impactOrigin() {
+  const context = ensureFxCanvas();
+  if (!context) return fxOrigin();
+  const target = elements.quizContent?.querySelector(
+    ".choice-button.correct, .spelling-letter-button.correct, .feedback-result, .question-card, .result-score",
+  );
+  const bounds = target?.getBoundingClientRect();
+  if (!bounds?.width) return fxOrigin();
+  return { x: bounds.left + bounds.width / 2, y: bounds.top + bounds.height / 2 };
+}
+
+function spawnParticleBurst({
+  count = 90,
+  power = 1,
+  origin = null,
+  speed = 1,
+  shards = false,
+  palette = PARTICLE_COLORS,
+  kinds = ["spark"],
+  gravity = 0.06,
+  spread = Math.PI * 2,
+  direction = -Math.PI / 2,
+} = {}) {
   if (!canvasEffectsEnabled()) return;
   const context = ensureFxCanvas();
   if (!context) return;
-  const center = origin ?? fxOrigin();
+  const center = origin ?? impactOrigin();
   const total = Math.min(Math.round(count), particleBudget() - fx.particles.length);
   if (total <= 0) return;
   for (let index = 0; index < total; index += 1) {
-    const angle = (Math.PI * 2 * index) / total + Math.random() * 0.4;
+    const angle = direction - spread / 2 + spread * (index / Math.max(1, total - 1)) + (Math.random() - 0.5) * 0.34;
     const velocity = (1.8 + Math.random() * (4.4 + power)) * speed;
+    const depth = 0.55 + Math.random() * 0.8;
+    const kind = shards && index % 3 === 0
+      ? "shard"
+      : kinds[index % kinds.length] ?? "spark";
     fx.particles.push({
       x: center.x,
       y: center.y,
-      vx: Math.cos(angle) * velocity,
-      vy: Math.sin(angle) * velocity - 1.4,
-      size: 1.1 + Math.random() * (2.2 + power * 0.7),
-      gravity: 0.045 + Math.random() * 0.06,
+      vx: Math.cos(angle) * velocity * depth,
+      vy: Math.sin(angle) * velocity * depth - 0.7,
+      size: (1.1 + Math.random() * (2.2 + power * 0.7)) * depth,
+      gravity: gravity * (0.7 + Math.random() * 0.7),
+      drag: 0.006 + Math.random() * 0.006,
       decay: 0.015 + Math.random() * 0.018,
       rotation: Math.random() * Math.PI,
       spin: (Math.random() - 0.5) * 0.26,
-      shard: shards && index % 3 === 0,
-      color: PARTICLE_COLORS[index % PARTICLE_COLORS.length],
+      kind,
+      alpha: 0.58 + depth * 0.32,
+      color: palette[index % palette.length],
+      life: 1,
+    });
+  }
+  startFxLoop();
+}
+
+function spawnConvergingParticles({ count = 36, origin = null, palette = PARTICLE_COLORS, power = 2 } = {}) {
+  if (!canvasEffectsEnabled()) return;
+  const context = ensureFxCanvas();
+  if (!context) return;
+  const center = origin ?? impactOrigin();
+  const total = Math.min(count, particleBudget() - fx.particles.length);
+  for (let index = 0; index < total; index += 1) {
+    const angle = Math.PI * 2 * index / Math.max(1, total) + Math.random() * 0.2;
+    const radius = Math.max(fx.width, fx.height) * (0.3 + Math.random() * 0.34);
+    const speed = 6 + power * 1.5 + Math.random() * 4;
+    fx.particles.push({
+      x: center.x + Math.cos(angle) * radius,
+      y: center.y + Math.sin(angle) * radius,
+      vx: -Math.cos(angle) * speed,
+      vy: -Math.sin(angle) * speed,
+      size: 1.2 + Math.random() * 2.6,
+      gravity: 0,
+      drag: 0.002,
+      decay: 0.026 + Math.random() * 0.012,
+      rotation: angle,
+      spin: 0.06,
+      kind: index % 4 === 0 ? "prism" : "spark",
+      alpha: 0.8,
+      color: palette[index % palette.length],
+      life: 1,
+    });
+  }
+  startFxLoop();
+}
+
+function spawnGoldShower({ count = 30, palette = PARTICLE_COLORS, power = 3 } = {}) {
+  if (!canvasEffectsEnabled()) return;
+  const context = ensureFxCanvas();
+  if (!context) return;
+  const total = Math.min(count, particleBudget() - fx.particles.length);
+  for (let index = 0; index < total; index += 1) {
+    const depth = 0.55 + Math.random() * 0.8;
+    fx.particles.push({
+      x: Math.random() * fx.width,
+      y: -20 - Math.random() * fx.height * 0.3,
+      vx: (Math.random() - 0.5) * (1.2 + power * 0.25),
+      vy: (2 + Math.random() * 2.8) * depth,
+      size: (2 + Math.random() * (2.5 + power * 0.4)) * depth,
+      gravity: 0.055 * depth,
+      drag: 0.004,
+      decay: 0.008 + Math.random() * 0.008,
+      rotation: Math.random() * Math.PI,
+      spin: (Math.random() - 0.5) * 0.32,
+      kind: index % 3 === 0 ? "star" : "coin",
+      alpha: 0.72 + depth * 0.2,
+      color: palette[index % palette.length],
       life: 1,
     });
   }
@@ -1032,18 +1195,18 @@ function triggerShockwave({
   if (!canvasEffectsEnabled()) return;
   const context = ensureFxCanvas();
   if (!context) return;
-  if (fx.rings.length > 6) return;
-  const center = origin ?? fxOrigin();
+  if (fx.rings.length > 12) return;
+  const center = origin ?? impactOrigin();
   fx.rings.push({ x: center.x, y: center.y, radius, speed, width, color, decay, alpha, life: 1 });
   startFxLoop();
 }
 
-function spawnSpeedLines({ origin = null, count = 24, power = 1 } = {}) {
+function spawnSpeedLines({ origin = null, count = 24, power = 1, palette = PARTICLE_COLORS, inward = false } = {}) {
   if (!canvasEffectsEnabled()) return;
   const context = ensureFxCanvas();
   if (!context) return;
-  if (fx.rays.length > 60) return;
-  const center = origin ?? fxOrigin();
+  if (fx.rays.length > 96) return;
+  const center = origin ?? impactOrigin();
   const total = isLowPowerDevice() ? Math.ceil(count / 2) : count;
   for (let index = 0; index < total; index += 1) {
     const angle = (Math.PI * 2 * index) / total + Math.random() * 0.25;
@@ -1051,12 +1214,38 @@ function spawnSpeedLines({ origin = null, count = 24, power = 1 } = {}) {
       x: center.x,
       y: center.y,
       angle,
-      distance: 40 + Math.random() * 90,
+      distance: inward ? 220 + Math.random() * 180 : 40 + Math.random() * 90,
       length: 90 + Math.random() * (140 + power * 40),
-      speed: 16 + Math.random() * (12 + power * 6),
+      speed: (inward ? -1 : 1) * (16 + Math.random() * (12 + power * 6)),
       width: 1 + Math.random() * 2.2,
       decay: 0.035 + Math.random() * 0.02,
-      color: index % 4 === 0 ? "#9b7cff" : "#c9f1ff",
+      color: palette[index % palette.length],
+      alpha: inward ? 0.34 : 0.52,
+      life: 1,
+    });
+  }
+  startFxLoop();
+}
+
+function spawnLightColumns({ count = 2, origin = null, palette = PARTICLE_COLORS, power = 3 } = {}) {
+  if (!canvasEffectsEnabled()) return;
+  const context = ensureFxCanvas();
+  if (!context) return;
+  const center = origin ?? impactOrigin();
+  const total = Math.min(count * 2, 12);
+  for (let index = 0; index < total; index += 1) {
+    const upward = index % 2 === 0;
+    fx.rays.push({
+      x: center.x + (index - total / 2) * 14,
+      y: center.y,
+      angle: upward ? -Math.PI / 2 : Math.PI / 2,
+      distance: 0,
+      length: fx.height * (0.42 + Math.random() * 0.38),
+      speed: 3 + power,
+      width: 3 + Math.random() * (3 + power),
+      decay: 0.014 + Math.random() * 0.008,
+      color: palette[index % palette.length],
+      alpha: 0.3,
       life: 1,
     });
   }
@@ -1152,54 +1341,54 @@ function triggerRgbSplit(duration = 160) {
   fxTimeout(() => document.body.classList.remove("fx-rgb"), duration);
 }
 
-function pulseVibration(power = 1) {
+function pulseVibration(power = 1, event = "correct") {
   if (!state.settings.vibration || !navigator.vibrate) return;
-  navigator.vibrate(power >= 4 ? [35, 30, 55] : power >= 2 ? 35 : 15);
+  if (event === "wrong") navigator.vibrate(8);
+  else if (["perfect", "sss-master", "combo-30"].includes(event)) navigator.vibrate([32, 24, 48, 28, 62]);
+  else if (power >= 4) navigator.vibrate([30, 24, 52]);
+  else navigator.vibrate(power >= 2 ? 30 : 13);
 }
 
-function effectAudioContext() {
-  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-  if (!AudioContextClass) return null;
-  if (!audioContext) audioContext = new AudioContextClass();
-  if (audioContext.state === "suspended") audioContext.resume().catch(() => {});
-  return audioContext;
+function maxSoundEnabled() {
+  return shouldPlayMaxSound(state.settings, {
+    hidden: document.hidden,
+    audioAvailable: Boolean(window.AudioContext || window.webkitAudioContext),
+  });
 }
 
-function playEffectSound(power = 1) {
-  if (!state.settings.sound) return;
-  try {
-    const context = effectAudioContext();
-    if (!context) return;
-    const oscillator = context.createOscillator();
-    const gain = context.createGain();
-    oscillator.type = "sine";
-    oscillator.frequency.setValueAtTime(520 + power * 70, context.currentTime);
-    oscillator.frequency.exponentialRampToValueAtTime(880 + power * 90, context.currentTime + 0.1);
-    gain.gain.setValueAtTime(0.045, context.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.14);
-    oscillator.connect(gain).connect(context.destination);
-    oscillator.start();
-    oscillator.stop(context.currentTime + 0.15);
-    oscillator.onended = () => {
-      oscillator.disconnect();
-      gain.disconnect();
-    };
-  } catch { /* Audio is an optional enhancement. */ }
+function unlockMaxAudio() {
+  return maxAudio.unlock({
+    enabled: maxSoundEnabled(),
+    intensity: state.settings.soundIntensity,
+  });
+}
+
+function playMaxSound(event, options = {}) {
+  return maxAudio.play(event, {
+    ...options,
+    enabled: maxSoundEnabled(),
+    hidden: document.hidden,
+    intensity: state.settings.soundIntensity,
+  });
 }
 
 /* --- UI layer ------------------------------------------------------------- */
 
-function renderMaxCallout(label, detail = "", variant = "pop") {
+function renderMaxCallout(label, detail = "", variant = "pop", options = {}) {
   const callout = elements.maxCallout;
   if (!callout) return 0;
   clearTimeout(calloutTimer);
   const calm = prefersReducedMotion();
-  const duration = calm ? 700 : variant === "slam" ? 1000 : 680;
-  callout.className = `max-callout max-callout--${calm ? "calm" : variant}`;
+  const duration = calm ? Math.min(900, options.duration ?? 700) : options.duration ?? (variant === "slam" ? 1000 : 680);
+  callout.className = `max-callout max-callout--${calm ? "calm" : variant} max-callout--cue-${options.event ?? "correct"}`;
+  callout.dataset.cue = options.event ?? "correct";
+  callout.style.setProperty("--max-callout-duration", `${duration}ms`);
   callout.innerHTML = `
     <div class="max-callout-inner" data-label="${escapeHtml(label)}">
+      ${options.emblem ? `<span class="max-callout-emblem" aria-hidden="true">${escapeHtml(options.emblem)}</span>` : ""}
       <span class="max-callout-label">${escapeHtml(label)}</span>
       ${detail ? `<small>${escapeHtml(detail)}</small>` : ""}
+      <span class="max-callout-shine" aria-hidden="true"></span>
     </div>`;
   callout.hidden = false;
   if (calm) {
@@ -1218,119 +1407,260 @@ function renderMaxCallout(label, detail = "", variant = "pop") {
   return duration;
 }
 
-/** 既存呼び出し（PERFECT / SSS MASTER など）と同じ強度の複合演出。 */
-function triggerMaxImpact(power = 1) {
-  const level = effectsLevel();
-  if (level === "off") return;
-  playEffectSound(power);
-  pulseVibration(power);
-  if (level === "reduced") {
-    triggerScreenFlash(0.5, 280);
-    return;
+function clearCueVisualState() {
+  if (fx.cueClass) document.body.classList.remove(fx.cueClass);
+  fx.cueClass = "";
+  document.body.classList.remove("fx-anticipation", "fx-answer", "fx-fanfare", "fx-jackpot", "fx-destroyed");
+  document.body.removeAttribute("data-max-cue");
+  if (elements.fxStage) elements.fxStage.className = "fx-stage";
+}
+
+function applyCueAnticipation(plan, visual) {
+  document.body.classList.add("fx-anticipation");
+  if (elements.fxStage) elements.fxStage.className = `fx-stage fx-stage--${plan.event}`;
+  if (elements.fxEnergyCore && effectsLevel() === "full") {
+    const duration = Math.max(150, plan.timeline.impactAt + 90);
+    fxAnimate(elements.fxEnergyCore, [
+      { opacity: 0, transform: "translate3d(-50%,-50%,0) scale(.12)" },
+      { opacity: 0.92, offset: 0.7, transform: "translate3d(-50%,-50%,0) scale(.72)" },
+      { opacity: 0, transform: "translate3d(-50%,-50%,0) scale(1.8)" },
+    ], { duration, easing: "cubic-bezier(.2,.78,.25,1)" });
   }
-  triggerScreenFlash(power >= 4 ? 0.85 : 0.42, power >= 4 ? 340 : 240);
-  triggerWorldImpact({ zoom: 0.016 + power * 0.008, shake: power >= 2 ? 2 + power : 0, duration: 300 + power * 20 });
-  spawnParticleBurst({ count: power >= 4 ? 190 : power >= 2 ? 120 : 70, power, shards: power >= 3 });
-  triggerShockwave({ speed: 14 + power * 3, width: 5 + power * 1.6 });
-  if (power >= 3) {
-    triggerShockwave({ speed: 9 + power * 2, width: 2.4, color: "rgba(130,220,255,.72)", decay: 0.022, alpha: 0.8 });
-  }
-  if (power >= 4) {
-    spawnSpeedLines({ count: 24, power });
-    triggerRgbSplit(150);
-    triggerScreenPulse(0.45, 460);
+  if (visual.converge) {
+    spawnConvergingParticles({ count: visual.converge, palette: visual.colors, power: plan.power });
+    spawnSpeedLines({ count: Math.min(visual.rays, visual.converge), power: plan.power, palette: visual.colors, inward: true });
   }
 }
 
-function showMaxCallout(label, detail = "", power = 1) {
-  if (!isMaxMode()) return;
-  renderMaxCallout(label, detail, power >= 4 ? "slam" : "pop");
-  triggerMaxImpact(power);
+function applyCueHitStop(plan, visual) {
+  if (visual.freeze > 0) triggerImpactFreeze(visual.freeze);
+  if (plan.event === "max-enter") triggerScreenInvert(54);
+}
+
+function applyCueFlash(plan, visual) {
+  if (visual.flash > 0) triggerScreenFlash(visual.flash, 220 + plan.power * 42);
+  if (visual.palette === "gold" || ["perfect", "sss-master", "combo-30"].includes(plan.event)) {
+    fxAnimate(elements.fxGoldFrame, [
+      { opacity: 0 },
+      { opacity: effectsLevel() === "reduced" ? 0.22 : 0.78, offset: 0.18 },
+      { opacity: 0 },
+    ], { duration: Math.min(720, plan.duration), easing: "ease-out" });
+  }
+}
+
+function applyCueCallout(plan, visual, label, detail) {
+  if (visual.callout === "none" || !label) return;
+  renderMaxCallout(label, detail, visual.callout, {
+    duration: Math.min(plan.duration, ["perfect", "sss-master"].includes(plan.event) ? 1500 : 1120),
+    emblem: visual.emblem,
+    event: plan.event,
+  });
+}
+
+function applyCueImpact(plan, visual) {
+  const origin = impactOrigin();
+  if (plan.event === "wrong") {
+    const wrongTarget = elements.quizContent?.querySelector(".choice-button.wrong, .spelling-letter-button.wrong, .feedback-wrong");
+    fxAnimate(wrongTarget, [
+      { transform: "translate3d(0,0,0) scale(1)", filter: "saturate(1)" },
+      { transform: "translate3d(0,2px,0) scale(.985)", filter: "saturate(.62)", offset: 0.35 },
+      { transform: "translate3d(0,0,0) scale(1)", filter: "saturate(1)" },
+    ], { duration: 210, easing: "ease-out" });
+    triggerShockwave({ origin, speed: 7, width: 2, color: "rgba(170,178,190,.55)", decay: 0.06, alpha: 0.5 });
+    return;
+  }
+  document.body.classList.add("fx-answer");
+  triggerWorldImpact({ zoom: visual.zoom, shake: visual.shake, duration: 280 + plan.power * 42 });
+  triggerScreenPulse(Math.min(0.62, 0.16 + visual.aura * 0.08), Math.min(760, plan.duration));
+  if (plan.power >= 3) triggerRgbSplit(Math.min(170, 90 + plan.power * 18));
+  pulseVibration(plan.power, plan.event);
+  for (let index = 0; index < visual.rings; index += 1) {
+    triggerShockwave({
+      origin,
+      radius: 6 + index * 4,
+      speed: 12 + plan.power * 4 - index * 1.5,
+      width: Math.max(2, 8 + plan.power * 1.2 - index * 1.3),
+      color: visual.colors[index % visual.colors.length],
+      decay: 0.026 + index * 0.004,
+      alpha: Math.max(0.38, 1 - index * 0.13),
+    });
+  }
+  if (visual.beams) spawnLightColumns({ count: visual.beams, origin, palette: visual.colors, power: plan.power });
+  if (plan.event === "weakness-destroyed") {
+    document.body.classList.add("fx-destroyed");
+    fxAnimate(elements.fxCrack, [
+      { opacity: 0, transform: "scale(.4)" },
+      { opacity: 0.9, offset: 0.28, transform: "scale(1)" },
+      { opacity: 0, transform: "scale(1.5)" },
+    ], { duration: 740, easing: "cubic-bezier(.15,.8,.2,1)" });
+  }
+}
+
+function applyCueParticles(plan, visual) {
+  const origin = impactOrigin();
+  const baseKinds = visual.prisms ? ["spark", "prism", "shard"] : ["spark"];
+  spawnParticleBurst({
+    count: visual.particles,
+    power: plan.power,
+    origin,
+    speed: 0.9 + plan.power * 0.12,
+    palette: visual.colors,
+    kinds: baseKinds,
+    shards: visual.prisms > 20,
+  });
+  if (visual.prisms) {
+    spawnParticleBurst({ count: visual.prisms, power: plan.power, origin, speed: 1.15, palette: visual.colors, kinds: ["prism", "shard"] });
+  }
+  if (visual.coins || visual.stars) {
+    spawnParticleBurst({
+      count: visual.coins + visual.stars,
+      power: plan.power,
+      origin,
+      speed: 0.86,
+      palette: visual.colors,
+      kinds: ["coin", "star", "coin"],
+      gravity: 0.085,
+      spread: Math.PI * 1.45,
+    });
+  }
+  if (visual.rays) spawnSpeedLines({ origin, count: visual.rays, power: plan.power, palette: visual.colors });
+  if (visual.shower) spawnGoldShower({ count: visual.shower, palette: visual.colors, power: plan.power });
+}
+
+function applyCueFanfare(plan, visual) {
+  if (plan.power < 2) return;
+  document.body.classList.add("fx-fanfare");
+  if (plan.power >= 4) document.body.classList.add("fx-jackpot");
+  fxAnimate(elements.fxLightColumn, [
+    { opacity: 0, transform: "translate3d(-50%,8%,0) scaleX(.35)" },
+    { opacity: effectsLevel() === "reduced" ? 0.16 : 0.7, offset: 0.22, transform: "translate3d(-50%,0,0) scaleX(1)" },
+    { opacity: 0, transform: "translate3d(-50%,-5%,0) scaleX(1.4)" },
+  ], { duration: Math.min(920, plan.duration), easing: "ease-out" });
+}
+
+function runMaxCue(event, { combo = 0, power = undefined, label = "", detail = "", variation = null } = {}) {
+  if (!isMaxMode()) return null;
+  const plan = resolveMaxCue(event, { combo, power, variation });
+  const visual = scaledVisualPlan(plan.visual, {
+    lowPower: isLowPowerDevice(),
+    reducedMotion: prefersReducedMotion(),
+  });
+  clearCueTimeline();
+  clearCueVisualState();
+  fx.cueClass = `fx-cue-${plan.event}`;
+  document.body.classList.add(fx.cueClass);
+  document.body.dataset.maxCue = plan.event;
+  playMaxSound(plan.event, { combo: plan.combo, power: plan.power, variation: plan.pitch.variation });
+
+  const handlers = {
+    anticipationAt: () => applyCueAnticipation(plan, visual),
+    hitStopAt: () => applyCueHitStop(plan, visual),
+    flashAt: () => applyCueFlash(plan, visual),
+    calloutAt: () => applyCueCallout(plan, visual, label, detail),
+    impactAt: () => applyCueImpact(plan, visual),
+    particleBurstAt: () => applyCueParticles(plan, visual),
+    fanfareAt: () => applyCueFanfare(plan, visual),
+    tailEndAt: () => {
+      document.body.classList.remove("fx-max-entrance");
+      clearCueVisualState();
+    },
+  };
+  for (const phase of MAX_TIMELINE_PHASES) cueTimeout(handlers[phase], plan.timeline[phase]);
+  return plan;
+}
+
+function installMaxEffectsLab() {
+  const localHost = ["localhost", "127.0.0.1", "::1"].includes(location.hostname);
+  if (!localHost || !new URLSearchParams(location.search).has("max-effects-lab")) return;
+  const samples = Object.freeze({
+    "max-enter": { combo: 0, label: "MAX MODE", detail: "READY" },
+    correct: { combo: 1, label: "CORRECT" },
+    "combo-3": { combo: 3, label: "3 COMBO", detail: "FLOW START" },
+    "combo-5": { combo: 5, label: "5 COMBO", detail: "RISING" },
+    "combo-10": { combo: 10, label: "10 COMBO", detail: "BLAZE" },
+    "combo-20": { combo: 20, label: "20 COMBO", detail: "JACKPOT NEAR" },
+    "combo-30": { combo: 30, label: "UNSTOPPABLE", detail: "30 COMBO" },
+    "new-record": { combo: 12, label: "NEW RECORD", detail: "12 COMBO" },
+    "weakness-destroyed": { combo: 8, label: "WEAKNESS DESTROYED", detail: "BREAK THROUGH" },
+    perfect: { combo: 20, label: "PERFECT", detail: "20 / 20" },
+    "sss-master": { combo: 30, label: "SSS MASTER", detail: "30 / 30" },
+    wrong: { combo: 0, label: "" },
+  });
+  window.__WORDS_MAX_EFFECTS_LAB__ = Object.freeze({
+    events: Object.freeze(Object.keys(samples)),
+    play: (event, options = {}) => runMaxCue(event, options),
+    stop: () => resetMaxEffects({ keepAmbience: true }),
+    audioState: () => maxAudio.debugState(),
+  });
+  state.settings.effectsMode = "max";
+  state.settings.vibration = false;
+  const panel = document.createElement("details");
+  panel.className = "max-effects-lab";
+  panel.open = true;
+  panel.innerHTML = `
+    <summary>MAX EFFECTS LAB <span data-lab-status>visual / muted</span></summary>
+    <div class="max-effects-lab-controls">
+      <button type="button" data-lab-max>MAX ON</button>
+      <button type="button" data-lab-sound>SOUND ON</button>
+      <button type="button" data-lab-simple>SIMPLE / STOP</button>
+      ${Object.keys(samples).map((event) => `<button type="button" data-lab-cue="${event}">${event}</button>`).join("")}
+    </div>`;
+  panel.addEventListener("click", (event) => {
+    const button = event.target.closest("button");
+    if (!button) return;
+    if (button.hasAttribute("data-lab-max")) {
+      state.settings.effectsMode = "max";
+      applySettings();
+      triggerMaxEntrance("LAB");
+    } else if (button.hasAttribute("data-lab-sound")) {
+      state.settings.effectsMode = "max";
+      state.settings.sound = true;
+      applySettings();
+      unlockMaxAudio();
+      triggerMaxEntrance("AUDIO READY");
+    } else if (button.hasAttribute("data-lab-simple")) {
+      state.settings.effectsMode = "simple";
+      state.settings.sound = false;
+      applySettings();
+    } else if (button.dataset.labCue) {
+      if (!isMaxMode()) {
+        state.settings.effectsMode = "max";
+        applySettings();
+      }
+      runMaxCue(button.dataset.labCue, samples[button.dataset.labCue]);
+    }
+    const status = panel.querySelector("[data-lab-status]");
+    if (status) {
+      const audio = maxAudio.debugState();
+      status.textContent = `${isMaxMode() ? "MAX" : "SIMPLE"} / ${audio.contextState} / ${audio.activeVoices} voices`;
+    }
+  });
+  document.body.append(panel);
 }
 
 /* --- sequences ------------------------------------------------------------ */
 
-/** MAX突入：静止 → 反転 → 閃光 → MAX文字の着弾（衝撃を全部同期） → 余韻。 */
 function triggerMaxEntrance(detail = "READY") {
   if (!isMaxMode()) return;
-  resetMaxEffects({ keepAmbience: true });
+  resetMaxEffects({ keepAmbience: true, keepAudio: true });
   syncMaxAmbience();
-  if (effectsLevel() === "reduced") {
-    renderMaxCallout("MAX MODE", detail);
-    triggerScreenFlash(0.4, 320);
-    playEffectSound(4);
-    pulseVibration(4);
-    return;
-  }
   document.body.classList.add("fx-max-entrance");
-  // Phase A — IMPACT FREEZE（溜め）
-  triggerImpactFreeze(80);
-  pulseVibration(2);
-  // Phase B — ネガポジ反転
-  fxTimeout(() => triggerScreenInvert(60), 72);
-  // Phase C — WHITE FLASH ＋ MAX文字の射出
-  fxTimeout(() => {
-    triggerScreenFlash(0.95, 300);
-    renderMaxCallout("MAX MODE", detail, "slam");
-  }, 132);
-  // Phase D — TEXT IMPACT（文字が最大になる瞬間に全レイヤーを同期）
-  fxTimeout(() => {
-    triggerWorldImpact({ zoom: 0.055, shake: 7, duration: 420 });
-    triggerRgbSplit(170);
-    triggerScreenPulse(0.55, 480);
-    triggerShockwave({ speed: 30, width: 12 });
-    spawnParticleBurst({ count: 200, power: 4, shards: true });
-    spawnSpeedLines({ count: 30, power: 4 });
-    playEffectSound(4);
-    pulseVibration(4);
-  }, 300);
-  // Phase E — 第2波（少し遅れて薄いリング）
-  fxTimeout(() => {
-    triggerShockwave({ speed: 20, width: 3.4, color: "rgba(140,205,255,.7)", decay: 0.02, alpha: 0.75 });
-    spawnParticleBurst({ count: 80, power: 2, speed: 0.7 });
-  }, 392);
-  // Phase F — MAX状態へ定着
-  fxTimeout(() => document.body.classList.remove("fx-max-entrance"), 1000);
-}
-
-/** MAX中の正解：コンボが伸びるほど各レイヤーの出力を上げる（上限あり）。 */
-function triggerMaxCorrect(power = 1, combo = 0) {
-  const level = effectsLevel();
-  if (level === "off") return;
-  playEffectSound(power);
-  pulseVibration(power);
-  if (level === "reduced") {
-    triggerScreenFlash(0.24, 240);
-    return;
-  }
-  const intensity = Math.min(1, combo / COMBO_INTENSITY_CAP);
-  document.body.classList.add("fx-answer");
-  fxTimeout(() => document.body.classList.remove("fx-answer"), 340);
-  triggerScreenFlash(0.2 + intensity * 0.42, 220 + intensity * 120);
-  triggerWorldImpact({
-    zoom: 0.014 + intensity * 0.032,
-    shake: combo >= 3 ? 2 + intensity * 6 : 0,
-    duration: 260 + intensity * 150,
-  });
-  spawnParticleBurst({ count: 34 + intensity * 150, power: 1 + intensity * 3, shards: combo >= 8 });
-  if (combo >= 3) triggerShockwave({ speed: 10 + intensity * 18, width: 3 + intensity * 8 });
-  if (combo >= 5) {
-    triggerShockwave({ speed: 7 + intensity * 10, width: 2, color: "rgba(130,220,255,.6)", decay: 0.024, alpha: 0.7 });
-  }
-  if (combo >= 8) {
-    triggerScreenPulse(0.28 + intensity * 0.26, 420);
-    spawnSpeedLines({ count: 14 + Math.round(intensity * 14), power: 2 + intensity * 2 });
-  }
-  if (combo >= 10) triggerRgbSplit(120);
+  runMaxCue("max-enter", { label: "MAX MODE", detail, power: 4 });
 }
 
 /** MAX終了：突入の逆再生。エネルギーが抜けて通常世界へ戻る。 */
 function triggerMaxExit() {
   clearFxTimers();
   clearTimeout(calloutTimer);
-  document.body.classList.remove("fx-freeze", "fx-rgb", "fx-answer", "fx-max-entrance");
+  clearCueVisualState();
+  maxAudio.stopAll();
+  document.body.classList.remove("fx-freeze", "fx-rgb", "fx-answer", "fx-max-entrance", "fx-fanfare", "fx-jackpot", "fx-destroyed");
   fx.frozen = false;
+  fx.particles = [];
+  fx.rings = [];
   fx.rays = [];
+  stopFxLoop();
+  if (fx.context && fx.width) fx.context.clearRect(0, 0, fx.width, fx.height);
   if (elements.maxCallout) {
     elements.maxCallout.hidden = true;
     elements.maxCallout.innerHTML = "";
@@ -1363,17 +1693,28 @@ function syncMaxAmbience() {
 }
 
 /** overlay・class・transform・rAFの残骸を残さないための共通後始末。 */
-function resetMaxEffects({ keepAmbience = false } = {}) {
+function resetMaxEffects({ keepAmbience = false, keepAudio = false } = {}) {
   clearFxTimers();
   clearTimeout(calloutTimer);
   cancelFxAnimations();
+  clearCueVisualState();
+  if (!keepAudio) maxAudio.stopAll();
   fx.frozen = false;
   fx.particles = [];
   fx.rings = [];
   fx.rays = [];
   stopFxLoop();
   if (fx.context && fx.width) fx.context.clearRect(0, 0, fx.width, fx.height);
-  document.body.classList.remove("fx-freeze", "fx-rgb", "fx-answer", "fx-max-entrance", "fx-max-exit");
+  document.body.classList.remove(
+    "fx-freeze",
+    "fx-rgb",
+    "fx-answer",
+    "fx-max-entrance",
+    "fx-max-exit",
+    "fx-fanfare",
+    "fx-jackpot",
+    "fx-destroyed",
+  );
   if (elements.maxCallout) {
     elements.maxCallout.hidden = true;
     elements.maxCallout.innerHTML = "";
@@ -1386,21 +1727,18 @@ function resetMaxEffects({ keepAmbience = false } = {}) {
 
 function correctEffect(special = "") {
   if (!isMaxMode()) return;
-  let label = "CORRECT";
-  let detail = "";
-  let power = 1;
-  if (state.combo >= 30) { label = "UNSTOPPABLE"; detail = `${state.combo} COMBO`; power = 4; }
-  else if (state.combo >= 20) { label = `🔥 ${state.combo} COMBO 🔥`; power = 4; }
-  else if (state.combo >= 10) { label = `🔥 ${state.combo} COMBO 🔥`; power = 3; }
-  else if (state.combo >= 5) { label = `${state.combo} COMBO`; power = 2; }
-  else if (state.combo >= 3) { label = `${state.combo} COMBO`; power = 2; }
-  if (special) {
-    label = special;
-    detail = special === "NEW RECORD" ? `${state.combo} COMBO` : "";
-    power = 4;
-  }
-  renderMaxCallout(label, detail, power >= 4 ? "slam" : "pop");
-  triggerMaxCorrect(power, state.combo);
+  const event = maxCueForAnswer({ correct: true, combo: state.combo, special });
+  const copy = {
+    correct: ["CORRECT", ""],
+    "combo-3": [`${state.combo} COMBO`, "FLOW START"],
+    "combo-5": [`${state.combo} COMBO`, "RISING"],
+    "combo-10": [`${state.combo} COMBO`, "BLAZE"],
+    "combo-20": [`${state.combo} COMBO`, "JACKPOT NEAR"],
+    "combo-30": ["UNSTOPPABLE", `${state.combo} COMBO`],
+    "new-record": ["NEW RECORD", `${state.combo} COMBO`],
+    "weakness-destroyed": ["WEAKNESS DESTROYED", "BREAK THROUGH"],
+  }[event] ?? ["CORRECT", ""];
+  runMaxCue(event, { combo: state.combo, label: copy[0], detail: copy[1] });
 }
 
 function setView(view) {
@@ -2183,6 +2521,8 @@ async function submitAnswer(answer, selfGrade = null, reviewDelayMs = null) {
   if (pendingCorrectEffect !== null) {
     const special = pendingCorrectEffect;
     requestAnimationFrame(() => correctEffect(special));
+  } else if (isMaxMode()) {
+    requestAnimationFrame(() => runMaxCue(maxCueForAnswer({ correct: false }), { label: "", combo: 0 }));
   }
 }
 
@@ -2320,7 +2660,13 @@ function renderSessionComplete() {
     </div>`;
   if (summary.total && summary.correct === summary.total) {
     const sssOnly = session.results.every((result) => result.item.importance === "SSS");
-    requestAnimationFrame(() => showMaxCallout(sssOnly ? "SSS MASTER" : "PERFECT", `${summary.correct} / ${summary.total}`, 4));
+    const finale = maxCueForFinale(sssOnly);
+    requestAnimationFrame(() => runMaxCue(finale, {
+      combo: state.combo,
+      power: 4,
+      label: sssOnly ? "SSS MASTER" : "PERFECT",
+      detail: `${summary.correct} / ${summary.total}`,
+    }));
   }
   renderHeader();
 }
@@ -2417,7 +2763,10 @@ function bindEvents() {
   addEventListener("orientationchange", markFxResize, { passive: true });
   document.addEventListener("visibilitychange", () => {
     document.body.classList.toggle("fx-hidden", document.hidden);
-    if (document.hidden) resetMaxEffects({ keepAmbience: true });
+    if (document.hidden) {
+      resetMaxEffects({ keepAmbience: true });
+      maxAudio.stopAll({ suspend: true });
+    }
   });
 
   document.addEventListener("click", (event) => {
@@ -2461,13 +2810,25 @@ function bindEvents() {
       state.settings.effectsMode = target.dataset.selectEffects;
       elements.onboarding.hidden = true;
       saveSettings();
-      if (isMaxMode()) triggerMaxEntrance("READY");
+      if (isMaxMode()) {
+        unlockMaxAudio();
+        triggerMaxEntrance("READY");
+      }
     }
     if (target.dataset.effectsMode) {
       state.settings.effectsMode = target.dataset.effectsMode;
       saveSettings();
       renderSettings();
-      if (isMaxMode()) triggerMaxEntrance("ON");
+      if (isMaxMode()) {
+        unlockMaxAudio();
+        triggerMaxEntrance("ON");
+      }
+    }
+    if (target.dataset.soundIntensity) {
+      state.settings.soundIntensity = target.dataset.soundIntensity === "full" ? "full" : "gentle";
+      saveSettings();
+      if (isMaxMode() && state.settings.sound) unlockMaxAudio();
+      renderSettings();
     }
     if (target.hasAttribute("data-reset-data")) {
       if (!window.confirm("本当に学習履歴を削除しますか？")) return;
@@ -2660,6 +3021,8 @@ function bindEvents() {
     const setting = event.target.dataset?.setting;
     if (!setting || !(setting in state.settings)) return;
     state.settings[setting] = event.target.checked;
+    if (setting === "sound" && state.settings.sound && isMaxMode()) unlockMaxAudio();
+    if (setting === "sound" && !state.settings.sound) maxAudio.stopAll();
     saveSettings();
   });
 
@@ -2732,6 +3095,8 @@ async function boot() {
     state.selectedMode = ALL_MODES.includes(selectedMode) ? selectedMode : null;
     state.progress = new Map(progressEntries);
     state.settings = { ...DEFAULT_SETTINGS, ...(settings ?? {}) };
+    state.settings.soundIntensity = state.settings.soundIntensity === "full" ? "full" : "gentle";
+    installMaxEffectsLab();
     state.bestCombo = Number(bestCombo) || 0;
     state.activeStudy = activeStudy?.config?.selection && selectionIsComplete(activeStudy.config.selection)
       ? activeStudy

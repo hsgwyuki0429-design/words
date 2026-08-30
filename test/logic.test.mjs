@@ -15,6 +15,7 @@ import {
   buildStudySession,
   difficultyScore,
   emptyHistory,
+  generateLetterChoices,
   historyForModes,
   itemSupportsMode,
   isAnswerCorrect,
@@ -24,10 +25,12 @@ import {
   normalizeStudySelection,
   reviewDelayForAnswer,
   recentStudyConfigKey,
+  releaseDeferredReviews,
   studyCombinationKey,
   studyCyclePolicy,
   studyModeForItem,
   studyPerformanceModes,
+  spellingLetters,
   slotTokensForQuestion,
   sortItems,
   summarizeByMode,
@@ -53,11 +56,27 @@ test("wrong answers become eligible for review after three minutes", () => {
   assert.equal(ONE_HOUR_REVIEW_DELAY_MS, 3_600_000);
   assert.equal(reviewDelayForAnswer("en_to_ja_choice", false), WRONG_REVIEW_DELAY_MS);
   assert.equal(reviewDelayForAnswer("ja_to_en_choice", true), null);
+  assert.equal(reviewDelayForAnswer("ja_to_en_spelling", false), WRONG_REVIEW_DELAY_MS);
   assert.equal(reviewDelayForAnswer("spelling_input", false), null);
   assert.equal(
     reviewDelayForAnswer("public_recall", false, ONE_HOUR_REVIEW_DELAY_MS),
     ONE_HOUR_REVIEW_DELAY_MS,
   );
+});
+
+test("deferred reviews are released early when no regular questions remain", () => {
+  const reviews = [
+    { dueAt: 300, entry: { id: "later" } },
+    { dueAt: 200, entry: { id: "next" } },
+  ];
+  assert.deepEqual(releaseDeferredReviews(reviews, 100, false), {
+    ready: [],
+    pending: [reviews[1], reviews[0]],
+  });
+  assert.deepEqual(releaseDeferredReviews(reviews, 100, true), {
+    ready: [reviews[1]],
+    pending: [reviews[0]],
+  });
 });
 
 test("answer normalization ignores case and repeated spaces but not spelling", () => {
@@ -267,6 +286,17 @@ test("English flashcards support both directions and reveal the matching answer"
   assert.equal(japaneseFirst.answer, item.english);
 });
 
+test("spelling choice questions expose four letters and advance over alphabetic characters", () => {
+  const item = items.find((candidate) => candidate.english === "high-fat");
+  const question = buildQuestion(item, "ja_to_en_spelling", items);
+  assert.deepEqual(question.spellingLetters, [..."highfat"]);
+  assert.deepEqual(spellingLetters(item.english), [..."highfat"]);
+  const choices = generateLetterChoices(question.spellingLetters[0], () => 0.42);
+  assert.equal(choices.length, 4);
+  assert.equal(new Set(choices).size, 4);
+  assert.ok(choices.includes("H"));
+});
+
 test("phrase distractors contain the same number of A and B placeholders", () => {
   const item = items.find((candidate) => candidate.english === "pour A over B");
   const question = buildQuestion(item, "ja_to_en_choice", items, () => 0.42);
@@ -388,6 +418,14 @@ test("step-based English study selection supports choice and flashcards in both 
   assert.equal(
     studyModeForItem(structure, { content: "structure", method: "ja_to_en_flashcard" }),
     "ja_to_en_flashcard",
+  );
+  assert.equal(
+    studyModeForItem(word, { content: "word", method: "ja_to_en_spelling" }),
+    "ja_to_en_spelling",
+  );
+  assert.equal(
+    studyModeForItem(phrase, { content: "phrase", method: "ja_to_en_spelling" }),
+    null,
   );
   assert.equal(
     studyModeForItem(phrase, { content: "word", method: "en_to_ja_flashcard" }),

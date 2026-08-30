@@ -32,6 +32,7 @@ export const HEALTH_RANGE_ORDER = [
 export const MODE_LABELS = {
   en_to_ja_choice: "英語 → 日本語 4択",
   ja_to_en_choice: "日本語 → 英語 4択",
+  ja_to_en_spelling: "日本語 → 英語 1文字ずつ4択",
   en_to_ja_flashcard: "英語 → 日本語 フラッシュカード",
   ja_to_en_flashcard: "日本語 → 英語 フラッシュカード",
   ja_to_en_input: "日本語 → 英語 入力",
@@ -61,7 +62,17 @@ export const ONE_HOUR_REVIEW_DELAY_MS = 60 * 60 * 1000;
 export function reviewDelayForAnswer(mode, correct, requestedDelayMs = null) {
   const requested = Math.max(0, Number(requestedDelayMs) || 0);
   if (requested) return requested;
-  return !correct && String(mode).endsWith("choice") ? WRONG_REVIEW_DELAY_MS : null;
+  return !correct && (String(mode).endsWith("choice") || mode === "ja_to_en_spelling")
+    ? WRONG_REVIEW_DELAY_MS
+    : null;
+}
+
+export function releaseDeferredReviews(reviews = [], now = Date.now(), forceNext = false) {
+  const ordered = [...reviews].sort((left, right) => left.dueAt - right.dueAt);
+  const ready = ordered.filter((review) => review.dueAt <= now);
+  const pending = ordered.filter((review) => review.dueAt > now);
+  if (forceNext && !ready.length && pending.length) ready.push(pending.shift());
+  return { ready, pending };
 }
 
 export const STUDY_CONTENT_LABELS = {
@@ -75,6 +86,7 @@ export const STUDY_CONTENT_LABELS = {
 
 export const STUDY_METHOD_LABELS = {
   ja_to_en_choice: "日本語 → 英語 4択",
+  ja_to_en_spelling: "日本語 → 英語 1文字ずつ4択",
   en_to_ja_choice: "英語 → 日本語 4択",
   ja_to_en_flashcard: "日本語 → 英語 フラッシュカード",
   en_to_ja_flashcard: "英語 → 日本語 フラッシュカード",
@@ -84,6 +96,10 @@ export const STUDY_METHOD_LABELS = {
 export const ENGLISH_CONTENT_TYPES = ["word", "phrase", "structure"];
 
 export function itemSupportsMode(item, mode) {
+  if (mode === "ja_to_en_spelling") {
+    return item.type === "word"
+      && (item.questionModes.includes("ja_to_en_choice") || item.questionModes.includes("spelling_input"));
+  }
   if (item.questionModes.includes(mode)) return true;
   if (mode === "en_to_ja_flashcard") return item.questionModes.includes("en_to_ja_choice");
   if (mode === "ja_to_en_flashcard") return item.questionModes.includes("ja_to_en_choice");
@@ -197,6 +213,20 @@ export function accuracyFor(record) {
   return record.totalAttempts > 0
     ? record.correctCount / record.totalAttempts
     : null;
+}
+
+export function spellingLetters(answer) {
+  return String(answer ?? "").match(/[A-Za-z]/g) ?? [];
+}
+
+export function generateLetterChoices(correctLetter, rng = Math.random) {
+  const correct = String(correctLetter ?? "").toUpperCase();
+  if (!/^[A-Z]$/.test(correct)) return [];
+  const distractors = shuffle(
+    [..."ABCDEFGHIJKLMNOPQRSTUVWXYZ"].filter((letter) => letter !== correct),
+    rng,
+  ).slice(0, 3);
+  return shuffle([correct, ...distractors], rng);
 }
 
 export function historyForModes(record, modes = []) {
@@ -510,6 +540,14 @@ export function buildQuestion(item, mode, pool, rng = Math.random, excludedChoic
         choices: [...generateChoices(item, mode, pool, rng, excludedChoiceItemIds), UNKNOWN_CHOICE],
         correctChoice: item.english,
       };
+    case "ja_to_en_spelling":
+      return {
+        ...base,
+        prompt: item.japanese,
+        answer: item.english,
+        spellingLetters: spellingLetters(item.english),
+        instruction: "正しいアルファベットを1文字ずつ選んでください",
+      };
     case "preposition_input":
       return {
         ...base,
@@ -576,7 +614,7 @@ export function normalizeStudySelection(selection = {}) {
     : ["word", "phrase", "structure", "all"];
   const methodOptions = recallSubject
     ? ["recall"]
-    : ["ja_to_en_choice", "en_to_ja_choice", "ja_to_en_flashcard", "en_to_ja_flashcard"];
+    : ["ja_to_en_choice", "ja_to_en_spelling", "en_to_ja_choice", "ja_to_en_flashcard", "en_to_ja_flashcard"];
   const selectedContents = recallSubject
     ? []
     : Array.isArray(selection.contents)

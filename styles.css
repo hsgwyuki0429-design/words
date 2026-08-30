@@ -1744,6 +1744,85 @@ body.quiz-active .main-content { padding-bottom: 0; }
   text-align: center;
 }
 
+.spelling-builder {
+  display: grid;
+  gap: 16px;
+}
+
+.spelling-word {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 5px;
+  min-height: 50px;
+  font-size: clamp(24px, 6vw, 38px);
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+.spelling-character {
+  display: grid;
+  place-items: center;
+  min-width: 0.82em;
+  color: #a1a1aa;
+  border-bottom: 3px solid #d4d4d8;
+}
+
+.spelling-character.current {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.spelling-character.completed {
+  color: #067647;
+  border-color: #6ce9a6;
+}
+
+.spelling-character.wrong {
+  color: #b42318;
+  border-color: #f97066;
+}
+
+.spelling-separator {
+  min-width: 0.35em;
+}
+
+.spelling-progress {
+  margin: 0;
+  color: var(--secondary);
+  font-size: 12px;
+  font-weight: 750;
+  text-align: center;
+}
+
+.spelling-letter-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.spelling-letter-button {
+  min-height: 68px;
+  color: var(--text);
+  background: #f7f7f9;
+  border: 1px solid var(--line-strong);
+  border-radius: 15px;
+  font-size: 24px;
+  font-weight: 850;
+}
+
+.spelling-letter-button.correct {
+  color: #05603a;
+  background: #ecfdf3;
+  border-color: #6ce9a6;
+}
+
+.spelling-letter-button.wrong {
+  color: #9c2418;
+  background: #fff1f0;
+  border-color: #fda29b;
+}
+
 .feedback-card dl {
   display: grid;
   gap: 9px;

@@ -284,6 +284,21 @@ def accepted_answers(english: str) -> list[str]:
     return unique
 
 
+def primary_notation(english: str) -> str:
+    """「help A (to) do / help A + 原形」のような併記は最初の表記を代表にする。"""
+    return clean_text(re.split(r"\s+/\s+", english)[0])
+
+
+def usage_key(english: str) -> str:
+    """任意扱いの括弧と併記を落とし、同じ語法の書き分けを1件にまとめるためのキー。
+
+    「help A (to) do / help A + 原形」「help A (to) do」「help A do」はすべて
+    「help a do」になり、訳も出典も1件に統合される。
+    """
+    stripped = PAREN_RE.sub(" ", primary_notation(english))
+    return re.sub(r"\s+", " ", stripped).strip().casefold()
+
+
 def content_tokens(text: str) -> set[str]:
     """語法のA・B・S・Vのような1文字のプレースホルダを除いた英語トークン。"""
     return {
@@ -411,6 +426,20 @@ def build_phrase_blank(answer: str) -> dict[str, str] | None:
         selected = selected[-2:]
     else:
         selected = list(range(max(1, len(matches) - 2), len(matches)))
+
+    # 「help A (to) do」の「(to)」のような任意扱いの語は空欄に含めない。
+    # 括弧を跨いで区切ると「help A ( ___」のような穴埋めになってしまう。
+    brackets = [match.span() for match in PAREN_RE.finditer(answer)]
+    selected = [
+        index
+        for index in selected
+        if not any(
+            start <= matches[index].start() and matches[index].end() <= end
+            for start, end in brackets
+        )
+    ]
+    if not selected:
+        return None
 
     first = matches[selected[0]]
     last = matches[selected[-1]]
@@ -597,9 +626,9 @@ def convert_audit(workbook) -> list[dict[str, object]]:
             english = clean_text(row[headers[columns["english"]]])
             if not english:
                 continue
-            key = english.casefold()
+            key = usage_key(english)
             record = local.setdefault(key, {
-                "english": english,
+                "english": primary_notation(english),
                 "japanese": [],
                 "source_type": source_type,
                 "importances": [],

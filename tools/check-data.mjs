@@ -7,7 +7,7 @@ const items = JSON.parse(fs.readFileSync(new URL("../data/items.json", import.me
 const publicItems = JSON.parse(fs.readFileSync(new URL("../data/public-items.json", import.meta.url), "utf8"));
 const healthItems = JSON.parse(fs.readFileSync(new URL("../data/health-items.json", import.meta.url), "utf8"));
 
-assert.equal(items.length, 1316, "Workbook must contain 1,316 unique English entries");
+assert.equal(items.length, 1314, "Workbook must contain 1,314 unique English entries");
 assert.equal(new Set(items.map((item) => item.id)).size, items.length, "IDs must be unique");
 assert.equal(
   new Set(items.map((item) => item.english.toLocaleLowerCase())).size,
@@ -26,7 +26,7 @@ assert.deepEqual(
       items.filter((item) => item.type === type).length,
     ]),
   ),
-  { word: 903, phrase: 331, structure: 82 },
+  { word: 903, phrase: 331, structure: 80 },
   "Workbook type counts must match the audited word, phrase, and usage lists",
 );
 
@@ -37,7 +37,7 @@ assert.deepEqual(
       items.filter((item) => item.sourceType === type).length,
     ]),
   ),
-  { "単語": 903, "熟語": 331, "語法": 82 },
+  { "単語": 903, "熟語": 331, "語法": 80 },
   "Source categories must preserve the workbook lineup",
 );
 

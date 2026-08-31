@@ -67805,8 +67805,8 @@
     }
   },
   {
-    "id": "orihime_011ffd3cc0",
-    "english": "help A (to) do / help A + 原形",
+    "id": "orihime_5ca7dc5b38",
+    "english": "help A (to) do",
     "japanese": "Aが〜するのを助ける",
     "type": "structure",
     "sourceType": "語法",
@@ -67815,7 +67815,7 @@
     "range": "OriHime",
     "lesson": "OriHime",
     "title": "A Vehicle of Your Heart",
-    "source": "P1-¶4-S3",
+    "source": "P1-¶4-S3; P2-¶10-S3; P6-¶6-S6",
     "sourceDetail": "textbook pp.62–63 · ¶4 S3",
     "sources": [
       {
@@ -67827,6 +67827,26 @@
         "note": "S3",
         "detail": "textbook pp.62–63 · ¶4 S3",
         "label": "P1-¶4-S3"
+      },
+      {
+        "range": "Mars",
+        "lesson": "Mars",
+        "title": "Human Habitation on Mars",
+        "page": "106–107",
+        "paragraph": "10",
+        "note": "S3",
+        "detail": "textbook pp.106–107 · ¶10 S3",
+        "label": "P2-¶10-S3"
+      },
+      {
+        "range": "Snow",
+        "lesson": "Lesson 4",
+        "title": "Why Snow Is White",
+        "page": "8–9",
+        "paragraph": "6",
+        "note": "S6",
+        "detail": "textbook pp.8–9 · ¶6 S6",
+        "label": "P6-¶6-S6"
       }
     ],
     "tags": [
@@ -67834,8 +67854,7 @@
       "blank"
     ],
     "acceptedAnswers": [
-      "help A (to) do",
-      "help A + 原形"
+      "help A (to) do"
     ],
     "questionModes": [
       "en_to_ja_choice",
@@ -67845,13 +67864,15 @@
     ],
     "order": 1240,
     "examples": [
-      "helps people ... feel happier"
+      "helps people ... feel happier",
+      "helped them understand",
+      "helps plant seedlings fix nitrogen"
     ],
-    "note": "本文例: helps people ... feel happier",
+    "note": "本文例: helps people ... feel happier／本文例: helped them understand／本文例: helps plant seedlings fix nitrogen",
     "blanks": {
       "phrase": {
-        "prompt": "help A ( ___",
-        "answer": "to) do"
+        "prompt": "help A (to) ___",
+        "answer": "do"
       }
     }
   },
@@ -68317,8 +68338,8 @@
     "note": "本文例: suggests there may have been ...",
     "blanks": {
       "phrase": {
-        "prompt": "___ ) S + V",
-        "answer": "suggest (that"
+        "prompt": "___ (that) S + V",
+        "answer": "suggest"
       }
     }
   },
@@ -68735,56 +68756,6 @@
     }
   },
   {
-    "id": "mars_5ca7dc5b38",
-    "english": "help A (to) do",
-    "japanese": "Aが〜するのを助ける",
-    "type": "structure",
-    "sourceType": "語法",
-    "importance": "SS",
-    "difficulty": "—",
-    "range": "Mars",
-    "lesson": "Mars",
-    "title": "Human Habitation on Mars",
-    "source": "P2-¶10-S3",
-    "sourceDetail": "textbook pp.106–107 · ¶10 S3",
-    "sources": [
-      {
-        "range": "Mars",
-        "lesson": "Mars",
-        "title": "Human Habitation on Mars",
-        "page": "106–107",
-        "paragraph": "10",
-        "note": "S3",
-        "detail": "textbook pp.106–107 · ¶10 S3",
-        "label": "P2-¶10-S3"
-      }
-    ],
-    "tags": [
-      "structure",
-      "blank"
-    ],
-    "acceptedAnswers": [
-      "help A (to) do"
-    ],
-    "questionModes": [
-      "en_to_ja_choice",
-      "ja_to_en_choice",
-      "ja_to_en_input",
-      "phrase_blank_input"
-    ],
-    "order": 1258,
-    "examples": [
-      "helped them understand"
-    ],
-    "note": "本文例: helped them understand",
-    "blanks": {
-      "phrase": {
-        "prompt": "help A ( ___",
-        "answer": "to) do"
-      }
-    }
-  },
-  {
     "id": "mars_773123ca16",
     "english": "make a contribution to A",
     "japanese": "Aに貢献する",
@@ -68824,7 +68795,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1259,
+    "order": 1258,
     "examples": [
       "contributions ... to our future"
     ],
@@ -68880,7 +68851,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1260,
+    "order": 1259,
     "examples": [
       "was first mentioned in ..."
     ],
@@ -68934,7 +68905,7 @@
       "ja_to_en_input",
       "phrase_blank_input"
     ],
-    "order": 1261,
+    "order": 1260,
     "examples": [
       "was considered an elegant treat"
     ],
@@ -68986,7 +68957,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1262,
+    "order": 1261,
     "examples": [
       "syrup made from plant vines"
     ],
@@ -69042,7 +69013,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1263,
+    "order": 1262,
     "examples": [
       "could be used for kezurihi"
     ],
@@ -69096,7 +69067,7 @@
       "ja_to_en_input",
       "phrase_blank_input"
     ],
-    "order": 1264,
+    "order": 1263,
     "examples": [
       "made shaved ice a luxury"
     ],
@@ -69146,7 +69117,7 @@
       "ja_to_en_input",
       "phrase_blank_input"
     ],
-    "order": 1265,
+    "order": 1264,
     "examples": [
       "couldn’t afford it"
     ],
@@ -69198,7 +69169,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1266,
+    "order": 1265,
     "examples": [
       "better at keeping ice"
     ],
@@ -69252,7 +69223,7 @@
       "ja_to_en_input",
       "phrase_blank_input"
     ],
-    "order": 1267,
+    "order": 1266,
     "examples": [
       "became possible to transport ice"
     ],
@@ -69304,7 +69275,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1268,
+    "order": 1267,
     "examples": [
       "would like to introduce"
     ],
@@ -69360,7 +69331,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1269,
+    "order": 1268,
     "examples": [
       "topped with many things"
     ],
@@ -69416,7 +69387,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1270,
+    "order": 1269,
     "examples": [
       "waiting for some kakigori"
     ],
@@ -69472,7 +69443,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1271,
+    "order": 1270,
     "examples": [
       "showing her around the Nikko area"
     ],
@@ -69538,7 +69509,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1272,
+    "order": 1271,
     "examples": [
       "prevent us from becoming dehydrated",
       "preventing the frost from going ..."
@@ -69595,7 +69566,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1273,
+    "order": 1272,
     "examples": [
       "regard kakigori as a summer treat"
     ],
@@ -69649,7 +69620,7 @@
       "ja_to_en_input",
       "phrase_blank_input"
     ],
-    "order": 1274,
+    "order": 1273,
     "examples": [
       "recognize the fact that beans ..."
     ],
@@ -69701,7 +69672,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1275,
+    "order": 1274,
     "examples": [
       "Thank you for listening"
     ],
@@ -69757,7 +69728,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1276,
+    "order": 1275,
     "examples": [
       "things made of plastic"
     ],
@@ -69813,7 +69784,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1277,
+    "order": 1276,
     "examples": [
       "ends up in the sea"
     ],
@@ -69869,7 +69840,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1278,
+    "order": 1277,
     "examples": [
       "broken down into tiny pieces"
     ],
@@ -69925,7 +69896,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1279,
+    "order": 1278,
     "examples": [
       "take in these poisons"
     ],
@@ -69981,7 +69952,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1280,
+    "order": 1279,
     "examples": [
       "at higher risk for cancer"
     ],
@@ -70037,7 +70008,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1281,
+    "order": 1280,
     "examples": [
       "known as “garbage beach”"
     ],
@@ -70091,7 +70062,7 @@
       "ja_to_en_input",
       "phrase_blank_input"
     ],
-    "order": 1282,
+    "order": 1281,
     "examples": [
       "developing a way to use ..."
     ],
@@ -70143,7 +70114,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1283,
+    "order": 1282,
     "examples": [
       "leads the world in recycling"
     ],
@@ -70197,7 +70168,7 @@
       "ja_to_en_input",
       "phrase_blank_input"
     ],
-    "order": 1284,
+    "order": 1283,
     "examples": [
       "seems to go by / seems to be increasing"
     ],
@@ -70249,7 +70220,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1285,
+    "order": 1284,
     "examples": [
       "floods us with information"
     ],
@@ -70305,7 +70276,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1286,
+    "order": 1285,
     "examples": [
       "keep up with the lives of others"
     ],
@@ -70359,7 +70330,7 @@
       "ja_to_en_input",
       "phrase_blank_input"
     ],
-    "order": 1287,
+    "order": 1286,
     "examples": [
       "miss any opportunities to try"
     ],
@@ -70409,7 +70380,7 @@
       "ja_to_en_input",
       "phrase_blank_input"
     ],
-    "order": 1288,
+    "order": 1287,
     "examples": [
       "tend to be worried"
     ],
@@ -70459,7 +70430,7 @@
       "ja_to_en_input",
       "phrase_blank_input"
     ],
-    "order": 1289,
+    "order": 1288,
     "examples": [
       "get customers to buy"
     ],
@@ -70521,7 +70492,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1290,
+    "order": 1289,
     "examples": [
       "checking my shoe for deer droppings"
     ],
@@ -70577,7 +70548,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1291,
+    "order": 1290,
     "examples": [
       "spent most of my day with friends"
     ],
@@ -70633,7 +70604,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1292,
+    "order": 1291,
     "examples": [
       "pay attention to what ..."
     ],
@@ -70689,7 +70660,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1293,
+    "order": 1292,
     "examples": [
       "be familiar with what happens ..."
     ],
@@ -70745,7 +70716,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1294,
+    "order": 1293,
     "examples": [
       "depends on how light interacts ..."
     ],
@@ -70801,7 +70772,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1295,
+    "order": 1294,
     "examples": [
       "consists of the colors ..."
     ],
@@ -70855,7 +70826,7 @@
       "ja_to_en_input",
       "phrase_blank_input"
     ],
-    "order": 1296,
+    "order": 1295,
     "examples": [
       "remember him mentioning ..."
     ],
@@ -70864,56 +70835,6 @@
       "phrase": {
         "prompt": "remember A ___",
         "answer": "doing"
-      }
-    }
-  },
-  {
-    "id": "snow_8986a17b6e",
-    "english": "help A do",
-    "japanese": "Aが〜するのを助ける",
-    "type": "structure",
-    "sourceType": "語法",
-    "importance": "S",
-    "difficulty": "—",
-    "range": "Snow",
-    "lesson": "Lesson 4",
-    "title": "Why Snow Is White",
-    "source": "P6-¶6-S6",
-    "sourceDetail": "textbook pp.8–9 · ¶6 S6",
-    "sources": [
-      {
-        "range": "Snow",
-        "lesson": "Lesson 4",
-        "title": "Why Snow Is White",
-        "page": "8–9",
-        "paragraph": "6",
-        "note": "S6",
-        "detail": "textbook pp.8–9 · ¶6 S6",
-        "label": "P6-¶6-S6"
-      }
-    ],
-    "tags": [
-      "structure",
-      "blank"
-    ],
-    "acceptedAnswers": [
-      "help A do"
-    ],
-    "questionModes": [
-      "en_to_ja_choice",
-      "ja_to_en_choice",
-      "ja_to_en_input",
-      "phrase_blank_input"
-    ],
-    "order": 1297,
-    "examples": [
-      "helps plant seedlings fix nitrogen"
-    ],
-    "note": "本文例: helps plant seedlings fix nitrogen",
-    "blanks": {
-      "phrase": {
-        "prompt": "help A ___",
-        "answer": "do"
       }
     }
   },
@@ -70955,7 +70876,7 @@
       "ja_to_en_input",
       "phrase_blank_input"
     ],
-    "order": 1298,
+    "order": 1296,
     "examples": [
       "invited six foreign journalists to join"
     ],
@@ -71005,7 +70926,7 @@
       "ja_to_en_input",
       "phrase_blank_input"
     ],
-    "order": 1299,
+    "order": 1297,
     "examples": [
       "were asked to discover"
     ],
@@ -71057,7 +70978,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1300,
+    "order": 1298,
     "examples": [
       "be aware of"
     ],
@@ -71113,7 +71034,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1301,
+    "order": 1299,
     "examples": [
       "impressed with the trains"
     ],
@@ -71169,7 +71090,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1302,
+    "order": 1300,
     "examples": [
       "interested in seeing ..."
     ],
@@ -71225,7 +71146,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1303,
+    "order": 1301,
     "examples": [
       "take such pride in their work"
     ],
@@ -71281,7 +71202,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1304,
+    "order": 1302,
     "examples": [
       "starts with workers collecting ..."
     ],
@@ -71335,7 +71256,7 @@
       "ja_to_en_input",
       "phrase_blank_input"
     ],
-    "order": 1305,
+    "order": 1303,
     "examples": [
       "tray is wiped clean"
     ],
@@ -71387,7 +71308,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1306,
+    "order": 1304,
     "examples": [
       "seats are returned to ... position"
     ],
@@ -71443,7 +71364,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1307,
+    "order": 1305,
     "examples": [
       "motivated by enjoying their work"
     ],
@@ -71499,7 +71420,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1308,
+    "order": 1306,
     "examples": [
       "is made up of a group ..."
     ],
@@ -71553,7 +71474,7 @@
       "ja_to_en_input",
       "phrase_blank_input"
     ],
-    "order": 1309,
+    "order": 1307,
     "examples": [
       "tell us whether food is ..."
     ],
@@ -71603,7 +71524,7 @@
       "ja_to_en_input",
       "phrase_blank_input"
     ],
-    "order": 1310,
+    "order": 1308,
     "examples": [
       "make up about 50 percent"
     ],
@@ -71655,7 +71576,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1311,
+    "order": 1309,
     "examples": [
       "four to six times as many taste buds as ..."
     ],
@@ -71709,7 +71630,7 @@
       "ja_to_en_input",
       "phrase_blank_input"
     ],
-    "order": 1312,
+    "order": 1310,
     "examples": [
       "more likely to be women"
     ],
@@ -71761,7 +71682,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1313,
+    "order": 1311,
     "examples": [
       "sensitive to bitter foods / pain"
     ],
@@ -71817,7 +71738,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1314,
+    "order": 1312,
     "examples": [
       "stay away from high-fat food items"
     ],
@@ -71873,7 +71794,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1315,
+    "order": 1313,
     "examples": [
       "put them more at risk for ..."
     ],
@@ -71929,7 +71850,7 @@
       "preposition_input",
       "phrase_blank_input"
     ],
-    "order": 1316,
+    "order": 1314,
     "examples": [
       "react negatively to them"
     ],

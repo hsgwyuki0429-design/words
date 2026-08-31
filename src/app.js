@@ -2228,6 +2228,34 @@ function renderFeedback(question, answer, correct) {
     </section>`;
 }
 
+// 直前に「次へ」で押した位置（画面上のY座標）。4択の連打で指を動かさずに済むよう、
+// 次の4択問題では「次の問題へ」ボタンをこの高さに出す。未計測のうちは既定の画面下。
+let nextButtonAnchorY = null;
+
+function isChoiceQuestion(mode) {
+  return typeof mode === "string" && mode.endsWith("choice");
+}
+
+// 回答後のタップで次に進んだ位置を覚える。キーボード操作の click は座標を持たないので除く。
+function rememberNextButtonAnchor(event) {
+  if (!isChoiceQuestion(state.session?.currentQuestion?.mode)) return;
+  if (!event || event.detail === 0 || typeof event.clientY !== "number") return;
+  nextButtonAnchorY = event.clientY;
+}
+
+// 覚えた高さへボタンを移す。画面外や既定位置（画面下）より下にははみ出させない。
+function applyNextButtonAnchor() {
+  const button = elements.quizContent.querySelector(".next-button");
+  if (!button || nextButtonAnchorY === null) return;
+  if (!isChoiceQuestion(state.session?.currentQuestion?.mode)) return;
+  const rect = button.getBoundingClientRect();
+  const minTop = 12;
+  const maxTop = Math.max(minTop, rect.top);
+  const top = Math.min(Math.max(nextButtonAnchorY - rect.height / 2, minTop), maxTop);
+  button.classList.add("next-button--anchored");
+  button.style.top = `${Math.round(top)}px`;
+}
+
 // .next-button は position:fixed のため、transformがかかる .quiz-shell の外に置く。
 function renderNextButton() {
   if (!state.session?.answered) return "";
@@ -2415,6 +2443,7 @@ function renderQuiz() {
       elements.quizContent.querySelector("input")?.focus({ preventScroll: true });
     });
   } else {
+    applyNextButtonAnchor();
     requestAnimationFrame(() => {
       window.scrollTo(0, 0);
       elements.quizContent.querySelector("[data-next-question]")?.focus({ preventScroll: true });
@@ -2809,7 +2838,10 @@ function bindEvents() {
       return;
     }
     if (!target) {
-      if (state.view === "quiz" && state.session?.answered) nextQuestion();
+      if (state.view === "quiz" && state.session?.answered) {
+        rememberNextButtonAnchor(event);
+        nextQuestion();
+      }
       return;
     }
     if (target.dataset.viewTarget) setView(target.dataset.viewTarget);
@@ -3003,7 +3035,10 @@ function bindEvents() {
     if (target.dataset.choice !== undefined) submitAnswer(target.dataset.choice);
     if (target.dataset.spellingLetter !== undefined) chooseSpellingLetter(target.dataset.spellingLetter);
     if (target.hasAttribute("data-submit-input")) submitAnswer(currentTypedAnswer());
-    if (target.hasAttribute("data-next-question")) nextQuestion();
+    if (target.hasAttribute("data-next-question")) {
+      rememberNextButtonAnchor(event);
+      nextQuestion();
+    }
     if (target.hasAttribute("data-quit-quiz")) {
       if (!state.session.results.length || window.confirm("この学習を終了しますか？")) {
         if (state.session.reviewTimer) clearTimeout(state.session.reviewTimer);

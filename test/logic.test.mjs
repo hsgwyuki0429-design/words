@@ -308,6 +308,36 @@ test("phrase distractors contain the same number of A and B placeholders", () =>
   assert.ok(answerChoices.every((choice) => count(choice, "B") === 1));
 });
 
+test("japanese-to-english choices drop distractors that share the prompt's gloss", () => {
+  const target = {
+    id: "garbage",
+    type: "word",
+    range: "Plastic",
+    importance: "S",
+    english: "garbage",
+    japanese: "ごみ",
+    acceptedAnswers: ["garbage"],
+  };
+  const pool = [
+    target,
+    { ...target, id: "trash", range: "Snow", english: "trash" },
+    { ...target, id: "waste", range: "Mars", english: "waste", japanese: "廃棄物" },
+    { ...target, id: "litter", range: "FOMO", english: "litter", japanese: "散らかったごみ" },
+    { ...target, id: "plastic", range: "Kakigori", english: "plastic", japanese: "プラスチック" },
+  ];
+  const question = buildQuestion(target, "ja_to_en_choice", pool, () => 0.42);
+  assert.equal(question.prompt, "ごみ");
+  assert.ok(!question.choices.includes("trash"), "same-gloss item must not be offered as a distractor");
+  assert.deepEqual(
+    new Set(question.choices),
+    new Set(["garbage", "waste", "litter", "plastic", UNKNOWN_CHOICE]),
+  );
+
+  // 英語→日本語では選択肢が訳そのものなので、重複は従来どおり畳まれる。
+  const reverse = buildQuestion(target, "en_to_ja_choice", pool, () => 0.42);
+  assert.equal(reverse.choices.filter((choice) => choice === "ごみ").length, 1);
+});
+
 test("structure choices hide grammar notes and avoid recent, nearby-range distractors", () => {
   const target = {
     id: "target",

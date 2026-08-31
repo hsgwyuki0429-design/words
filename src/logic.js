@@ -447,8 +447,12 @@ export function generateChoices(item, mode, pool, rng = Math.random, excludedIte
   const excluded = new Set(excludedItemIds);
   const targetSignature = placeholderSignature(item.english);
   const matchPlaceholderShape = item.type !== "word" && targetSignature !== "0:0";
+  // 日本語→英語では訳がそのまま問題文になるので、同じ訳の語句は誤答にできない。
+  // garbage と trash のように、どちらを選んでも正解になってしまう。
+  const promptGloss = mode === "ja_to_en_choice" ? normalizeAnswer(item.japanese) : "";
   const eligible = (candidate) =>
     candidate.id !== item.id &&
+    (!promptGloss || normalizeAnswer(candidate.japanese) !== promptGloss) &&
     (!matchPlaceholderShape || (
       candidate.type !== "word" && placeholderSignature(candidate.english) === targetSignature
     ));

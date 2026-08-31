@@ -260,11 +260,11 @@ test("difficulty order prioritizes repeated mistakes", () => {
 });
 
 test("workbook difficulty order starts with the hardest level", () => {
-  const sample = ["4級", "2級", "準1級", "専門"].map((difficulty) =>
+  const sample = ["A", "C", "E", "F"].map((difficulty) =>
     items.find((item) => item.difficulty === difficulty),
   );
   const sorted = sortItems(sample, new Map(), "difficulty-level-desc");
-  assert.deepEqual(sorted.map((item) => item.difficulty), ["専門", "準1級", "2級", "4級"]);
+  assert.deepEqual(sorted.map((item) => item.difficulty), ["F", "E", "C", "A"]);
 });
 
 test("choice questions contain four answer options, unknown, and the correct answer", () => {
@@ -287,10 +287,10 @@ test("English flashcards support both directions and reveal the matching answer"
 });
 
 test("spelling choice questions expose four letters and advance over alphabetic characters", () => {
-  const item = items.find((candidate) => candidate.english === "high-fat");
+  const item = items.find((candidate) => candidate.english === "high-speed");
   const question = buildQuestion(item, "ja_to_en_spelling", items);
-  assert.deepEqual(question.spellingLetters, [..."highfat"]);
-  assert.deepEqual(spellingLetters(item.english), [..."highfat"]);
+  assert.deepEqual(question.spellingLetters, [..."highspeed"]);
+  assert.deepEqual(spellingLetters(item.english), [..."highspeed"]);
   const choices = generateLetterChoices(question.spellingLetters[0], () => 0.42);
   assert.equal(choices.length, 4);
   assert.equal(new Set(choices).size, 4);
@@ -298,7 +298,7 @@ test("spelling choice questions expose four letters and advance over alphabetic 
 });
 
 test("phrase distractors contain the same number of A and B placeholders", () => {
-  const item = items.find((candidate) => candidate.english === "pour A over B");
+  const item = items.find((candidate) => candidate.english === "share A with B");
   const question = buildQuestion(item, "ja_to_en_choice", items, () => 0.42);
   const count = (value, placeholder) =>
     (value.match(new RegExp(`(?<![A-Za-z])${placeholder}(?![A-Za-z])`, "g")) ?? []).length;
@@ -322,7 +322,7 @@ test("structure choices hide grammar notes and avoid recent, nearby-range distra
     target,
     { ...target, id: "mars", range: "Mars", english: "mars structure", japanese: "火星の誤答（間接疑問）" },
     { ...target, id: "snow", range: "Snow", english: "snow structure", japanese: "雪の誤答（受動態）" },
-    { ...target, id: "fomo", range: "FOMO", english: "fomo structure", japanese: "別範囲の誤答（分詞構文）" },
+    { ...target, id: "fomo", range: "FOMO", english: "fomo usage", japanese: "別範囲の誤答（語法）" },
     { ...target, id: "recent", range: "Plastic", english: "recent structure", japanese: "直近の答え（to不定詞）" },
   ];
   const question = buildQuestion(target, "en_to_ja_choice", pool, () => 0.42, ["recent"]);

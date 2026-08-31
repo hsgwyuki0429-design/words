@@ -127,6 +127,20 @@ NEW_SOURCE_MAP = {
         "title": "Taste & Supertasters",
     },
 }
+AUDIT_SOURCE_RE = re.compile(r"^P([1-8])(?:-TITLE|-¶(\d+)-S(\d+))$")
+AUDIT_SOURCE_MAP = {
+    "1": {"range": "OriHime", "slug": "orihime", "lesson": "OriHime", "title": "A Vehicle of Your Heart", "page": "62–63"},
+    "2": {"range": "Mars", "slug": "mars", "lesson": "Mars", "title": "Human Habitation on Mars", "page": "106–107"},
+    "3": {"range": "Kakigori", "slug": "kakigori", "lesson": "Kakigori", "title": "A Cool Food: Kakigori", "page": "46–47"},
+    "4": {"range": "Plastic", "slug": "plastic", "lesson": "Lesson 2", "title": "Plastic Garbage", "page": "4–5"},
+    "5": {"range": "FOMO", "slug": "fomo", "lesson": "Lesson 3", "title": "FOMO", "page": "6–7"},
+    "6": {"range": "Snow", "slug": "snow", "lesson": "Lesson 4", "title": "Why Snow Is White", "page": "8–9"},
+    "7": {"range": "Shinkansen", "slug": "shinkansen", "lesson": "Lesson 5", "title": "7-Minute Miracle", "page": "10–11"},
+    "8": {"range": "Taste Buds", "slug": "taste-buds", "lesson": "Lesson 6", "title": "Taste Buds", "page": "12–13"},
+}
+IMPORTANCE_ORDER = ["SSS", "SS", "S", "A", "B", "C"]
+DIFFICULTY_ORDER = ["A", "B", "C", "D", "E", "F"]
+APP_WORD_IMPORTANCE = {"SSS", "SS", "S", "A"}
 WORD_RE = re.compile(r"[A-Za-z]+(?:['’\-][A-Za-z]+)*")
 PLACEHOLDERS = {"a", "b", "s", "v"}
 PREPOSITIONS = {
@@ -185,6 +199,23 @@ def clean_text(value: object) -> str:
 
 def parse_source(label: str) -> dict[str, str]:
     cleaned = clean_text(label)
+    audit_match = AUDIT_SOURCE_RE.match(cleaned)
+    if audit_match:
+        source_key, paragraph, sentence = audit_match.groups()
+        source = AUDIT_SOURCE_MAP[source_key]
+        location = "title" if "TITLE" in cleaned else f"¶{paragraph} S{sentence}"
+        return {
+            "range": source["range"],
+            "lesson": source["lesson"],
+            "title": source["title"],
+            "page": source["page"],
+            "paragraph": paragraph or "",
+            "note": "TITLE" if "TITLE" in cleaned else f"S{sentence}",
+            "detail": f"textbook pp.{source['page']} · {location}",
+            "label": cleaned,
+            "slug": source["slug"],
+        }
+
     new_match = NEW_SOURCE_RE.match(cleaned)
     if new_match:
         scan_page, source_key, book_kind, page = new_match.groups()
@@ -256,6 +287,8 @@ def classify_type(source_type: str, english: str) -> str:
     if source_type == "熟語":
         return "phrase"
     if source_type == "構文":
+        return "structure"
+    if source_type == "語法":
         return "structure"
     if re.search(r"\b(?:A|B|S|V)\b", english):
         return "structure"
@@ -341,8 +374,197 @@ def build_phrase_blank(answer: str) -> dict[str, str] | None:
     }
 
 
-def convert(workbook_path: Path) -> list[dict[str, object]]:
-    workbook = load_workbook(workbook_path, read_only=True, data_only=True)
+def best_importance(values: list[str]) -> str:
+    return min(values, key=lambda value: IMPORTANCE_ORDER.index(value))
+
+
+def hardest_difficulty(values: list[str]) -> str:
+    known = [value for value in values if value in DIFFICULTY_ORDER]
+    return max(known, key=lambda value: DIFFICULTY_ORDER.index(value)) if known else "—"
+
+
+def parse_sources(value: object) -> list[dict[str, str]]:
+    return [parse_source(part) for part in clean_text(value).split(";") if clean_text(part)]
+
+
+def append_unique(target: list[str], values: list[str]) -> None:
+    seen = {value.casefold() for value in target}
+    for value in values:
+        cleaned = clean_text(value)
+        if cleaned and cleaned.casefold() not in seen:
+            target.append(cleaned)
+            seen.add(cleaned.casefold())
+
+
+def append_unique_sources(
+    target: list[dict[str, str]], values: list[dict[str, str]]
+) -> None:
+    seen = {source["label"] for source in target}
+    for source in values:
+        if source["label"] not in seen:
+            target.append(source)
+            seen.add(source["label"])
+
+
+def make_item(record: dict[str, object], order: int) -> dict[str, object]:
+    english = str(record["english"])
+    japanese = "／".join(record["japanese"])
+    source_type = str(record["source_type"])
+    sources = record["sources"]
+    primary = sources[0]
+    digest_source = f"{source_type}|{english}".casefold().encode("utf-8")
+    digest = hashlib.sha1(digest_source).hexdigest()[:10]
+    item_id = f"{primary['slug']}_{digest}"
+
+    answers = accepted_answers(english)
+    primary_answer = answers[0]
+    item_type = classify_type(source_type, english)
+    preposition_blank = build_preposition_blank(primary_answer)
+    phrase_blank = (
+        build_phrase_blank(primary_answer)
+        if item_type in {"phrase", "structure", "expression"}
+        else None
+    )
+
+    modes = ["en_to_ja_choice", "ja_to_en_choice", "ja_to_en_input"]
+    tags = [item_type]
+    if item_type == "word" and len(word_matches(primary_answer)) == 1:
+        modes.append("spelling_input")
+        tags.append("spelling")
+    if preposition_blank:
+        modes.append("preposition_input")
+        tags.append("preposition")
+    if phrase_blank:
+        modes.append("phrase_blank_input")
+        tags.append("blank")
+
+    item: dict[str, object] = {
+        "id": item_id,
+        "english": english,
+        "japanese": japanese,
+        "type": item_type,
+        "sourceType": source_type,
+        "importance": record["importance"],
+        "difficulty": record["difficulty"],
+        "range": primary["range"],
+        "lesson": primary["lesson"],
+        "title": primary["title"],
+        "source": "; ".join(source["label"] for source in sources),
+        "sourceDetail": primary["detail"],
+        "sources": [
+            {key: value for key, value in source.items() if key != "slug"}
+            for source in sources
+        ],
+        "tags": tags,
+        "acceptedAnswers": answers,
+        "questionModes": modes,
+        "order": order,
+    }
+    if record.get("lemma"):
+        item["lemma"] = record["lemma"]
+    if record.get("surface_forms"):
+        item["surfaceForms"] = record["surface_forms"]
+    if record.get("examples"):
+        item["examples"] = record["examples"]
+    if record.get("notes"):
+        item["note"] = "／".join(record["notes"])
+
+    blanks: dict[str, dict[str, str]] = {}
+    if preposition_blank:
+        blanks["preposition"] = preposition_blank
+    if phrase_blank:
+        blanks["phrase"] = phrase_blank
+    if blanks:
+        item["blanks"] = blanks
+    return item
+
+
+def convert_audit(workbook) -> list[dict[str, object]]:
+    grouped: OrderedDict[str, dict[str, object]] = OrderedDict()
+
+    word_sheet = workbook["02_英単語一覧"]
+    word_rows = word_sheet.iter_rows(values_only=True)
+    word_headers = {clean_text(value): index for index, value in enumerate(next(word_rows))}
+    for row in word_rows:
+        lemma = clean_text(row[word_headers["原形"]])
+        if not lemma:
+            continue
+        key = f"単語|{lemma.casefold()}"
+        record = grouped.setdefault(key, {
+            "english": lemma,
+            "lemma": lemma,
+            "japanese": [],
+            "source_type": "単語",
+            "importances": [],
+            "difficulties": [],
+            "sources": [],
+            "surface_forms": [],
+            "examples": [],
+            "notes": [],
+        })
+        append_unique(record["japanese"], [row[word_headers["本文中の意味"]]])
+        append_unique(record["surface_forms"], [row[word_headers["本文中の形"]]])
+        append_unique_sources(record["sources"], parse_sources(row[word_headers["出典"]]))
+        record["importances"].append(clean_text(row[word_headers["重要度"]]))
+        record["difficulties"].append(clean_text(row[word_headers["難易度"]]))
+
+    records: list[dict[str, object]] = []
+    for record in grouped.values():
+        record["importance"] = best_importance(record.pop("importances"))
+        record["difficulty"] = hardest_difficulty(record.pop("difficulties"))
+        if record["importance"] in APP_WORD_IMPORTANCE:
+            records.append(record)
+
+    for sheet_name, source_type, columns in (
+        (
+            "03_熟語・連語一覧",
+            "熟語",
+            {"english": "表現", "japanese": "日本語訳", "example": "本文中の意味・使い方", "importance": "重要度", "difficulty": "難易度"},
+        ),
+        (
+            "04_語法一覧",
+            "語法",
+            {"english": "語法", "japanese": "意味", "example": "本文中の該当箇所", "importance": "重要度"},
+        ),
+    ):
+        sheet = workbook[sheet_name]
+        rows = sheet.iter_rows(values_only=True)
+        headers = {clean_text(value): index for index, value in enumerate(next(rows))}
+        local: OrderedDict[str, dict[str, object]] = OrderedDict()
+        for row in rows:
+            english = clean_text(row[headers[columns["english"]]])
+            if not english:
+                continue
+            key = english.casefold()
+            record = local.setdefault(key, {
+                "english": english,
+                "japanese": [],
+                "source_type": source_type,
+                "importances": [],
+                "difficulties": [],
+                "sources": [],
+                "surface_forms": [],
+                "examples": [],
+                "notes": [],
+            })
+            append_unique(record["japanese"], [row[headers[columns["japanese"]]]])
+            example = clean_text(row[headers[columns["example"]]])
+            append_unique(record["examples"], [example])
+            append_unique(record["notes"], [f"本文例: {example}"] if example else [])
+            append_unique_sources(record["sources"], parse_sources(row[headers["出典"]]))
+            record["importances"].append(clean_text(row[headers[columns["importance"]]]))
+            if "difficulty" in columns:
+                record["difficulties"].append(clean_text(row[headers[columns["difficulty"]]]))
+
+        for record in local.values():
+            record["importance"] = best_importance(record.pop("importances"))
+            record["difficulty"] = hardest_difficulty(record.pop("difficulties"))
+            records.append(record)
+
+    return [make_item(record, order) for order, record in enumerate(records, start=1)]
+
+
+def convert_legacy(workbook) -> list[dict[str, object]]:
     sheet = workbook["全一覧_重要度順"]
     rows = sheet.iter_rows(values_only=True)
     headers = [clean_text(value) for value in next(rows)]
@@ -466,6 +688,13 @@ def convert(workbook_path: Path) -> list[dict[str, object]]:
         items.append(item)
 
     return items
+
+
+def convert(workbook_path: Path) -> list[dict[str, object]]:
+    workbook = load_workbook(workbook_path, read_only=True, data_only=True)
+    if {"02_英単語一覧", "03_熟語・連語一覧", "04_語法一覧"}.issubset(workbook.sheetnames):
+        return convert_audit(workbook)
+    return convert_legacy(workbook)
 
 
 def main() -> None:

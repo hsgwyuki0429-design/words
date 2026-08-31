@@ -751,6 +751,36 @@ h2 {
   line-height: 1.25;
 }
 
+.word-form-kind {
+  display: inline-flex;
+  margin-top: 10px;
+  padding: 3px 7px;
+  color: #175cd3;
+  background: #eff8ff;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 760;
+  letter-spacing: 0.05em;
+}
+
+.word-card .word-surface-forms {
+  margin-top: 7px;
+  font-size: 12px;
+}
+
+.word-surface-forms span {
+  margin-right: 7px;
+  color: #667085;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.source-evidence {
+  margin-top: 5px;
+  color: var(--secondary);
+  font-size: 12px;
+}
+
 .word-card p {
   margin: 0;
   color: var(--secondary);

@@ -16,8 +16,8 @@ assert.equal(
 );
 assert.equal(
   items.reduce((sum, item) => sum + item.sources.length, 0),
-  654,
-  "All 654 workbook source rows must be preserved",
+  880,
+  "All 880 selected workbook source references must be preserved",
 );
 assert.deepEqual(
   Object.fromEntries(
@@ -26,8 +26,19 @@ assert.deepEqual(
       items.filter((item) => item.type === type).length,
     ]),
   ),
-  { word: 383, phrase: 197, structure: 61 },
-  "Workbook type counts must match the replacement lists",
+  { word: 228, phrase: 331, structure: 82 },
+  "Workbook type counts must match the audited word, phrase, and usage lists",
+);
+
+assert.deepEqual(
+  Object.fromEntries(
+    ["単語", "熟語", "語法"].map((type) => [
+      type,
+      items.filter((item) => item.sourceType === type).length,
+    ]),
+  ),
+  { "単語": 228, "熟語": 331, "語法": 82 },
+  "Source categories must preserve the workbook lineup",
 );
 
 for (const item of items) {
@@ -63,6 +74,10 @@ for (const item of items) {
   }
   if (["ja_to_en_input", "spelling_input"].some((mode) => item.questionModes.includes(mode))) {
     assert.ok(slotTokensForQuestion(item, "ja_to_en_input").length >= 1, `${item.id}: no word slots`);
+  }
+  if (item.type === "word") {
+    assert.equal(item.english, item.lemma, `${item.id}: words must use the lemma as English`);
+    assert.ok(item.surfaceForms.length >= 1, `${item.id}: source surface forms are required`);
   }
 }
 

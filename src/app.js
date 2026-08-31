@@ -39,8 +39,8 @@ import {
   summarizeByRange,
   summarizeHistory,
   summarizeSession,
-} from "./logic.js?v=2026.2.17";
-import { createMaxAudioEngine } from "./audio.js?v=2026.2.17";
+} from "./logic.js?v=2026.2.18";
+import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
   maxCueForAnswer,
@@ -48,7 +48,7 @@ import {
   resolveMaxCue,
   scaledVisualPlan,
   shouldPlayMaxSound,
-} from "./max-cues.js?v=2026.2.17";
+} from "./max-cues.js?v=2026.2.18";
 import { clearAllData, getMeta, loadHistory, recordAttempt, setMeta } from "./storage.js";
 
 const DEFAULT_SETTINGS = {
@@ -223,7 +223,7 @@ const MODE_META = {
   ja_to_en_input: { icon: "日→英", tags: ["完全入力", "語句"] },
   spelling_input: { icon: "Aa", tags: ["完全入力", "スペル"] },
   preposition_input: { icon: "_", tags: ["穴埋め", "前置詞"] },
-  phrase_blank_input: { icon: "…", tags: ["穴埋め", "熟語・構文"] },
+  phrase_blank_input: { icon: "…", tags: ["穴埋め", "熟語・語法"] },
   public_recall: { icon: "公", tags: ["自己採点", "一問一答"] },
   health_recall: { icon: "保", tags: ["自己採点", "一問一答"] },
 };
@@ -239,8 +239,8 @@ const ACTIVE_ENGLISH_STUDY_MODES = [
 const STUDY_CONTENT_META = {
   word: { icon: "Aa", title: "単語", detail: "英単語を中心に学習", tags: ["単語"] },
   phrase: { icon: "…", title: "熟語", detail: "熟語だけを学習", tags: ["熟語"] },
-  structure: { icon: "S V", title: "構文", detail: "構文だけを学習", tags: ["構文"] },
-  all: { icon: "＋", title: "すべて", detail: "単語・熟語・構文を続けて学習", tags: ["単語", "熟語", "構文"] },
+  structure: { icon: "V", title: "語法", detail: "語法だけを学習", tags: ["語法"] },
+  all: { icon: "＋", title: "すべて", detail: "単語・熟語・語法を続けて学習", tags: ["単語", "熟語", "語法"] },
 };
 
 const STUDY_DIRECTION_META = {
@@ -283,7 +283,7 @@ const KNOWN_STUDY_SELECTIONS = [
 const TAG_LABELS = {
   word: "単語",
   phrase: "熟語",
-  structure: "構文",
+  structure: "語法",
   expression: "表現",
   preposition: "前置詞",
   spelling: "スペル",
@@ -554,7 +554,7 @@ function renderStudyContent() {
   });
   const allCard = `<button class="multi-select-card select-all-card${allSelected ? " selected" : ""}" type="button" data-study-content-all aria-pressed="${allSelected}">
     <span class="multi-check" aria-hidden="true">${allSelected ? "✓" : ""}</span>
-    <span><strong>全選択</strong><small>単語・熟語・構文のすべて（${baseItems.length}語句）</small></span>
+    <span><strong>全選択</strong><small>単語・熟語・語法のすべて（${baseItems.length}語句）</small></span>
   </button>`;
   const contentCards = ENGLISH_CONTENT_TYPES.map((content) => {
     const selected = !allSelected && selectedContents.includes(content);
@@ -1893,8 +1893,12 @@ function renderList(resetLimit = false) {
             <span class="importance-badge importance-${item.importance.toLowerCase()}">${item.importance}</span>
             <span class="type-label">${TYPE_LABELS[item.type]}</span>
           </div>
+          ${item.type === "word" ? '<span class="word-form-kind">原形</span>' : ""}
           <h2>${escapeHtml(item.english)}</h2>
           <p>${escapeHtml(item.japanese)}</p>
+          ${item.type === "word" && item.surfaceForms?.length
+            ? `<p class="word-surface-forms"><span>本文中の形</span>${escapeHtml(item.surfaceForms.join(" / "))}</p>`
+            : ""}
           <div class="item-tags word-card-tags">${renderTags([item.type, ...item.tags])}</div>
         </div>
         <div class="word-card-meta">
@@ -2128,6 +2132,14 @@ function sourceLine(item) {
     .join(" / ");
 }
 
+function itemEvidenceLine(item) {
+  if (item.type === "word" && item.surfaceForms?.length) {
+    return `本文中の形：${item.surfaceForms.join(" / ")}`;
+  }
+  if (item.examples?.length) return `本文例：${item.examples.join(" / ")}`;
+  return "";
+}
+
 function renderChoiceArea(question, answered, currentAnswer) {
   const letters = ["A", "B", "C", "D", "？"];
   return `<div class="choice-list">
@@ -2210,6 +2222,7 @@ function renderFeedback(question, answer, correct) {
         <div>
           <strong class="source-range">範囲：${escapeHtml(question.item.range)}</strong>
           <p>${escapeHtml(sourceLine(question.item))}</p>
+          ${itemEvidenceLine(question.item) ? `<p class="source-evidence">${escapeHtml(itemEvidenceLine(question.item))}</p>` : ""}
         </div>
       </div>` : ""}
     </section>`;
@@ -3071,7 +3084,7 @@ async function boot() {
       }),
     );
     const [response, publicResponse, healthResponse, history, selectedMode, progressEntries, settings, bestCombo, activeStudy, selectedPeriod, recentStudies, lastSessionConfig] = await Promise.all([
-      fetch("./data/items.json?v=2026.08.26"),
+      fetch("./data/items.json?v=2026.08.31"),
       fetch("./data/public-items.json?v=2026.2.4"),
       fetch("./data/health-items.json?v=2026.2.4"),
       loadHistory(),

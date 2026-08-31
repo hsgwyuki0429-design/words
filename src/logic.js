@@ -1,5 +1,5 @@
 export const IMPORTANCE_ORDER = ["SSS", "SS", "S", "A", "B", "C", "D"];
-export const DIFFICULTY_ORDER = ["4級", "3級", "準2級", "2級", "準1級", "1級", "専門"];
+export const DIFFICULTY_ORDER = ["—", "A", "B", "C", "D", "E", "F"];
 export const RANGE_ORDER = [
   "OriHime",
   "Mars",
@@ -38,7 +38,7 @@ export const MODE_LABELS = {
   ja_to_en_input: "日本語 → 英語 入力",
   spelling_input: "スペル完全入力",
   preposition_input: "前置詞穴埋め",
-  phrase_blank_input: "熟語・構文穴埋め",
+  phrase_blank_input: "熟語・語法穴埋め",
   public_recall: "公共 一問一答",
   health_recall: "保健 一問一答",
 };
@@ -46,7 +46,7 @@ export const MODE_LABELS = {
 export const TYPE_LABELS = {
   word: "単語",
   phrase: "熟語",
-  structure: "構文",
+  structure: "語法",
   expression: "表現",
   "public-term": "語句回答",
   "public-short": "短文回答",
@@ -78,8 +78,8 @@ export function releaseDeferredReviews(reviews = [], now = Date.now(), forceNext
 export const STUDY_CONTENT_LABELS = {
   word: "単語",
   phrase: "熟語",
-  structure: "構文",
-  all: "単語＋熟語＋構文",
+  structure: "語法",
+  all: "単語＋熟語＋語法",
   term: "語句回答問題",
   short: "短文回答問題",
 };
@@ -267,6 +267,8 @@ function includesSearch(item, query) {
   if (!normalized) return true;
   return [
     item.english,
+    item.lemma,
+    (item.surfaceForms ?? []).join(" "),
     item.japanese,
     item.range,
     item.lesson,
@@ -558,7 +560,7 @@ export function buildQuestion(item, mode, pool, rng = Math.random, excludedChoic
       return {
         ...base,
         prompt: item.blanks.phrase.prompt,
-        instruction: "熟語・構文の空欄を完全入力してください",
+        instruction: "熟語・語法の空欄を完全入力してください",
       };
     case "spelling_input":
       return {

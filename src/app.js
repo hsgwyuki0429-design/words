@@ -3084,7 +3084,7 @@ async function boot() {
       }),
     );
     const [response, publicResponse, healthResponse, history, selectedMode, progressEntries, settings, bestCombo, activeStudy, selectedPeriod, recentStudies, lastSessionConfig] = await Promise.all([
-      fetch("./data/items.json?v=2026.08.31"),
+      fetch("./data/items.json?v=2026.08.31b"),
       fetch("./data/public-items.json?v=2026.2.4"),
       fetch("./data/health-items.json?v=2026.2.4"),
       loadHistory(),

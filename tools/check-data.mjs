@@ -7,7 +7,7 @@ const items = JSON.parse(fs.readFileSync(new URL("../data/items.json", import.me
 const publicItems = JSON.parse(fs.readFileSync(new URL("../data/public-items.json", import.meta.url), "utf8"));
 const healthItems = JSON.parse(fs.readFileSync(new URL("../data/health-items.json", import.meta.url), "utf8"));
 
-assert.equal(items.length, 641, "Workbook must contain 641 unique English entries");
+assert.equal(items.length, 1316, "Workbook must contain 1,316 unique English entries");
 assert.equal(new Set(items.map((item) => item.id)).size, items.length, "IDs must be unique");
 assert.equal(
   new Set(items.map((item) => item.english.toLocaleLowerCase())).size,
@@ -16,8 +16,8 @@ assert.equal(
 );
 assert.equal(
   items.reduce((sum, item) => sum + item.sources.length, 0),
-  880,
-  "All 880 selected workbook source references must be preserved",
+  2276,
+  "All 2,276 selected workbook source references must be preserved",
 );
 assert.deepEqual(
   Object.fromEntries(
@@ -26,7 +26,7 @@ assert.deepEqual(
       items.filter((item) => item.type === type).length,
     ]),
   ),
-  { word: 228, phrase: 331, structure: 82 },
+  { word: 903, phrase: 331, structure: 82 },
   "Workbook type counts must match the audited word, phrase, and usage lists",
 );
 
@@ -37,9 +37,24 @@ assert.deepEqual(
       items.filter((item) => item.sourceType === type).length,
     ]),
   ),
-  { "単語": 228, "熟語": 331, "語法": 82 },
+  { "単語": 903, "熟語": 331, "語法": 82 },
   "Source categories must preserve the workbook lineup",
 );
+
+const contentTokens = (value) =>
+  new Set(
+    (value.match(/[A-Za-z]+(?:['’-][A-Za-z]+)*/g) ?? [])
+      .filter((token) => token.length > 1)
+      .map((token) => token.toLocaleLowerCase()),
+  );
+for (const item of items) {
+  const answer = contentTokens(item.english);
+  const prompt = contentTokens(item.japanese);
+  assert.ok(
+    answer.size === 0 || [...answer].some((token) => !prompt.has(token)),
+    `${item.id}: the Japanese prompt gives away the whole answer (${item.english})`,
+  );
+}
 
 for (const item of items) {
   for (const field of [

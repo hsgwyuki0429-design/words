@@ -140,8 +140,11 @@ AUDIT_SOURCE_MAP = {
 }
 IMPORTANCE_ORDER = ["SSS", "SS", "S", "A", "B", "C"]
 DIFFICULTY_ORDER = ["A", "B", "C", "D", "E", "F"]
-APP_WORD_IMPORTANCE = {"SSS", "SS", "S", "A"}
+APP_WORD_IMPORTANCE = {"SSS", "SS", "S", "A", "B"}
 WORD_RE = re.compile(r"[A-Za-z]+(?:['’\-][A-Za-z]+)*")
+PAREN_RE = re.compile(r"[（(]([^（()）]*)[)）]")
+JAPANESE_RE = re.compile(r"[ぁ-んァ-ヶ一-龥]")
+NAME_NOTE_RE = re.compile(r"^[^、]*(?:名|の一部)$")
 PLACEHOLDERS = {"a", "b", "s", "v"}
 PREPOSITIONS = {
     "about",
@@ -281,6 +284,52 @@ def accepted_answers(english: str) -> list[str]:
     return unique
 
 
+def content_tokens(text: str) -> set[str]:
+    """語法のA・B・S・Vのような1文字のプレースホルダを除いた英語トークン。"""
+    return {
+        match.group().casefold()
+        for match in word_matches(text)
+        if len(match.group()) > 1
+    }
+
+
+def strip_answer_notes(japanese: str, english: str) -> str:
+    """訳の中に答えがまるごと出ている注記を取り除く。
+
+    「NASA（米国航空宇宙局）」のように答えの後ろへ訳が続く形は括弧の中を訳として採り、
+    「味蕾（taste bud）」のような補足注記や「bullet trainで新幹線」のような用例は落とす。
+    答えの一部しか出ていない「NASAのコンテストで優勝した」のような訳はそのまま残す。
+    """
+    answer = content_tokens(english)
+    if not answer:
+        return japanese
+
+    def leaks(text: str) -> bool:
+        return answer <= content_tokens(text)
+
+    variants: list[str] = []
+    for variant in japanese.split("／"):
+        variant = PAREN_RE.sub(lambda m: "" if leaks(m.group(1)) else m.group(), variant)
+        if PAREN_RE.search(variant) and leaks(PAREN_RE.sub("", variant)):
+            notes = [note for note in PAREN_RE.findall(variant) if note and not leaks(note)]
+            variant = "、".join(note for note in notes if JAPANESE_RE.search(note))
+        cleaned = "、".join(
+            segment for segment in variant.split("、") if segment and not leaks(segment)
+        ).strip("、 ")
+        if cleaned:
+            variants.append(cleaned)
+    return "／".join(dict.fromkeys(variants))
+
+
+def is_quizzable(japanese: str, original: str) -> bool:
+    """訳が残っていて、かつ「人名」「〜の一部」のような名前ラベルだけでないか。"""
+    variants = [variant for variant in japanese.split("／") if variant]
+    if not variants:
+        return False
+    labels = PAREN_RE.findall(original) + variants
+    return not any(NAME_NOTE_RE.match(label) for label in labels)
+
+
 def classify_type(source_type: str, english: str) -> str:
     if source_type == "単語":
         return "word"
@@ -404,6 +453,19 @@ def append_unique_sources(
         if source["label"] not in seen:
             target.append(source)
             seen.add(source["label"])
+
+
+def quizzable_records(records: list[dict[str, object]]) -> list[dict[str, object]]:
+    """答えが訳にそのまま出ている注記を落とし、出題として成立しない語句を除く。"""
+    kept: list[dict[str, object]] = []
+    for record in records:
+        original = "／".join(record["japanese"])
+        japanese = strip_answer_notes(original, str(record["english"]))
+        if not is_quizzable(japanese, original):
+            continue
+        record["japanese"] = japanese.split("／")
+        kept.append(record)
+    return kept
 
 
 def make_item(record: dict[str, object], order: int) -> dict[str, object]:
@@ -561,7 +623,10 @@ def convert_audit(workbook) -> list[dict[str, object]]:
             record["difficulty"] = hardest_difficulty(record.pop("difficulties"))
             records.append(record)
 
-    return [make_item(record, order) for order, record in enumerate(records, start=1)]
+    return [
+        make_item(record, order)
+        for order, record in enumerate(quizzable_records(records), start=1)
+    ]
 
 
 def convert_legacy(workbook) -> list[dict[str, object]]:
@@ -623,7 +688,7 @@ def convert_legacy(workbook) -> list[dict[str, object]]:
             record["notes"].append(note)
 
     items: list[dict[str, object]] = []
-    for order, record in enumerate(grouped.values(), start=1):
+    for order, record in enumerate(quizzable_records(list(grouped.values())), start=1):
         english = record["english"]
         japanese = "／".join(record["japanese"])
         source_type = record["source_type"]

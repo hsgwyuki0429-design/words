@@ -1,4 +1,4 @@
-const CACHE_NAME = "words-2026-2-v18";
+const CACHE_NAME = "words-2026-2-v19";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -10,7 +10,7 @@ const APP_SHELL = [
   "./src/logic.js?v=2026.2.18",
   "./src/storage.js",
   "./health-notes.html?v=2026.2.8",
-  "./data/items.json?v=2026.08.31",
+  "./data/items.json?v=2026.08.31b",
   "./data/public-items.json?v=2026.2.4",
   "./data/health-items.json?v=2026.2.4",
   "./manifest.webmanifest",

@@ -1913,6 +1913,9 @@ body.quiz-active .main-content { padding-bottom: 0; }
 .quiz-answered .question-card h1 { margin-bottom: 22px; font-size: clamp(26px, 5vw, 40px); }
 .quiz-answered .choice-list { gap: 7px; }
 .quiz-answered .choice-button { min-height: 48px; padding-top: 6px; padding-bottom: 6px; }
+/* 回答後の選択肢は disabled で click を発生させないため、タップを背面へ通す。
+   これで選択肢の上を押しても「どこを押しても次へ進む」が効く。 */
+.quiz-answered .choice-button:disabled { pointer-events: none; }
 
 .feedback-result {
   display: flex;
@@ -2129,6 +2132,12 @@ body.quiz-active .main-content { padding-bottom: 0; }
   width: min(748px, calc(100% - 32px));
   margin: 0 auto;
   box-shadow: 0 10px 32px rgba(0, 0, 0, 0.2);
+}
+
+/* 直前に押した高さへ移したとき。top は JS が実測値を入れる。 */
+.next-button--anchored {
+  bottom: auto;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.26);
 }
 
 .result-shell {

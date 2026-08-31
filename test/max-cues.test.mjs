@@ -195,9 +195,9 @@ test("app integration unlocks on MAX actions and stops on mode exit or backgroun
 });
 
 test("PWA cache ships every versioned MAX effect asset", () => {
-  assert.match(indexHtml, /styles\.css\?v=2026\.2\.18/);
-  assert.match(indexHtml, /src\/app\.js\?v=2026\.2\.18/);
-  assert.match(serviceWorker, /words-2026-2-v20/);
+  assert.match(indexHtml, /styles\.css\?v=2026\.2\.20/);
+  assert.match(indexHtml, /src\/app\.js\?v=2026\.2\.20/);
+  assert.match(serviceWorker, /words-2026-2-v21/);
   assert.match(serviceWorker, /src\/audio\.js\?v=2026\.2\.18/);
   assert.match(serviceWorker, /src\/max-cues\.js\?v=2026\.2\.18/);
 });

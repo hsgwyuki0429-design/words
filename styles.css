@@ -2089,30 +2089,26 @@ body.quiz-active .main-content { padding-bottom: 0; }
   display: flex;
   flex-direction: column;
   min-height: var(--choice-card-height);
-  padding: clamp(20px, 4vw, 34px);
-}
-
-.quiz-shell:not(.quiz-answered) .swipe-choice-card {
-  justify-content: center;
+  padding: clamp(16px, 3vw, 24px);
 }
 
 .swipe-choice-card .question-instruction {
-  margin-bottom: clamp(18px, 3vw, 28px);
+  margin-bottom: 14px;
 }
 
 .swipe-choice-card h1 {
-  margin-bottom: clamp(24px, 4vw, 34px);
+  margin-bottom: 16px;
   font-size: var(--choice-heading-size);
 }
 
 .swipe-choice-card .choice-list {
-  gap: 8px;
+  gap: 7px;
 }
 
 .swipe-choice-card .choice-button {
-  min-height: 52px;
-  padding-top: 7px;
-  padding-bottom: 7px;
+  min-height: 46px;
+  padding-top: 5px;
+  padding-bottom: 5px;
 }
 
 .question-translation {
@@ -2266,7 +2262,11 @@ body.quiz-active .main-content { padding-bottom: 0; }
   padding-bottom: calc(76px + var(--safe-bottom));
 }
 
-.quiz-answered .quiz-progress { margin-bottom: 14px; }
+.quiz-choice.quiz-answered {
+  padding-bottom: calc(30px + var(--safe-bottom));
+}
+
+.quiz-choice .quiz-progress { margin-bottom: 14px; }
 .quiz-answered .question-card { padding: clamp(18px, 4vw, 30px); }
 .quiz-answered .question-instruction { margin-bottom: 14px; }
 .quiz-answered .question-card h1 { margin-bottom: 22px; font-size: clamp(26px, 5vw, 40px); }
@@ -2291,29 +2291,35 @@ body.quiz-active .main-content { padding-bottom: 0; }
 }
 .quiz-answered .feedback-result { margin: 0; }
 .quiz-answered .source-box { margin: 0; }
-.quiz-answered .swipe-choice-card {
+.quiz-choice .swipe-choice-card {
   min-height: var(--choice-card-height);
   padding: clamp(16px, 3vw, 24px);
 }
-.quiz-answered .swipe-choice-card h1 {
+.quiz-choice .swipe-choice-card .question-instruction {
+  margin-bottom: 14px;
+}
+.quiz-choice .swipe-choice-card h1 {
   margin-bottom: 16px;
   font-size: var(--choice-heading-size);
 }
-.quiz-answered .swipe-choice-card .choice-button {
+.quiz-choice .swipe-choice-card .choice-list {
+  gap: 7px;
+}
+.quiz-choice .swipe-choice-card .choice-button {
   min-height: 46px;
   padding-top: 5px;
   padding-bottom: 5px;
 }
 .swipe-choice-card > .feedback-card {
-  margin-top: 14px;
-  padding: 14px 0 0;
+  margin-top: 12px;
+  padding: 12px 0 0;
   background: transparent;
   border: 0;
   border-top: 1px solid var(--line);
   border-radius: 0;
 }
 .swipe-choice-card > .choice-gesture-footer {
-  margin-top: 12px;
+  margin-top: 10px;
   background: #f7f7f9;
   border-color: rgba(23, 23, 25, 0.06);
   box-shadow: none;
@@ -3209,8 +3215,7 @@ body.quiz-active .main-content { padding-bottom: 0; }
     --choice-heading-size: clamp(26px, 7vw, 34px);
   }
 
-  .swipe-choice-card,
-  .quiz-answered .swipe-choice-card {
+  .quiz-choice .swipe-choice-card {
     padding: 18px;
   }
 
@@ -3399,6 +3404,21 @@ body.quiz-active .main-content { padding-bottom: 0; }
   .quiz-answered .source-box { padding: 10px; }
   .resume-study-card { align-items: stretch; flex-direction: column; }
   .resume-study-card .primary-button { width: 100%; }
+}
+
+@media (max-width: 360px) {
+  .quiz-choice .swipe-choice-card > .feedback-card {
+    gap: 8px;
+    margin-top: 10px;
+    padding-top: 10px;
+  }
+
+  .quiz-choice .swipe-choice-card > .choice-gesture-footer {
+    min-height: 38px;
+    margin-top: 8px;
+    padding-top: 7px;
+    padding-bottom: 7px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

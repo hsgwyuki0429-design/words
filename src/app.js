@@ -2254,8 +2254,8 @@ function renderFeedback(question, answer, correct) {
         <span class="importance-badge importance-${question.item.importance.toLowerCase()}">${question.item.importance}</span>
         <div>
           <strong class="source-range">範囲：${escapeHtml(question.item.range)}</strong>
-          <p>${escapeHtml(sourceLine(question.item))}</p>
-          ${itemEvidenceLine(question.item) ? `<p class="source-evidence">${escapeHtml(itemEvidenceLine(question.item))}</p>` : ""}
+          ${!isChoice ? `<p>${escapeHtml(sourceLine(question.item))}</p>` : ""}
+          ${!isChoice && itemEvidenceLine(question.item) ? `<p class="source-evidence">${escapeHtml(itemEvidenceLine(question.item))}</p>` : ""}
         </div>
       </div>` : ""}
     </section>`;
@@ -2790,7 +2790,7 @@ function renderQuiz() {
     : "";
 
   elements.quizContent.innerHTML = `
-    <div class="quiz-shell${answered ? " quiz-answered" : ""}">
+    <div class="quiz-shell${answered ? " quiz-answered" : ""}${isSwipeAdvance ? " quiz-choice" : ""}">
       <header class="quiz-header">
         <button class="icon-button" type="button" data-quit-quiz aria-label="学習を終了">×</button>
         <div class="quiz-progress-copy"><strong>${session.cursor + 1}</strong> / ${session.queue.length}</div>

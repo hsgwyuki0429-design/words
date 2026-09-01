@@ -329,3 +329,20 @@ test("front and preview choice headings share the same responsive size", () => {
   assert.match(stylesSource, /\.swipe-choice-card h1\s*\{[\s\S]*?font-size:\s*var\(--choice-heading-size\)/);
   assert.match(stylesSource, /\.quiz-card-preview--choice \.quiz-card-preview-prompt\s*\{[\s\S]*?font-size:\s*var\(--choice-heading-size\)/);
 });
+
+test("choice prompt and options keep the answered layout before answering", () => {
+  assert.match(appSource, /quiz-shell\$\{answered \? " quiz-answered" : ""\}\$\{isSwipeAdvance \? " quiz-choice" : ""\}/);
+  assert.match(stylesSource, /\.quiz-choice \.quiz-progress\s*\{\s*margin-bottom:\s*14px/);
+  assert.match(stylesSource, /\.quiz-choice \.swipe-choice-card \.question-instruction\s*\{\s*margin-bottom:\s*14px/);
+  assert.match(stylesSource, /\.quiz-choice \.swipe-choice-card h1\s*\{[\s\S]*?margin-bottom:\s*16px/);
+  assert.match(stylesSource, /\.quiz-choice \.swipe-choice-card \.choice-button\s*\{[\s\S]*?min-height:\s*46px/);
+  assert.match(stylesSource, /\.quiz-choice\.quiz-answered\s*\{[\s\S]*?padding-bottom:\s*calc\(30px \+ var\(--safe-bottom\)\)/);
+  assert.match(stylesSource, /@media \(max-width:\s*760px\)[\s\S]*?\.quiz-choice \.swipe-choice-card\s*\{\s*padding:\s*18px/);
+  assert.match(stylesSource, /@media \(max-width:\s*360px\)[\s\S]*?\.quiz-choice \.swipe-choice-card > \.feedback-card[\s\S]*?margin-top:\s*10px/);
+  assert.doesNotMatch(stylesSource, /\.quiz-shell:not\(\.quiz-answered\) \.swipe-choice-card/);
+});
+
+test("choice feedback adds only the result and range details", () => {
+  assert.match(appSource, /\$\{!isChoice \? `<p>\$\{escapeHtml\(sourceLine\(question\.item\)\)\}<\/p>` : ""\}/);
+  assert.match(appSource, /\$\{!isChoice && itemEvidenceLine\(question\.item\) \? `<p class="source-evidence">/);
+});

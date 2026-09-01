@@ -39,7 +39,7 @@ import {
   summarizeByRange,
   summarizeHistory,
   summarizeSession,
-} from "./logic.js?v=2026.2.19";
+} from "./logic.js?v=2026.9.1";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -50,6 +50,14 @@ import {
   shouldPlayMaxSound,
 } from "./max-cues.js?v=2026.2.18";
 import { clearAllData, getMeta, loadHistory, recordAttempt, setMeta } from "./storage.js";
+import {
+  bindQuizGestures,
+  isRecallMode,
+  isSwipeAdvanceMode,
+  oppositeDirection,
+  quizGesturePolicy,
+  recallActionForDirection,
+} from "./quiz-gestures.js?v=2026.9.1b";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -250,7 +258,7 @@ const STUDY_DIRECTION_META = {
 
 const STUDY_FORMAT_META = {
   choice: { icon: "4", title: "4択問題", detail: "4つの候補から正しい答えを選ぶ", tags: ["選択式"] },
-  flashcard: { icon: "▣", title: "フラッシュカード", detail: "画面を押して答えを表示し、自分で採点する", tags: ["自己採点"] },
+  flashcard: { icon: "▣", title: "フラッシュカード", detail: "タップで表裏、スワイプで自己採点", tags: ["自己採点"] },
   spelling: { icon: "Aa", title: "スペル1文字ずつ4択", detail: "アルファベットを1文字ずつ選んで単語を完成させる", tags: ["スペル", "選択式"] },
 };
 
@@ -433,7 +441,7 @@ function studySelectionLabel(selection = state.studySelection) {
   const normalized = normalizeStudySelection(selection);
   if (!selectionIsComplete(normalized)) return "—";
   if (normalized.subject !== "english") {
-    return `${studyContentLabel(normalized)} / 答えを表示して自己採点`;
+    return `${studyContentLabel(normalized)} / タップで表裏・スワイプで自己採点`;
   }
   const parts = [
     studyContentLabel(normalized),
@@ -1269,7 +1277,7 @@ function spawnLightColumns({ count = 2, origin = null, palette = PARTICLE_COLORS
 
 /**
  * transformを載せてよい要素だけを返す。
- * position:fixed の子（.next-button / .public-grade-guide / .bottom-nav）を
+ * position:fixed の子（.next-button / .bottom-nav）を
  * 内包する要素は含めない（含めると固定配置の基準がずれて回答UIが飛ぶ）。
  */
 function worldStageElements() {
@@ -1764,6 +1772,10 @@ function setView(view) {
     clearTimeout(state.session.reviewTimer);
     state.session.reviewTimer = null;
   }
+  if (view !== "quiz") {
+    clearCardFlights();
+    quizGestureController?.reset();
+  }
   state.view = view;
   document.querySelectorAll("[data-view]").forEach((section) => {
     section.hidden = section.dataset.view !== view;
@@ -1819,7 +1831,7 @@ function renderHome() {
       ? "保健を、思い出せるまで。"
       : "英コミを、思い出せるまで。";
   elements.homeCopy.textContent = isRecallSubject()
-    ? "問題を見て答えを思い出し、左右のタップで自己採点します。"
+    ? "タップで表裏を切り替え、スワイプで自己採点します。"
     : "英語と日本語を行き来しながら、4択とフラッシュカードで確かめます。";
 
   const activeSubject = state.activeStudy?.config?.subject
@@ -2103,6 +2115,9 @@ function startSession(overrides = {}) {
     currentAnswer: "",
     answered: false,
     revealed: false,
+    isTransitioning: false,
+    cardEnterFrom: null,
+    cardEnterPromise: null,
     questionStartedAt: 0,
     startedAt: Date.now(),
     complete: false,
@@ -2123,7 +2138,7 @@ function startSession(overrides = {}) {
   prepareQuestion();
 }
 
-function prepareQuestion() {
+function prepareQuestion({ enterFrom = null } = {}) {
   const session = state.session;
   const entry = session.queue[session.cursor];
   const recentItemIds = session.results.slice(-12).map((result) => result.itemId);
@@ -2131,6 +2146,8 @@ function prepareQuestion() {
   session.currentAnswer = "";
   session.answered = false;
   session.revealed = false;
+  session.cardEnterFrom = enterFrom;
+  session.cardEnterPromise = null;
   session.lastReviewDelayMs = null;
   session.spellingIndex = 0;
   session.spellingAnswer = [];
@@ -2244,40 +2261,7 @@ function renderFeedback(question, answer, correct) {
     </section>`;
 }
 
-// 直前に「次へ」で押した位置（画面上のY座標）。4択の連打で指を動かさずに済むよう、
-// 次の4択問題では「次の問題へ」ボタンをこの高さに出す。未計測のうちは既定の画面下。
-let nextButtonAnchorY = null;
-
-function isChoiceQuestion(mode) {
-  return typeof mode === "string" && mode.endsWith("choice");
-}
-
-// 回答後のタップで次に進んだ位置を覚える。キーボード操作の click は座標を持たないので除く。
-// ヘッダーや進捗バーなど選択肢の外側をタップした場合は「どこを押しても次へ」の対象ではあるが、
-// 見た目上ボタンが画面上部へ飛んだように見えて分かりづらいため、位置の記憶からは除外する。
-function rememberNextButtonAnchor(event) {
-  if (!isChoiceQuestion(state.session?.currentQuestion?.mode)) return;
-  if (!event || event.detail === 0 || typeof event.clientY !== "number") return;
-  if (event.target.closest(".quiz-header")) return;
-  nextButtonAnchorY = event.clientY;
-}
-
-// 覚えた高さへボタンを移す。既定位置（画面下）より下にははみ出させず、
-// ヘッダー付近など画面上部にも出さない（下半分に留める）。
-function applyNextButtonAnchor() {
-  const button = elements.quizContent.querySelector(".next-button");
-  if (!button || nextButtonAnchorY === null) return;
-  if (!isChoiceQuestion(state.session?.currentQuestion?.mode)) return;
-  const rect = button.getBoundingClientRect();
-  const maxTop = Math.max(12, rect.top);
-  const minTop = Math.min(maxTop, Math.max(12, window.innerHeight * 0.4));
-  const top = Math.min(Math.max(nextButtonAnchorY - rect.height / 2, minTop), maxTop);
-  button.classList.add("next-button--anchored");
-  button.style.top = `${Math.round(top)}px`;
-}
-
-// .next-button は position:fixed のため、transformがかかる .quiz-shell の外に置く。
-function renderNextButton() {
+function renderNextButton(swipePrimary = false) {
   if (!state.session?.answered) return "";
   const atEnd = state.session.cursor + 1 >= state.session.queue.length;
   const label = atEnd && state.session.deferredReviews.length
@@ -2286,10 +2270,305 @@ function renderNextButton() {
       ? "結果を見る"
       : "次の問題へ";
   return `
-    <button class="primary-button next-button" type="button" data-next-question>
-      ${label}
+    <button class="secondary-button next-button${swipePrimary ? " next-button--fallback" : ""}" type="button" data-next-question aria-label="${label}">
+      <span class="next-button-label">${label}</span>
       <span aria-hidden="true">→</span>
     </button>`;
+}
+
+function renderRecallSwipeHints() {
+  return `
+    <div class="quiz-swipe-hints recall-swipe-hints" aria-hidden="true">
+      <span class="quiz-swipe-hint hint-up" data-swipe-direction="up"><strong>✓</strong><i>↑</i></span>
+      <span class="quiz-swipe-hint hint-left" data-swipe-direction="left"><i>←</i><strong>3m</strong></span>
+      <span class="quiz-swipe-hint hint-right" data-swipe-direction="right"><strong>1h</strong><i>→</i></span>
+    </div>`;
+}
+
+function renderChoiceSwipeHints() {
+  return `
+    <div class="quiz-swipe-hints choice-swipe-hints" aria-hidden="true">
+      <span class="quiz-swipe-hint hint-up" data-swipe-direction="up">↑</span>
+      <span class="quiz-swipe-hint hint-left" data-swipe-direction="left">←</span>
+      <span class="quiz-swipe-hint hint-right" data-swipe-direction="right">→</span>
+      <span class="quiz-swipe-hint hint-down" data-swipe-direction="down">↓</span>
+    </div>`;
+}
+
+function renderRecallGradeFallback() {
+  return `
+    <div class="recall-grade-fallback" aria-label="自己採点">
+      <button type="button" data-recall-grade="left" aria-label="3分後にもう一度">3m</button>
+      <button type="button" data-recall-grade="right" aria-label="1時間後に復習">1h</button>
+      <button type="button" data-recall-grade="up" aria-label="習得">✓</button>
+    </div>`;
+}
+
+const CARD_EXIT_DURATION_MS = 205;
+const CARD_ENTER_DURATION_MS = 205;
+const CARD_OVERLAP_DELAY_MS = 48;
+const activeCardFlights = new Set();
+let quizGestureController = null;
+
+function reducedMotionRequested() {
+  return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+}
+
+function waitMilliseconds(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+function waitForPaint() {
+  return new Promise((resolve) => requestAnimationFrame(() => resolve()));
+}
+
+function clearGestureSurfaceStyles(surface) {
+  if (!surface) return;
+  surface.classList.remove("is-dragging", "is-swipe-cancelling");
+  surface.removeAttribute("data-active-direction");
+  surface.style.removeProperty("--quiz-drag-x");
+  surface.style.removeProperty("--quiz-drag-y");
+  surface.style.removeProperty("--quiz-drag-rotate");
+}
+
+function handleQuizDrag({ surface, dx, dy, direction }) {
+  const rotation = Math.abs(dx) > Math.abs(dy)
+    ? Math.max(-3.5, Math.min(3.5, dx / 38))
+    : 0;
+  surface.classList.remove("is-swipe-cancelling");
+  surface.classList.add("is-dragging");
+  surface.dataset.activeDirection = direction;
+  surface.style.setProperty("--quiz-drag-x", `${dx}px`);
+  surface.style.setProperty("--quiz-drag-y", `${dy}px`);
+  surface.style.setProperty("--quiz-drag-rotate", `${rotation}deg`);
+}
+
+function animateSwipeCancel({ surface }) {
+  if (!surface?.isConnected) return Promise.resolve();
+  surface.classList.remove("is-dragging");
+  surface.classList.add("is-swipe-cancelling");
+  surface.removeAttribute("data-active-direction");
+  surface.style.setProperty("--quiz-drag-x", "0px");
+  surface.style.setProperty("--quiz-drag-y", "0px");
+  surface.style.setProperty("--quiz-drag-rotate", "0deg");
+  if (reducedMotionRequested()) {
+    clearGestureSurfaceStyles(surface);
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => {
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      surface.removeEventListener("transitionend", onTransitionEnd);
+      clearGestureSurfaceStyles(surface);
+      resolve();
+    };
+    const onTransitionEnd = (event) => {
+      if (event.target === surface && event.propertyName === "transform") finish();
+    };
+    surface.addEventListener("transitionend", onTransitionEnd);
+    setTimeout(finish, 240);
+  });
+}
+
+function cardExitTranslation(direction, rect) {
+  const margin = 48;
+  if (direction === "left") return { x: -(rect.right + margin), y: 0, rotate: -4 };
+  if (direction === "right") return { x: window.innerWidth - rect.left + margin, y: 0, rotate: 4 };
+  if (direction === "up") return { x: 0, y: -(rect.bottom + margin), rotate: 0 };
+  return { x: 0, y: window.innerHeight - rect.top + margin, rotate: 0 };
+}
+
+function removeCardFlight(flight) {
+  if (!flight) return;
+  activeCardFlights.delete(flight);
+  flight.remove();
+}
+
+function clearCardFlights() {
+  for (const flight of activeCardFlights) removeCardFlight(flight);
+}
+
+function animateCardExit(surface, direction) {
+  if (!surface?.isConnected || reducedMotionRequested()) {
+    if (surface) surface.style.visibility = "hidden";
+    return Promise.resolve();
+  }
+  const rect = surface.getBoundingClientRect();
+  const translation = cardExitTranslation(direction, rect);
+  const cardClone = surface.cloneNode(true);
+  cardClone.querySelectorAll("[id]").forEach((element) => element.removeAttribute("id"));
+  cardClone.querySelectorAll("button, input, select, textarea, a").forEach((element) => {
+    element.setAttribute("tabindex", "-1");
+  });
+  cardClone.removeAttribute("data-quiz-gesture-surface");
+  cardClone.removeAttribute("data-active-direction");
+  cardClone.classList.remove("is-dragging", "is-swipe-cancelling", "is-card-entering", "is-card-entered");
+  cardClone.style.setProperty("--quiz-drag-x", "0px");
+  cardClone.style.setProperty("--quiz-drag-y", "0px");
+  cardClone.style.setProperty("--quiz-drag-rotate", "0deg");
+  const flight = document.createElement("div");
+  flight.className = `quiz-card-flight${surface.closest(".quiz-answered") ? " quiz-answered" : ""}`;
+  flight.setAttribute("aria-hidden", "true");
+  flight.append(cardClone);
+  Object.assign(flight.style, {
+    position: "fixed",
+    left: `${rect.left}px`,
+    top: `${rect.top}px`,
+    width: `${rect.width}px`,
+    height: `${rect.height}px`,
+    margin: "0",
+    padding: "0",
+    transform: "translate3d(0, 0, 0) rotate(0deg)",
+    transition: `transform ${CARD_EXIT_DURATION_MS}ms cubic-bezier(.2,.78,.24,1), opacity ${CARD_EXIT_DURATION_MS}ms ease-out`,
+  });
+  document.body.append(flight);
+  activeCardFlights.add(flight);
+  surface.style.visibility = "hidden";
+  flight.getBoundingClientRect();
+  requestAnimationFrame(() => {
+    flight.style.transform = `translate3d(${translation.x}px, ${translation.y}px, 0) rotate(${translation.rotate}deg)`;
+    flight.style.opacity = "0.18";
+  });
+  return waitMilliseconds(CARD_EXIT_DURATION_MS + 30).then(() => removeCardFlight(flight));
+}
+
+function cardEnterTranslation(direction, rect) {
+  const margin = 36;
+  if (direction === "left") return { x: -(rect.right + margin), y: 0 };
+  if (direction === "right") return { x: window.innerWidth - rect.left + margin, y: 0 };
+  if (direction === "up") return { x: 0, y: -(rect.bottom + margin) };
+  return { x: 0, y: window.innerHeight - rect.top + margin };
+}
+
+function startCardEnterAnimation(direction) {
+  const surface = elements.quizContent.querySelector("[data-quiz-gesture-surface]");
+  if (!direction || !surface) return Promise.resolve();
+  if (reducedMotionRequested()) return Promise.resolve();
+  const rect = surface.getBoundingClientRect();
+  const translation = cardEnterTranslation(direction, rect);
+  surface.classList.add("is-card-entering");
+  surface.dataset.enterFrom = direction;
+  surface.style.setProperty("--quiz-enter-x", `${translation.x}px`);
+  surface.style.setProperty("--quiz-enter-y", `${translation.y}px`);
+  return new Promise((resolve) => {
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      surface.removeEventListener("transitionend", onTransitionEnd);
+      surface.classList.remove("is-card-entering", "is-card-entered");
+      surface.removeAttribute("data-enter-from");
+      surface.style.removeProperty("--quiz-enter-x");
+      surface.style.removeProperty("--quiz-enter-y");
+      resolve();
+    };
+    const onTransitionEnd = (event) => {
+      if (event.target === surface && event.propertyName === "transform") finish();
+    };
+    surface.addEventListener("transitionend", onTransitionEnd);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      surface.classList.add("is-card-entered");
+    }));
+    setTimeout(finish, CARD_ENTER_DURATION_MS + 100);
+  });
+}
+
+function activateRenderedGestureCard() {
+  const session = state.session;
+  if (!session) return;
+  const enterFrom = session.cardEnterFrom;
+  session.cardEnterFrom = null;
+  session.cardEnterPromise = startCardEnterAnimation(enterFrom);
+}
+
+function currentQuizGesturePolicy() {
+  const session = state.session;
+  const question = session?.currentQuestion;
+  return quizGesturePolicy({
+    mode: question?.mode,
+    answered: session?.answered,
+    revealed: session?.revealed,
+    isTransitioning: session?.isTransitioning,
+  });
+}
+
+function toggleRecallFace() {
+  const session = state.session;
+  if (!session || !isRecallMode(session.currentQuestion?.mode)) return;
+  if (!currentQuizGesturePolicy().tapEnabled) return;
+  session.revealed = !session.revealed;
+  renderQuiz();
+}
+
+async function transitionToNextCard(surface, direction, session) {
+  const exitPromise = animateCardExit(surface, direction);
+  await waitMilliseconds(reducedMotionRequested() ? 0 : CARD_OVERLAP_DELAY_MS);
+  if (state.session !== session || !session.answered) {
+    await exitPromise;
+    return;
+  }
+  nextQuestion({ enterFrom: oppositeDirection(direction) });
+  const enterPromise = session.cardEnterPromise ?? Promise.resolve();
+  await Promise.all([exitPromise, enterPromise]);
+}
+
+async function handleRecallSwipe({ surface, direction }) {
+  const session = state.session;
+  const question = session?.currentQuestion;
+  const action = recallActionForDirection(direction);
+  if (!session || !question || !action || !currentQuizGesturePolicy().dragEnabled) {
+    await animateSwipeCancel({ surface });
+    return;
+  }
+  session.isTransitioning = true;
+  const reviewDelayMs = action === "three-minutes"
+    ? WRONG_REVIEW_DELAY_MS
+    : action === "one-hour"
+      ? ONE_HOUR_REVIEW_DELAY_MS
+      : null;
+  try {
+    await submitAnswer(question.answer, action === "mastered", reviewDelayMs, { renderResult: false });
+    if (state.session !== session || session.currentQuestion !== question) return;
+    await waitForPaint();
+    await transitionToNextCard(surface, direction, session);
+  } finally {
+    if (state.session === session) session.isTransitioning = false;
+  }
+}
+
+async function handleChoiceNextSwipe({ surface, direction }) {
+  const session = state.session;
+  if (!session?.answered || session.isTransitioning
+    || !isSwipeAdvanceMode(session.currentQuestion?.mode)) {
+    await animateSwipeCancel({ surface });
+    return;
+  }
+  session.isTransitioning = true;
+  try {
+    await transitionToNextCard(surface, direction, session);
+  } finally {
+    if (state.session === session) session.isTransitioning = false;
+  }
+}
+
+function handleQuizSwipe(payload) {
+  const mode = state.session?.currentQuestion?.mode;
+  return isRecallMode(mode)
+    ? handleRecallSwipe(payload)
+    : handleChoiceNextSwipe(payload);
+}
+
+function advanceAnsweredCard(direction = "right") {
+  const session = state.session;
+  const surface = elements.quizContent.querySelector("[data-quiz-gesture-surface]");
+  if (!session?.answered || session.isTransitioning) return;
+  if (surface && isSwipeAdvanceMode(session.currentQuestion?.mode)) {
+    handleChoiceNextSwipe({ surface, direction });
+  } else {
+    nextQuestion();
+  }
 }
 
 let lastRenderedCombo = 0;
@@ -2379,32 +2658,36 @@ function renderRecallQuiz() {
         <span class="mode-pill">${TYPE_LABELS[question.item.type]}</span>
       </header>
       <div class="quiz-progress"><span style="width:${progress}%"></span></div>
-      <article class="public-recall-card">
-        <div class="public-recall-meta">
-          <span class="importance-badge importance-${question.item.importance.toLowerCase()}">${question.item.importance}</span>
-          <span>${escapeHtml(question.item.range)}</span>
-          ${question.item.number ? `<span>Q${question.item.number}</span>` : ""}
-        </div>
-        <p class="question-instruction">${revealed ? "答えを確認して自己採点" : "問題"}</p>
-        <h1>${escapeHtml(question.prompt)}</h1>
-        ${revealed ? `
-          <div class="public-recall-answer" aria-live="polite">
-            <span>答え</span>
-            <strong>${escapeHtml(question.answer)}</strong>
+      <div class="quiz-card-stage recall-card-stage${revealed ? " is-swipe-ready" : ""}">
+        <article
+          class="public-recall-card quiz-gesture-card"
+          data-quiz-gesture-surface
+          data-gesture-state="${revealed ? "recall-answer" : "recall-question"}"
+          role="button"
+          tabindex="0"
+          aria-pressed="${revealed}"
+          aria-label="${revealed ? "答え面。タップで問題面。左は3分後、右は1時間後、上は習得" : "問題面。タップで答えを表示"}"
+        >
+          <div class="public-recall-meta">
+            <span class="importance-badge importance-${question.item.importance.toLowerCase()}">${question.item.importance}</span>
+            <span>${escapeHtml(question.item.range)}</span>
+            ${question.item.number ? `<span>Q${question.item.number}</span>` : ""}
           </div>
-          ${state.settings.showSources ? `<p class="public-recall-source">${escapeHtml(question.item.sourceDetail)}</p>` : ""}
-        ` : `
-          <div class="public-reveal-hint"><span aria-hidden="true">👆</span><strong>画面をタップして答えを表示</strong></div>
-        `}
-      </article>
-    </div>
-    ${revealed ? `
-      <div class="public-grade-guide" aria-label="自己採点">
-        <button type="button" data-public-grade="three-minutes"><span>もう一度</span><strong>3分後</strong></button>
-        <button type="button" data-public-grade="one-hour"><span>あとで復習</span><strong>1時間後</strong></button>
-        <button type="button" data-public-grade="mastered"><span>覚えた</span><strong>習得</strong></button>
+          <p class="question-instruction">${revealed ? "答え" : "問題"}</p>
+          <h1>${escapeHtml(question.prompt)}</h1>
+          ${revealed ? `
+            <div class="public-recall-answer" aria-live="polite">
+              <strong>${escapeHtml(question.answer)}</strong>
+            </div>
+            ${state.settings.showSources ? `<p class="public-recall-source">${escapeHtml(question.item.sourceDetail)}</p>` : ""}
+            ${renderRecallSwipeHints()}
+            <span class="quiz-tap-hint quiz-tap-hint-back" aria-hidden="true">tap</span>
+          ` : '<span class="quiz-tap-hint" aria-hidden="true">tap</span>'}
+        </article>
       </div>
-    ` : ""}`;
+      ${revealed ? renderRecallGradeFallback() : ""}
+    </div>`;
+  activateRenderedGestureCard();
   requestAnimationFrame(() => window.scrollTo(0, 0));
 }
 
@@ -2426,6 +2709,7 @@ function renderQuiz() {
   const progress = Math.round(((session.cursor + (answered ? 1 : 0)) / session.queue.length) * 100);
   const isChoice = question.mode.endsWith("choice");
   const isSpellingChoice = question.mode === "ja_to_en_spelling";
+  const isSwipeAdvance = isSwipeAdvanceMode(question.mode);
   const usesSlots = ["ja_to_en_input", "spelling_input"].includes(question.mode);
   const translation = question.mode === "phrase_blank_input"
     ? `<p class="question-translation"><span>日本語訳</span>${escapeHtml(question.item.japanese)}</p>`
@@ -2447,15 +2731,27 @@ function renderQuiz() {
       </header>
       ${isMaxMode() && state.combo ? renderComboPill(comboChanged) : ""}
       <div class="quiz-progress"><span style="width:${progress}%"></span></div>
-      <article class="question-card">
-        <p class="question-instruction">${escapeHtml(question.instruction)}</p>
-        <h1>${escapeHtml(question.prompt)}</h1>
-        ${translation}
-        <div class="answer-area">${answerArea}</div>
-      </article>
-      ${answered ? renderFeedback(question, session.currentAnswer, lastResult.correct) : ""}
+      <div class="quiz-card-stage${answered && isSwipeAdvance ? " is-swipe-ready" : ""}">
+        <div
+          class="quiz-gesture-card quiz-question-stack"
+          ${isSwipeAdvance ? "data-quiz-gesture-surface" : ""}
+          data-gesture-state="${answered && isSwipeAdvance ? "choice-answer" : "choice-question"}"
+          ${answered && isSwipeAdvance ? 'tabindex="0" aria-label="回答済みカード。上下左右どの方向へ払っても次へ進みます"' : ""}
+        >
+          <article class="question-card">
+            <p class="question-instruction">${escapeHtml(question.instruction)}</p>
+            <h1>${escapeHtml(question.prompt)}</h1>
+            ${translation}
+            <div class="answer-area">${answerArea}</div>
+          </article>
+          ${answered ? renderFeedback(question, session.currentAnswer, lastResult.correct) : ""}
+          ${answered && isSwipeAdvance ? renderChoiceSwipeHints() : ""}
+        </div>
+      </div>
     </div>
-    ${answered ? renderNextButton() : ""}`;
+    ${answered ? renderNextButton(isSwipeAdvance) : ""}`;
+
+  activateRenderedGestureCard();
 
   if (!answered) {
     requestAnimationFrame(() => {
@@ -2463,10 +2759,11 @@ function renderQuiz() {
       elements.quizContent.querySelector("input")?.focus({ preventScroll: true });
     });
   } else {
-    applyNextButtonAnchor();
     requestAnimationFrame(() => {
       window.scrollTo(0, 0);
-      elements.quizContent.querySelector("[data-next-question]")?.focus({ preventScroll: true });
+      if (!isSwipeAdvance) {
+        elements.quizContent.querySelector("[data-next-question]")?.focus({ preventScroll: true });
+      }
     });
   }
 }
@@ -2477,7 +2774,12 @@ function currentTypedAnswer() {
   return elements.quizContent.querySelector("#single-answer-input")?.value.trim() ?? "";
 }
 
-async function submitAnswer(answer, selfGrade = null, reviewDelayMs = null) {
+async function submitAnswer(
+  answer,
+  selfGrade = null,
+  reviewDelayMs = null,
+  { renderResult = true } = {},
+) {
   const session = state.session;
   if (!session || session.answered) return;
   const question = session.currentQuestion;
@@ -2576,16 +2878,17 @@ async function submitAnswer(answer, selfGrade = null, reviewDelayMs = null) {
     });
     session.deferredReviews.sort((a, b) => a.dueAt - b.dueAt);
   }
-  renderQuiz();
+  if (renderResult) renderQuiz();
   renderHeader();
-  // 描画が終わってから演出を出す。フラッシュカードは直後に nextQuestion() が
-  // 再描画するため、rAF に載せて「今表示されている画面」に衝撃を当てる。
+  // 保存とUI更新の後に既存のMAX演出を起動する。自己採点スワイプでは
+  // 現在カードを残したまま演出を始め、その後カード退場へつなぐ。
   if (pendingCorrectEffect !== null) {
     const special = pendingCorrectEffect;
     requestAnimationFrame(() => correctEffect(special));
   } else if (isMaxMode()) {
     requestAnimationFrame(() => runMaxCue(maxCueForAnswer({ correct: false }), { label: "", combo: 0 }));
   }
+  return { correct, scheduledDelay };
 }
 
 function injectDueReviews(session, forceNext = false) {
@@ -2640,7 +2943,7 @@ function renderReviewWait() {
   }, Math.min(1000, Math.max(100, remainingMs)));
 }
 
-function nextQuestion() {
+function nextQuestion({ enterFrom = null } = {}) {
   const session = state.session;
   if (!session?.answered) return;
   session.cursor += 1;
@@ -2654,7 +2957,7 @@ function nextQuestion() {
     renderSessionComplete();
     return;
   }
-  prepareQuestion();
+  prepareQuestion({ enterFrom });
 }
 
 function renderSessionComplete() {
@@ -2803,6 +3106,9 @@ function retryWrongItems() {
     currentAnswer: "",
     answered: false,
     revealed: false,
+    isTransitioning: false,
+    cardEnterFrom: null,
+    cardEnterPromise: null,
     questionStartedAt: 0,
     startedAt: Date.now(),
     complete: false,
@@ -2823,6 +3129,13 @@ function distributeSlotText(startInput, text) {
 function bindEvents() {
   addEventListener("resize", markFxResize, { passive: true });
   addEventListener("orientationchange", markFxResize, { passive: true });
+  quizGestureController = bindQuizGestures(elements.quizContent, {
+    getPolicy: currentQuizGesturePolicy,
+    onTap: toggleRecallFace,
+    onDrag: handleQuizDrag,
+    onCancel: animateSwipeCancel,
+    onSwipe: handleQuizSwipe,
+  });
   document.addEventListener("visibilitychange", () => {
     document.body.classList.toggle("fx-hidden", document.hidden);
     if (document.hidden) {
@@ -2833,37 +3146,7 @@ function bindEvents() {
 
   document.addEventListener("click", (event) => {
     const target = event.target.closest("button");
-    const recallSession = state.view === "quiz" && ["_recall", "_flashcard"]
-      .some((suffix) => state.session?.currentQuestion?.mode.endsWith(suffix));
-    if (recallSession && !target?.hasAttribute("data-quit-quiz")) {
-      if (!state.session.revealed) {
-        state.session.revealed = true;
-        renderQuiz();
-      } else if (!state.session.answered) {
-        const horizontalPosition = event.clientX / window.innerWidth;
-        const grade = target?.dataset.publicGrade
-          ?? (horizontalPosition < 1 / 3
-            ? "three-minutes"
-            : horizontalPosition < 2 / 3
-              ? "one-hour"
-              : "mastered");
-        const answer = state.session.currentQuestion.answer;
-        const delay = grade === "three-minutes"
-          ? WRONG_REVIEW_DELAY_MS
-          : grade === "one-hour"
-            ? ONE_HOUR_REVIEW_DELAY_MS
-            : null;
-        submitAnswer(answer, grade === "mastered", delay).then(nextQuestion);
-      }
-      return;
-    }
-    if (!target) {
-      if (state.view === "quiz" && state.session?.answered) {
-        rememberNextButtonAnchor(event);
-        nextQuestion();
-      }
-      return;
-    }
+    if (!target) return;
     if (target.dataset.viewTarget) setView(target.dataset.viewTarget);
     if (target.dataset.period) {
       state.selectedPeriod = target.dataset.period;
@@ -3055,9 +3338,12 @@ function bindEvents() {
     if (target.dataset.choice !== undefined) submitAnswer(target.dataset.choice);
     if (target.dataset.spellingLetter !== undefined) chooseSpellingLetter(target.dataset.spellingLetter);
     if (target.hasAttribute("data-submit-input")) submitAnswer(currentTypedAnswer());
+    if (target.dataset.recallGrade !== undefined) {
+      const surface = elements.quizContent.querySelector("[data-quiz-gesture-surface]");
+      if (surface) handleRecallSwipe({ surface, direction: target.dataset.recallGrade });
+    }
     if (target.hasAttribute("data-next-question")) {
-      rememberNextButtonAnchor(event);
-      nextQuestion();
+      advanceAnsweredCard("right");
     }
     if (target.hasAttribute("data-quit-quiz")) {
       if (!state.session.results.length || window.confirm("この学習を終了しますか？")) {
@@ -3095,11 +3381,21 @@ function bindEvents() {
   });
 
   elements.quizContent.addEventListener("keydown", (event) => {
-    if (state.session?.currentQuestion?.mode === "ja_to_en_spelling") return;
+    const mode = state.session?.currentQuestion?.mode;
+    const gestureSurface = event.target.closest("[data-quiz-gesture-surface]");
+    if (isRecallMode(mode)) {
+      if (gestureSurface && ["Enter", " "].includes(event.key)) {
+        event.preventDefault();
+        toggleRecallFace();
+      }
+      return;
+    }
+    if (event.target.closest("button")) return;
+    if (mode === "ja_to_en_spelling") return;
     if (event.key === "Enter") {
       event.preventDefault();
-      if (state.session?.answered) nextQuestion();
-      else submitAnswer(currentTypedAnswer());
+      if (state.session?.answered) advanceAnsweredCard("right");
+      else if (!isSwipeAdvanceMode(mode)) submitAnswer(currentTypedAnswer());
       return;
     }
     const input = event.target.closest(".word-slot-input");

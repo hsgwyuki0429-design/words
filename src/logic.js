@@ -90,7 +90,7 @@ export const STUDY_METHOD_LABELS = {
   en_to_ja_choice: "英語 → 日本語 4択",
   ja_to_en_flashcard: "日本語 → 英語 フラッシュカード",
   en_to_ja_flashcard: "英語 → 日本語 フラッシュカード",
-  recall: "答えを表示して自己採点",
+  recall: "タップで表裏・スワイプで自己採点",
 };
 
 export const ENGLISH_CONTENT_TYPES = ["word", "phrase", "structure"];
@@ -514,21 +514,21 @@ export function buildQuestion(item, mode, pool, rng = Math.random, excludedChoic
         ...base,
         prompt: item[`${item.subject}Question`] ?? item.recallQuestion ?? item.publicQuestion ?? item.english,
         answer: item[`${item.subject}Answer`] ?? item.recallAnswer ?? item.publicAnswer ?? item.japanese,
-        instruction: "問題を確認し、画面をタップして答えを表示してください",
+        instruction: "tap",
       };
     case "en_to_ja_flashcard":
       return {
         ...base,
         prompt: item.english,
         answer: item.japanese,
-        instruction: "英語の意味を考え、画面をタップして答えを表示してください",
+        instruction: "tap",
       };
     case "ja_to_en_flashcard":
       return {
         ...base,
         prompt: item.japanese,
         answer: item.english,
-        instruction: "対応する英語を考え、画面をタップして答えを表示してください",
+        instruction: "tap",
       };
     case "en_to_ja_choice":
       return {

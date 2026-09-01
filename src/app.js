@@ -2785,6 +2785,9 @@ function renderQuiz() {
     : usesSlots
       ? renderWordSlots(question, answered, session.currentAnswer)
       : renderTextInput(answered, session.currentAnswer);
+  const feedbackArea = answered
+    ? renderFeedback(question, session.currentAnswer, lastResult.correct)
+    : "";
 
   elements.quizContent.innerHTML = `
     <div class="quiz-shell${answered ? " quiz-answered" : ""}">
@@ -2803,14 +2806,15 @@ function renderQuiz() {
           data-gesture-state="${answered && isSwipeAdvance ? "choice-answer" : "choice-question"}"
           ${answered && isSwipeAdvance ? 'tabindex="0" aria-label="回答済みカード。上下左右どの方向へ払っても次へ進みます"' : ""}
         >
-          <article class="question-card">
+          <article class="question-card${isSwipeAdvance ? " swipe-choice-card" : ""}">
             <p class="question-instruction">${escapeHtml(question.instruction)}</p>
             <h1>${escapeHtml(question.prompt)}</h1>
             ${translation}
             <div class="answer-area">${answerArea}</div>
+            ${answered && isSwipeAdvance ? feedbackArea : ""}
+            ${answered && isSwipeAdvance ? renderChoiceSwipeHints() : ""}
           </article>
-          ${answered ? renderFeedback(question, session.currentAnswer, lastResult.correct) : ""}
-          ${answered && isSwipeAdvance ? renderChoiceSwipeHints() : ""}
+          ${answered && !isSwipeAdvance ? feedbackArea : ""}
         </div>
       </div>
     </div>

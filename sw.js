@@ -1,9 +1,9 @@
-const CACHE_NAME = "words-2026-9-v4";
+const CACHE_NAME = "words-2026-9-v5";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=2026.9.2a",
-  "./src/app.js?v=2026.9.2",
+  "./styles.css?v=2026.9.2b",
+  "./src/app.js?v=2026.9.2b",
   "./src/audio.js?v=2026.2.18",
   "./src/max-cues.js?v=2026.2.18",
   "./src/logic.js",

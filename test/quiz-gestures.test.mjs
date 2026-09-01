@@ -316,3 +316,16 @@ test("preview layering stays below the active card and exit flight", () => {
 test("reduced motion keeps the preview stable", () => {
   assert.match(stylesSource, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.quiz-card-preview\s*\{[\s\S]*?transform:\s*scale\(0\.982\) translateY\(5px\)/);
 });
+
+test("answered choice feedback and swipe guide stay inside one question card", () => {
+  assert.match(appSource, /<article class="question-card\$\{isSwipeAdvance \? " swipe-choice-card" : ""\}">[\s\S]*?answered && isSwipeAdvance \? feedbackArea[\s\S]*?renderChoiceSwipeHints\(\)[\s\S]*?<\/article>/);
+  assert.match(appSource, /answered && !isSwipeAdvance \? feedbackArea/);
+  assert.match(stylesSource, /\.swipe-choice-card\s*\{[\s\S]*?min-height:\s*var\(--choice-card-height\)/);
+  assert.match(stylesSource, /\.swipe-choice-card > \.feedback-card\s*\{[\s\S]*?background:\s*transparent[\s\S]*?border-top:/);
+});
+
+test("front and preview choice headings share the same responsive size", () => {
+  assert.match(stylesSource, /--choice-heading-size:\s*clamp\(/);
+  assert.match(stylesSource, /\.swipe-choice-card h1\s*\{[\s\S]*?font-size:\s*var\(--choice-heading-size\)/);
+  assert.match(stylesSource, /\.quiz-card-preview--choice \.quiz-card-preview-prompt\s*\{[\s\S]*?font-size:\s*var\(--choice-heading-size\)/);
+});

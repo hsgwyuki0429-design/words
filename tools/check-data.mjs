@@ -150,15 +150,23 @@ assert.deepEqual(
 );
 console.log(`Public data check passed: ${publicItems.length} questions across ${PUBLIC_RANGE_ORDER.length} ranges.`);
 
-assert.equal(healthItems.length, 1036, "Health data must contain 1036 unique reviewed questions");
+assert.equal(healthItems.length, 282, "Health data must contain 282 unique reviewed questions");
 assert.equal(new Set(healthItems.map((item) => item.id)).size, healthItems.length, "Health IDs must be unique");
 assert.deepEqual(
   Object.fromEntries(["health-term", "health-short"].map((type) => [
     type,
     healthItems.filter((item) => item.type === type).length,
   ])),
-  { "health-term": 982, "health-short": 54 },
-  "Health answer format counts must match the deduplicated workbook data",
+  { "health-term": 282, "health-short": 0 },
+  "The one-word answer workbook must contain term questions only",
+);
+assert.deepEqual(
+  Object.fromEntries(["S", "A", "B", "C"].map((importance) => [
+    importance,
+    healthItems.filter((item) => item.importance === importance).length,
+  ])),
+  { S: 127, A: 96, B: 48, C: 11 },
+  "Health importance counts must match the workbook audit sheet",
 );
 
 const healthKnowledgeKeys = healthItems.map((item) =>
@@ -176,6 +184,7 @@ for (const item of healthItems) {
   assert.equal(item.subject, "health", `${item.id}: subject must be health`);
   assert.deepEqual(item.questionModes, ["health_recall"], `${item.id}: health mode is required`);
   assert.ok(HEALTH_RANGE_ORDER.includes(item.range), `${item.id}: unknown health range ${item.range}`);
+  assert.equal(item.acceptedAnswers[0], item.healthAnswer, `${item.id}: accepted answer must match`);
 }
 assert.deepEqual(
   [...new Set(healthItems.map((item) => item.range))],

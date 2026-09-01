@@ -546,10 +546,12 @@ test("health study selections match the public self-grading flow", () => {
   const termSelection = { subject: "health", content: "term", method: "recall", scope: "full" };
   const shortSelection = { subject: "health", content: "short", method: "recall", scope: "full" };
   const term = healthItems.find((item) => item.type === "health-term");
-  const short = healthItems.find((item) => item.type === "health-short");
+  assert.ok(
+    healthItems.every((item) => item.type === "health-term"),
+    "the one-word answer workbook only ships term questions",
+  );
   assert.equal(studyModeForItem(term, termSelection), "health_recall");
-  assert.equal(studyModeForItem(short, termSelection), null);
-  assert.equal(studyModeForItem(short, shortSelection), "health_recall");
+  assert.equal(studyModeForItem(term, shortSelection), null);
   assert.equal(studyCombinationKey(termSelection), "health:term:recall:full");
   const question = buildQuestion(term, "health_recall", healthItems);
   assert.equal(question.prompt, term.healthQuestion);

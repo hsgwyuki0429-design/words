@@ -259,3 +259,60 @@ test("pointermove drives the live card transform instead of waiting for pointeru
   assert.match(gestureSource, /const handlePointerMove[\s\S]*?onDrag\?\.\(\{/);
   assert.match(appSource, /function handleQuizDrag[\s\S]*?--quiz-drag-x[\s\S]*?--quiz-drag-y/);
 });
+
+test("answered choice guidance uses a normal-flow footer instead of a card-edge overlay", () => {
+  const implementation = appSource.match(/function renderChoiceSwipeHints\(\)[\s\S]*?\n}/)?.[0] ?? "";
+  assert.match(implementation, /choice-gesture-footer/);
+  assert.match(implementation, /スワイプで次へ/);
+  assert.doesNotMatch(implementation, /quiz-swipe-hints|hint-left|hint-right|hint-up|hint-down/);
+  assert.match(stylesSource, /\.choice-gesture-footer\s*\{[\s\S]*?position:\s*relative/);
+  assert.doesNotMatch(stylesSource, /\.choice-gesture-footer\s*\{[^}]*position:\s*absolute/s);
+});
+
+test("swipe-primary next fallback is hidden on touch devices and phone widths", () => {
+  assert.match(stylesSource, /@media \(hover: none\) and \(pointer: coarse\)[\s\S]*?\.next-button--fallback\s*\{\s*display:\s*none/);
+  assert.match(stylesSource, /@media \(max-width: 760px\)[\s\S]*?\.next-button--fallback\s*\{\s*display:\s*none/);
+  assert.match(appSource, /next-button\$\{swipePrimary \? " next-button--fallback" : ""\}/);
+});
+
+test("swipe-ready stages render a noninteractive card preview instead of a blank pseudo-card", () => {
+  assert.match(appSource, /class="quiz-card-preview quiz-card-preview--\$\{kind\}" aria-hidden="true" inert/);
+  assert.match(appSource, /renderCardPreview\("recall"\)/);
+  assert.match(appSource, /renderCardPreview\("choice"\)/);
+  assert.match(stylesSource, /\.quiz-card-preview\s*\{[\s\S]*?pointer-events:\s*none/);
+  assert.match(stylesSource, /\.quiz-card-preview-options/);
+  assert.match(stylesSource, /\.quiz-card-preview-answer/);
+  assert.doesNotMatch(stylesSource, /\.quiz-card-stage::before/);
+});
+
+test("preview uses the queued next prompt without mutating question state", () => {
+  const previewPrompt = appSource.match(/function previewPromptForEntry\(entry\)[\s\S]*?\n}/)?.[0] ?? "";
+  const previewCard = appSource.match(/function renderCardPreview\(kind\)[\s\S]*?\n}/)?.[0] ?? "";
+  assert.match(previewCard, /session\?\.queue\?\.\[session\.cursor \+ 1\]/);
+  assert.match(previewCard, /previewPromptForEntry\(nextEntry\)/);
+  assert.doesNotMatch(`${previewPrompt}\n${previewCard}`, /buildQuestion|nextQuestion|cursor\s*\+=|deferredReviews|recordAttempt/);
+});
+
+test("recall answer guide names all three unchanged grading directions", () => {
+  const implementation = appSource.match(/function renderRecallSwipeHints\(\)[\s\S]*?\n}/)?.[0] ?? "";
+  assert.match(implementation, /data-swipe-direction="left"[^>]*>[\s\S]*?←[\s\S]*?3分/);
+  assert.match(implementation, /data-swipe-direction="up"[^>]*>[\s\S]*?↑[\s\S]*?習得/);
+  assert.match(implementation, /data-swipe-direction="right"[^>]*>[\s\S]*?1時間[\s\S]*?→/);
+  assert.match(stylesSource, /\.gesture-guide-item\s*\{[\s\S]*?opacity:\s*0\.66/);
+});
+
+test("drag progress reveals the preview and cancel clears its inline state", () => {
+  assert.match(appSource, /function handleQuizDrag[\s\S]*?setCardPreviewProgress\(surface, Math\.hypot\(dx, dy\)\)/);
+  assert.match(appSource, /function animateSwipeCancel[\s\S]*?setCardPreviewProgress\(surface, 0\)/);
+  assert.match(appSource, /function clearGestureSurfaceStyles[\s\S]*?clearCardPreviewStyles\(surface\)/);
+});
+
+test("preview layering stays below the active card and exit flight", () => {
+  assert.match(stylesSource, /\.quiz-card-preview\s*\{[\s\S]*?z-index:\s*0/);
+  assert.match(stylesSource, /\.quiz-gesture-card\s*\{[\s\S]*?z-index:\s*2/);
+  assert.match(stylesSource, /\.quiz-card-flight\s*\{[\s\S]*?z-index:\s*55/);
+});
+
+test("reduced motion keeps the preview stable", () => {
+  assert.match(stylesSource, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.quiz-card-preview\s*\{[\s\S]*?transform:\s*scale\(0\.982\) translateY\(5px\)/);
+});

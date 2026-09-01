@@ -2253,20 +2253,24 @@ function isChoiceQuestion(mode) {
 }
 
 // 回答後のタップで次に進んだ位置を覚える。キーボード操作の click は座標を持たないので除く。
+// ヘッダーや進捗バーなど選択肢の外側をタップした場合は「どこを押しても次へ」の対象ではあるが、
+// 見た目上ボタンが画面上部へ飛んだように見えて分かりづらいため、位置の記憶からは除外する。
 function rememberNextButtonAnchor(event) {
   if (!isChoiceQuestion(state.session?.currentQuestion?.mode)) return;
   if (!event || event.detail === 0 || typeof event.clientY !== "number") return;
+  if (event.target.closest(".quiz-header")) return;
   nextButtonAnchorY = event.clientY;
 }
 
-// 覚えた高さへボタンを移す。画面外や既定位置（画面下）より下にははみ出させない。
+// 覚えた高さへボタンを移す。既定位置（画面下）より下にははみ出させず、
+// ヘッダー付近など画面上部にも出さない（下半分に留める）。
 function applyNextButtonAnchor() {
   const button = elements.quizContent.querySelector(".next-button");
   if (!button || nextButtonAnchorY === null) return;
   if (!isChoiceQuestion(state.session?.currentQuestion?.mode)) return;
   const rect = button.getBoundingClientRect();
-  const minTop = 12;
-  const maxTop = Math.max(minTop, rect.top);
+  const maxTop = Math.max(12, rect.top);
+  const minTop = Math.min(maxTop, Math.max(12, window.innerHeight * 0.4));
   const top = Math.min(Math.max(nextButtonAnchorY - rect.height / 2, minTop), maxTop);
   button.classList.add("next-button--anchored");
   button.style.top = `${Math.round(top)}px`;

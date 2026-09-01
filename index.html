@@ -15,7 +15,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icons/app-icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icons/app-icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=2026.2.20" />
+    <link rel="stylesheet" href="./styles.css?v=2026.2.21" />
   </head>
   <body>
     <div class="fx-backdrop" id="fx-backdrop" aria-hidden="true">
@@ -234,6 +234,15 @@
           ></iframe>
         </section>
 
+        <section class="view public-notes-view" id="view-public-notes" data-view="public-notes" hidden>
+          <iframe
+            class="public-notes-frame"
+            id="public-notes-frame"
+            src="./public-notes.html?v=2026.9.1"
+            title="公共 重要語句完全網羅文章"
+          ></iframe>
+        </section>
+
         <section class="view" id="view-analysis" data-view="analysis" hidden>
           <div class="page-heading">
             <p class="eyebrow">PHASE 4 · ANALYSIS</p>
@@ -369,6 +378,6 @@
     </aside>
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-    <script type="module" src="./src/app.js?v=2026.2.22"></script>
+    <script type="module" src="./src/app.js?v=2026.2.23"></script>
   </body>
 </html>

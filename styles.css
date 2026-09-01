@@ -145,18 +145,21 @@ select:focus-visible {
   padding-top: 28px;
 }
 
-body.health-notes-active .main-content {
+body.health-notes-active .main-content,
+body.public-notes-active .main-content {
   width: 100%;
   max-width: none;
   padding: 0 0 calc(70px + var(--safe-bottom));
 }
 
-.health-notes-view {
+.health-notes-view,
+.public-notes-view {
   height: calc(100dvh - 64px - 70px - var(--safe-bottom));
   padding: 0;
 }
 
-.health-notes-frame {
+.health-notes-frame,
+.public-notes-frame {
   display: block;
   width: 100%;
   height: 100%;

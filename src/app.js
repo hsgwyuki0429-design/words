@@ -515,25 +515,34 @@ function selectionCard({ icon, title, detail, tags, dataAttribute }) {
 function recallContentMeta() {
   const termCount = state.items.filter((item) => item.answerFormat === "term").length;
   const shortCount = state.items.filter((item) => item.answerFormat === "short").length;
-  return {
-    term: { icon: "語", title: "語句回答問題", detail: "用語・人物・制度名・年号など", tags: [`${termCount}問`] },
-    short: { icon: "文", title: "短文回答問題", detail: "定義・理由・特徴・しくみなど", tags: [`${shortCount}問`] },
-    all: { icon: "＋", title: "どっちとも", detail: "語句回答と短文回答をまとめて学習", tags: [`${termCount + shortCount}問`] },
-  };
+  const meta = {};
+  if (termCount) {
+    meta.term = { icon: "語", title: "語句回答問題", detail: "用語・人物・制度名・年号など", tags: [`${termCount}問`] };
+  }
+  if (shortCount) {
+    meta.short = { icon: "文", title: "短文回答問題", detail: "定義・理由・特徴・しくみなど", tags: [`${shortCount}問`] };
+  }
+  if (termCount && shortCount) {
+    meta.all = { icon: "＋", title: "どっちとも", detail: "語句回答と短文回答をまとめて学習", tags: [`${termCount + shortCount}問`] };
+  }
+  return meta;
 }
 
 function renderStudyContent() {
   elements.studyContentHeading.textContent = isRecallSubject()
     ? "どの問題を学習しますか？"
     : "何を学習しますか？";
+  const recallContents = isRecallSubject() ? recallContentMeta() : {};
   elements.studyContentCopy.textContent = isRecallSubject()
-    ? "語句回答、短文回答、または両方から選んでください。"
+    ? Object.keys(recallContents).length > 1
+      ? "語句回答、短文回答、または両方から選んでください。"
+      : "この教科に収録されている問題から選んでください。"
     : "複数選択できます。すべて学ぶ場合は「全選択」を選んでください。";
   const action = elements.confirmStudyContent.closest(".sticky-action");
   if (isRecallSubject()) {
     action.hidden = true;
     elements.studyContentOptions.className = "selection-grid content-selection-grid";
-    elements.studyContentOptions.innerHTML = Object.entries(recallContentMeta())
+    elements.studyContentOptions.innerHTML = Object.entries(recallContents)
       .map(([content, meta]) => selectionCard({
         ...meta,
         dataAttribute: `data-study-content="${content}"`,
@@ -3120,7 +3129,7 @@ async function boot() {
     );
     const [response, publicResponse, healthResponse, history, selectedMode, progressEntries, settings, bestCombo, activeStudy, selectedPeriod, recentStudies, lastSessionConfig] = await Promise.all([
       fetch("./data/items.json?v=2026.08.31b"),
-      fetch("./data/public-items.json?v=2026.2.4"),
+      fetch("./data/public-items.json?v=2026.09.01"),
       fetch("./data/health-items.json?v=2026.2.4"),
       loadHistory(),
       getMeta("selectedMode"),

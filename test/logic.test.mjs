@@ -529,14 +529,17 @@ test("public study selections keep answer formats separate and use self grading"
   const termSelection = { subject: "public", content: "term", method: "recall", scope: "full" };
   const shortSelection = { subject: "public", content: "short", method: "recall", scope: "full" };
   const term = publicItems.find((item) => item.type === "public-term");
-  const short = publicItems.find((item) => item.type === "public-short");
+  assert.ok(
+    publicItems.every((item) => item.type === "public-term"),
+    "the one-word answer workbook only ships term questions",
+  );
   assert.equal(studyModeForItem(term, termSelection), "public_recall");
-  assert.equal(studyModeForItem(short, termSelection), null);
-  assert.equal(studyModeForItem(short, shortSelection), "public_recall");
+  assert.equal(studyModeForItem(term, shortSelection), null);
   assert.equal(studyCombinationKey(termSelection), "public:term:recall:full");
   const question = buildQuestion(term, "public_recall", publicItems);
   assert.equal(question.prompt, term.publicQuestion);
   assert.equal(question.answer, term.publicAnswer);
+  assert.equal(summarizeByRange(publicItems, new Map()).length, 6);
 });
 
 test("health study selections match the public self-grading flow", () => {

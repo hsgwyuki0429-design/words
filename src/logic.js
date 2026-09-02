@@ -461,9 +461,26 @@ function compareNullableNumber(a, b, fallbackA = 0, fallbackB = 0) {
   return (a ?? fallbackA) - (b ?? fallbackB);
 }
 
-export function sortItems(items, history, sortKey = "importance-desc", rng = Math.random) {
+// 重要度順・難易度順では、同じレベル帯の中の並びをランダムにする。
+// （S の中での順番は毎回変わる／レベルをまたぐ順番は変えない）
+export const RANDOM_TIE_BREAK_SORT_KEYS = [
+  "importance-desc",
+  "importance-asc",
+  "difficulty-level-desc",
+];
+
+export function sortItems(
+  items,
+  history,
+  sortKey = "importance-desc",
+  rng = Math.random,
+  { randomizeTies = false } = {},
+) {
   if (sortKey === "random") return shuffle(items, rng);
-  const sorted = [...items];
+  // Array#sort は安定なので、先にシャッフルしてから同値を 0 で返すと
+  // 同じレベル帯の中だけがランダムな並びになる。
+  const randomTies = randomizeTies && RANDOM_TIE_BREAK_SORT_KEYS.includes(sortKey);
+  const sorted = randomTies ? shuffle(items, rng) : [...items];
   const importanceIndex = (item) => IMPORTANCE_ORDER.indexOf(item.importance);
   const difficultyIndex = (item) => DIFFICULTY_ORDER.indexOf(item.difficulty);
   const rangeIndex = (item) => {
@@ -539,7 +556,8 @@ export function sortItems(items, history, sortKey = "importance-desc", rng = Mat
         result = importanceIndex(a) - importanceIndex(b);
         break;
     }
-    return result || registrationIndex(a) - registrationIndex(b);
+    if (result) return result;
+    return randomTies ? 0 : registrationIndex(a) - registrationIndex(b);
   });
   return sorted;
 }
@@ -904,6 +922,7 @@ export function buildStudySession({
     scopedHistory,
     sortKey,
     rng,
+    { randomizeTies: true },
   )
     .map((item) => ({ item, mode: studyModeForItem(item, selection) }))
     .filter((entry) => entry.mode && !completed.has(entry.item.id));

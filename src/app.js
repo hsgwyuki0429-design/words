@@ -59,7 +59,7 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.3b";
+} from "./logic.js?v=2026.9.4a";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -78,7 +78,7 @@ import {
   recordAttempt,
   removeHistory,
   setMeta,
-} from "./storage.js?v=2026.9.3b";
+} from "./storage.js?v=2026.9.4a";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -86,7 +86,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.3b";
+} from "./quiz-gestures.js?v=2026.9.4a";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -132,7 +132,6 @@ const state = {
   rangeSelectionMode: null,
   contentSelectionMode: null,
   rangeFlow: "dashboard",
-  rangeDetailAdvancedOpen: false,
   studyFlowMode: "dashboard",
   studyProgress: {},
 };
@@ -147,13 +146,9 @@ const elements = Object.fromEntries(
     "dashboard-copy",
     "dashboard-result",
     "dashboard-range-list",
-    "range-detail-eyebrow",
     "range-detail-title",
     "range-detail-copy",
     "range-detail-groups",
-    "range-detail-advanced",
-    "range-detail-advanced-summary",
-    "range-detail-advanced-body",
     "study-range-back",
     "study-range-eyebrow",
     "recent-study-section",
@@ -171,7 +166,7 @@ const elements = Object.fromEntries(
     "study-range-options",
     "confirm-study-ranges",
     "study-range-action-copy",
-    "study-importance-kind-options",
+    "study-importance-options-single",
     "study-importance-options",
     "confirm-study-importance",
     "study-content-multi-options",
@@ -689,15 +684,38 @@ function renderStudyRangeSelect() {
     : `${state.filters.ranges.length}範囲を選択中。次へ進めます`;
 }
 
-function renderStudyImportanceKind() {
+// 「何を学習しますか？」と同じ1列リスト。全重要度だけは一番上に置く。
+function renderStudyImportance() {
   const available = currentImportanceOrder();
-  elements.studyImportanceKindOptions.innerHTML = [
-    { mode: "all", icon: "∞", title: "重要度全部", detail: `${available[0]}から${available.at(-1)}まですべて学習`, tags: ["すべて"] },
-    { mode: "custom", icon: "✓", title: "その他の重要度", detail: "重要度を複数選択", tags: ["複数選択可"] },
-  ].map((meta) => selectionCard({
-    ...meta,
-    dataAttribute: `data-importance-filter-mode="${meta.mode}"`,
-  })).join("");
+  const unit = isRecallSubject() ? "問" : "語句";
+  const countFor = (importance) => learningItems({
+    ...state.filters,
+    importance: importance ? [importance] : [],
+    performance: "all",
+    minimumWrong: 0,
+  }).length;
+  const rows = [
+    contentChoiceRow({
+      title: "全重要度",
+      detail: `${available[0]}から${available.at(-1)}まで ${countFor(null)}${unit}`,
+      attribute: 'data-study-importance-choice="all"',
+    }),
+    ...available.map((importance) => {
+      const count = countFor(importance);
+      return contentChoiceRow({
+        title: importance,
+        detail: count ? `${count}${unit}` : "この条件では出題できません",
+        attribute: `data-study-importance-choice="${importance}"${count ? "" : ' disabled aria-disabled="true"'}`,
+      });
+    }),
+    contentChoiceRow({
+      title: "その他",
+      detail: "重要度を複数選択する",
+      attribute: "data-study-importance-other",
+      variant: "secondary",
+    }),
+  ];
+  elements.studyImportanceOptionsSingle.innerHTML = rows.join("");
 }
 
 function renderStudyImportanceSelect() {
@@ -713,26 +731,25 @@ function renderStudyImportanceSelect() {
 }
 
 function renderStudySortKind() {
-  const main = [
-    { key: "importance-desc", title: "重要度順", detail: "重要度が高い問題から" },
+  const rows = [
+    { key: "importance-desc", title: "重要度順", detail: "重要度が高い問題から（同じ重要度の中はランダム）" },
     ...(!isRecallSubject()
-      ? [{ key: "difficulty-level-desc", title: "難易度順", detail: "教材の難易度が高い問題から" }]
+      ? [{ key: "difficulty-level-desc", title: "難易度順", detail: "難易度が高い問題から（同じ難易度の中はランダム）" }]
       : []),
     { key: "difficulty", title: "苦手順", detail: "間違いが多い問題から" },
     { key: "random", title: "ランダム", detail: "毎回シャッフルして出題" },
-  ];
-  elements.studySortKindOptions.innerHTML = `
-    <div class="sort-main-grid">
-      ${main.map((option) => `
-        <button class="sort-main-card" type="button" data-study-sort-kind="${option.key}">
-          <strong>${escapeHtml(option.title)}</strong>
-          <small>${escapeHtml(option.detail)}</small>
-        </button>`).join("")}
-    </div>
-    <button class="sort-other-entry" type="button" data-study-sort-kind="other">
-      <span class="content-choice-copy"><strong>その他</strong><small>正答率順・範囲順・A–Z など</small></span>
-      <span class="card-arrow" aria-hidden="true">›</span>
-    </button>`;
+  ].map((option) => contentChoiceRow({
+    title: option.title,
+    detail: option.detail,
+    attribute: `data-study-sort-kind="${option.key}"`,
+  }));
+  rows.push(contentChoiceRow({
+    title: "その他",
+    detail: "正答率順・範囲順・A–Z など",
+    attribute: 'data-study-sort-kind="other"',
+    variant: "secondary",
+  }));
+  elements.studySortKindOptions.innerHTML = rows.join("");
 }
 
 function renderStudySortOther() {
@@ -744,6 +761,9 @@ function renderStudySortOther() {
 }
 
 function viewBeforeImportanceSelection() {
+  if (state.studyFlowMode === "dashboard") {
+    return isRecallSubject() ? "range-detail" : "study-content";
+  }
   if (isRecallSubject()) return "study-content";
   return "study-scope";
 }
@@ -836,13 +856,16 @@ function modeProgressCard(card, unit) {
   const gaugeLabel = `解答済み ${answeredPercent}パーセント、習得 ${masteredPercent}パーセント`;
   const cycleLabel = entry ? contentLabelFromProgressKey(entry.meta) : "";
   const cycleCopy = cycle
-    ? `${cycleLabel ? `${cycleLabel} · ` : ""}${cycle.masteryRound > 1 ? `ラウンド${cycle.masteryRound} · ` : ""}${cycle.cycleNumber}周目 · 残り${cycle.remainingCount}${unit}`
-    : "まだ始めていません";
+    ? `${cycleLabel ? `${cycleLabel} ` : ""}${cycle.masteryRound > 1 ? `R${cycle.masteryRound}· ` : ""}${cycle.cycleNumber}周目 残り${cycle.remainingCount}`
+    : "";
   return `
     <button class="mode-progress-card" type="button" data-study-target="${escapeHtml(card.key)}"${progress.totalItems ? "" : ' disabled aria-disabled="true"'}>
       <span class="mode-progress-head">
         <strong>${escapeHtml(card.title)}</strong>
-        <small>${escapeHtml(card.detail)}</small>
+        ${progress.totalItems
+          ? cycleCopy ? `<span class="mode-progress-cycle">${escapeHtml(cycleCopy)}</span>` : ""
+          : '<span class="mode-progress-cycle">出題できません</span>'}
+        <span class="card-arrow" aria-hidden="true">›</span>
       </span>
       <span class="mode-progress-gauge" role="img" aria-label="${escapeHtml(gaugeLabel)}">
         <span class="mode-progress-answered" style="width:${answeredPercent}%"></span>
@@ -852,8 +875,6 @@ function modeProgressCard(card, unit) {
         <span class="mode-progress-figure is-answered">解答済み ${answeredPercent}%（${progress.answeredItems} / ${progress.totalItems}${unit}）</span>
         <span class="mode-progress-figure is-mastered">${escapeHtml(masteredCopy)}</span>
       </span>
-      <span class="mode-progress-cycle">${escapeHtml(cycleCopy)}</span>
-      <span class="mode-progress-start">${progress.totalItems ? "この形式で学習する" : "この形式で出題できる問題がありません"}<span aria-hidden="true">${progress.totalItems ? " →" : ""}</span></span>
     </button>`;
 }
 
@@ -864,56 +885,17 @@ function renderRangeDetail() {
     return;
   }
   const unit = isRecallSubject() ? "問" : "語句";
-  elements.rangeDetailEyebrow.textContent = ranges.length > 1 ? "RANGES" : "RANGE";
   elements.rangeDetailTitle.textContent = rangeDetailLabel(ranges);
   elements.rangeDetailCopy.textContent = ranges.length > 1
-    ? `${ranges.join("・")}をまとめて学習します。形式をタップするとそのまま始まります。`
+    ? `${ranges.join("・")}をまとめて学習します。`
     : "やりたい形式をタップすると、そのまま学習が始まります。";
   elements.rangeDetailGroups.innerHTML = dashboardTargetGroups().map((group) => `
     <section class="mode-group" aria-label="${escapeHtml(group.label)}">
       <h2 class="mode-group-title">${escapeHtml(group.label)}</h2>
       <div class="mode-card-list">${group.cards.map((card) => modeProgressCard(card, unit)).join("")}</div>
     </section>`).join("");
-  renderRangeDetailAdvanced();
 }
 
-function detailSortOptions() {
-  return Object.entries(STUDY_SORT_LABELS)
-    .filter(([key]) => !(isRecallSubject() && key === "difficulty-level-desc"));
-}
-
-function advancedConditionLabels() {
-  return [
-    state.filters.importance.length ? `重要度 ${state.filters.importance.join("・")}` : "重要度 全部",
-    `並び ${STUDY_SORT_LABELS[state.sortKey] ?? "重要度順"}`,
-  ];
-}
-
-function renderRangeDetailAdvanced() {
-  elements.rangeDetailAdvanced.open = state.rangeDetailAdvancedOpen;
-  elements.rangeDetailAdvancedSummary.textContent = advancedConditionLabels().join(" · ");
-  elements.rangeDetailAdvancedBody.innerHTML = `
-    <div class="advanced-field">
-      <span class="field-label">重要度（選ばなければ全部）</span>
-      <div class="advanced-chip-row">
-        ${currentImportanceOrder().map((importance) => {
-          const selected = state.filters.importance.includes(importance);
-          return `<button class="advanced-chip${selected ? " selected" : ""}" type="button" data-detail-importance="${importance}" aria-pressed="${selected}">${importance}</button>`;
-        }).join("")}
-      </div>
-    </div>
-    <label class="advanced-field">
-      <span class="field-label">並び替え</span>
-      <select class="select-control" data-detail-sort>
-        ${detailSortOptions().map(([key, label]) =>
-          `<option value="${key}"${state.sortKey === key ? " selected" : ""}>${escapeHtml(label)}</option>`).join("")}
-      </select>
-    </label>
-    <p class="advanced-note">出題する問題は周回状況からアプリが自動で決めます（1周目は全部、以降はまだ習得していない問題）。</p>
-    <button class="text-button" type="button" data-open-step-flow>ステップ形式で条件を選び直す</button>`;
-}
-
-// 範囲と形式はここで確定する。この先で範囲・出題方向・形式を聞き直さない。
 function startStudyFromTarget(key) {
   const target = dashboardTargetByKey(key);
   if (!target) return;
@@ -927,8 +909,8 @@ function startStudyFromTarget(key) {
   state.rangeSelectionMode = "custom";
   state.studySelection = config.selection;
   state.studyFlowMode = "dashboard";
-  // 一問一答は形式カードの時点で学習内容も決まっているので並び替えへ直行する。
-  setView(isRecallSubject() ? "study-sort-kind" : "study-content");
+  // 一問一答は形式カードの時点で学習内容も決まっているので重要度へ直行する。
+  setView(isRecallSubject() ? "study-importance" : "study-content");
 }
 
 function showToast(message) {
@@ -1975,7 +1957,7 @@ const STUDY_FLOW_VIEWS = [
   "study-method",
   "study-scope",
   "study-range-select",
-  "study-importance-kind",
+  "study-importance",
   "study-importance-select",
   "study-content-multi",
   "study-sort-kind",
@@ -2028,7 +2010,7 @@ function setView(view) {
   if (view === "study-method") renderStudyMethod();
   if (view === "study-scope") renderStudyScope();
   if (view === "study-range-select") renderStudyRangeSelect();
-  if (view === "study-importance-kind") renderStudyImportanceKind();
+  if (view === "study-importance") renderStudyImportance();
   if (view === "study-importance-select") renderStudyImportanceSelect();
   if (view === "study-content-multi") renderStudyContentMulti();
   if (view === "study-sort-kind") renderStudySortKind();
@@ -2285,6 +2267,8 @@ function buildCycleQueue({ progress, poolItems, mode, sortKey }) {
     poolItems.filter((item) => pending.has(item.id)),
     scopedHistory,
     sortKey,
+    Math.random,
+    { randomizeTies: true },
   );
   const dueById = new Map((progress.pendingReviews ?? []).map((review) => [review.itemId, review.dueAt]));
   const now = Date.now();
@@ -3767,19 +3751,6 @@ function bindEvents() {
       setView("study-range-select");
     }
     if (target.dataset.studyTarget) startStudyFromTarget(target.dataset.studyTarget);
-    if (target.dataset.detailImportance) {
-      const importance = target.dataset.detailImportance;
-      state.filters.importance = state.filters.importance.includes(importance)
-        ? state.filters.importance.filter((value) => value !== importance)
-        : [...state.filters.importance, importance];
-      state.importanceFilterMode = state.filters.importance.length ? "custom" : "all";
-      renderRangeDetail();
-    }
-    if (target.hasAttribute("data-open-step-flow")) {
-      state.rangeFlow = "study";
-      state.studyFlowMode = "step";
-      setView("study-content");
-    }
     if (target.hasAttribute("data-open-performance-detail")) openFilter();
     if (target.dataset.recentStudyIndex !== undefined) {
       const entry = state.recentStudies[Number(target.dataset.recentStudyIndex)];
@@ -3790,7 +3761,7 @@ function bindEvents() {
     }
     if (target.dataset.studyContentChoice) {
       applyContentChoice(target.dataset.studyContentChoice);
-      setView(state.studyFlowMode === "dashboard" ? "study-sort-kind" : "study-method");
+      setView(state.studyFlowMode === "dashboard" ? "study-importance" : "study-method");
     }
     if (target.hasAttribute("data-study-content-other")) {
       state.contentSelectionMode = "custom";
@@ -3807,7 +3778,7 @@ function bindEvents() {
           method: "recall",
           scope: "full",
         };
-        setView("study-importance-kind");
+        setView("study-importance");
       } else {
         const content = target.dataset.studyContent;
         const current = state.contentSelectionMode === "all"
@@ -3833,7 +3804,7 @@ function bindEvents() {
       }
     }
     if (target.id === "confirm-study-content" && state.studySelection.contents?.length) {
-      setView(state.studyFlowMode === "dashboard" ? "study-sort-kind" : "study-method");
+      setView(state.studyFlowMode === "dashboard" ? "study-importance" : "study-method");
     }
     if (target.dataset.studyDirection) {
       state.studySelection.direction = target.dataset.studyDirection;
@@ -3843,7 +3814,7 @@ function bindEvents() {
     if (target.dataset.studyFormat && state.studySelection.direction) {
       state.studySelection.method = `${state.studySelection.direction}_${target.dataset.studyFormat}`;
       state.studySelection.scope = "full";
-      setView("study-importance-kind");
+      setView("study-importance");
     }
     if (target.hasAttribute("data-study-range-all")) {
       state.rangeSelectionMode = "all";
@@ -3868,15 +3839,16 @@ function bindEvents() {
     if (target.hasAttribute("data-back-before-importance")) {
       setView(viewBeforeImportanceSelection());
     }
-    if (target.dataset.importanceFilterMode) {
-      state.importanceFilterMode = target.dataset.importanceFilterMode;
-      if (state.importanceFilterMode === "all") {
-        state.filters.importance = [];
-        setView("study-sort-kind");
-      } else {
-        state.filters.importance = [];
-        setView("study-importance-select");
-      }
+    if (target.dataset.studyImportanceChoice) {
+      const choice = target.dataset.studyImportanceChoice;
+      state.importanceFilterMode = choice === "all" ? "all" : "custom";
+      state.filters.importance = choice === "all" ? [] : [choice];
+      setView("study-sort-kind");
+    }
+    if (target.hasAttribute("data-study-importance-other")) {
+      state.importanceFilterMode = "custom";
+      state.filters.importance = [];
+      setView("study-importance-select");
     }
     if (target.dataset.studyImportance) {
       const importance = target.dataset.studyImportance;
@@ -3889,9 +3861,7 @@ function bindEvents() {
       setView("study-sort-kind");
     }
     if (target.hasAttribute("data-back-before-sort")) {
-      setView(state.studyFlowMode === "dashboard"
-        ? "study-content"
-        : state.importanceFilterMode === "custom" ? "study-importance-select" : "study-importance-kind");
+      setView("study-importance");
     }
     if (target.dataset.studySortKind) {
       if (target.dataset.studySortKind === "other") {
@@ -3980,16 +3950,7 @@ function bindEvents() {
   elements.filterForm.addEventListener("input", renderFilterPreview);
   elements.filterBackdrop.addEventListener("click", closeFilter);
 
-  elements.rangeDetailAdvanced.addEventListener("toggle", () => {
-    state.rangeDetailAdvancedOpen = elements.rangeDetailAdvanced.open;
-  });
-
   document.addEventListener("change", (event) => {
-    if (event.target.matches?.("[data-detail-sort]")) {
-      state.sortKey = event.target.value;
-      renderRangeDetail();
-      return;
-    }
     const setting = event.target.dataset?.setting;
     if (!setting || !(setting in state.settings)) return;
     state.settings[setting] = event.target.checked;
@@ -4111,7 +4072,7 @@ async function boot() {
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.3b").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.4a").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

@@ -126,7 +126,7 @@ test("items that cannot be asked in a mode are excluded from the denominator", (
   assert.equal(progressForRangeAndMode(scoped, answered, "Plastic", "ja_to_en_input").answeredRate, 1);
 });
 
-test("range detail exposes exactly the five current English study formats", () => {
+test("範囲詳細には現行の英語5形式だけが並ぶ", () => {
   assert.deepEqual(ENGLISH_STUDY_MODES, [
     "en_to_ja_choice",
     "en_to_ja_flashcard",
@@ -145,7 +145,7 @@ test("range detail exposes exactly the five current English study formats", () =
     summarizeRangeModes({ items, history: new Map(), ranges: ["Plastic"] }).map((stat) => stat.mode),
     ENGLISH_STUDY_MODES,
   );
-  const detailSource = functionSource("renderRangeDetail", "detailSortOptions");
+  const detailSource = functionSource("renderRangeDetail", "startStudyFromTarget");
   assert.match(detailSource, /dashboardTargetGroups\(\)/);
   assert.match(detailSource, /modeProgressCard\(card, unit\)/);
 });
@@ -170,11 +170,11 @@ test("the range list shows range names only, with no rates or scores", () => {
   assert.match(indexSource, /id="dashboard-range-list"/);
 });
 
-test("format cards state what each number means", () => {
+test("形式カードの数値は何の数字かが分かる形で出す", () => {
   const cardSource = functionSource("modeProgressCard", "renderRangeDetail");
   assert.match(cardSource, /解答済み \$\{answeredPercent\}%（\$\{progress\.answeredItems\} \/ \$\{progress\.totalItems\}\$\{unit\}）/);
   assert.match(cardSource, /習得 \$\{masteredPercent\}%（\$\{progress\.masteredItems\} \/ \$\{progress\.totalItems\}\$\{unit\}）/);
-  assert.match(cardSource, /\$\{cycle\.cycleNumber\}周目 · 残り\$\{cycle\.remainingCount\}\$\{unit\}/);
+  assert.match(cardSource, /\$\{cycle\.cycleNumber\}周目 残り\$\{cycle\.remainingCount\}/);
   // 集計そのものは logic.js の純粋関数に任せる
   assert.match(cardSource, /summarizeRangeModeProgress\(\{/);
   assert.doesNotMatch(cardSource, /modeStats/);
@@ -200,7 +200,7 @@ test("tapping a format card settles range and format in one step", () => {
   assert.match(startSource, /studyConfigForTarget\(\{/);
   assert.match(startSource, /state\.studySelection = config\.selection/);
   // 次は「何を学習するか」。範囲・出題方向・形式は聞き直さない。
-  assert.match(startSource, /setView\(isRecallSubject\(\) \? "study-sort-kind" : "study-content"\)/);
+  assert.match(startSource, /setView\(isRecallSubject\(\) \? "study-importance" : "study-content"\)/);
   assert.doesNotMatch(startSource, /setView\("study-(range-select|method|scope)"\)/);
   assert.match(appSource, /if \(target\.dataset\.studyTarget\) startStudyFromTarget\(target\.dataset\.studyTarget\)/);
 });
@@ -257,26 +257,30 @@ test("the mastery gauge is fed by the current mastery round, not by long-term hi
   );
 });
 
-test("importance, sorting and answer-status filters survive as secondary controls", () => {
-  const advancedSource = functionSource("renderRangeDetailAdvanced", "startStudyFromTarget");
-  assert.match(advancedSource, /data-detail-importance/);
-  assert.match(advancedSource, /data-detail-sort/);
-  assert.match(advancedSource, /detailSortOptions\(\)/);
-  assert.match(indexSource, /id="range-detail-advanced"/);
+test("重要度と並び替えは毎回選ぶ画面として通常フローに入る", () => {
+  // 重要度は「何を学習しますか？」と同じ1列リスト
+  const importanceSource = functionSource("renderStudyImportance", "renderStudyImportanceSelect");
+  assert.match(importanceSource, /contentChoiceRow\(\{/);
+  assert.match(importanceSource, /data-study-importance-choice="all"/);
+  assert.match(importanceSource, /data-study-importance-other/);
+  assert.match(indexSource, /class="content-choice-list" id="study-importance-options-single"/);
   // 並び替えの選択肢（重要度・苦手順・ランダム・その他）は削っていない
   assert.match(appSource, /\["random", "ランダム"\]/);
   assert.match(appSource, /difficulty: "苦手順"/);
   assert.match(appSource, /"importance-desc": "重要度順"/);
   // 従来のステップ形式も残す
   assert.match(indexSource, /id="view-study-sort-kind"/);
-  assert.match(indexSource, /id="view-study-importance-kind"/);
-  assert.match(appSource, /data-open-step-flow"\)\) \{[\s\S]*?setView\("study-content"\)/);
+  assert.match(indexSource, /id="view-study-importance-select"/);
+  assert.match(indexSource, /id="view-study-method"/);
   // 回答状況を毎回選ばせる画面は通常フローから外す
   assert.doesNotMatch(indexSource, /id="view-study-performance"/);
   assert.doesNotMatch(appSource, /data-study-performance=/);
+  // 範囲詳細の「詳細設定」は毎回選ぶ画面へ移したので残さない
+  assert.doesNotMatch(indexSource, /range-detail-advanced/);
+  assert.doesNotMatch(appSource, /data-detail-importance|data-detail-sort/);
 });
 
-test("recall subjects share the same dashboard shape", () => {
+test("一問一答の教科も同じダッシュボード構造を使う", () => {
   const publicGroups = studyTargetsForDashboard({ subject: "public", contents: ["term"] });
   assert.equal(publicGroups.length, 1);
   assert.deepEqual(publicGroups[0].cards.map((card) => card.mode), ["public_recall"]);
@@ -306,7 +310,7 @@ test("real workbook data fills every format gauge for a range", () => {
   assert.equal(progressForRangeAndMode(items, history, "Plastic", "en_to_ja_choice").answeredItems, 0);
 });
 
-test("the dashboard is the entry point and the place a session ends", () => {
+test("ダッシュボードが入口であり、学習終了後の戻り先でもある", () => {
   assert.match(indexSource, /id="view-dashboard" data-view="dashboard"/);
   assert.match(indexSource, /id="view-range-detail" data-view="range-detail"/);
   assert.doesNotMatch(indexSource, /id="view-home"/);
@@ -314,8 +318,20 @@ test("the dashboard is the entry point and the place a session ends", () => {
   assert.match(appSource, /if \(view === "dashboard"\) renderDashboard\(\)/);
   assert.match(appSource, /if \(view === "range-detail"\) renderRangeDetail\(\)/);
   assert.match(functionSource("selectSubject", "selectionIsComplete"), /setView\("dashboard"\)/);
-  // 44px 以上のタップ領域と safe-area を保つ
-  assert.match(stylesSource, /\.range-choice \{[\s\S]*?min-height: 66px/);
+  // 44px 以上のタップ領域を保つ
+  assert.match(stylesSource, /\.range-choice \{[\s\S]*?min-height: 56px/);
   assert.match(stylesSource, /\.mode-progress-card \{[\s\S]*?min-height: 44px/);
-  assert.match(stylesSource, /\.advanced-chip \{[\s\S]*?min-height: 44px/);
+  assert.match(stylesSource, /\.content-choice \{[\s\S]*?min-height: 64px/);
+});
+
+test("範囲一覧と形式カードは1画面に収まる高さで組む", () => {
+  // 範囲ボタンは2カラム固定（1カラムに戻すメディアクエリを残さない）
+  assert.match(stylesSource, /\.range-choice-list \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  const mobile = stylesSource.slice(stylesSource.indexOf("@media (max-width: 760px)"));
+  assert.doesNotMatch(mobile, /\.range-choice-list \{\s*\n\s*grid-template-columns: 1fr/);
+  // 形式カードは説明文と「この形式で学習する」を畳んで高さを抑える
+  const cardSource = functionSource("modeProgressCard", "renderRangeDetail");
+  assert.doesNotMatch(cardSource, /mode-progress-start|card\.detail/);
+  assert.match(stylesSource, /\.mode-progress-gauge \{[\s\S]*?height: 10px/);
+  assert.match(stylesSource, /\.mode-group \{[\s\S]*?margin-bottom: 12px/);
 });

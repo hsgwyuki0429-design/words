@@ -15,7 +15,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icons/app-icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icons/app-icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=2026.9.3b" />
+    <link rel="stylesheet" href="./styles.css?v=2026.9.4a" />
   </head>
   <body>
     <div class="fx-backdrop" id="fx-backdrop" aria-hidden="true">
@@ -100,21 +100,13 @@
           </div>
         </section>
 
-        <section class="view range-detail-view" id="view-range-detail" data-view="range-detail" hidden>
-          <div class="page-heading range-detail-heading">
+        <section class="view range-detail-view compact-step-view" id="view-range-detail" data-view="range-detail" hidden>
+          <div class="page-heading range-detail-heading compact-step-heading">
             <button class="text-button back-link" type="button" data-view-target="dashboard">← 範囲を選び直す</button>
-            <p class="eyebrow" id="range-detail-eyebrow">RANGE</p>
             <h1 id="range-detail-title">範囲</h1>
             <p id="range-detail-copy">やりたい形式をタップすると、そのまま学習が始まります。</p>
           </div>
           <div id="range-detail-groups"></div>
-          <details class="range-detail-advanced" id="range-detail-advanced">
-            <summary>
-              <span><strong>詳細設定</strong><small id="range-detail-advanced-summary">重要度・回答状況・並び替え</small></span>
-              <span class="card-arrow" aria-hidden="true">›</span>
-            </summary>
-            <div class="range-detail-advanced-body" id="range-detail-advanced-body"></div>
-          </details>
         </section>
 
         <section class="view compact-range-view" id="view-study-range-select" data-view="study-range-select" hidden>
@@ -174,21 +166,20 @@
           <div class="selection-grid scope-selection-grid" id="study-scope-options"></div>
         </section>
 
-        <section class="view" id="view-study-importance-kind" data-view="study-importance-kind" hidden>
-          <div class="page-heading selection-page-heading">
-            <button class="text-button back-link" type="button" data-back-before-importance>← 前の選択へ</button>
-            <p class="eyebrow">FILTER 2</p>
-            <h1>重要度を絞り込む</h1>
-            <p>すべての重要度を学習するか、重要度を指定するか選んでください。</p>
+        <section class="view compact-step-view" id="view-study-importance" data-view="study-importance" hidden>
+          <div class="page-heading selection-page-heading compact-step-heading">
+            <button class="text-button back-link" type="button" data-back-before-importance>← 前へ戻る</button>
+            <h1>重要度を選ぶ</h1>
+            <p>押すとそのまま次へ進みます。</p>
           </div>
-          <div class="selection-grid" id="study-importance-kind-options"></div>
+          <div class="content-choice-list" id="study-importance-options-single"></div>
         </section>
 
         <section class="view" id="view-study-importance-select" data-view="study-importance-select" hidden>
           <div class="page-heading selection-page-heading">
-            <button class="text-button back-link" type="button" data-view-target="study-importance-kind">← 選び直す</button>
-            <p class="eyebrow">FILTER 2 · MULTIPLE</p>
-            <h1>重要度を選択</h1>
+            <button class="text-button back-link" type="button" data-view-target="study-importance">← 選び直す</button>
+            <p class="eyebrow">MULTIPLE</p>
+            <h1>重要度を組み合わせる</h1>
             <p>複数選択できます。学習したい重要度をすべて選んでください。</p>
           </div>
           <div class="multi-select-grid importance-select-grid" id="study-importance-options"></div>
@@ -203,7 +194,7 @@
             <h1>並び替えを選ぶ</h1>
             <p>押すとそのまま学習が始まります。</p>
           </div>
-          <div class="sort-kind-block" id="study-sort-kind-options"></div>
+          <div class="content-choice-list" id="study-sort-kind-options"></div>
         </section>
 
         <section class="view" id="view-study-sort-other" data-view="study-sort-other" hidden>
@@ -399,6 +390,6 @@
     </aside>
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-    <script type="module" src="./src/app.js?v=2026.9.3b"></script>
+    <script type="module" src="./src/app.js?v=2026.9.4a"></script>
   </body>
 </html>

@@ -31,7 +31,6 @@ import {
   normalizeRecentStudies,
   recentStudyConfigKey,
   releaseDeferredReviews,
-  studyCombinationKey,
   studyModeForItem,
   studyPerformanceModes,
   spellingLetters,
@@ -80,7 +79,6 @@ const state = {
   view: "period",
   selectedMode: null,
   studySelection: { subject: "english", content: null, contents: [], direction: null, method: null, scope: "full" },
-  progress: new Map(),
   filters: {
     ranges: [],
     importance: [],
@@ -97,7 +95,6 @@ const state = {
   settings: { ...DEFAULT_SETTINGS },
   combo: 0,
   bestCombo: 0,
-  activeStudy: null,
   recentStudies: [],
   importanceFilterMode: null,
   rangeSelectionMode: null,
@@ -112,7 +109,6 @@ const elements = Object.fromEntries(
     "greeting",
     "home-title",
     "home-copy",
-    "resume-study-card",
     "recent-study-section",
     "recent-study-list",
     "study-content-heading",
@@ -212,6 +208,7 @@ const OTHER_SORT_OPTIONS = [
 
 const STUDY_SORT_LABELS = {
   "importance-desc": "重要度順",
+  "difficulty-level-desc": "難易度順",
   difficulty: "苦手順",
   ...Object.fromEntries(OTHER_SORT_OPTIONS),
 };
@@ -261,32 +258,6 @@ const STUDY_FORMAT_META = {
   flashcard: { icon: "▣", title: "フラッシュカード", detail: "タップで表裏、スワイプで自己採点", tags: ["自己採点"] },
   spelling: { icon: "Aa", title: "スペル1文字ずつ4択", detail: "アルファベットを1文字ずつ選んで単語を完成させる", tags: ["スペル", "選択式"] },
 };
-
-const ENGLISH_CONTENT_COMBINATIONS = [
-  ["word"],
-  ["phrase"],
-  ["structure"],
-  ["word", "phrase"],
-  ["word", "structure"],
-  ["phrase", "structure"],
-  [...ENGLISH_CONTENT_TYPES],
-];
-
-const KNOWN_STUDY_SELECTIONS = [
-  ...ENGLISH_CONTENT_COMBINATIONS.flatMap((contents) => [
-    { contents, method: "ja_to_en_choice", scope: "full" },
-    { contents, method: "en_to_ja_choice", scope: "full" },
-    { contents, method: "ja_to_en_flashcard", scope: "full" },
-    { contents, method: "en_to_ja_flashcard", scope: "full" },
-    ...(contents.includes("word") ? [{ contents, method: "ja_to_en_spelling", scope: "full" }] : []),
-  ]),
-  { subject: "public", content: "term", method: "recall", scope: "full" },
-  { subject: "public", content: "short", method: "recall", scope: "full" },
-  { subject: "public", content: "all", method: "recall", scope: "full" },
-  { subject: "health", content: "term", method: "recall", scope: "full" },
-  { subject: "health", content: "short", method: "recall", scope: "full" },
-  { subject: "health", content: "all", method: "recall", scope: "full" },
-];
 
 const TAG_LABELS = {
   word: "単語",
@@ -370,20 +341,22 @@ function emptyFilters() {
 }
 
 function resetStudyFlow() {
+  const ranges = [...currentRangeOrder()];
+  const selectAllEnglishContents = !isRecallSubject();
   state.studySelection = {
     subject: isRecallSubject() ? state.subject : "english",
-    content: null,
-    contents: [],
+    content: selectAllEnglishContents ? "all" : null,
+    contents: selectAllEnglishContents ? [...ENGLISH_CONTENT_TYPES] : [],
     direction: null,
     method: null,
     scope: "full",
   };
   state.sortKey = "importance-desc";
   state.filters = emptyFilters();
-  state.filters.ranges = [];
+  state.filters.ranges = ranges;
   state.importanceFilterMode = null;
-  state.rangeSelectionMode = null;
-  state.contentSelectionMode = null;
+  state.rangeSelectionMode = "all";
+  state.contentSelectionMode = selectAllEnglishContents ? "all" : null;
 }
 
 function selectSubject(subject) {
@@ -463,7 +436,7 @@ function recentStudyRangeLabel(config) {
 }
 
 function recentStudyTimeLabel(lastUsedAt) {
-  if (!lastUsedAt) return "前回";
+  if (!lastUsedAt) return "履歴";
   return new Intl.DateTimeFormat("ja-JP", {
     month: "numeric",
     day: "numeric",
@@ -481,10 +454,6 @@ function renderRecentStudies() {
   }
   elements.recentStudyList.innerHTML = entries.map((entry, index) => {
     const config = entry.config;
-    const resumesActiveStudy = Boolean(
-      state.activeStudy
-      && recentStudyConfigKey(state.activeStudy.config) === recentStudyConfigKey(config),
-    );
     const importance = config.filters.importance.length
       ? `重要度：${config.filters.importance.join("・")}`
       : "重要度：全部";
@@ -499,16 +468,9 @@ function renderRecentStudies() {
         <strong>${escapeHtml(studyContentLabel(config.selection))}</strong>
         <span class="recent-study-method">${escapeHtml(STUDY_METHOD_LABELS[config.selection.method])}</span>
         <small>${escapeHtml([recentStudyRangeLabel(config), importance, performance, sort].join(" · "))}</small>
-        <span class="recent-study-action">${resumesActiveStudy
-          ? `途中から再開（${Number(state.activeStudy.answeredCount) || 0} / ${Number(state.activeStudy.totalCount) || 0}問）`
-          : "この条件で始める"} <span aria-hidden="true">→</span></span>
+        <span class="recent-study-action">この条件で始める <span aria-hidden="true">→</span></span>
       </button>`;
   }).join("");
-}
-
-function progressForSelection(selection = state.studySelection) {
-  const key = studyCombinationKey(selection);
-  return key ? state.progress.get(key) ?? { completedItemIds: [] } : { completedItemIds: [] };
 }
 
 function selectionCard({ icon, title, detail, tags, dataAttribute }) {
@@ -549,7 +511,7 @@ function renderStudyContent() {
     ? Object.keys(recallContents).length > 1
       ? "語句回答、短文回答、または両方から選んでください。"
       : "この教科に収録されている問題から選んでください。"
-    : "複数選択できます。すべて学ぶ場合は「全選択」を選んでください。";
+    : "最初はすべて選択されています。必要な教材だけに絞ることもできます。";
   const action = elements.confirmStudyContent.closest(".sticky-action");
   if (isRecallSubject()) {
     action.hidden = true;
@@ -581,7 +543,7 @@ function renderStudyContent() {
     const selected = !allSelected && selectedContents.includes(content);
     const meta = STUDY_CONTENT_META[content];
     const count = baseItems.filter((item) => item.type === content).length;
-    return `<button class="multi-select-card${selected ? " selected" : ""}${allSelected ? " disabled-by-all" : ""}" type="button" data-study-content="${content}" aria-pressed="${selected}" ${allSelected ? "disabled aria-disabled=\"true\"" : ""}>
+    return `<button class="multi-select-card${selected ? " selected" : ""}" type="button" data-study-content="${content}" aria-pressed="${selected}">
       <span class="multi-check" aria-hidden="true">${selected ? "✓" : ""}</span>
       <span><strong>${escapeHtml(meta.title)}</strong><small>${count}語句</small></span>
     </button>`;
@@ -633,7 +595,7 @@ function renderStudyRangeSelect() {
   const rangeCards = ranges.map((range) => {
     const selected = !allSelected && state.filters.ranges.includes(range);
     const count = state.items.filter((item) => item.range === range).length;
-    return `<button class="multi-select-card${selected ? " selected" : ""}${allSelected ? " disabled-by-all" : ""}" type="button" data-study-range="${escapeHtml(range)}" aria-pressed="${selected}" ${allSelected ? "disabled aria-disabled=\"true\"" : ""}>
+    return `<button class="multi-select-card${selected ? " selected" : ""}" type="button" data-study-range="${escapeHtml(range)}" aria-pressed="${selected}">
       <span class="multi-check" aria-hidden="true">${selected ? "✓" : ""}</span>
       <span><strong>${escapeHtml(range)}</strong><small>${count}${isRecallSubject() ? "問" : "語句"}</small></span>
     </button>`;
@@ -704,7 +666,7 @@ function renderStudyPerformance() {
   const statusCopy = unanswered === 0
     ? "未回答の問題がないため、復習を先頭にしました。"
     : answered > 0
-      ? "続きから始めやすいよう、未回答を先頭にしました。"
+      ? "未回答の問題を優先して表示しています。"
       : "今の条件に合う回答状況から選んでください。";
   elements.studyPerformanceCopy.textContent = `${formatLabel}の履歴だけで集計します。${statusCopy}`;
   elements.studyPerformanceOptions.innerHTML = options
@@ -719,12 +681,16 @@ function renderStudyPerformance() {
 }
 
 function renderStudySortKind() {
-  elements.studySortKindOptions.innerHTML = [
+  const options = [
     { key: "importance-desc", icon: "S", title: "重要度順", detail: "重要度が高い問題から出題", tags: ["おすすめ"] },
+    ...(!isRecallSubject()
+      ? [{ key: "difficulty-level-desc", icon: "F", title: "難易度順", detail: "教材の難易度が高い問題から出題", tags: ["F → A"] }]
+      : []),
     { key: "difficulty", icon: "↘", title: "苦手順", detail: "間違いが多い問題から出題", tags: ["復習"] },
     { key: "random", icon: "⇄", title: "ランダム", detail: "問題を毎回シャッフルして出題", tags: ["シャッフル"] },
     { key: "other", icon: "…", title: "その他", detail: "正答率や範囲順などから選択", tags: ["詳細"] },
-  ].map((meta) => selectionCard({
+  ];
+  elements.studySortKindOptions.innerHTML = options.map((meta) => selectionCard({
     ...meta,
     dataAttribute: `data-study-sort-kind="${meta.key}"`,
   })).join("");
@@ -805,7 +771,7 @@ function renderSettings() {
       ${toggle("showSources", "出典を表示", "回答後に教材と範囲を表示")}
     </section>
     <section class="settings-card">
-      <h2>学習データ</h2><p>正誤履歴、途中位置、設定をこの端末から削除します。</p>
+      <h2>学習データ</h2><p>正誤履歴、最近の学習条件、設定をこの端末から削除します。</p>
       <button class="secondary-button danger-button" type="button" data-reset-data>学習データを初期化</button>
     </section>`;
 }
@@ -1834,25 +1800,6 @@ function renderHome() {
     ? "タップで表裏を切り替え、スワイプで自己採点します。"
     : "英語と日本語を行き来しながら、4択とフラッシュカードで確かめます。";
 
-  const activeSubject = state.activeStudy?.config?.subject
-    ?? state.activeStudy?.config?.selection?.subject
-    ?? "english";
-  if (state.activeStudy?.config?.selection && activeSubject === state.subject) {
-    const answered = Number(state.activeStudy.answeredCount) || 0;
-    const total = Number(state.activeStudy.totalCount) || 0;
-    elements.resumeStudyCard.hidden = false;
-    elements.resumeStudyCard.innerHTML = `
-      <div>
-        <span class="subtle-label">前回の学習</span>
-        <strong>途中から</strong>
-        <small>${escapeHtml(studySelectionLabel(state.activeStudy.config.selection))} · ${answered} / ${total}問まで回答</small>
-      </div>
-      <button class="primary-button compact" type="button" data-resume-active>途中から再開</button>`;
-  } else {
-    elements.resumeStudyCard.hidden = true;
-    elements.resumeStudyCard.innerHTML = "";
-  }
-
   renderRecentStudies();
   renderHeader();
 }
@@ -2034,7 +1981,7 @@ function startSession(overrides = {}) {
     setView("study-content");
     return;
   }
-  let config = {
+  const config = {
     subject: overrides.subject ?? state.subject,
     filters: overrides.filters ?? { ...state.filters, search: "" },
     ...(usesSelection ? { selection } : { mode }),
@@ -2042,27 +1989,15 @@ function startSession(overrides = {}) {
     count: overrides.itemIds ? (overrides.count ?? "all") : "all",
     itemIds: overrides.itemIds ?? null,
   };
-  const resumeSnapshot = state.activeStudy
-    && recentStudyConfigKey(state.activeStudy.config) === recentStudyConfigKey(config)
-    ? state.activeStudy
-    : null;
-  if (resumeSnapshot?.config?.itemIds?.length && !config.itemIds) {
-    config = { ...config, count: "all", itemIds: resumeSnapshot.config.itemIds };
-  }
   const sessionItems = config.itemIds
     ? state.items.filter((item) => config.itemIds.includes(item.id))
     : state.items;
-  const combinationKey = usesSelection ? studyCombinationKey(selection) : null;
-  const progress = usesSelection ? progressForSelection(selection) : { completedItemIds: [] };
-  let queue = usesSelection
+  const queue = usesSelection
     ? buildStudySession({
         items: sessionItems,
         history: state.history,
         filters: config.filters,
         selection,
-        completedItemIds: resumeSnapshot || config.filters.performance === "all"
-          ? progress.completedItemIds
-          : [],
         sortKey: config.sortKey,
         count: config.count,
       })
@@ -2074,25 +2009,6 @@ function startSession(overrides = {}) {
         sortKey: config.sortKey,
         count: config.count,
       });
-  if (usesSelection && !queue.length && progress.completedItemIds.length) {
-    const resetProgress = {
-      ...progress,
-      completedItemIds: [],
-      completedCycles: (progress.completedCycles ?? 0) + 1,
-    };
-    state.progress.set(combinationKey, resetProgress);
-    setMeta(`studyProgress:${combinationKey}`, resetProgress).catch(console.warn);
-    queue = buildStudySession({
-      items: sessionItems,
-      history: state.history,
-      filters: config.filters,
-      selection,
-      completedItemIds: [],
-      sortKey: config.sortKey,
-      count: config.count,
-    });
-    if (queue.length) showToast("この組み合わせを最初からもう一周します");
-  }
   if (!queue.length) {
     showToast("この条件に合う問題がありません");
     return;
@@ -2104,7 +2020,6 @@ function startSession(overrides = {}) {
   if (usesSelection) state.studySelection = selection;
   state.selectedMode = queue[0].mode;
   setMeta("selectedMode", state.selectedMode).catch(console.warn);
-  setMeta("lastSessionConfig", config).catch(console.warn);
   state.session = {
     queue,
     cursor: 0,
@@ -2121,18 +2036,8 @@ function startSession(overrides = {}) {
     questionStartedAt: 0,
     startedAt: Date.now(),
     complete: false,
-    combinationKey,
     selection: usesSelection ? selection : null,
   };
-  if (usesSelection) {
-    state.activeStudy = {
-      config: { ...config, itemIds: queue.map((entry) => entry.item.id) },
-      answeredCount: Number(resumeSnapshot?.answeredCount) || 0,
-      totalCount: Number(resumeSnapshot?.totalCount) || queue.length,
-      startedAt: resumeSnapshot?.startedAt ?? Date.now(),
-    };
-    setMeta("activeStudy", state.activeStudy).catch(console.warn);
-  }
   state.combo = 0;
   setView("quiz");
   prepareQuestion();
@@ -2886,15 +2791,6 @@ async function submitAnswer(
     durationMs,
   });
 
-  if (session.combinationKey && state.activeStudy) {
-    state.activeStudy = {
-      ...state.activeStudy,
-      answeredCount: (Number(state.activeStudy.answeredCount) || 0) + 1,
-      updatedAt: Date.now(),
-    };
-    setMeta("activeStudy", state.activeStudy).catch(console.warn);
-  }
-
   let pendingCorrectEffect = null;
   if (correct) {
     state.combo += 1;
@@ -2909,33 +2805,6 @@ async function submitAnswer(
     pendingCorrectEffect = special;
   } else {
     state.combo = 0;
-  }
-
-  if (session.combinationKey) {
-    const currentProgress = state.progress.get(session.combinationKey) ?? {
-      completedItemIds: [],
-    };
-    const completedItemIds = [
-      ...new Set([...(currentProgress.completedItemIds ?? []), question.item.id]),
-    ];
-    const nextProgress = {
-      completedItemIds,
-      attempts: (currentProgress.attempts ?? 0) + 1,
-      correctCount: (currentProgress.correctCount ?? 0) + (correct ? 1 : 0),
-      wrongCount: (currentProgress.wrongCount ?? 0) + (correct ? 0 : 1),
-      itemResults: {
-        ...(currentProgress.itemResults ?? {}),
-        [question.item.id]: {
-          lastResult: correct ? "correct" : "wrong",
-          answeredAt: Date.now(),
-        },
-      },
-      updatedAt: Date.now(),
-    };
-    state.progress.set(session.combinationKey, nextProgress);
-    setMeta(`studyProgress:${session.combinationKey}`, nextProgress).catch((error) => {
-      console.warn("学習位置の保存に失敗しました", error);
-    });
   }
 
   const scheduledDelay = reviewDelayForAnswer(question.mode, correct, reviewDelayMs);
@@ -3035,10 +2904,6 @@ function renderSessionComplete() {
   const summary = summarizeSession(session.results);
   const overall = summarizeHistory(state.items, state.history);
   const itemUnit = isRecallSubject() ? "問" : "語句";
-  if (session.combinationKey) {
-    state.activeStudy = null;
-    setMeta("activeStudy", null).catch(console.warn);
-  }
   const wrongItems = [
     ...new Map(
       session.results
@@ -3054,7 +2919,6 @@ function renderSessionComplete() {
       return `<div class="result-breakdown-row">
         <span>${escapeHtml(range)}</span>
         <strong>${rangeSummary.correct} / ${rangeSummary.total}</strong>
-        <span>${formatPercent(rangeSummary.accuracy)}</span>
       </div>`;
     })
     .join("");
@@ -3065,7 +2929,6 @@ function renderSessionComplete() {
       <h1>${summary.correct === summary.total ? "全問正解です。" : "学習を記録しました。"}</h1>
       <p>${escapeHtml(session.selection ? studySelectionLabel(session.selection) : MODE_LABELS[state.selectedMode])}</p>
       <div class="result-stat-grid">
-        <div><span>2回連続達成</span><strong>${formatPercent(overall.twoCorrectStreakRate)}</strong></div>
         <div><span>達成${itemUnit}</span><strong>${overall.twoCorrectStreakItems} / ${state.items.length}</strong></div>
         <div><span>平均回答</span><strong>${formatSeconds(summary.averageDurationMs)}</strong></div>
         <div><span>学習時間</span><strong>${formatSeconds(summary.durationMs)}</strong></div>
@@ -3259,9 +3122,6 @@ function bindEvents() {
       setView("study-range-select");
     }
     if (target.hasAttribute("data-open-performance-detail")) openFilter();
-    if (target.hasAttribute("data-resume-active") && state.activeStudy?.config) {
-      startSession(state.activeStudy.config);
-    }
     if (target.dataset.recentStudyIndex !== undefined) {
       const entry = state.recentStudies[Number(target.dataset.recentStudyIndex)];
       if (entry?.config) {
@@ -3270,12 +3130,11 @@ function bindEvents() {
       }
     }
     if (target.hasAttribute("data-study-content-all") && !isRecallSubject()) {
-      const clearing = state.contentSelectionMode === "all";
-      state.contentSelectionMode = clearing ? null : "all";
+      state.contentSelectionMode = "all";
       state.studySelection = {
         subject: "english",
-        content: clearing ? null : "all",
-        contents: clearing ? [] : [...ENGLISH_CONTENT_TYPES],
+        content: "all",
+        contents: [...ENGLISH_CONTENT_TYPES],
         direction: null,
         method: null,
         scope: "full",
@@ -3295,10 +3154,14 @@ function bindEvents() {
         setView("study-importance-kind");
       } else {
         const content = target.dataset.studyContent;
-        const current = state.studySelection.contents ?? [];
-        const contents = current.includes(content)
-          ? current.filter((value) => value !== content)
-          : [...current, content];
+        const current = state.contentSelectionMode === "all"
+          ? []
+          : state.studySelection.contents ?? [];
+        const contents = state.contentSelectionMode === "all"
+          ? [content]
+          : current.includes(content)
+            ? current.filter((value) => value !== content)
+            : [...current, content];
         state.contentSelectionMode = contents.length ? "custom" : null;
         state.studySelection = {
           subject: "english",
@@ -3329,17 +3192,19 @@ function bindEvents() {
       setView("study-importance-kind");
     }
     if (target.hasAttribute("data-study-range-all")) {
-      const clearing = state.rangeSelectionMode === "all";
-      state.rangeSelectionMode = clearing ? null : "all";
-      state.filters.ranges = clearing ? [] : [...currentRangeOrder()];
+      state.rangeSelectionMode = "all";
+      state.filters.ranges = [...currentRangeOrder()];
       renderStudyRangeSelect();
     }
     if (target.dataset.studyRange) {
       const range = target.dataset.studyRange;
+      const wasAllSelected = state.rangeSelectionMode === "all";
       state.rangeSelectionMode = "custom";
-      state.filters.ranges = state.filters.ranges.includes(range)
-        ? state.filters.ranges.filter((value) => value !== range)
-        : [...state.filters.ranges, range];
+      state.filters.ranges = wasAllSelected
+        ? [range]
+        : state.filters.ranges.includes(range)
+          ? state.filters.ranges.filter((value) => value !== range)
+          : [...state.filters.ranges, range];
       if (!state.filters.ranges.length) state.rangeSelectionMode = null;
       renderStudyRangeSelect();
     }
@@ -3497,25 +3362,16 @@ function bindEvents() {
 async function boot() {
   bindEvents();
   try {
-    const progressPromise = Promise.all(
-      KNOWN_STUDY_SELECTIONS.map(async (selection) => {
-        const key = studyCombinationKey(selection);
-        return [key, await getMeta(`studyProgress:${key}`, { completedItemIds: [] })];
-      }),
-    );
-    const [response, publicResponse, healthResponse, history, selectedMode, progressEntries, settings, bestCombo, activeStudy, selectedPeriod, recentStudies, lastSessionConfig] = await Promise.all([
+    const [response, publicResponse, healthResponse, history, selectedMode, settings, bestCombo, selectedPeriod, recentStudies] = await Promise.all([
       fetch("./data/items.json?v=2026.08.31b"),
       fetch("./data/public-items.json?v=2026.09.01"),
       fetch("./data/health-items.json?v=2026.09.01"),
       loadHistory(),
       getMeta("selectedMode"),
-      progressPromise,
       getMeta("settings", DEFAULT_SETTINGS),
       getMeta("bestCombo", 0),
-      getMeta("activeStudy", null),
       getMeta("selectedPeriod", null),
       getMeta("recentStudies", []),
-      getMeta("lastSessionConfig", null),
     ]);
     if (!response.ok) throw new Error(`教材データを読み込めませんでした (${response.status})`);
     if (!publicResponse.ok) throw new Error(`公共データを読み込めませんでした (${publicResponse.status})`);
@@ -3526,19 +3382,11 @@ async function boot() {
     state.items = state.englishItems;
     state.history = history;
     state.selectedMode = ALL_MODES.includes(selectedMode) ? selectedMode : null;
-    state.progress = new Map(progressEntries);
     state.settings = { ...DEFAULT_SETTINGS, ...(settings ?? {}) };
     state.settings.soundIntensity = state.settings.soundIntensity === "full" ? "full" : "gentle";
     installMaxEffectsLab();
     state.bestCombo = Number(bestCombo) || 0;
-    state.activeStudy = activeStudy?.config?.selection && selectionIsComplete(activeStudy.config.selection)
-      ? activeStudy
-      : null;
-    state.recentStudies = normalizeRecentStudies([
-      ...(Array.isArray(recentStudies) ? recentStudies : []),
-      ...(state.activeStudy ? [{ config: state.activeStudy.config, lastUsedAt: state.activeStudy.startedAt }] : []),
-      ...(lastSessionConfig ? [{ config: lastSessionConfig, lastUsedAt: 0 }] : []),
-    ]);
+    state.recentStudies = normalizeRecentStudies(Array.isArray(recentStudies) ? recentStudies : []);
     state.selectedPeriod = selectedPeriod === "2026.2" ? selectedPeriod : null;
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");

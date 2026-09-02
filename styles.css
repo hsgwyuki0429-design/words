@@ -197,31 +197,6 @@ h2 {
   text-align: center;
 }
 
-.resume-study-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-  width: 100%;
-  margin-top: 12px;
-  padding: 16px 18px;
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  text-align: left;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.035);
-}
-
-.home-resume-top {
-  width: min(100%, 700px);
-  margin: 22px auto 0;
-}
-
-.resume-study-card strong,
-.resume-study-card small { display: block; }
-.resume-study-card strong { margin: 3px 0; font-size: 19px; }
-.resume-study-card small { color: var(--secondary); font-size: 12px; }
-
 .home-hero h1 {
   max-width: 640px;
   margin: 0 auto 16px;
@@ -2691,13 +2666,6 @@ body.quiz-active .main-content { padding-bottom: 0; }
   border-style: solid;
 }
 
-.multi-select-card.disabled-by-all {
-  opacity: 0.34;
-  filter: grayscale(0.8);
-  box-shadow: none;
-  cursor: not-allowed;
-}
-
 .range-select-grid .multi-select-card {
   grid-template-columns: 30px minmax(0, 1fr);
   gap: 9px;
@@ -3030,6 +2998,7 @@ body.quiz-active .main-content { padding-bottom: 0; }
 }
 
 .result-stat-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   width: 100%;
   margin-top: 22px;
   text-align: left;
@@ -3048,7 +3017,7 @@ body.quiz-active .main-content { padding-bottom: 0; }
 .result-section-heading,
 .result-breakdown-row {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: 1fr auto;
   align-items: center;
   gap: 14px;
 }
@@ -3058,8 +3027,7 @@ body.quiz-active .main-content { padding-bottom: 0; }
   font-size: 15px;
 }
 
-.result-section-heading > span,
-.result-breakdown-row > span:last-child {
+.result-section-heading > span {
   color: var(--secondary);
   font-size: 11px;
 }
@@ -3402,8 +3370,6 @@ body.quiz-active .main-content { padding-bottom: 0; }
   .settings-card { padding: 18px; }
   .quiz-answered .feedback-card { grid-template-columns: 1fr; }
   .quiz-answered .source-box { padding: 10px; }
-  .resume-study-card { align-items: stretch; flex-direction: column; }
-  .resume-study-card .primary-button { width: 100%; }
 }
 
 @media (max-width: 360px) {

@@ -51,6 +51,10 @@ test("character hints are absent while hidden and preserve typed values when tog
   assert.doesNotMatch(toggleHandler, /renderQuiz\(\)/);
   assert.equal(characterHintForToken("apple"), "_____");
   assert.equal(characterHintForToken("take care"), "________");
+  assert.match(stylesSource, /\.word-slot\s*\{[\s\S]*?height:\s*74px[\s\S]*?min-height:\s*74px/);
+  assert.doesNotMatch(stylesSource, /\.show-character-count \.word-slot\s*\{/);
+  assert.doesNotMatch(stylesSource, /\.show-character-count \.word-slot-input\s*\{/);
+  assert.match(stylesSource, /\.word-slot-input:focus\s*\{[\s\S]*?box-shadow:\s*none/);
 });
 
 test("the character-count control exists only in keyboard-input quiz headers", () => {
@@ -119,15 +123,29 @@ test("legacy settings load safely and character-count preference persists", () =
   assert.match(appSource, /function saveSettings\(\)[\s\S]*?setMeta\("settings", state\.settings\)/);
 });
 
-test("answered keyboard input shows accessible correctness and answer details", () => {
+test("answered keyboard input keeps the typed boxes and shows only the correct answer and range", () => {
+  const slots = functionSource("renderWordSlots", "updateCharacterCountDisplay");
   const feedback = functionSource("renderFeedback", "renderNextButton");
-  assert.match(feedback, /correct \? "✓" : "×"/);
-  assert.match(feedback, /correct \? "正解" : "不正解"/);
-  assert.match(feedback, /あなたの回答/);
-  assert.match(feedback, /正しい回答/);
-  assert.match(feedback, /importance-badge/);
-  assert.match(feedback, /範囲：/);
-  assert.match(feedback, /state\.settings\.showSources && !isChoice && sourceLine/);
+  const keyboardFeedback = feedback.slice(
+    feedback.indexOf("if (isKeyboardInput)"),
+    feedback.indexOf("const showSourceBox"),
+  );
+  assert.match(slots, /\$\{answered \? "" : '<button class="primary-button answer-button"/);
+  assert.match(keyboardFeedback, /keyboard-feedback-card/);
+  assert.match(keyboardFeedback, />正答</);
+  assert.match(keyboardFeedback, />範囲</);
+  assert.doesNotMatch(keyboardFeedback, /あなたの回答|重要度|importance-badge|sourceLine|itemEvidenceLine/);
   assert.match(stylesSource, /\.word-slot\.is-correct\s*\{/);
   assert.match(stylesSource, /\.word-slot\.is-wrong\s*\{/);
+  assert.match(stylesSource, /\.quiz-answered \.word-slot\s*\{[\s\S]*?pointer-events:\s*none/);
+  assert.match(stylesSource, /\.quiz-keyboard-input \.swipe-input-card,[\s\S]*?\.quiz-keyboard-input\.quiz-answered \.swipe-input-card[\s\S]*?padding:/);
+});
+
+test("answered keyboard cards use the same four-direction swipe progression as choices", () => {
+  const quiz = functionSource("renderQuiz", "currentTypedAnswer");
+  assert.match(quiz, /renderCardPreview\(isChoice \? "choice" : "input"\)/);
+  assert.match(quiz, /isKeyboardInput \? " swipe-input-card"/);
+  assert.match(quiz, /answered && isSwipeAdvance \? renderChoiceSwipeHints\(\)/);
+  assert.match(stylesSource, /\.swipe-input-card\s*\{[\s\S]*?min-height:\s*var\(--input-card-height\)/);
+  assert.match(stylesSource, /\.swipe-input-card > \.keyboard-feedback-card\s*\{[\s\S]*?border-top:/);
 });

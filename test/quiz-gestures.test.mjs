@@ -161,12 +161,17 @@ test("choice swipes are disabled before an answer", () => {
   }
 });
 
-test("keyboard input never opts into choice-card swipe navigation", () => {
-  assert.equal(isSwipeAdvanceMode("ja_to_en_input"), false);
-  assert.deepEqual(quizGesturePolicy({ mode: "ja_to_en_input", answered: true }), {
+test("keyboard input enables four-direction swipe navigation only after answering", () => {
+  assert.equal(isSwipeAdvanceMode("ja_to_en_input"), true);
+  assert.deepEqual(quizGesturePolicy({ mode: "ja_to_en_input", answered: false }), {
     tapEnabled: false,
     dragEnabled: false,
     allowedDirections: [],
+  });
+  assert.deepEqual(quizGesturePolicy({ mode: "ja_to_en_input", answered: true }), {
+    tapEnabled: false,
+    dragEnabled: true,
+    allowedDirections: ["left", "right", "up", "down"],
   });
 });
 
@@ -287,7 +292,7 @@ test("swipe-primary next fallback is hidden on touch devices and phone widths", 
 test("swipe-ready stages render a noninteractive card preview instead of a blank pseudo-card", () => {
   assert.match(appSource, /class="quiz-card-preview quiz-card-preview--\$\{kind\}" aria-hidden="true" inert/);
   assert.match(appSource, /renderCardPreview\("recall"\)/);
-  assert.match(appSource, /renderCardPreview\("choice"\)/);
+  assert.match(appSource, /renderCardPreview\(isChoice \? "choice" : "input"\)/);
   assert.match(stylesSource, /\.quiz-card-preview\s*\{[\s\S]*?pointer-events:\s*none/);
   assert.match(stylesSource, /\.quiz-card-preview-options/);
   assert.match(stylesSource, /\.quiz-card-preview-answer/);
@@ -327,7 +332,7 @@ test("reduced motion keeps the preview stable", () => {
 });
 
 test("answered choice feedback and swipe guide stay inside one question card", () => {
-  assert.match(appSource, /<article class="question-card\$\{isSwipeAdvance \? " swipe-choice-card" : ""\}">[\s\S]*?answered && isSwipeAdvance \? feedbackArea[\s\S]*?renderChoiceSwipeHints\(\)[\s\S]*?<\/article>/);
+  assert.match(appSource, /<article class="question-card\$\{isChoice \? " swipe-choice-card" : isKeyboardInput \? " swipe-input-card" : ""\}">[\s\S]*?answered && isSwipeAdvance \? feedbackArea[\s\S]*?renderChoiceSwipeHints\(\)[\s\S]*?<\/article>/);
   assert.match(appSource, /answered && !isSwipeAdvance \? feedbackArea/);
   assert.match(stylesSource, /\.swipe-choice-card\s*\{[\s\S]*?min-height:\s*var\(--choice-card-height\)/);
   assert.match(stylesSource, /\.swipe-choice-card > \.feedback-card\s*\{[\s\S]*?background:\s*transparent[\s\S]*?border-top:/);
@@ -340,7 +345,7 @@ test("front and preview choice headings share the same responsive size", () => {
 });
 
 test("choice prompt and options keep the answered layout before answering", () => {
-  assert.match(appSource, /quiz-shell\$\{answered \? " quiz-answered" : ""\}\$\{isSwipeAdvance \? " quiz-choice" : ""\}/);
+  assert.match(appSource, /quiz-shell\$\{answered \? " quiz-answered" : ""\}\$\{isChoice \? " quiz-choice" : ""\}/);
   assert.match(stylesSource, /\.quiz-choice \.quiz-progress\s*\{\s*margin-bottom:\s*14px/);
   assert.match(stylesSource, /\.quiz-choice \.swipe-choice-card \.question-instruction\s*\{\s*margin-bottom:\s*14px/);
   assert.match(stylesSource, /\.quiz-choice \.swipe-choice-card h1\s*\{[\s\S]*?margin-bottom:\s*16px/);
@@ -351,12 +356,14 @@ test("choice prompt and options keep the answered layout before answering", () =
   assert.doesNotMatch(stylesSource, /\.quiz-shell:not\(\.quiz-answered\) \.swipe-choice-card/);
 });
 
-test("choice feedback remains compact while keyboard feedback includes answer metadata", () => {
-  const feedback = appSource.match(/function renderFeedback\(question, answer, correct\)[\s\S]*?\n}/)?.[0] ?? "";
+test("choice feedback remains unchanged while keyboard feedback is reduced to answer and range", () => {
+  const feedback = appSource.match(/function renderFeedback\(question, _answer, correct\)[\s\S]*?\n}/)?.[0] ?? "";
   assert.match(feedback, /const isKeyboardInput = question\.mode === "ja_to_en_input"/);
-  assert.match(feedback, /const showSourceBox = isKeyboardInput \|\| state\.settings\.showSources/);
-  assert.match(feedback, /あなたの回答/);
-  assert.match(feedback, /正しい回答/);
+  assert.match(feedback, /keyboard-feedback-card/);
+  assert.match(feedback, />正答</);
+  assert.match(feedback, />範囲</);
+  assert.doesNotMatch(feedback, /あなたの回答|正しい回答/);
+  assert.match(feedback, /const showSourceBox = state\.settings\.showSources/);
   assert.match(feedback, /state\.settings\.showSources && !isChoice && sourceLine/);
   assert.match(feedback, /state\.settings\.showSources && !isChoice && itemEvidenceLine/);
 });

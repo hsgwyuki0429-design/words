@@ -39,7 +39,7 @@ import {
   summarizeHistory,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.2j";
+} from "./logic.js?v=2026.9.2k";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -49,7 +49,7 @@ import {
   scaledVisualPlan,
   shouldPlayMaxSound,
 } from "./max-cues.js?v=2026.2.18";
-import { clearAllData, getMeta, getMetaObject, loadHistory, recordAttempt, setMeta } from "./storage.js?v=2026.9.2j";
+import { clearAllData, getMeta, getMetaObject, loadHistory, recordAttempt, setMeta } from "./storage.js?v=2026.9.2k";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -57,7 +57,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.2j";
+} from "./quiz-gestures.js?v=2026.9.2k";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -2187,7 +2187,7 @@ function renderWordSlots(question, answered, currentAnswer) {
     <div class="word-slots${showCharacterCount ? " show-character-count" : ""}" data-word-slot-count="${plan.slots.length}" aria-label="${plan.slots.length}語の英語入力">
       ${segments}
     </div>
-    <button class="primary-button answer-button" type="button" data-submit-input ${answered ? "disabled" : ""}>回答する</button>`;
+    ${answered ? "" : '<button class="primary-button answer-button" type="button" data-submit-input>回答する</button>'}`;
 }
 
 function updateCharacterCountDisplay() {
@@ -2230,12 +2230,25 @@ function renderTextInput(answered, currentAnswer) {
     <button class="primary-button answer-button" type="button" data-submit-input ${answered ? "disabled" : ""}>回答する</button>`;
 }
 
-function renderFeedback(question, answer, correct) {
+function renderFeedback(question, _answer, correct) {
   if (!state.session.answered) return "";
   const isChoice = question.mode.endsWith("choice");
   const isKeyboardInput = question.mode === "ja_to_en_input";
   const correctAnswer = answersForMode(question.item, question.mode)[0];
-  const showSourceBox = isKeyboardInput || state.settings.showSources;
+  if (isKeyboardInput) {
+    return `
+      <section class="feedback-card keyboard-feedback-card ${correct ? "feedback-correct" : "feedback-wrong"}" aria-live="polite" aria-label="${correct ? "正解" : "不正解"}">
+        <div class="keyboard-feedback-detail">
+          <span>正答</span>
+          <strong>${escapeHtml(correctAnswer)}</strong>
+        </div>
+        <div class="keyboard-feedback-detail keyboard-feedback-range">
+          <span>範囲</span>
+          <strong>${escapeHtml(question.item.range)}</strong>
+        </div>
+      </section>`;
+  }
+  const showSourceBox = state.settings.showSources;
   return `
     <section class="feedback-card ${correct ? "feedback-correct" : "feedback-wrong"}" aria-live="polite">
       <div class="feedback-result">
@@ -2243,10 +2256,7 @@ function renderFeedback(question, answer, correct) {
         <strong>${correct ? "正解" : "不正解"}</strong>
       </div>
       ${state.session.lastReviewDelayMs === WRONG_REVIEW_DELAY_MS ? '<p class="review-scheduled-note">3分後にもう一度出題します</p>' : ""}
-      ${isKeyboardInput ? `<dl class="feedback-answer-summary">
-        <div><dt>あなたの回答</dt><dd>${escapeHtml(answer || "（未入力）")}</dd></div>
-        <div><dt>正しい回答</dt><dd>${escapeHtml(correctAnswer)}</dd></div>
-      </dl>` : !correct && !isChoice ? `<p class="input-correct-answer"><span>正解</span><strong>${escapeHtml(correctAnswer)}</strong></p>` : ""}
+      ${!correct && !isChoice ? `<p class="input-correct-answer"><span>正解</span><strong>${escapeHtml(correctAnswer)}</strong></p>` : ""}
       ${showSourceBox ? `<div class="source-box">
         <span class="importance-badge importance-${question.item.importance.toLowerCase()}">${question.item.importance}</span>
         <div>
@@ -2721,7 +2731,7 @@ function renderQuiz() {
     : "";
 
   elements.quizContent.innerHTML = `
-    <div class="quiz-shell${answered ? " quiz-answered" : ""}${isSwipeAdvance ? " quiz-choice" : ""}${isKeyboardInput ? " quiz-keyboard-input" : ""}">
+    <div class="quiz-shell${answered ? " quiz-answered" : ""}${isChoice ? " quiz-choice" : ""}${isKeyboardInput ? " quiz-keyboard-input" : ""}">
       <header class="quiz-header${isKeyboardInput ? " quiz-header--input" : ""}">
         <button class="icon-button" type="button" data-quit-quiz aria-label="学習を終了">×</button>
         <div class="quiz-progress-copy"><strong>${session.cursor + 1}</strong> / ${session.queue.length}</div>
@@ -2733,14 +2743,14 @@ function renderQuiz() {
       ${isMaxMode() && state.combo ? renderComboPill(comboChanged) : ""}
       <div class="quiz-progress"><span style="width:${progress}%"></span></div>
       <div class="quiz-card-stage${answered && isSwipeAdvance ? " is-swipe-ready" : ""}">
-        ${answered && isSwipeAdvance ? renderCardPreview("choice") : ""}
+        ${answered && isSwipeAdvance ? renderCardPreview(isChoice ? "choice" : "input") : ""}
         <div
           class="quiz-gesture-card quiz-question-stack"
           ${isSwipeAdvance ? "data-quiz-gesture-surface" : ""}
           data-gesture-state="${answered && isSwipeAdvance ? "choice-answer" : "choice-question"}"
           ${answered && isSwipeAdvance ? 'tabindex="0" aria-label="回答済みカード。上下左右どの方向へ払っても次へ進みます"' : ""}
         >
-          <article class="question-card${isSwipeAdvance ? " swipe-choice-card" : ""}">
+          <article class="question-card${isChoice ? " swipe-choice-card" : isKeyboardInput ? " swipe-input-card" : ""}">
             <p class="question-instruction">${escapeHtml(question.instruction)}</p>
             <h1>${escapeHtml(question.prompt)}</h1>
             ${translation}
@@ -3512,7 +3522,7 @@ async function boot() {
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.2j").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.2k").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

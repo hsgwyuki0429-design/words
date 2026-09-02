@@ -1033,3 +1033,198 @@ export function summarizeByMode(items, history) {
     };
   }).filter((stat) => stat.supportedItems > 0);
 }
+
+// ---------------------------------------------------------------------------
+// 学習ダッシュボード（範囲 → 形式別進捗 → そのまま学習）
+// ---------------------------------------------------------------------------
+
+// 新しいダッシュボードで扱う英語の学習形式。旧 spelling_input は含めない。
+export const ENGLISH_STUDY_MODES = [
+  "en_to_ja_choice",
+  "en_to_ja_flashcard",
+  "ja_to_en_choice",
+  "ja_to_en_flashcard",
+  "ja_to_en_input",
+];
+
+export const STUDY_DIRECTION_LABELS = {
+  en_to_ja: "英語 → 日本語",
+  ja_to_en: "日本語 → 英語",
+};
+
+export const DASHBOARD_MODE_META = {
+  en_to_ja_choice: { title: "4択", detail: "英語を見て、意味を4つから選ぶ" },
+  en_to_ja_flashcard: { title: "フラッシュカード", detail: "英語を見て、意味を思い出す" },
+  ja_to_en_choice: { title: "4択", detail: "日本語を見て、英語を4つから選ぶ" },
+  ja_to_en_flashcard: { title: "フラッシュカード", detail: "日本語を見て、英語を思い出す" },
+  ja_to_en_input: { title: "キーボード入力", detail: "日本語を見て、英語を入力する" },
+};
+
+const ENGLISH_DASHBOARD_GROUPS = [
+  ["en_to_ja", ["en_to_ja_choice", "en_to_ja_flashcard"]],
+  ["ja_to_en", ["ja_to_en_choice", "ja_to_en_flashcard", "ja_to_en_input"]],
+];
+
+const RECALL_CONTENT_META = {
+  term: { title: "語句回答", detail: "用語・人物・制度名などを答える" },
+  short: { title: "短文回答", detail: "定義・理由・しくみなどを答える" },
+  all: { title: "どっちとも", detail: "語句回答と短文回答をまとめて学習" },
+};
+
+// 習得判定レイヤー。判定条件（2回連続正解 / 直近正解 / 直近3回の正答率など）は
+// まだ確定していないため、ここでは「未確定」を返し、UI もゲージ枠だけを用意する。
+// 条件が決まったら isMasteredForMode() と MASTERY_RULE だけを差し替えればよい。
+export const MASTERY_RULE = {
+  id: "undecided",
+  decided: false,
+  label: "習得の判定基準は未確定",
+};
+
+export function isMasteredForMode(record, mode) {
+  if (!MASTERY_RULE.decided) return null;
+  return (record?.modeStats?.[mode]?.attempts ?? 0) > 0;
+}
+
+export function hasAnsweredMode(record, mode) {
+  return (record?.modeStats?.[mode]?.attempts ?? 0) > 0;
+}
+
+export function itemsForModeProgress(items = [], { ranges = [], types = [], mode } = {}) {
+  const rangeSet = new Set((ranges ?? []).filter(Boolean));
+  const typeSet = new Set((types ?? []).filter(Boolean));
+  return items.filter((item) =>
+    (!rangeSet.size || rangeSet.has(item.range)) &&
+    (!typeSet.size || typeSet.has(item.type)) &&
+    itemSupportsMode(item, mode));
+}
+
+export function answeredCountForMode(items, history, mode, options = {}) {
+  return itemsForModeProgress(items, { ...options, mode })
+    .filter((item) => hasAnsweredMode(getHistory(history, item.id), mode)).length;
+}
+
+export function summarizeRangeModeProgress({
+  items = [],
+  history,
+  ranges = [],
+  types = [],
+  mode,
+} = {}) {
+  const scoped = itemsForModeProgress(items, { ranges, types, mode });
+  const rangeList = [...new Set((ranges ?? []).filter(Boolean))];
+  let answeredItems = 0;
+  let masteredItems = 0;
+  let masteryDecided = true;
+  scoped.forEach((item) => {
+    const record = getHistory(history, item.id);
+    if (hasAnsweredMode(record, mode)) answeredItems += 1;
+    const mastered = isMasteredForMode(record, mode);
+    if (mastered === null) masteryDecided = false;
+    else if (mastered) masteredItems += 1;
+  });
+  const totalItems = scoped.length;
+  return {
+    range: rangeList.length === 1 ? rangeList[0] : null,
+    ranges: rangeList,
+    mode,
+    label: MODE_LABELS[mode] ?? mode,
+    totalItems,
+    answeredItems,
+    answeredRate: totalItems ? answeredItems / totalItems : 0,
+    masteredItems: masteryDecided ? masteredItems : null,
+    masteredRate: masteryDecided ? (totalItems ? masteredItems / totalItems : 0) : null,
+    masteryDecided,
+  };
+}
+
+export function progressForRangeAndMode(items, history, range, mode, options = {}) {
+  return summarizeRangeModeProgress({
+    ...options,
+    items,
+    history,
+    ranges: range ? [range] : [],
+    mode,
+  });
+}
+
+export function summarizeRangeModes({
+  items = [],
+  history,
+  ranges = [],
+  types = [],
+  modes = ENGLISH_STUDY_MODES,
+} = {}) {
+  return modes.map((mode) => summarizeRangeModeProgress({ items, history, ranges, types, mode }));
+}
+
+export function studyTargetsForDashboard({ subject = "english", contents = [] } = {}) {
+  if (subject === "public" || subject === "health") {
+    const available = ["term", "short"].filter((content) => contents.includes(content));
+    const list = available.length > 1 ? [...available, "all"] : available;
+    return [{
+      key: subject,
+      direction: null,
+      label: "一問一答",
+      cards: list.map((content) => ({
+        key: `${subject}:${content}`,
+        mode: `${subject}_recall`,
+        title: RECALL_CONTENT_META[content].title,
+        detail: RECALL_CONTENT_META[content].detail,
+        types: content === "all"
+          ? [`${subject}-term`, `${subject}-short`]
+          : [`${subject}-${content}`],
+        selection: normalizeStudySelection({ subject, content, method: "recall" }),
+      })),
+    }];
+  }
+  return ENGLISH_DASHBOARD_GROUPS.map(([direction, modes]) => ({
+    key: direction,
+    direction,
+    label: STUDY_DIRECTION_LABELS[direction],
+    cards: modes.map((mode) => ({
+      key: mode,
+      mode,
+      title: DASHBOARD_MODE_META[mode].title,
+      detail: DASHBOARD_MODE_META[mode].detail,
+      types: [...ENGLISH_CONTENT_TYPES],
+      selection: normalizeStudySelection({
+        subject: "english",
+        contents: [...ENGLISH_CONTENT_TYPES],
+        direction,
+        method: mode,
+      }),
+    })),
+  }));
+}
+
+export function dashboardStudyCards(options = {}) {
+  return studyTargetsForDashboard(options).flatMap((group) => group.cards);
+}
+
+// 形式カードを押した時点で「範囲」と「形式」を確定させた学習設定を作る。
+// この後のフローで範囲・出題方向・形式を再度たずねてはいけない。
+export function studyConfigForTarget({
+  target,
+  ranges = [],
+  filters = {},
+  sortKey = "importance-desc",
+} = {}) {
+  const selection = normalizeStudySelection(target?.selection ?? {});
+  const stringList = (values) => [...new Set(Array.isArray(values) ? values.filter(Boolean).map(String) : [])];
+  return {
+    subject: selection.subject,
+    selection,
+    filters: {
+      ranges: stringList(ranges),
+      importance: stringList(filters.importance),
+      types: stringList(filters.types),
+      tags: stringList(filters.tags),
+      performance: typeof filters.performance === "string" ? filters.performance : "all",
+      minimumWrong: Math.max(0, Number(filters.minimumWrong) || 0),
+      search: "",
+    },
+    sortKey: typeof sortKey === "string" ? sortKey : "importance-desc",
+    count: "all",
+    itemIds: null,
+  };
+}

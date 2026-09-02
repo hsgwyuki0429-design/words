@@ -319,9 +319,14 @@ test("ダッシュボードが入口であり、学習終了後の戻り先で�
   assert.match(appSource, /if \(view === "range-detail"\) renderRangeDetail\(\)/);
   assert.match(functionSource("selectSubject", "selectionIsComplete"), /setView\("dashboard"\)/);
   // 44px 以上のタップ領域を保つ
-  assert.match(stylesSource, /\.range-choice \{[\s\S]*?min-height: 56px/);
-  assert.match(stylesSource, /\.mode-progress-card \{[\s\S]*?min-height: 44px/);
-  assert.match(stylesSource, /\.content-choice \{[\s\S]*?min-height: 64px/);
+  assert.match(stylesSource, /\.range-choice \{[^}]*min-height: 56px/);
+  assert.match(stylesSource, /\.mode-progress-card \{[^}]*min-height: 44px/);
+  assert.match(stylesSource, /\.content-choice \{[^}]*min-height: 56px/);
+  // 画面が低い端末向けに詰めるときも 44px は下回らない
+  const shortScreen = stylesSource.slice(stylesSource.indexOf("@media (max-height: 720px)"));
+  [...shortScreen.matchAll(/min-height: (\d+)px/g)].forEach((match) => {
+    assert.ok(Number(match[1]) >= 44, `低い画面でも 44px 以上（${match[1]}px）`);
+  });
 });
 
 test("範囲一覧と形式カードは1画面に収まる高さで組む", () => {
@@ -332,8 +337,24 @@ test("範囲一覧と形式カードは1画面に収まる高さで組む", () =
   // 形式カードは説明文と「この形式で学習する」を畳んで高さを抑える
   const cardSource = functionSource("modeProgressCard", "renderRangeDetail");
   assert.doesNotMatch(cardSource, /mode-progress-start|card\.detail/);
-  assert.match(stylesSource, /\.mode-progress-gauge \{[\s\S]*?height: 10px/);
-  assert.match(stylesSource, /\.mode-group \{[\s\S]*?margin-bottom: 12px/);
+  assert.match(stylesSource, /\.mode-progress-gauge \{[^}]*height: 10px/);
+  assert.match(stylesSource, /\.mode-group \{[^}]*margin-bottom: 10px/);
+});
+
+test("選択画面の見出しは戻るボタンとタイトルを1行にまとめる", () => {
+  // safe-area のある実機でも縦を使い切らないよう、見出しは1行
+  const headings = [...indexSource.matchAll(/class="[^"]*compact-step-heading"/g)];
+  assert.equal(headings.length, 4, "範囲詳細・学習内容・重要度・並び替えの4画面");
+  assert.equal((indexSource.match(/class="step-heading-row"/g) ?? []).length, 4);
+  assert.match(stylesSource, /\.step-heading-row \{[\s\S]*?display: flex/);
+  // 1タップで進む4画面では、縦積みの戻るリンクを残さない
+  [...indexSource.matchAll(/compact-step-heading">([\s\S]*?)<\/div>\s*\n\s*<\/div>/g)].forEach((match) => {
+    assert.doesNotMatch(match[1], /class="text-button back-link"/);
+    assert.match(match[1], /class="icon-button step-back"/);
+  });
+  assert.match(functionSource("renderRangeDetail", "startStudyFromTarget"), /rangeDetailCopy\.textContent = ranges\.length > 1 \? `\$\{ranges\.length\}範囲` : ""/);
+  // 低い画面向けの調整を用意する
+  assert.match(stylesSource, /@media \(max-height: 720px\)/);
 });
 
 test("範囲一覧の先頭に、2個分の幅を持つ全範囲ボタンを置く", () => {

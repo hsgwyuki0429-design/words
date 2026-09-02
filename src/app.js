@@ -59,7 +59,7 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.4b";
+} from "./logic.js?v=2026.9.4c";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -78,7 +78,7 @@ import {
   recordAttempt,
   removeHistory,
   setMeta,
-} from "./storage.js?v=2026.9.4b";
+} from "./storage.js?v=2026.9.4c";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -86,7 +86,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.4b";
+} from "./quiz-gestures.js?v=2026.9.4c";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -535,15 +535,13 @@ function recallContentMeta() {
 function renderStudyContent() {
   const fromDashboard = state.studyFlowMode === "dashboard";
   elements.studyContentBack.dataset.viewTarget = fromDashboard ? "range-detail" : "study-range-select";
-  elements.studyContentBack.textContent = fromDashboard ? "← 形式を選び直す" : "← 範囲を選び直す";
+  elements.studyContentBack.setAttribute("aria-label", fromDashboard ? "形式を選び直す" : "範囲を選び直す");
   elements.studyContentHeading.textContent = isRecallSubject()
     ? "どの問題を学習しますか？"
     : "何を学習しますか？";
   if (isRecallSubject()) {
     const recallContents = recallContentMeta();
-    elements.studyContentCopy.textContent = Object.keys(recallContents).length > 1
-      ? "語句回答、短文回答、または両方から選んでください。"
-      : "この教科に収録されている問題から選んでください。";
+    elements.studyContentCopy.textContent = "";
     elements.studyContentOptions.className = "content-choice-list";
     elements.studyContentOptions.innerHTML = Object.entries(recallContents)
       .map(([content, meta]) => contentChoiceRow({
@@ -555,7 +553,7 @@ function renderStudyContent() {
     return;
   }
 
-  elements.studyContentCopy.textContent = "押すとそのまま次へ進みます。";
+  elements.studyContentCopy.textContent = "";
   const baseItems = applyFilters(state.items, state.history, {
     ...state.filters,
     performance: "all",
@@ -697,7 +695,7 @@ function renderStudyImportance() {
   const rows = [
     contentChoiceRow({
       title: "全重要度",
-      detail: `${available[0]}から${available.at(-1)}まで ${countFor(null)}${unit}`,
+      detail: `${countFor(null)}${unit}すべて`,
       attribute: 'data-study-importance-choice="all"',
     }),
     ...available.map((importance) => {
@@ -895,9 +893,7 @@ function renderRangeDetail() {
   }
   const unit = isRecallSubject() ? "問" : "語句";
   elements.rangeDetailTitle.textContent = rangeDetailLabel(ranges);
-  elements.rangeDetailCopy.textContent = ranges.length > 1
-    ? `${ranges.join("・")}をまとめて学習します。`
-    : "やりたい形式をタップすると、そのまま学習が始まります。";
+  elements.rangeDetailCopy.textContent = ranges.length > 1 ? `${ranges.length}範囲` : "";
   elements.rangeDetailGroups.innerHTML = dashboardTargetGroups().map((group) => `
     <section class="mode-group" aria-label="${escapeHtml(group.label)}">
       <h2 class="mode-group-title">${escapeHtml(group.label)}</h2>
@@ -4087,7 +4083,7 @@ async function boot() {
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.4b").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.4c").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

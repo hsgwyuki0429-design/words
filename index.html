@@ -15,7 +15,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icons/app-icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icons/app-icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=2026.9.4b" />
+    <link rel="stylesheet" href="./styles.css?v=2026.9.4c" />
   </head>
   <body>
     <div class="fx-backdrop" id="fx-backdrop" aria-hidden="true">
@@ -102,9 +102,11 @@
 
         <section class="view range-detail-view compact-step-view" id="view-range-detail" data-view="range-detail" hidden>
           <div class="page-heading range-detail-heading compact-step-heading">
-            <button class="text-button back-link" type="button" data-view-target="dashboard">← 範囲を選び直す</button>
-            <h1 id="range-detail-title">範囲</h1>
-            <p id="range-detail-copy">やりたい形式をタップすると、そのまま学習が始まります。</p>
+            <div class="step-heading-row">
+              <button class="icon-button step-back" type="button" data-view-target="dashboard" aria-label="範囲を選び直す">←</button>
+              <h1 id="range-detail-title">範囲</h1>
+              <span class="step-heading-note" id="range-detail-copy"></span>
+            </div>
           </div>
           <div id="range-detail-groups"></div>
         </section>
@@ -125,9 +127,11 @@
 
         <section class="view compact-step-view" id="view-study-content" data-view="study-content" hidden>
           <div class="page-heading selection-page-heading compact-step-heading">
-            <button class="text-button back-link" type="button" id="study-content-back" data-view-target="range-detail">← 形式を選び直す</button>
-            <h1 id="study-content-heading">何を学習しますか？</h1>
-            <p id="study-content-copy">押すとそのまま次へ進みます。</p>
+            <div class="step-heading-row">
+              <button class="icon-button step-back" type="button" id="study-content-back" data-view-target="range-detail" aria-label="形式を選び直す">←</button>
+              <h1 id="study-content-heading">何を学習しますか？</h1>
+              <span class="step-heading-note" id="study-content-copy"></span>
+            </div>
           </div>
           <div class="content-choice-list" id="study-content-options"></div>
         </section>
@@ -167,10 +171,11 @@
         </section>
 
         <section class="view compact-step-view" id="view-study-importance" data-view="study-importance" hidden>
-          <div class="page-heading selection-page-heading compact-step-heading">
-            <button class="text-button back-link" type="button" data-back-before-importance>← 前へ戻る</button>
-            <h1>重要度を選ぶ</h1>
-            <p>押すとそのまま次へ進みます。</p>
+          <div class="page-heading compact-step-heading">
+            <div class="step-heading-row">
+              <button class="icon-button step-back" type="button" data-back-before-importance aria-label="前へ戻る">←</button>
+              <h1>重要度を選ぶ</h1>
+            </div>
           </div>
           <div class="content-choice-list" id="study-importance-options-single"></div>
         </section>
@@ -189,10 +194,11 @@
         </section>
 
         <section class="view compact-step-view" id="view-study-sort-kind" data-view="study-sort-kind" hidden>
-          <div class="page-heading selection-page-heading compact-step-heading">
-            <button class="text-button back-link" type="button" data-back-before-sort>← 前へ戻る</button>
-            <h1>並び替えを選ぶ</h1>
-            <p>押すとそのまま学習が始まります。</p>
+          <div class="page-heading compact-step-heading">
+            <div class="step-heading-row">
+              <button class="icon-button step-back" type="button" data-back-before-sort aria-label="前へ戻る">←</button>
+              <h1>並び替えを選ぶ</h1>
+            </div>
           </div>
           <div class="content-choice-list" id="study-sort-kind-options"></div>
         </section>
@@ -390,6 +396,6 @@
     </aside>
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-    <script type="module" src="./src/app.js?v=2026.9.4b"></script>
+    <script type="module" src="./src/app.js?v=2026.9.4c"></script>
   </body>
 </html>

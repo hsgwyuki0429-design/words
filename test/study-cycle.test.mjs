@@ -307,8 +307,8 @@ test("学習内容の画面は5行に収まり、複数選択は「その他」�
     /sticky-action/,
   );
   assert.match(appSource, /data-study-content-other"\)\) \{[\s\S]*?setView\("study-content-multi"\)/);
-  assert.match(stylesSource, /\.content-choice \{[\s\S]*?min-height: 64px/);
-  assert.match(stylesSource, /\.content-choice--secondary \{[\s\S]*?min-height: 56px/);
+  assert.match(stylesSource, /\.content-choice \{[^}]*min-height: 56px/);
+  assert.match(stylesSource, /\.content-choice--secondary \{[^}]*min-height: 50px/);
   // 単語・熟語・構文の表記
   assert.match(appSource, /title: "構文"/);
   assert.match(logicSource, /structure: "構文"/);

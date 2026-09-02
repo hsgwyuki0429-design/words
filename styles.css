@@ -4016,6 +4016,20 @@ body.quiz-active .main-content { padding-bottom: 0; }
   border-color: var(--blue);
 }
 
+/* 「全範囲」だけは他のボタン2個分の横幅で先頭に置く（高さは同じ） */
+.range-choice--all {
+  grid-column: 1 / -1;
+}
+
+.range-choice-detail {
+  margin-left: auto;
+  padding-right: 4px;
+  color: var(--secondary);
+  font-size: 12px;
+  font-weight: 660;
+  white-space: nowrap;
+}
+
 .range-choice-name {
   min-width: 0;
   overflow-wrap: anywhere;

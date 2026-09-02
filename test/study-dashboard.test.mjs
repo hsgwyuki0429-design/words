@@ -335,3 +335,23 @@ test("範囲一覧と形式カードは1画面に収まる高さで組む", () =
   assert.match(stylesSource, /\.mode-progress-gauge \{[\s\S]*?height: 10px/);
   assert.match(stylesSource, /\.mode-group \{[\s\S]*?margin-bottom: 12px/);
 });
+
+test("範囲一覧の先頭に、2個分の幅を持つ全範囲ボタンを置く", () => {
+  const dashboardSource = functionSource("renderDashboard", "cardStudyProgress");
+  // 先頭にあること
+  const allIndex = dashboardSource.indexOf("data-dashboard-all-ranges");
+  const eachIndex = dashboardSource.indexOf("data-dashboard-range=");
+  assert.ok(allIndex > 0 && allIndex < eachIndex, "全範囲ボタンが個別の範囲より前にある");
+  assert.match(dashboardSource, /range-choice range-choice--all/);
+  assert.match(dashboardSource, /range-choice-name">全範囲/);
+  // 高さは他と同じまま、横幅だけ2カラム分にする
+  assert.match(stylesSource, /\.range-choice--all \{\s*\n\s*grid-column: 1 \/ -1;\s*\n\}/);
+  assert.doesNotMatch(stylesSource, /\.range-choice--all \{[^}]*min-height/);
+  // 押すと全範囲を選んで範囲詳細へ進む
+  assert.match(
+    appSource,
+    /data-dashboard-all-ranges"\)\) \{\s*\n\s*state\.filters\.ranges = dashboardRanges\(\);[\s\S]*?setView\("range-detail"\)/,
+  );
+  // 範囲一覧には割合や成績を出さない方針は保つ
+  assert.doesNotMatch(dashboardSource, /正答率|習得率|回答率|%/);
+});

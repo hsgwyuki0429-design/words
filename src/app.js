@@ -59,7 +59,7 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.4a";
+} from "./logic.js?v=2026.9.4b";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -78,7 +78,7 @@ import {
   recordAttempt,
   removeHistory,
   setMeta,
-} from "./storage.js?v=2026.9.4a";
+} from "./storage.js?v=2026.9.4b";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -86,7 +86,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.4a";
+} from "./quiz-gestures.js?v=2026.9.4b";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -811,11 +811,20 @@ function renderDashboard() {
     : isRecallSubject()
       ? "範囲を選ぶと、一問一答の現在地が見られます。"
       : "範囲を選ぶと、5つの学習形式それぞれの現在地が見られます。";
-  elements.dashboardRangeList.innerHTML = dashboardRanges().map((range) => `
+  const ranges = dashboardRanges();
+  const unit = isRecallSubject() ? "問" : "語句";
+  elements.dashboardRangeList.innerHTML = [
+    `<button class="range-choice range-choice--all" type="button" data-dashboard-all-ranges>
+      <span class="range-choice-name">全範囲</span>
+      <span class="range-choice-detail">${ranges.length}範囲 ${state.items.length}${unit}</span>
+      <span class="card-arrow" aria-hidden="true">›</span>
+    </button>`,
+    ...ranges.map((range) => `
     <button class="range-choice" type="button" data-dashboard-range="${escapeHtml(range)}">
       <span class="range-choice-name">${escapeHtml(range)}</span>
       <span class="card-arrow" aria-hidden="true">›</span>
-    </button>`).join("");
+    </button>`),
+  ].join("");
   renderRecentStudies();
   renderHeader();
 }
@@ -3738,6 +3747,12 @@ function bindEvents() {
       state.studyFlowMode = "step";
       setView("study-range-select");
     }
+    if (target.hasAttribute("data-dashboard-all-ranges")) {
+      state.filters.ranges = dashboardRanges();
+      state.rangeSelectionMode = "all";
+      state.rangeFlow = "dashboard";
+      setView("range-detail");
+    }
     if (target.dataset.dashboardRange) {
       state.filters.ranges = [target.dataset.dashboardRange];
       state.rangeSelectionMode = "custom";
@@ -4072,7 +4087,7 @@ async function boot() {
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.4a").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.4b").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

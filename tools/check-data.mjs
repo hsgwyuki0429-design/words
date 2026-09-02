@@ -1,7 +1,14 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 
-import { ALL_MODES, HEALTH_RANGE_ORDER, PUBLIC_RANGE_ORDER, RANGE_ORDER, slotTokensForQuestion } from "../src/logic.js";
+import {
+  ALL_MODES,
+  HEALTH_RANGE_ORDER,
+  PUBLIC_RANGE_ORDER,
+  RANGE_ORDER,
+  acceptedInputAnswers,
+  slotTokensForQuestion,
+} from "../src/logic.js";
 
 const items = JSON.parse(fs.readFileSync(new URL("../data/items.json", import.meta.url), "utf8"));
 const publicItems = JSON.parse(fs.readFileSync(new URL("../data/public-items.json", import.meta.url), "utf8"));
@@ -79,6 +86,14 @@ for (const item of items) {
     item.questionModes.every((mode) => ALL_MODES.includes(mode)),
     `${item.id}: unknown question mode`,
   );
+  assert.ok(
+    item.questionModes.includes("ja_to_en_input"),
+    `${item.id}: keyboard input must support every English content type`,
+  );
+  assert.ok(
+    acceptedInputAnswers(item.acceptedAnswers).length >= 1,
+    `${item.id}: accepted answers must produce at least one keyboard-input answer`,
+  );
   if (item.questionModes.includes("preposition_input")) {
     assert.ok(item.blanks?.preposition?.prompt.includes("___"), `${item.id}: bad preposition blank`);
     assert.ok(item.blanks.preposition.answer, `${item.id}: missing preposition answer`);
@@ -87,9 +102,7 @@ for (const item of items) {
     assert.ok(item.blanks?.phrase?.prompt.includes("___"), `${item.id}: bad phrase blank`);
     assert.ok(item.blanks.phrase.answer, `${item.id}: missing phrase answer`);
   }
-  if (["ja_to_en_input", "spelling_input"].some((mode) => item.questionModes.includes(mode))) {
-    assert.ok(slotTokensForQuestion(item, "ja_to_en_input").length >= 1, `${item.id}: no word slots`);
-  }
+  assert.ok(slotTokensForQuestion(item, "ja_to_en_input").length >= 1, `${item.id}: no word slots`);
   if (item.type === "word") {
     assert.equal(item.english, item.lemma, `${item.id}: words must use the lemma as English`);
     assert.ok(item.surfaceForms.length >= 1, `${item.id}: source surface forms are required`);

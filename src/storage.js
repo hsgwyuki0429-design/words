@@ -110,6 +110,12 @@ export async function getMeta(key, fallback = null) {
   return record?.value ?? fallback;
 }
 
+export async function getMetaObject(key, defaults = {}) {
+  const value = await getMeta(key, null);
+  const stored = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  return { ...defaults, ...stored };
+}
+
 export async function setMeta(key, value) {
   await openDatabase();
   if (useFallback) {

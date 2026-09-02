@@ -19,13 +19,14 @@ import {
   buildQuestion,
   buildSession,
   buildStudySession,
+  characterHintForToken,
+  distributeInputText,
   getHistory,
-  generateLetterChoices,
   historyForModes,
+  inputPlanForQuestion,
   isAnswerCorrect,
   normalizeAnswer,
   reviewDelayForAnswer,
-  slotTokensForQuestion,
   sortItems,
   normalizeStudySelection,
   normalizeRecentStudies,
@@ -33,12 +34,12 @@ import {
   releaseDeferredReviews,
   studyModeForItem,
   studyPerformanceModes,
-  spellingLetters,
   summarizeByMode,
   summarizeByRange,
   summarizeHistory,
+  summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.1";
+} from "./logic.js?v=2026.9.2j";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -48,7 +49,7 @@ import {
   scaledVisualPlan,
   shouldPlayMaxSound,
 } from "./max-cues.js?v=2026.2.18";
-import { clearAllData, getMeta, loadHistory, recordAttempt, setMeta } from "./storage.js";
+import { clearAllData, getMeta, getMetaObject, loadHistory, recordAttempt, setMeta } from "./storage.js?v=2026.9.2j";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -56,7 +57,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.1b";
+} from "./quiz-gestures.js?v=2026.9.2j";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -66,6 +67,7 @@ const DEFAULT_SETTINGS = {
   particles: true,
   shake: true,
   showSources: true,
+  showCharacterCount: false,
 };
 
 const state = {
@@ -222,10 +224,9 @@ const SUBJECT_LABELS = {
 const MODE_META = {
   en_to_ja_choice: { icon: "英→日", tags: ["4択", "意味"] },
   ja_to_en_choice: { icon: "日→英", tags: ["4択", "英語"] },
-  ja_to_en_spelling: { icon: "Aa", tags: ["1文字ずつ4択", "スペル"] },
   en_to_ja_flashcard: { icon: "英→日", tags: ["自己採点", "フラッシュカード"] },
   ja_to_en_flashcard: { icon: "日→英", tags: ["自己採点", "フラッシュカード"] },
-  ja_to_en_input: { icon: "日→英", tags: ["完全入力", "語句"] },
+  ja_to_en_input: { icon: "⌨", tags: ["キーボード入力", "英語"] },
   spelling_input: { icon: "Aa", tags: ["完全入力", "スペル"] },
   preposition_input: { icon: "_", tags: ["穴埋め", "前置詞"] },
   phrase_blank_input: { icon: "…", tags: ["穴埋め", "熟語・語法"] },
@@ -236,7 +237,7 @@ const MODE_META = {
 const ACTIVE_ENGLISH_STUDY_MODES = [
   "en_to_ja_choice",
   "ja_to_en_choice",
-  "ja_to_en_spelling",
+  "ja_to_en_input",
   "en_to_ja_flashcard",
   "ja_to_en_flashcard",
 ];
@@ -256,7 +257,7 @@ const STUDY_DIRECTION_META = {
 const STUDY_FORMAT_META = {
   choice: { icon: "4", title: "4択問題", detail: "4つの候補から正しい答えを選ぶ", tags: ["選択式"] },
   flashcard: { icon: "▣", title: "フラッシュカード", detail: "タップで表裏、スワイプで自己採点", tags: ["自己採点"] },
-  spelling: { icon: "Aa", title: "スペル1文字ずつ4択", detail: "アルファベットを1文字ずつ選んで単語を完成させる", tags: ["スペル", "選択式"] },
+  input: { icon: "⌨", title: "キーボード入力", detail: "日本語を見て、英語をキーボードで入力する", tags: ["単語", "熟語・語法"] },
 };
 
 const TAG_LABELS = {
@@ -410,19 +411,6 @@ function studyContentLabel(selection = state.studySelection) {
   return normalized.contents.map((content) => STUDY_CONTENT_LABELS[content]).join("＋") || "教材";
 }
 
-function studySelectionLabel(selection = state.studySelection) {
-  const normalized = normalizeStudySelection(selection);
-  if (!selectionIsComplete(normalized)) return "—";
-  if (normalized.subject !== "english") {
-    return `${studyContentLabel(normalized)} / タップで表裏・スワイプで自己採点`;
-  }
-  const parts = [
-    studyContentLabel(normalized),
-    STUDY_METHOD_LABELS[normalized.method],
-  ];
-  return parts.join(" / ");
-}
-
 function recentStudyRangeLabel(config) {
   const ranges = config.filters?.ranges ?? [];
   const allRanges = config.subject === "public"
@@ -573,9 +561,8 @@ function renderStudyMethod() {
 
 function renderStudyScope() {
   const formats = Object.entries(STUDY_FORMAT_META).filter(([format]) => {
-    if (format !== "spelling") return true;
-    return state.studySelection.direction === "ja_to_en"
-      && state.studySelection.contents?.includes("word");
+    if (format !== "input") return true;
+    return state.studySelection.direction === "ja_to_en";
   });
   elements.studyScopeOptions.innerHTML = formats
     .map(([format, meta]) => selectionCard({
@@ -647,6 +634,8 @@ function renderStudyPerformance() {
   const answered = base.length - unanswered;
   const formatLabel = isRecallSubject()
     ? "一問一答"
+    : state.studySelection.method === "ja_to_en_input"
+      ? "キーボード入力"
     : state.studySelection.method?.endsWith("_flashcard")
       ? "フラッシュカード"
       : "4択";
@@ -1061,7 +1050,7 @@ function impactOrigin() {
   const context = ensureFxCanvas();
   if (!context) return fxOrigin();
   const target = elements.quizContent?.querySelector(
-    ".choice-button.correct, .spelling-letter-button.correct, .feedback-result, .question-card, .result-score",
+    ".choice-button.correct, .word-slot.is-correct, .feedback-result, .question-card, .result-complete-mark",
   );
   const bounds = target?.getBoundingClientRect();
   if (!bounds?.width) return fxOrigin();
@@ -1447,7 +1436,7 @@ function applyCueCallout(plan, visual, label, detail) {
 function applyCueImpact(plan, visual) {
   const origin = impactOrigin();
   if (plan.event === "wrong") {
-    const wrongTarget = elements.quizContent?.querySelector(".choice-button.wrong, .spelling-letter-button.wrong, .feedback-wrong");
+    const wrongTarget = elements.quizContent?.querySelector(".choice-button.wrong, .word-slot.is-wrong, .feedback-wrong");
     fxAnimate(wrongTarget, [
       { transform: "translate3d(0,0,0) scale(1)", filter: "saturate(1)" },
       { transform: "translate3d(0,2px,0) scale(.985)", filter: "saturate(.62)", offset: 0.35 },
@@ -1798,7 +1787,7 @@ function renderHome() {
       : "英コミを、思い出せるまで。";
   elements.homeCopy.textContent = isRecallSubject()
     ? "タップで表裏を切り替え、スワイプで自己採点します。"
-    : "英語と日本語を行き来しながら、4択とフラッシュカードで確かめます。";
+    : "4択、キーボード入力、フラッシュカードで英語を確かめます。";
 
   renderRecentStudies();
   renderHeader();
@@ -1967,6 +1956,54 @@ function resetFilters() {
   renderFilterForm();
 }
 
+function cloneSessionConfig(config) {
+  if (!config) return null;
+  return {
+    ...config,
+    filters: config.filters ? {
+      ...config.filters,
+      ranges: [...(config.filters.ranges ?? [])],
+      importance: [...(config.filters.importance ?? [])],
+      types: [...(config.filters.types ?? [])],
+      tags: [...(config.filters.tags ?? [])],
+    } : null,
+    selection: config.selection ? normalizeStudySelection(config.selection) : null,
+    itemIds: config.itemIds ? [...config.itemIds] : null,
+  };
+}
+
+function beginSession(queue, { selection = null, config = null } = {}) {
+  if (state.session?.reviewTimer) clearTimeout(state.session.reviewTimer);
+  const copyQueue = () => queue.map((entry) => ({ ...entry }));
+  state.selectedMode = queue[0].mode;
+  setMeta("selectedMode", state.selectedMode).catch(console.warn);
+  state.session = {
+    queue: copyQueue(),
+    initialQueue: copyQueue(),
+    cursor: 0,
+    results: [],
+    deferredReviews: [],
+    reviewTimer: null,
+    currentQuestion: null,
+    currentAnswer: "",
+    currentCorrect: null,
+    answered: false,
+    revealed: false,
+    isTransitioning: false,
+    cardEnterFrom: null,
+    cardEnterPromise: null,
+    questionStartedAt: 0,
+    startedAt: Date.now(),
+    complete: false,
+    selection,
+    config: cloneSessionConfig(config),
+    showAllReviewItems: false,
+  };
+  state.combo = 0;
+  setView("quiz");
+  prepareQuestion();
+}
+
 function startSession(overrides = {}) {
   const mode = overrides.mode ?? overrides.modes?.[0] ?? state.selectedMode;
   const selection = normalizeStudySelection(overrides.selection ?? state.studySelection);
@@ -2018,29 +2055,10 @@ function startSession(overrides = {}) {
     setMeta("recentStudies", state.recentStudies).catch(console.warn);
   }
   if (usesSelection) state.studySelection = selection;
-  state.selectedMode = queue[0].mode;
-  setMeta("selectedMode", state.selectedMode).catch(console.warn);
-  state.session = {
-    queue,
-    cursor: 0,
-    results: [],
-    deferredReviews: [],
-    reviewTimer: null,
-    currentQuestion: null,
-    currentAnswer: "",
-    answered: false,
-    revealed: false,
-    isTransitioning: false,
-    cardEnterFrom: null,
-    cardEnterPromise: null,
-    questionStartedAt: 0,
-    startedAt: Date.now(),
-    complete: false,
+  beginSession(queue, {
     selection: usesSelection ? selection : null,
-  };
-  state.combo = 0;
-  setView("quiz");
-  prepareQuestion();
+    config: { ...config, ...(usesSelection ? { selection } : {}) },
+  });
 }
 
 function prepareQuestion({ enterFrom = null } = {}) {
@@ -2049,23 +2067,19 @@ function prepareQuestion({ enterFrom = null } = {}) {
   const recentItemIds = session.results.slice(-12).map((result) => result.itemId);
   session.currentQuestion = buildQuestion(entry.item, entry.mode, state.items, Math.random, recentItemIds);
   session.currentAnswer = "";
+  session.currentSlotValues = null;
+  session.currentCorrect = null;
   session.answered = false;
   session.revealed = false;
   session.cardEnterFrom = enterFrom;
   session.cardEnterPromise = null;
   session.lastReviewDelayMs = null;
-  session.spellingIndex = 0;
-  session.spellingAnswer = [];
-  session.spellingSelected = null;
-  session.spellingChoices = session.currentQuestion.mode === "ja_to_en_spelling"
-    ? generateLetterChoices(session.currentQuestion.spellingLetters[0])
-    : [];
   session.questionStartedAt = performance.now();
   renderQuiz();
 }
 
 function sourceLine(item) {
-  return item.sources
+  return (item.sources ?? [])
     .map((source) => `${source.lesson} · ${source.title}${source.detail ? ` · ${source.detail}` : ""}`)
     .join(" / ");
 }
@@ -2101,28 +2115,101 @@ function renderChoiceArea(question, answered, currentAnswer) {
   </div>`;
 }
 
+function characterHintMarkup(token, value = "") {
+  const hint = characterHintForToken(token);
+  let suppliedCount = ([...String(value)].filter((character) => /[A-Za-z0-9]/.test(character))).length;
+  return [...hint].map((character) => {
+    if (character !== "_") {
+      return `<span class="character-hint-fixed">${escapeHtml(character)}</span>`;
+    }
+    const filled = suppliedCount > 0;
+    suppliedCount = Math.max(0, suppliedCount - 1);
+    return `<span class="character-hint-mark ${filled ? "is-filled" : "is-remaining"}">_</span>`;
+  }).join("");
+}
+
+function inputSlotValues(question, currentAnswer) {
+  const plan = question.inputPlan ?? inputPlanForQuestion(question.item, question.mode);
+  const savedValues = state.session?.currentSlotValues;
+  return Array.isArray(savedValues)
+    ? plan.slots.map((_, index) => savedValues[index] ?? "")
+    : distributeInputText(plan, currentAnswer);
+}
+
+function inputSlotResultClass(slot, value, answered, correct) {
+  if (!answered) return "";
+  if (correct) return " is-correct";
+  if (!value && slot.optional) return " is-optional-empty";
+  return slot.alternatives.some((answer) => normalizeAnswer(answer) === normalizeAnswer(value))
+    ? " is-correct"
+    : " is-wrong";
+}
+
 function renderWordSlots(question, answered, currentAnswer) {
-  const tokens = slotTokensForQuestion(question.item, question.mode);
-  const supplied = String(currentAnswer).split(/\s+/).filter(Boolean);
+  const plan = question.inputPlan ?? inputPlanForQuestion(question.item, question.mode);
+  const supplied = inputSlotValues(question, currentAnswer);
+  const showCharacterCount = Boolean(state.settings.showCharacterCount);
+  const slotMarkup = new Map(plan.slots.map((slot, index) => {
+    const value = supplied[index] ?? "";
+    const hintLength = characterHintForToken(slot.answer).replace(/['-]/g, "").length;
+    const sizeClass = hintLength > 14 ? " word-slot--xlong" : hintLength > 9 ? " word-slot--long" : "";
+    const resultClass = inputSlotResultClass(slot, value, answered, state.session.currentCorrect);
+    const resultIcon = answered && resultClass
+      ? `<span class="word-slot-result" aria-hidden="true">${resultClass.includes("is-wrong") ? "×" : resultClass.includes("is-correct") ? "✓" : ""}</span>`
+      : "";
+    return [index, `<label class="word-slot${sizeClass}${resultClass}" data-word-slot-container>
+      ${slot.optional ? '<span class="word-slot-optional">任意</span>' : ""}
+      <input
+        class="word-slot-input"
+        data-slot-index="${index}"
+        data-hint-token="${escapeHtml(slot.answer)}"
+        type="text"
+        inputmode="text"
+        value="${escapeHtml(value)}"
+        aria-label="${index + 1}語目${slot.optional ? "（任意）" : ""}"
+        ${answered && resultClass.includes("is-wrong") ? 'aria-invalid="true"' : ""}
+        autocomplete="off"
+        autocapitalize="none"
+        autocorrect="off"
+        spellcheck="false"
+        lang="en"
+        enterkeyhint="${index === plan.slots.length - 1 ? "done" : "next"}"
+        ${answered ? "disabled" : ""}
+      />
+      <span class="word-slot-hint" data-character-hint aria-hidden="true">${showCharacterCount ? characterHintMarkup(slot.answer, value) : ""}</span>
+      ${resultIcon}
+    </label>`];
+  }));
+  const segments = plan.segments.map((segment) => segment.kind === "slot"
+    ? slotMarkup.get(segment.slotIndex) ?? ""
+    : `<span class="word-slot-fixed" aria-hidden="true">${escapeHtml(segment.text)}</span>`).join("");
   return `
-    <div class="word-slots" data-word-slot-count="${tokens.length}" aria-label="${tokens.length}語の英語入力">
-      ${tokens
-        .map(
-          (_, index) => `<input
-            class="word-slot-input"
-            data-slot-index="${index}"
-            type="text"
-            value="${escapeHtml(supplied[index] ?? "")}"
-            aria-label="${index + 1}語目"
-            autocapitalize="none"
-            autocomplete="off"
-            spellcheck="false"
-            ${answered ? "disabled" : ""}
-          />`,
-        )
-        .join("")}
+    <div class="word-slots${showCharacterCount ? " show-character-count" : ""}" data-word-slot-count="${plan.slots.length}" aria-label="${plan.slots.length}語の英語入力">
+      ${segments}
     </div>
     <button class="primary-button answer-button" type="button" data-submit-input ${answered ? "disabled" : ""}>回答する</button>`;
+}
+
+function updateCharacterCountDisplay() {
+  const slots = elements.quizContent.querySelector(".word-slots");
+  if (!slots) return;
+  const show = Boolean(state.settings.showCharacterCount);
+  slots.classList.toggle("show-character-count", show);
+  slots.querySelectorAll(".word-slot-input").forEach((input) => {
+    const hint = input.closest("[data-word-slot-container]")?.querySelector("[data-character-hint]");
+    if (hint) hint.innerHTML = show ? characterHintMarkup(input.dataset.hintToken, input.value) : "";
+  });
+  const toggle = elements.quizContent.querySelector("[data-toggle-character-count]");
+  if (toggle) {
+    toggle.setAttribute("aria-pressed", String(show));
+    toggle.textContent = `文字数：${show ? "表示" : "非表示"}`;
+  }
+}
+
+function ensureInputVisible(input = document.activeElement) {
+  if (!input?.classList?.contains("word-slot-input")) return;
+  const behavior = reducedMotionRequested() ? "auto" : "smooth";
+  requestAnimationFrame(() => input.scrollIntoView({ block: "center", inline: "nearest", behavior }));
 }
 
 function renderTextInput(answered, currentAnswer) {
@@ -2146,7 +2233,9 @@ function renderTextInput(answered, currentAnswer) {
 function renderFeedback(question, answer, correct) {
   if (!state.session.answered) return "";
   const isChoice = question.mode.endsWith("choice");
+  const isKeyboardInput = question.mode === "ja_to_en_input";
   const correctAnswer = answersForMode(question.item, question.mode)[0];
+  const showSourceBox = isKeyboardInput || state.settings.showSources;
   return `
     <section class="feedback-card ${correct ? "feedback-correct" : "feedback-wrong"}" aria-live="polite">
       <div class="feedback-result">
@@ -2154,13 +2243,16 @@ function renderFeedback(question, answer, correct) {
         <strong>${correct ? "正解" : "不正解"}</strong>
       </div>
       ${state.session.lastReviewDelayMs === WRONG_REVIEW_DELAY_MS ? '<p class="review-scheduled-note">3分後にもう一度出題します</p>' : ""}
-      ${!correct && !isChoice ? `<p class="input-correct-answer"><span>正解</span><strong>${escapeHtml(correctAnswer)}</strong></p>` : ""}
-      ${state.settings.showSources ? `<div class="source-box">
+      ${isKeyboardInput ? `<dl class="feedback-answer-summary">
+        <div><dt>あなたの回答</dt><dd>${escapeHtml(answer || "（未入力）")}</dd></div>
+        <div><dt>正しい回答</dt><dd>${escapeHtml(correctAnswer)}</dd></div>
+      </dl>` : !correct && !isChoice ? `<p class="input-correct-answer"><span>正解</span><strong>${escapeHtml(correctAnswer)}</strong></p>` : ""}
+      ${showSourceBox ? `<div class="source-box">
         <span class="importance-badge importance-${question.item.importance.toLowerCase()}">${question.item.importance}</span>
         <div>
           <strong class="source-range">範囲：${escapeHtml(question.item.range)}</strong>
-          ${!isChoice ? `<p>${escapeHtml(sourceLine(question.item))}</p>` : ""}
-          ${!isChoice && itemEvidenceLine(question.item) ? `<p class="source-evidence">${escapeHtml(itemEvidenceLine(question.item))}</p>` : ""}
+          ${state.settings.showSources && !isChoice && sourceLine(question.item) ? `<p>${escapeHtml(sourceLine(question.item))}</p>` : ""}
+          ${state.settings.showSources && !isChoice && itemEvidenceLine(question.item) ? `<p class="source-evidence">${escapeHtml(itemEvidenceLine(question.item))}</p>` : ""}
         </div>
       </div>` : ""}
     </section>`;
@@ -2211,7 +2303,7 @@ function previewPromptForEntry(entry) {
     return item[`${item.subject}Question`] ?? item.recallQuestion ?? item.publicQuestion ?? item.english ?? "";
   }
   if (mode === "en_to_ja_flashcard" || mode === "en_to_ja_choice") return item.english ?? "";
-  if (["ja_to_en_flashcard", "ja_to_en_choice", "ja_to_en_spelling", "spelling_input", "ja_to_en_input"].includes(mode)) {
+  if (["ja_to_en_flashcard", "ja_to_en_choice", "spelling_input", "ja_to_en_input"].includes(mode)) {
     return item.japanese ?? "";
   }
   if (mode === "preposition_input") return item.blanks?.preposition?.prompt ?? "";
@@ -2549,70 +2641,6 @@ function renderComboPill(changed) {
   return `<div class="combo-pill${heat}${pop}"><span class="combo-pill-text" data-text="${escapeHtml(text)}">${escapeHtml(text)}</span></div>`;
 }
 
-function renderSpellingChoiceArea(question, answered) {
-  const session = state.session;
-  const targetLetters = question.spellingLetters ?? spellingLetters(question.answer);
-  const currentIndex = Math.min(session.spellingIndex ?? 0, Math.max(0, targetLetters.length - 1));
-  let letterIndex = 0;
-  const word = [...question.answer].map((character) => {
-    if (!/[A-Za-z]/.test(character)) {
-      return `<span class="spelling-separator">${character === " " ? "&nbsp;" : escapeHtml(character)}</span>`;
-    }
-    const index = letterIndex;
-    letterIndex += 1;
-    const supplied = session.spellingAnswer?.[index];
-    const value = supplied ?? (index === currentIndex && !answered ? "?" : "·");
-    const wrong = answered && index === currentIndex && supplied
-      && normalizeAnswer(supplied) !== normalizeAnswer(targetLetters[index]);
-    const className = wrong
-      ? " wrong"
-      : index === currentIndex && !answered
-        ? " current"
-        : supplied
-          ? " completed"
-          : "";
-    return `<span class="spelling-character${className}">${escapeHtml(String(value).toUpperCase())}</span>`;
-  }).join("");
-  const correctLetter = targetLetters[currentIndex]?.toUpperCase();
-  const choices = session.spellingChoices ?? [];
-  return `
-    <div class="spelling-builder" aria-label="スペル ${currentIndex + 1}文字目 / ${targetLetters.length}文字">
-      <div class="spelling-word" aria-live="polite">${word}</div>
-      <p class="spelling-progress">${Math.min(currentIndex + 1, targetLetters.length)} / ${targetLetters.length}文字</p>
-      <div class="spelling-letter-grid">
-        ${choices.map((letter) => {
-          const selected = normalizeAnswer(letter) === normalizeAnswer(session.spellingSelected);
-          const correct = normalizeAnswer(letter) === normalizeAnswer(correctLetter);
-          const resultClass = answered ? (correct ? " correct" : selected ? " wrong" : "") : "";
-          return `<button class="spelling-letter-button${resultClass}" type="button" data-spelling-letter="${letter}" ${answered ? "disabled" : ""}>${letter}</button>`;
-        }).join("")}
-      </div>
-    </div>`;
-}
-
-function chooseSpellingLetter(letter) {
-  const session = state.session;
-  if (!session || session.answered || session.currentQuestion.mode !== "ja_to_en_spelling") return;
-  const targetLetters = session.currentQuestion.spellingLetters;
-  const index = session.spellingIndex ?? 0;
-  const correctLetter = targetLetters[index];
-  session.spellingSelected = letter;
-  if (normalizeAnswer(letter) !== normalizeAnswer(correctLetter)) {
-    session.spellingAnswer.push(letter);
-    submitAnswer(session.spellingAnswer.join(""));
-    return;
-  }
-  session.spellingAnswer.push(correctLetter);
-  if (session.spellingAnswer.length >= targetLetters.length) {
-    submitAnswer(session.currentQuestion.answer);
-    return;
-  }
-  session.spellingIndex += 1;
-  session.spellingSelected = null;
-  session.spellingChoices = generateLetterChoices(targetLetters[session.spellingIndex]);
-  renderQuiz();
-}
-
 function renderRecallQuiz() {
   const session = state.session;
   const question = session.currentQuestion;
@@ -2677,15 +2705,13 @@ function renderQuiz() {
   const lastResult = session.results.at(-1);
   const progress = Math.round(((session.cursor + (answered ? 1 : 0)) / session.queue.length) * 100);
   const isChoice = question.mode.endsWith("choice");
-  const isSpellingChoice = question.mode === "ja_to_en_spelling";
+  const isKeyboardInput = question.mode === "ja_to_en_input";
   const isSwipeAdvance = isSwipeAdvanceMode(question.mode);
   const usesSlots = ["ja_to_en_input", "spelling_input"].includes(question.mode);
   const translation = question.mode === "phrase_blank_input"
     ? `<p class="question-translation"><span>日本語訳</span>${escapeHtml(question.item.japanese)}</p>`
     : "";
-  const answerArea = isSpellingChoice
-    ? renderSpellingChoiceArea(question, answered)
-    : isChoice
+  const answerArea = isChoice
       ? renderChoiceArea(question, answered, session.currentAnswer)
     : usesSlots
       ? renderWordSlots(question, answered, session.currentAnswer)
@@ -2695,11 +2721,14 @@ function renderQuiz() {
     : "";
 
   elements.quizContent.innerHTML = `
-    <div class="quiz-shell${answered ? " quiz-answered" : ""}${isSwipeAdvance ? " quiz-choice" : ""}">
-      <header class="quiz-header">
+    <div class="quiz-shell${answered ? " quiz-answered" : ""}${isSwipeAdvance ? " quiz-choice" : ""}${isKeyboardInput ? " quiz-keyboard-input" : ""}">
+      <header class="quiz-header${isKeyboardInput ? " quiz-header--input" : ""}">
         <button class="icon-button" type="button" data-quit-quiz aria-label="学習を終了">×</button>
         <div class="quiz-progress-copy"><strong>${session.cursor + 1}</strong> / ${session.queue.length}</div>
-        <span class="mode-pill">${escapeHtml(question.label)}</span>
+        ${isKeyboardInput ? `<div class="quiz-header-tools">
+          <span class="mode-pill">${escapeHtml(question.label)}</span>
+          <button class="character-count-toggle" type="button" data-toggle-character-count aria-pressed="${state.settings.showCharacterCount}">文字数：${state.settings.showCharacterCount ? "表示" : "非表示"}</button>
+        </div>` : `<span class="mode-pill">${escapeHtml(question.label)}</span>`}
       </header>
       ${isMaxMode() && state.combo ? renderComboPill(comboChanged) : ""}
       <div class="quiz-progress"><span style="width:${progress}%"></span></div>
@@ -2730,7 +2759,9 @@ function renderQuiz() {
   if (!answered) {
     requestAnimationFrame(() => {
       window.scrollTo(0, 0);
-      elements.quizContent.querySelector("input")?.focus({ preventScroll: true });
+      const firstInput = elements.quizContent.querySelector("input");
+      firstInput?.focus({ preventScroll: true });
+      if (firstInput?.classList.contains("word-slot-input")) ensureInputVisible(firstInput);
     });
   } else {
     requestAnimationFrame(() => {
@@ -2744,7 +2775,11 @@ function renderQuiz() {
 
 function currentTypedAnswer() {
   const slotInputs = [...elements.quizContent.querySelectorAll(".word-slot-input")];
-  if (slotInputs.length) return slotInputs.map((input) => input.value.trim()).join(" ").trim();
+  if (slotInputs.length) {
+    const values = slotInputs.map((input) => input.value.trim());
+    if (state.session) state.session.currentSlotValues = values;
+    return values.join(" ").trim();
+  }
   return elements.quizContent.querySelector("#single-answer-input")?.value.trim() ?? "";
 }
 
@@ -2764,7 +2799,12 @@ async function submitAnswer(
       ? normalizeAnswer(answer) === normalizeAnswer(question.correctChoice)
       : isAnswerCorrect(answer, question.acceptedAnswers);
   const durationMs = Math.round(performance.now() - session.questionStartedAt);
+  const scheduledDelay = reviewDelayForAnswer(question.mode, correct, reviewDelayMs);
+  const correctAnswer = isChoice
+    ? question.correctChoice
+    : question.answer ?? answersForMode(question.item, question.mode)[0];
   session.currentAnswer = answer;
+  session.currentCorrect = correct;
   session.answered = true;
   const previousHistory = getHistory(state.history, question.item.id);
   let savedHistory = null;
@@ -2789,6 +2829,9 @@ async function submitAnswer(
     correct,
     answer,
     durationMs,
+    prompt: question.prompt,
+    correctAnswer,
+    reviewDelayMs: scheduledDelay,
   });
 
   let pendingCorrectEffect = null;
@@ -2807,7 +2850,6 @@ async function submitAnswer(
     state.combo = 0;
   }
 
-  const scheduledDelay = reviewDelayForAnswer(question.mode, correct, reviewDelayMs);
   session.lastReviewDelayMs = scheduledDelay;
   if (scheduledDelay) {
     session.deferredReviews.push({
@@ -2902,57 +2944,94 @@ function renderSessionComplete() {
   const session = state.session;
   if (!session) return;
   const summary = summarizeSession(session.results);
-  const overall = summarizeHistory(state.items, state.history);
-  const itemUnit = isRecallSubject() ? "問" : "語句";
-  const wrongItems = [
-    ...new Map(
-      session.results
-        .filter((result) => !result.correct)
-        .map((result) => [result.itemId, result]),
-    ).values(),
+  const reviewItems = summarizeReviewItems(session.results);
+  const visibleItems = session.showAllReviewItems ? reviewItems : reviewItems.slice(0, 5);
+  const isSelfGraded = session.results.some((result) => isRecallMode(result.mode));
+  const ranges = [...new Set(session.results.map((result) => result.item.range).filter(Boolean))];
+  const rangeLabel = ranges.length <= 1 ? ranges[0] ?? "選択範囲" : `${ranges.length}範囲`;
+  const types = [...new Set(session.results.map((result) => result.item.type)
+    .filter((type) => ENGLISH_CONTENT_TYPES.includes(type)))];
+  const contentLabel = session.selection
+    ? studyContentLabel(session.selection)
+    : isSelfGraded
+      ? "一問一答"
+      : types.map((type) => STUDY_CONTENT_LABELS[type]).join("＋") || "教材";
+  const methodLabel = session.selection?.method
+    ? STUDY_METHOD_LABELS[session.selection.method]
+    : isSelfGraded
+      ? "自己採点"
+      : MODE_LABELS[session.results[0]?.mode] ?? "学習";
+  const resultContext = [
+    ["教科", SUBJECT_LABELS[state.subject] ?? "英語"],
+    ["範囲", rangeLabel],
+    ["教材", contentLabel],
+    ["出題形式", methodLabel],
   ];
-  const rangeRows = [...new Set(session.results.map((result) => result.item.range))]
-    .map((range) => {
-      const rangeSummary = summarizeSession(
-        session.results.filter((result) => result.item.range === range),
-      );
-      return `<div class="result-breakdown-row">
-        <span>${escapeHtml(range)}</span>
-        <strong>${rangeSummary.correct} / ${rangeSummary.total}</strong>
-      </div>`;
-    })
-    .join("");
+  const reviewUserAnswer = (result) => isRecallMode(result.mode)
+    ? result.reviewDelayMs === ONE_HOUR_REVIEW_DELAY_MS ? "1時間後の復習へ" : "3分後の復習へ"
+    : result.answer || "（未入力）";
+  const reviewMarkup = visibleItems.map((result) => `
+    <article class="result-review-item">
+      <div class="result-review-heading">
+        <span class="result-review-range">${escapeHtml(result.item.range)}</span>
+        ${result.wrongCount > 1 ? `<span class="result-review-count">${result.wrongCount}回</span>` : ""}
+      </div>
+      <h3>${escapeHtml(result.prompt ?? result.item.japanese ?? result.item.english)}</h3>
+      <dl>
+        <div><dt>正しい回答</dt><dd>${escapeHtml(result.correctAnswer ?? result.item.acceptedAnswers?.[0] ?? "—")}</dd></div>
+        <div><dt>あなたの回答</dt><dd>${escapeHtml(reviewUserAnswer(result))}</dd></div>
+      </dl>
+    </article>`).join("");
+  const primaryAction = reviewItems.length
+    ? {
+        heading: "間違えた問題を固めよう",
+        detail: `今回間違えた${reviewItems.length}問だけを、もう一度確認できます`,
+        label: `間違えた${reviewItems.length}問をもう一度`,
+        attribute: "data-retry-wrong",
+      }
+    : {
+        heading: "今回の範囲は完了",
+        detail: "同じ条件でもう一周するか、別の範囲へ進めます",
+        label: "同じ条件でもう一周",
+        attribute: "data-repeat-session",
+      };
   elements.quizContent.innerHTML = `
     <div class="result-shell">
-      <p class="eyebrow">SESSION COMPLETE</p>
-      <div class="result-score"><strong>${summary.correct}</strong><span>/ ${summary.total}</span></div>
-      <h1>${summary.correct === summary.total ? "全問正解です。" : "学習を記録しました。"}</h1>
-      <p>${escapeHtml(session.selection ? studySelectionLabel(session.selection) : MODE_LABELS[state.selectedMode])}</p>
-      <div class="result-stat-grid">
-        <div><span>達成${itemUnit}</span><strong>${overall.twoCorrectStreakItems} / ${state.items.length}</strong></div>
-        <div><span>平均回答</span><strong>${formatSeconds(summary.averageDurationMs)}</strong></div>
-        <div><span>学習時間</span><strong>${formatSeconds(summary.durationMs)}</strong></div>
-      </div>
-      <section class="result-breakdown">
-        <div class="result-section-heading"><h2>範囲別</h2><span>${summary.uniqueItems}${itemUnit}</span></div>
-        ${rangeRows}
+      <header class="result-complete-header">
+        <span class="result-complete-mark" aria-hidden="true">✓</span>
+        <p class="eyebrow">SESSION COMPLETE</p>
+        <h1>学習完了</h1>
+        <ul class="result-context-list" aria-label="今回の学習条件">
+          ${resultContext.map(([label, value]) => `<li><span>${label}</span><strong>${escapeHtml(value)}</strong></li>`).join("")}
+        </ul>
+      </header>
+      <section class="result-record" aria-labelledby="result-record-title">
+        <h2 id="result-record-title">今回の記録</h2>
+        <div class="result-record-grid">
+          <div><span>${isSelfGraded ? "習得" : "正解"}</span><strong>${summary.correct}</strong></div>
+          <div><span>${isSelfGraded ? "復習へ" : "間違い"}</span><strong>${summary.wrong}</strong></div>
+          <div><span>学習時間</span><strong>${formatSeconds(summary.durationMs)}</strong></div>
+        </div>
       </section>
-      ${
-        wrongItems.length
-          ? `<div class="result-wrong-list"><h2>今回間違えた${itemUnit}</h2>${wrongItems
-              .map(
-                (result) => `<div>
-                  <span class="result-word-copy"><strong>${escapeHtml(result.item.english)}</strong><small>${escapeHtml(result.item.japanese)}</small></span>
-                  <span class="item-tags">${renderTags([result.item.type, ...result.item.tags], 3)}</span>
-                </div>`,
-              )
-              .join("")}</div>`
-          : ""
-      }
-      <div class="result-actions">
-        ${wrongItems.length ? '<button class="secondary-button" type="button" data-retry-wrong>間違いだけ復習</button>' : ""}
-        <button class="secondary-button" type="button" data-view-analysis>分析を見る</button>
-        <button class="primary-button" type="button" data-result-home>ホームへ</button>
+      <section class="result-next-card" aria-labelledby="result-next-title">
+        <div>
+          <p class="eyebrow">NEXT STEP</p>
+          <h2 id="result-next-title">${primaryAction.heading}</h2>
+          <p>${primaryAction.detail}</p>
+        </div>
+        <button class="primary-button result-primary-action" type="button" ${primaryAction.attribute}>${primaryAction.label}<span aria-hidden="true">→</span></button>
+      </section>
+      ${reviewItems.length ? `<section class="result-review-section" aria-labelledby="result-review-title">
+        <div class="result-section-title"><div><p class="eyebrow">CHECK</p><h2 id="result-review-title">要確認問題</h2></div><span>${reviewItems.length}問</span></div>
+        <div class="result-review-list">${reviewMarkup}</div>
+        ${reviewItems.length > 5 && !session.showAllReviewItems ? '<button class="text-button result-show-all" type="button" data-show-all-review>すべて表示</button>' : ""}
+      </section>` : ""}
+      <div class="result-other-actions">
+        <button class="secondary-button" type="button" data-change-study>学習条件を変える</button>
+        <div class="result-text-actions">
+          <button class="text-button" type="button" data-result-home>ホームへ戻る</button>
+          <button class="text-button" type="button" data-view-analysis>詳しい分析を見る</button>
+        </div>
       </div>
     </div>`;
   if (summary.total && summary.correct === summary.total) {
@@ -3020,42 +3099,41 @@ function renderAnalysis() {
 
 function retryWrongItems() {
   const session = state.session;
-  const wrong = [
-    ...new Map(
-      session.results
-        .filter((result) => !result.correct)
-        .map((result) => [result.itemId, { item: result.item, mode: result.mode }]),
-    ).values(),
-  ];
+  const wrong = summarizeReviewItems(session?.results)
+    .map((result) => ({ item: result.item, mode: result.mode }));
   if (!wrong.length) return;
-  state.session = {
-    queue: wrong,
-    cursor: 0,
-    results: [],
-    deferredReviews: [],
-    reviewTimer: null,
-    currentQuestion: null,
-    currentAnswer: "",
-    answered: false,
-    revealed: false,
-    isTransitioning: false,
-    cardEnterFrom: null,
-    cardEnterPromise: null,
-    questionStartedAt: 0,
-    startedAt: Date.now(),
-    complete: false,
-  };
-  prepareQuestion();
+  beginSession(wrong, {
+    selection: session.selection,
+    config: {
+      ...(session.config ?? {}),
+      itemIds: wrong.map((entry) => entry.item.id),
+      count: "all",
+    },
+  });
+}
+
+function repeatCompletedSession() {
+  const session = state.session;
+  if (!session?.initialQueue?.length) return;
+  beginSession(session.initialQueue.map((entry) => ({ item: entry.item, mode: entry.mode })), {
+    selection: session.selection,
+    config: session.config,
+  });
 }
 
 function distributeSlotText(startInput, text) {
   const inputs = [...elements.quizContent.querySelectorAll(".word-slot-input")];
   const start = inputs.indexOf(startInput);
-  const parts = text.trim().split(/\s+/).filter(Boolean);
-  parts.forEach((part, offset) => {
-    if (inputs[start + offset]) inputs[start + offset].value = part;
+  const question = state.session?.currentQuestion;
+  const plan = question?.inputPlan ?? (question ? inputPlanForQuestion(question.item, question.mode) : null);
+  const values = distributeInputText(plan, text, start);
+  values.forEach((value, index) => {
+    if (inputs[index] && (start === 0 || value)) inputs[index].value = value;
   });
-  inputs[Math.min(start + parts.length, inputs.length - 1)]?.focus();
+  state.session.currentSlotValues = inputs.map((input) => input.value.trim());
+  updateCharacterCountDisplay();
+  const lastFilled = values.reduce((last, value, index) => value ? index : last, start);
+  inputs[Math.min(lastFilled + 1, inputs.length - 1)]?.focus();
 }
 
 function bindEvents() {
@@ -3270,7 +3348,11 @@ function bindEvents() {
       renderList(false);
     }
     if (target.dataset.choice !== undefined) submitAnswer(target.dataset.choice);
-    if (target.dataset.spellingLetter !== undefined) chooseSpellingLetter(target.dataset.spellingLetter);
+    if (target.hasAttribute("data-toggle-character-count")) {
+      state.settings.showCharacterCount = !state.settings.showCharacterCount;
+      saveSettings();
+      updateCharacterCountDisplay();
+    }
     if (target.hasAttribute("data-submit-input")) submitAnswer(currentTypedAnswer());
     if (target.dataset.recallGrade !== undefined) {
       const surface = elements.quizContent.querySelector("[data-quiz-gesture-surface]");
@@ -3287,6 +3369,16 @@ function bindEvents() {
       }
     }
     if (target.hasAttribute("data-retry-wrong")) retryWrongItems();
+    if (target.hasAttribute("data-repeat-session")) repeatCompletedSession();
+    if (target.hasAttribute("data-show-all-review") && state.session?.complete) {
+      state.session.showAllReviewItems = true;
+      renderSessionComplete();
+    }
+    if (target.hasAttribute("data-change-study")) {
+      state.session = null;
+      resetStudyFlow();
+      setView("study-range-select");
+    }
     if (target.hasAttribute("data-view-analysis")) {
       state.session = null;
       setView("analysis");
@@ -3325,23 +3417,40 @@ function bindEvents() {
       return;
     }
     if (event.target.closest("button")) return;
-    if (mode === "ja_to_en_spelling") return;
+    const input = event.target.closest(".word-slot-input");
+    if (input) {
+      const inputs = [...elements.quizContent.querySelectorAll(".word-slot-input")];
+      const index = inputs.indexOf(input);
+      if (event.key === "Enter") {
+        event.preventDefault();
+        if (index < inputs.length - 1) {
+          inputs[index + 1].focus();
+          ensureInputVisible(inputs[index + 1]);
+        } else {
+          submitAnswer(currentTypedAnswer());
+        }
+        return;
+      }
+      if (event.key === " ") {
+        event.preventDefault();
+        if (inputs[index + 1]) {
+          inputs[index + 1].focus();
+          ensureInputVisible(inputs[index + 1]);
+        }
+        return;
+      }
+      if (event.key === "Backspace" && !input.value && index > 0) {
+        const previous = inputs[index - 1];
+        previous.focus();
+        previous.setSelectionRange(previous.value.length, previous.value.length);
+        ensureInputVisible(previous);
+      }
+      return;
+    }
     if (event.key === "Enter") {
       event.preventDefault();
       if (state.session?.answered) advanceAnsweredCard("right");
       else if (!isSwipeAdvanceMode(mode)) submitAnswer(currentTypedAnswer());
-      return;
-    }
-    const input = event.target.closest(".word-slot-input");
-    if (!input) return;
-    const inputs = [...elements.quizContent.querySelectorAll(".word-slot-input")];
-    const index = inputs.indexOf(input);
-    if (event.key === " " && input.value.trim()) {
-      event.preventDefault();
-      inputs[index + 1]?.focus();
-    }
-    if (event.key === "Backspace" && !input.value && index > 0) {
-      inputs[index - 1].focus();
     }
   });
   elements.quizContent.addEventListener("paste", (event) => {
@@ -3355,8 +3464,20 @@ function bindEvents() {
   });
   elements.quizContent.addEventListener("input", (event) => {
     const input = event.target.closest(".word-slot-input");
-    if (input && /\s/.test(input.value)) distributeSlotText(input, input.value);
+    if (!input) return;
+    if (/\s/.test(input.value)) {
+      distributeSlotText(input, input.value);
+      return;
+    }
+    state.session.currentSlotValues = [...elements.quizContent.querySelectorAll(".word-slot-input")]
+      .map((slotInput) => slotInput.value.trim());
+    if (state.settings.showCharacterCount) updateCharacterCountDisplay();
   });
+  elements.quizContent.addEventListener("focusin", (event) => {
+    const input = event.target.closest(".word-slot-input");
+    if (input) ensureInputVisible(input);
+  });
+  window.visualViewport?.addEventListener("resize", () => ensureInputVisible());
 }
 
 async function boot() {
@@ -3368,7 +3489,7 @@ async function boot() {
       fetch("./data/health-items.json?v=2026.09.01"),
       loadHistory(),
       getMeta("selectedMode"),
-      getMeta("settings", DEFAULT_SETTINGS),
+      getMetaObject("settings", DEFAULT_SETTINGS),
       getMeta("bestCombo", 0),
       getMeta("selectedPeriod", null),
       getMeta("recentStudies", []),
@@ -3382,7 +3503,7 @@ async function boot() {
     state.items = state.englishItems;
     state.history = history;
     state.selectedMode = ALL_MODES.includes(selectedMode) ? selectedMode : null;
-    state.settings = { ...DEFAULT_SETTINGS, ...(settings ?? {}) };
+    state.settings = settings;
     state.settings.soundIntensity = state.settings.soundIntensity === "full" ? "full" : "gentle";
     installMaxEffectsLab();
     state.bestCombo = Number(bestCombo) || 0;
@@ -3391,7 +3512,7 @@ async function boot() {
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.2j").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

@@ -1,16 +1,15 @@
-const CACHE_NAME = "words-2026-9-v12";
+const APP_VERSION = "2026.9.2j";
+const CACHE_NAME = `words-${APP_VERSION}`;
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=2026.9.2i",
-  "./src/app.js?v=2026.9.2i",
+  `./styles.css?v=${APP_VERSION}`,
+  `./src/app.js?v=${APP_VERSION}`,
   "./src/audio.js?v=2026.2.18",
   "./src/max-cues.js?v=2026.2.18",
-  "./src/logic.js",
-  "./src/logic.js?v=2026.9.1",
-  "./src/quiz-gestures.js",
-  "./src/quiz-gestures.js?v=2026.9.1b",
-  "./src/storage.js",
+  `./src/logic.js?v=${APP_VERSION}`,
+  `./src/quiz-gestures.js?v=${APP_VERSION}`,
+  `./src/storage.js?v=${APP_VERSION}`,
   "./health-notes.html?v=2026.2.8",
   "./public-notes.html?v=2026.9.1",
   "./data/items.json?v=2026.08.31b",

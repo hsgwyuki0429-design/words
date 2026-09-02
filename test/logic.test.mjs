@@ -7,16 +7,19 @@ import {
   ONE_HOUR_REVIEW_DELAY_MS,
   UNKNOWN_CHOICE,
   WRONG_REVIEW_DELAY_MS,
+  acceptedInputAnswers,
   addRecentStudy,
   accuracyFor,
   applyFilters,
   buildQuestion,
   buildSession,
   buildStudySession,
+  characterHintForToken,
   difficultyScore,
+  distributeInputText,
   emptyHistory,
-  generateLetterChoices,
   historyForModes,
+  inputPlanForAnswers,
   itemSupportsMode,
   isAnswerCorrect,
   mergeAttempt,
@@ -30,13 +33,14 @@ import {
   studyCyclePolicy,
   studyModeForItem,
   studyPerformanceModes,
-  spellingLetters,
   slotTokensForQuestion,
   sortItems,
   summarizeByMode,
   summarizeByRange,
   summarizeHistory,
+  summarizeReviewItems,
   summarizeSession,
+  visibleReviewItems,
 } from "../src/logic.js";
 
 const items = JSON.parse(fs.readFileSync(new URL("../data/items.json", import.meta.url), "utf8"));
@@ -56,7 +60,7 @@ test("wrong answers become eligible for review after three minutes", () => {
   assert.equal(ONE_HOUR_REVIEW_DELAY_MS, 3_600_000);
   assert.equal(reviewDelayForAnswer("en_to_ja_choice", false), WRONG_REVIEW_DELAY_MS);
   assert.equal(reviewDelayForAnswer("ja_to_en_choice", true), null);
-  assert.equal(reviewDelayForAnswer("ja_to_en_spelling", false), WRONG_REVIEW_DELAY_MS);
+  assert.equal(reviewDelayForAnswer("ja_to_en_input", false), WRONG_REVIEW_DELAY_MS);
   assert.equal(reviewDelayForAnswer("spelling_input", false), null);
   assert.equal(
     reviewDelayForAnswer("public_recall", false, ONE_HOUR_REVIEW_DELAY_MS),
@@ -115,6 +119,36 @@ test("history records overall and per-mode results", () => {
   assert.equal(second.modeStats.ja_to_en_input.wrong, 1);
   assert.equal(second.totalAnswerTimeMs, 2000);
   assert.equal(accuracyFor(second), 0.5);
+});
+
+test("legacy spelling history remains stored but is separate from keyboard-input scores", () => {
+  let record = mergeAttempt(null, {
+    itemId: "legacy-sample",
+    mode: "ja_to_en_spelling",
+    correct: false,
+    answeredAt: 100,
+  });
+  record = mergeAttempt(record, {
+    itemId: "legacy-sample",
+    mode: "ja_to_en_input",
+    correct: true,
+    answeredAt: 200,
+  });
+  const keyboardHistory = historyForModes(record, ["ja_to_en_input"]);
+  assert.equal(record.modeStats.ja_to_en_spelling.wrong, 1);
+  assert.equal(record.modeStats.ja_to_en_input.correct, 1);
+  assert.equal(keyboardHistory.totalAttempts, 1);
+  assert.equal(keyboardHistory.wrongCount, 0);
+});
+
+test("saved legacy spelling study conditions migrate to keyboard input", () => {
+  const normalized = normalizeStudySelection({
+    subject: "english",
+    content: "word",
+    method: "ja_to_en_spelling",
+  });
+  assert.equal(normalized.method, "ja_to_en_input");
+  assert.deepEqual(normalized.contents, ["word"]);
 });
 
 test("choice and flashcard performance histories stay separate", () => {
@@ -286,15 +320,41 @@ test("English flashcards support both directions and reveal the matching answer"
   assert.equal(japaneseFirst.answer, item.english);
 });
 
-test("spelling choice questions expose four letters and advance over alphabetic characters", () => {
-  const item = items.find((candidate) => candidate.english === "high-speed");
-  const question = buildQuestion(item, "ja_to_en_spelling", items);
-  assert.deepEqual(question.spellingLetters, [..."highspeed"]);
-  assert.deepEqual(spellingLetters(item.english), [..."highspeed"]);
-  const choices = generateLetterChoices(question.spellingLetters[0], () => 0.42);
-  assert.equal(choices.length, 4);
-  assert.equal(new Set(choices).size, 4);
-  assert.ok(choices.includes("H"));
+test("keyboard input builds one box per word for words, phrases, and structures", () => {
+  const word = items.find((candidate) => candidate.english === "apple");
+  const phrase = { acceptedAnswers: ["take care of"] };
+  const structure = items.find((candidate) => candidate.english === "enable A to do");
+  assert.equal(slotTokensForQuestion(word, "ja_to_en_input").length, 1);
+  assert.deepEqual(slotTokensForQuestion(phrase, "ja_to_en_input"), ["take", "care", "of"]);
+  assert.deepEqual(slotTokensForQuestion(structure, "ja_to_en_input"), ["enable", "A", "to", "do"]);
+  assert.equal(buildQuestion(structure, "ja_to_en_input", items).inputPlan.slots.length, 4);
+});
+
+test("keyboard input accepts optional words, slash alternatives, fixed notation, case, and repeated spaces", () => {
+  assert.deepEqual(
+    acceptedInputAnswers(["help A (to) do"]),
+    ["help A do", "help A to do"],
+  );
+  assert.equal(isAnswerCorrect("HELP   A DO", ["help A (to) do"]), true);
+  assert.equal(isAnswerCorrect("be better at doing", ["be good/better at doing"]), true);
+  assert.equal(isAnswerCorrect("suggest s v", ["suggest (that) S + V"]), true);
+  assert.equal(isAnswerCorrect("make a", ["make A + 動詞原形"]), true);
+  assert.equal(isAnswerCorrect("as many a as b", ["倍数 + as many A as B"]), true);
+  assert.equal(isAnswerCorrect("known as garbage beach", ["known as “garbage beach”"]), true);
+});
+
+test("character hints count each character while preserving apostrophes and hyphens", () => {
+  assert.equal(characterHintForToken("apple"), "_____");
+  assert.equal(characterHintForToken("take"), "____");
+  assert.equal(characterHintForToken("high-speed"), "____-_____");
+  assert.equal(characterHintForToken("you’ll"), "___'__");
+});
+
+test("pasted phrases distribute across slots and keep an omitted optional slot empty", () => {
+  const phrasePlan = inputPlanForAnswers(["take care of"]);
+  assert.deepEqual(distributeInputText(phrasePlan, "take care of"), ["take", "care", "of"]);
+  const optionalPlan = inputPlanForAnswers(["help A (to) do"]);
+  assert.deepEqual(distributeInputText(optionalPlan, "help A do"), ["help", "A", "", "do"]);
 });
 
 test("phrase distractors contain the same number of A and B placeholders", () => {
@@ -429,7 +489,7 @@ test("overall two-correct streak rate counts mastered items", () => {
   assert.equal(summary.twoCorrectStreakRate, 2 / 3);
 });
 
-test("step-based English study selection supports choice and flashcards in both directions", () => {
+test("step-based English study selection supports choice, flashcards, and keyboard input", () => {
   const word = items.find((item) => item.type === "word");
   const phrase = items.find((item) => item.type === "phrase");
   const structure = items.find((item) => item.type === "structure");
@@ -450,12 +510,16 @@ test("step-based English study selection supports choice and flashcards in both 
     "ja_to_en_flashcard",
   );
   assert.equal(
-    studyModeForItem(word, { content: "word", method: "ja_to_en_spelling" }),
-    "ja_to_en_spelling",
+    studyModeForItem(word, { content: "word", method: "ja_to_en_input" }),
+    "ja_to_en_input",
   );
   assert.equal(
-    studyModeForItem(phrase, { content: "phrase", method: "ja_to_en_spelling" }),
-    null,
+    studyModeForItem(phrase, { content: "phrase", method: "ja_to_en_input" }),
+    "ja_to_en_input",
+  );
+  assert.equal(
+    studyModeForItem(structure, { content: "structure", method: "ja_to_en_input" }),
+    "ja_to_en_input",
   );
   assert.equal(
     studyModeForItem(phrase, { content: "word", method: "en_to_ja_flashcard" }),
@@ -480,6 +544,22 @@ test("English content selection supports multiple types and keeps a stable progr
   assert.ok(studyModeForItem(items.find((item) => item.type === "word"), selection));
   assert.ok(studyModeForItem(items.find((item) => item.type === "phrase"), selection));
   assert.equal(studyModeForItem(items.find((item) => item.type === "structure"), selection), null);
+});
+
+test("one keyboard-input session can mix words, phrases, and structures", () => {
+  const selection = {
+    subject: "english",
+    contents: ["word", "phrase", "structure"],
+    method: "ja_to_en_input",
+  };
+  const session = buildStudySession({
+    items,
+    history: new Map(),
+    selection,
+    count: "all",
+  });
+  assert.deepEqual(new Set(session.map((entry) => entry.item.type)), new Set(["word", "phrase", "structure"]));
+  assert.ok(session.every((entry) => entry.mode === "ja_to_en_input"));
 });
 
 test("same study combination resumes after completed item ids", () => {

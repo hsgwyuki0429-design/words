@@ -151,7 +151,7 @@ test("recall swipes are disabled again while the question face is visible", () =
 });
 
 test("choice swipes are disabled before an answer", () => {
-  for (const mode of ["en_to_ja_choice", "ja_to_en_choice", "ja_to_en_spelling"]) {
+  for (const mode of ["en_to_ja_choice", "ja_to_en_choice"]) {
     assert.equal(isSwipeAdvanceMode(mode), true);
     assert.deepEqual(quizGesturePolicy({ mode, answered: false }), {
       tapEnabled: false,
@@ -159,6 +159,15 @@ test("choice swipes are disabled before an answer", () => {
       allowedDirections: [],
     });
   }
+});
+
+test("keyboard input never opts into choice-card swipe navigation", () => {
+  assert.equal(isSwipeAdvanceMode("ja_to_en_input"), false);
+  assert.deepEqual(quizGesturePolicy({ mode: "ja_to_en_input", answered: true }), {
+    tapEnabled: false,
+    dragEnabled: false,
+    allowedDirections: [],
+  });
 });
 
 test("answered choice cards accept all four directions with identical policy", () => {
@@ -342,7 +351,12 @@ test("choice prompt and options keep the answered layout before answering", () =
   assert.doesNotMatch(stylesSource, /\.quiz-shell:not\(\.quiz-answered\) \.swipe-choice-card/);
 });
 
-test("choice feedback adds only the result and range details", () => {
-  assert.match(appSource, /\$\{!isChoice \? `<p>\$\{escapeHtml\(sourceLine\(question\.item\)\)\}<\/p>` : ""\}/);
-  assert.match(appSource, /\$\{!isChoice && itemEvidenceLine\(question\.item\) \? `<p class="source-evidence">/);
+test("choice feedback remains compact while keyboard feedback includes answer metadata", () => {
+  const feedback = appSource.match(/function renderFeedback\(question, answer, correct\)[\s\S]*?\n}/)?.[0] ?? "";
+  assert.match(feedback, /const isKeyboardInput = question\.mode === "ja_to_en_input"/);
+  assert.match(feedback, /const showSourceBox = isKeyboardInput \|\| state\.settings\.showSources/);
+  assert.match(feedback, /あなたの回答/);
+  assert.match(feedback, /正しい回答/);
+  assert.match(feedback, /state\.settings\.showSources && !isChoice && sourceLine/);
+  assert.match(feedback, /state\.settings\.showSources && !isChoice && itemEvidenceLine/);
 });

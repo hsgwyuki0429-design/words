@@ -195,10 +195,14 @@ test("app integration unlocks on MAX actions and stops on mode exit or backgroun
 });
 
 test("PWA cache ships every versioned MAX effect asset", () => {
-  assert.match(indexHtml, /styles\.css\?v=2026\.9\.2i/);
-  assert.match(indexHtml, /src\/app\.js\?v=2026\.9\.2i/);
-  assert.match(serviceWorker, /words-2026-9-v12/);
-  assert.match(serviceWorker, /src\/quiz-gestures\.js\?v=2026\.9\.1b/);
+  const appVersion = serviceWorker.match(/const APP_VERSION = "([^"]+)"/)?.[1];
+  assert.ok(appVersion, "the service worker must declare an application version");
+  assert.match(indexHtml, new RegExp(`styles\\.css\\?v=${appVersion.replaceAll(".", "\\.")}`));
+  assert.match(indexHtml, new RegExp(`src/app\\.js\\?v=${appVersion.replaceAll(".", "\\.")}`));
+  assert.match(serviceWorker, /const CACHE_NAME = `words-\$\{APP_VERSION\}`/);
+  assert.match(serviceWorker, /src\/logic\.js\?v=\$\{APP_VERSION\}/);
+  assert.match(serviceWorker, /src\/quiz-gestures\.js\?v=\$\{APP_VERSION\}/);
+  assert.match(serviceWorker, /src\/storage\.js\?v=\$\{APP_VERSION\}/);
   assert.match(serviceWorker, /src\/audio\.js\?v=2026\.2\.18/);
   assert.match(serviceWorker, /src\/max-cues\.js\?v=2026\.2\.18/);
 });

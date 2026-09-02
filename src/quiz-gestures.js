@@ -37,7 +37,7 @@ export function isRecallMode(mode) {
 
 export function isSwipeAdvanceMode(mode) {
   return typeof mode === "string"
-    && (mode.endsWith("choice") || mode === "ja_to_en_spelling");
+    && mode.endsWith("choice");
 }
 
 export function recallActionForDirection(direction) {

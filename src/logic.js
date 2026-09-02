@@ -32,10 +32,9 @@ export const HEALTH_RANGE_ORDER = [
 export const MODE_LABELS = {
   en_to_ja_choice: "英語 → 日本語 4択",
   ja_to_en_choice: "日本語 → 英語 4択",
-  ja_to_en_spelling: "日本語 → 英語 1文字ずつ4択",
   en_to_ja_flashcard: "英語 → 日本語 フラッシュカード",
   ja_to_en_flashcard: "日本語 → 英語 フラッシュカード",
-  ja_to_en_input: "日本語 → 英語 入力",
+  ja_to_en_input: "キーボード入力",
   spelling_input: "スペル完全入力",
   preposition_input: "前置詞穴埋め",
   phrase_blank_input: "熟語・語法穴埋め",
@@ -62,7 +61,7 @@ export const ONE_HOUR_REVIEW_DELAY_MS = 60 * 60 * 1000;
 export function reviewDelayForAnswer(mode, correct, requestedDelayMs = null) {
   const requested = Math.max(0, Number(requestedDelayMs) || 0);
   if (requested) return requested;
-  return !correct && (String(mode).endsWith("choice") || mode === "ja_to_en_spelling")
+  return !correct && (String(mode).endsWith("choice") || mode === "ja_to_en_input")
     ? WRONG_REVIEW_DELAY_MS
     : null;
 }
@@ -86,7 +85,7 @@ export const STUDY_CONTENT_LABELS = {
 
 export const STUDY_METHOD_LABELS = {
   ja_to_en_choice: "日本語 → 英語 4択",
-  ja_to_en_spelling: "日本語 → 英語 1文字ずつ4択",
+  ja_to_en_input: "キーボード入力",
   en_to_ja_choice: "英語 → 日本語 4択",
   ja_to_en_flashcard: "日本語 → 英語 フラッシュカード",
   en_to_ja_flashcard: "英語 → 日本語 フラッシュカード",
@@ -96,10 +95,6 @@ export const STUDY_METHOD_LABELS = {
 export const ENGLISH_CONTENT_TYPES = ["word", "phrase", "structure"];
 
 export function itemSupportsMode(item, mode) {
-  if (mode === "ja_to_en_spelling") {
-    return item.type === "word"
-      && (item.questionModes.includes("ja_to_en_choice") || item.questionModes.includes("spelling_input"));
-  }
   if (item.questionModes.includes(mode)) return true;
   if (mode === "en_to_ja_flashcard") return item.questionModes.includes("en_to_ja_choice");
   if (mode === "ja_to_en_flashcard") return item.questionModes.includes("ja_to_en_choice");
@@ -119,7 +114,9 @@ export function normalizeAnswer(value) {
 
 export function isAnswerCorrect(input, acceptedAnswers) {
   const normalized = normalizeAnswer(input);
-  return acceptedAnswers.some((answer) => normalizeAnswer(answer) === normalized);
+  return acceptedAnswers.some((answer) => normalizeAnswer(answer) === normalized)
+    || acceptedInputAnswers(acceptedAnswers)
+      .some((answer) => normalizeAnswer(answer) === normalized);
 }
 
 export function answersForMode(item, mode) {
@@ -132,16 +129,145 @@ export function answersForMode(item, mode) {
   return item.acceptedAnswers;
 }
 
-export function tokenizeAnswer(answer) {
-  return (
-    String(answer ?? "")
-      .replace(/(?:\.{3}|…+|～+)/g, " ")
-      .match(/[A-Za-z]+(?:['’\-][A-Za-z]+)*/g) ?? []
+const INPUT_TOKEN_PATTERN = /[A-Za-z0-9]+(?:['’\-][A-Za-z0-9]+)*/g;
+const JAPANESE_NOTATION_PATTERN = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u;
+const WRAPPING_QUOTE_PATTERN = /^[“”"「」『』]+|[“”"「」『』]+$/gu;
+
+function parseInputAnswer(answer) {
+  const rawParts = String(answer ?? "")
+    .replace(/(?:\.{3}|…+|～+)/g, " … ")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  const notationIndexes = new Set();
+  rawParts.forEach((part, index) => {
+    if (part !== "+") return;
+    notationIndexes.add(index);
+    if (JAPANESE_NOTATION_PATTERN.test(rawParts[index - 1] ?? "")) notationIndexes.add(index - 1);
+    if (JAPANESE_NOTATION_PATTERN.test(rawParts[index + 1] ?? "")) notationIndexes.add(index + 1);
+  });
+
+  const slots = [];
+  const segments = [];
+  rawParts.forEach((rawPart, partIndex) => {
+    if (notationIndexes.has(partIndex) || rawPart === "…") {
+      segments.push({ kind: "fixed", text: rawPart });
+      return;
+    }
+
+    const prefix = rawPart.match(/^[“”"「」『』]+/u)?.[0] ?? "";
+    const suffix = rawPart.match(/[“”"「」『』]+$/u)?.[0] ?? "";
+    let core = rawPart.replace(WRAPPING_QUOTE_PATTERN, "");
+    const optional = /^\([^()\s]+\)$/u.test(core);
+    if (optional) core = core.slice(1, -1);
+    const alternatives = core
+      .split("/")
+      .flatMap((part) => part.match(INPUT_TOKEN_PATTERN) ?? [])
+      .filter(Boolean);
+
+    if (!alternatives.length) {
+      segments.push({ kind: "fixed", text: rawPart });
+      return;
+    }
+    if (prefix) segments.push({ kind: "fixed", text: prefix });
+    const slotIndex = slots.length;
+    slots.push({
+      index: slotIndex,
+      answer: alternatives[0],
+      alternatives: [...new Set(alternatives)],
+      optional,
+    });
+    segments.push({ kind: "slot", slotIndex });
+    if (suffix) segments.push({ kind: "fixed", text: suffix });
+  });
+
+  let layouts = [{ tokens: [], slotIndexes: [] }];
+  for (const slot of slots) {
+    const choices = [
+      ...(slot.optional ? [null] : []),
+      ...slot.alternatives,
+    ];
+    layouts = layouts.flatMap((layout) => choices.map((choice) => choice === null
+      ? layout
+      : {
+          tokens: [...layout.tokens, choice],
+          slotIndexes: [...layout.slotIndexes, slot.index],
+        }));
+  }
+  return { slots, segments, layouts };
+}
+
+export function inputPlanForAnswers(acceptedAnswers = []) {
+  const parsedAnswers = (Array.isArray(acceptedAnswers) ? acceptedAnswers : [])
+    .map(parseInputAnswer)
+    .filter((parsed) => parsed.slots.length);
+  const primary = parsedAnswers[0] ?? { slots: [], segments: [], layouts: [] };
+  const slots = primary.slots.map((slot) => ({ ...slot, alternatives: [...slot.alternatives] }));
+  const segments = primary.segments.map((segment) => ({ ...segment }));
+  const maximumSlotCount = parsedAnswers.reduce(
+    (maximum, parsed) => Math.max(maximum, parsed.slots.length),
+    slots.length,
   );
+  while (slots.length < maximumSlotCount) {
+    const slotIndex = slots.length;
+    slots.push({ index: slotIndex, answer: "", alternatives: [], optional: true });
+    segments.push({ kind: "slot", slotIndex });
+  }
+
+  const layouts = parsedAnswers.flatMap((parsed, answerIndex) => parsed.layouts.map((layout) => ({
+    tokens: [...layout.tokens],
+    slotIndexes: answerIndex === 0
+      ? [...layout.slotIndexes]
+      : layout.tokens.map((_, index) => index),
+  })));
+  return { slots, segments, layouts };
+}
+
+export function acceptedInputAnswers(acceptedAnswers = []) {
+  return [...new Set(
+    inputPlanForAnswers(acceptedAnswers).layouts
+      .map((layout) => layout.tokens.join(" ").trim())
+      .filter(Boolean),
+  )];
+}
+
+export function inputPlanForQuestion(item, mode) {
+  return inputPlanForAnswers(answersForMode(item, mode));
+}
+
+export function tokenizeAnswer(answer) {
+  return parseInputAnswer(answer).slots.map((slot) => slot.answer);
 }
 
 export function slotTokensForQuestion(item, mode) {
-  return tokenizeAnswer(answersForMode(item, mode)[0] ?? "");
+  return inputPlanForQuestion(item, mode).slots.map((slot) => slot.answer);
+}
+
+export function characterHintForToken(token) {
+  return [...String(token ?? "").normalize("NFKC").replace(/[‘’]/g, "'")]
+    .map((character) => /[A-Za-z0-9]/.test(character) ? "_" : /['-]/.test(character) ? character : "")
+    .join("");
+}
+
+export function distributeInputText(plan, text, startIndex = 0) {
+  const parts = String(text ?? "").trim().split(/\s+/).filter(Boolean);
+  const values = Array.from({ length: plan?.slots?.length ?? 0 }, () => "");
+  const start = Math.max(0, Number(startIndex) || 0);
+  const matchingLayout = start === 0
+    ? plan?.layouts?.find((layout) =>
+        normalizeAnswer(layout.tokens.join(" ")) === normalizeAnswer(parts.join(" ")))
+    : null;
+  if (matchingLayout) {
+    parts.forEach((part, index) => {
+      const slotIndex = matchingLayout.slotIndexes[index];
+      if (slotIndex !== undefined && values[slotIndex] !== undefined) values[slotIndex] = part;
+    });
+    return values;
+  }
+  parts.forEach((part, offset) => {
+    if (values[start + offset] !== undefined) values[start + offset] = part;
+  });
+  return values;
 }
 
 export function emptyHistory(itemId) {
@@ -213,20 +339,6 @@ export function accuracyFor(record) {
   return record.totalAttempts > 0
     ? record.correctCount / record.totalAttempts
     : null;
-}
-
-export function spellingLetters(answer) {
-  return String(answer ?? "").match(/[A-Za-z]/g) ?? [];
-}
-
-export function generateLetterChoices(correctLetter, rng = Math.random) {
-  const correct = String(correctLetter ?? "").toUpperCase();
-  if (!/^[A-Z]$/.test(correct)) return [];
-  const distractors = shuffle(
-    [..."ABCDEFGHIJKLMNOPQRSTUVWXYZ"].filter((letter) => letter !== correct),
-    rng,
-  ).slice(0, 3);
-  return shuffle([correct, ...distractors], rng);
 }
 
 export function historyForModes(record, modes = []) {
@@ -546,14 +658,6 @@ export function buildQuestion(item, mode, pool, rng = Math.random, excludedChoic
         choices: [...generateChoices(item, mode, pool, rng, excludedChoiceItemIds), UNKNOWN_CHOICE],
         correctChoice: item.english,
       };
-    case "ja_to_en_spelling":
-      return {
-        ...base,
-        prompt: item.japanese,
-        answer: item.english,
-        spellingLetters: spellingLetters(item.english),
-        instruction: "正しいアルファベットを1文字ずつ選んでください",
-      };
     case "preposition_input":
       return {
         ...base,
@@ -577,7 +681,8 @@ export function buildQuestion(item, mode, pool, rng = Math.random, excludedChoic
       return {
         ...base,
         prompt: item.japanese,
-        instruction: "英語を語順どおり完全入力してください",
+        inputPlan: inputPlanForQuestion(item, mode),
+        instruction: "日本語に対応する英語を入力してください",
       };
   }
 }
@@ -618,9 +723,12 @@ export function normalizeStudySelection(selection = {}) {
   const contentOptions = recallSubject
     ? ["term", "short", "all"]
     : ["word", "phrase", "structure", "all"];
+  const requestedMethod = selection.method === "ja_to_en_spelling"
+    ? "ja_to_en_input"
+    : selection.method;
   const methodOptions = recallSubject
     ? ["recall"]
-    : ["ja_to_en_choice", "ja_to_en_spelling", "en_to_ja_choice", "ja_to_en_flashcard", "en_to_ja_flashcard"];
+    : ["ja_to_en_choice", "ja_to_en_input", "en_to_ja_choice", "ja_to_en_flashcard", "en_to_ja_flashcard"];
   const selectedContents = recallSubject
     ? []
     : Array.isArray(selection.contents)
@@ -637,7 +745,7 @@ export function normalizeStudySelection(selection = {}) {
       : selectedContents.length === 1
         ? selectedContents[0]
         : null;
-  const method = methodOptions.includes(selection.method) ? selection.method : null;
+  const method = methodOptions.includes(requestedMethod) ? requestedMethod : null;
   const direction = ["en_to_ja", "ja_to_en"].includes(selection.direction)
     ? selection.direction
     : method?.startsWith("en_to_ja")
@@ -839,6 +947,30 @@ export function summarizeSession(results = []) {
     bestStreak,
     durationMs,
     averageDurationMs: total ? durationMs / total : 0,
+  };
+}
+
+export function summarizeReviewItems(results = []) {
+  const reviewItems = new Map();
+  for (const result of results) {
+    if (result.correct) continue;
+    const current = reviewItems.get(result.itemId);
+    reviewItems.set(result.itemId, {
+      ...(current ?? result),
+      ...result,
+      wrongCount: (current?.wrongCount ?? 0) + 1,
+    });
+  }
+  return [...reviewItems.values()];
+}
+
+export function visibleReviewItems(results = [], expanded = false, limit = 5) {
+  const items = summarizeReviewItems(results);
+  const safeLimit = Math.max(0, Number(limit) || 0);
+  return {
+    items: expanded ? items : items.slice(0, safeLimit),
+    total: items.length,
+    hasMore: !expanded && items.length > safeLimit,
   };
 }
 

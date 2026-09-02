@@ -59,7 +59,7 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.4c";
+} from "./logic.js?v=2026.9.5a";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -78,7 +78,7 @@ import {
   recordAttempt,
   removeHistory,
   setMeta,
-} from "./storage.js?v=2026.9.4c";
+} from "./storage.js?v=2026.9.5a";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -86,7 +86,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.4c";
+} from "./quiz-gestures.js?v=2026.9.5a";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -548,31 +548,28 @@ function renderStudyContent() {
         title: meta.title,
         detail: meta.detail,
         attribute: `data-study-content="${content}"`,
+        progress: selectionProgress({ types: recallTypesForContent(content) }),
       }))
       .join("");
     return;
   }
 
   elements.studyContentCopy.textContent = "";
-  const baseItems = applyFilters(state.items, state.history, {
-    ...state.filters,
-    performance: "all",
-    minimumWrong: 0,
-    search: "",
-    modes: [],
-  });
+  const baseItems = studyContentBaseItems();
   const count = (type) => baseItems.filter((item) => item.type === type).length;
   elements.studyContentOptions.className = "content-choice-list";
   elements.studyContentOptions.innerHTML = [
     ...ENGLISH_CONTENT_TYPES.map((content) => contentChoiceRow({
       title: STUDY_CONTENT_META[content].title,
-      detail: count(content) ? `${count(content)}語句` : "この条件では出題できません",
+      detail: count(content) ? `${count(content)}語句` : "出題できません",
       attribute: `data-study-content-choice="${content}"${count(content) ? "" : ' disabled aria-disabled="true"'}`,
+      progress: count(content) ? selectionProgress({ types: [content] }) : null,
     })),
     contentChoiceRow({
       title: "全選択",
-      detail: `単語・熟語・構文の${baseItems.length}語句`,
+      detail: `${baseItems.length}語句`,
       attribute: 'data-study-content-choice="all"',
+      progress: selectionProgress({ types: [...ENGLISH_CONTENT_TYPES] }),
     }),
     contentChoiceRow({
       title: "その他",
@@ -583,23 +580,44 @@ function renderStudyContent() {
   ].join("");
 }
 
-function contentChoiceRow({ title, detail, attribute, variant = "primary" }) {
-  return `
-    <button class="content-choice${variant === "secondary" ? " content-choice--secondary" : ""}" type="button" ${attribute}>
+function contentChoiceRow({ title, detail, attribute, variant = "primary", progress = null }) {
+  const classes = [
+    "content-choice",
+    variant === "secondary" ? "content-choice--secondary" : "",
+    progress ? "content-choice--gauge" : "",
+  ].filter(Boolean).join(" ");
+  if (!progress) {
+    return `
+    <button class="${classes}" type="button" ${attribute}>
       <span class="content-choice-copy"><strong>${escapeHtml(title)}</strong><small>${escapeHtml(detail)}</small></span>
       <span class="card-arrow" aria-hidden="true">›</span>
     </button>`;
+  }
+  return `
+    <button class="${classes}" type="button" ${attribute}>
+      <span class="content-choice-head">
+        <strong>${escapeHtml(title)}</strong>
+        <small>${escapeHtml(detail)}</small>
+        <span class="card-arrow" aria-hidden="true">›</span>
+      </span>${progressGaugeMarkup(progress)}
+    </button>`;
 }
 
-function renderStudyContentMulti() {
-  const selectedContents = state.studySelection.contents ?? [];
-  const baseItems = applyFilters(state.items, state.history, {
+// 学習内容の件数は、範囲だけで絞った母数を使う（重要度はこの後の画面で選ぶ）
+function studyContentBaseItems() {
+  return applyFilters(state.items, state.history, {
     ...state.filters,
+    importance: [],
     performance: "all",
     minimumWrong: 0,
     search: "",
     modes: [],
   });
+}
+
+function renderStudyContentMulti() {
+  const selectedContents = state.studySelection.contents ?? [];
+  const baseItems = studyContentBaseItems();
   elements.studyContentMultiOptions.innerHTML = ENGLISH_CONTENT_TYPES.map((content) => {
     const selected = selectedContents.includes(content);
     const meta = STUDY_CONTENT_META[content];
@@ -692,18 +710,21 @@ function renderStudyImportance() {
     performance: "all",
     minimumWrong: 0,
   }).length;
+  const types = studyContentTypes();
   const rows = [
     contentChoiceRow({
       title: "全重要度",
-      detail: `${countFor(null)}${unit}すべて`,
+      detail: `${countFor(null)}${unit}`,
       attribute: 'data-study-importance-choice="all"',
+      progress: selectionProgress({ types }),
     }),
     ...available.map((importance) => {
       const count = countFor(importance);
       return contentChoiceRow({
         title: importance,
-        detail: count ? `${count}${unit}` : "この条件では出題できません",
+        detail: count ? `${count}${unit}` : "出題できません",
         attribute: `data-study-importance-choice="${importance}"${count ? "" : ' disabled aria-disabled="true"'}`,
+        progress: count ? selectionProgress({ types, importance: [importance] }) : null,
       });
     }),
     contentChoiceRow({
@@ -846,7 +867,53 @@ function cardStudyProgress(card) {
   })[0] ?? null;
 }
 
-function modeProgressCard(card, unit) {
+// 形式カード・学習内容・重要度で共通の進捗ゲージ。
+// 1本のトラックに「未回答（背景）」「解答済み（薄い塗り）」「習得（濃い塗り）」を重ねる。
+function progressGaugeMarkup(progress) {
+  const answeredPercent = Math.round(progress.answeredRate * 100);
+  const masteredPercent = Math.round(progress.masteredRate * 100);
+  const label = `解答済み ${answeredPercent}パーセント、習得 ${masteredPercent}パーセント`;
+  return `
+      <span class="progress-gauge" role="img" aria-label="${escapeHtml(label)}">
+        <span class="progress-gauge-answered" style="width:${answeredPercent}%"></span>
+        <span class="progress-gauge-mastered" style="width:${masteredPercent}%"></span>
+      </span>
+      <span class="progress-legend">
+        <span class="progress-figure is-answered">解答済み ${answeredPercent}%（${progress.answeredItems}/${progress.totalItems}）</span>
+        <span class="progress-figure is-mastered">習得 ${masteredPercent}%（${progress.masteredItems}/${progress.totalItems}）</span>
+      </span>`;
+}
+
+// 現在選んでいる形式で、指定した内容・重要度に絞った進捗を出す。
+function recallTypesForContent(content) {
+  if (!isRecallSubject()) return [];
+  return content === "all"
+    ? [`${state.subject}-term`, `${state.subject}-short`]
+    : [`${state.subject}-${content}`];
+}
+
+// いま選んでいる学習内容が対象にしている項目種別
+function studyContentTypes() {
+  if (isRecallSubject()) return recallTypesForContent(state.studySelection.content ?? "all");
+  const contents = state.studySelection.contents ?? [];
+  return contents.length ? [...contents] : [...ENGLISH_CONTENT_TYPES];
+}
+
+function selectionProgress({ types = [], importance = [] } = {}) {
+  const mode = exactStudyMode(state.studySelection);
+  if (!mode) return null;
+  return summarizeRangeModeProgress({
+    items: state.items,
+    history: state.history,
+    ranges: state.filters.ranges,
+    types,
+    importance,
+    mode,
+    masteredIds: masteredIdsForMode(state.studyProgress, mode, { criterion: masteryCriterion() }),
+  });
+}
+
+function modeProgressCard(card) {
   const entry = cardStudyProgress(card);
   const cycle = studyProgressSummary(entry?.progress ?? null);
   const progress = summarizeRangeModeProgress({
@@ -857,10 +924,6 @@ function modeProgressCard(card, unit) {
     mode: card.mode,
     masteredIds: masteredIdsForMode(state.studyProgress, card.mode, { criterion: masteryCriterion() }),
   });
-  const answeredPercent = Math.round(progress.answeredRate * 100);
-  const masteredPercent = Math.round(progress.masteredRate * 100);
-  const masteredCopy = `習得 ${masteredPercent}%（${progress.masteredItems} / ${progress.totalItems}${unit}）`;
-  const gaugeLabel = `解答済み ${answeredPercent}パーセント、習得 ${masteredPercent}パーセント`;
   const cycleLabel = entry ? contentLabelFromProgressKey(entry.meta) : "";
   const cycleCopy = cycle
     ? `${cycleLabel ? `${cycleLabel} ` : ""}${cycle.masteryRound > 1 ? `R${cycle.masteryRound}· ` : ""}${cycle.cycleNumber}周目 残り${cycle.remainingCount}`
@@ -874,14 +937,7 @@ function modeProgressCard(card, unit) {
           : '<span class="mode-progress-cycle">出題できません</span>'}
         <span class="card-arrow" aria-hidden="true">›</span>
       </span>
-      <span class="mode-progress-gauge" role="img" aria-label="${escapeHtml(gaugeLabel)}">
-        <span class="mode-progress-answered" style="width:${answeredPercent}%"></span>
-        <span class="mode-progress-mastered" style="width:${masteredPercent}%"></span>
-      </span>
-      <span class="mode-progress-legend">
-        <span class="mode-progress-figure is-answered">解答済み ${answeredPercent}%（${progress.answeredItems} / ${progress.totalItems}${unit}）</span>
-        <span class="mode-progress-figure is-mastered">${escapeHtml(masteredCopy)}</span>
-      </span>
+${progressGaugeMarkup(progress)}
     </button>`;
 }
 
@@ -891,13 +947,12 @@ function renderRangeDetail() {
     setView("dashboard");
     return;
   }
-  const unit = isRecallSubject() ? "問" : "語句";
   elements.rangeDetailTitle.textContent = rangeDetailLabel(ranges);
   elements.rangeDetailCopy.textContent = ranges.length > 1 ? `${ranges.length}範囲` : "";
   elements.rangeDetailGroups.innerHTML = dashboardTargetGroups().map((group) => `
     <section class="mode-group" aria-label="${escapeHtml(group.label)}">
       <h2 class="mode-group-title">${escapeHtml(group.label)}</h2>
-      <div class="mode-card-list">${group.cards.map((card) => modeProgressCard(card, unit)).join("")}</div>
+      <div class="mode-card-list">${group.cards.map((card) => modeProgressCard(card)).join("")}</div>
     </section>`).join("");
 }
 
@@ -4083,7 +4138,7 @@ async function boot() {
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.4c").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.5a").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

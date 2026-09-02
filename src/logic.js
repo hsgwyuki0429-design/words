@@ -1130,12 +1130,19 @@ export function hasAnsweredMode(record, mode) {
   return (record?.modeStats?.[mode]?.attempts ?? 0) > 0;
 }
 
-export function itemsForModeProgress(items = [], { ranges = [], types = [], mode } = {}) {
+export function itemsForModeProgress(items = [], {
+  ranges = [],
+  types = [],
+  importance = [],
+  mode,
+} = {}) {
   const rangeSet = new Set((ranges ?? []).filter(Boolean));
   const typeSet = new Set((types ?? []).filter(Boolean));
+  const importanceSet = new Set((importance ?? []).filter(Boolean));
   return items.filter((item) =>
     (!rangeSet.size || rangeSet.has(item.range)) &&
     (!typeSet.size || typeSet.has(item.type)) &&
+    (!importanceSet.size || importanceSet.has(item.importance)) &&
     itemSupportsMode(item, mode));
 }
 
@@ -1151,10 +1158,11 @@ export function summarizeRangeModeProgress({
   history,
   ranges = [],
   types = [],
+  importance = [],
   mode,
   masteredIds = [],
 } = {}) {
-  const scoped = itemsForModeProgress(items, { ranges, types, mode });
+  const scoped = itemsForModeProgress(items, { ranges, types, importance, mode });
   const rangeList = [...new Set((ranges ?? []).filter(Boolean))];
   const mastered = new Set(masteredIds ?? []);
   let answeredItems = 0;

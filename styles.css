@@ -4166,7 +4166,7 @@ body.quiz-active .main-content { padding-bottom: 0; }
 }
 
 /* 1本のトラックに「未回答（背景）」「解答済み（薄い塗り）」「習得（濃い塗り）」を重ねる */
-.mode-progress-gauge {
+.progress-gauge {
   position: relative;
   display: block;
   overflow: hidden;
@@ -4176,8 +4176,8 @@ body.quiz-active .main-content { padding-bottom: 0; }
   border-radius: 999px;
 }
 
-.mode-progress-answered,
-.mode-progress-mastered {
+.progress-gauge-answered,
+.progress-gauge-mastered {
   position: absolute;
   top: 0;
   left: 0;
@@ -4187,22 +4187,22 @@ body.quiz-active .main-content { padding-bottom: 0; }
   transition: width 220ms ease;
 }
 
-.mode-progress-answered {
+.progress-gauge-answered {
   background: rgba(10, 102, 216, 0.26);
 }
 
-.mode-progress-mastered {
+.progress-gauge-mastered {
   background: var(--blue);
 }
 
-.mode-progress-legend {
+.progress-legend {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   gap: 2px 12px;
 }
 
-.mode-progress-figure {
+.progress-figure {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -4211,27 +4211,27 @@ body.quiz-active .main-content { padding-bottom: 0; }
   font-weight: 660;
 }
 
-.mode-progress-figure::before {
+.progress-figure::before {
   width: 9px;
   height: 9px;
   border-radius: 3px;
   content: "";
 }
 
-.mode-progress-figure.is-answered::before {
+.progress-figure.is-answered::before {
   background: rgba(10, 102, 216, 0.32);
 }
 
-.mode-progress-figure.is-mastered::before {
+.progress-figure.is-mastered::before {
   background: var(--blue);
 }
 
 /* 習得判定が未確定の間は凡例も控えめにしておく */
-.mode-progress-figure.is-pending {
+.progress-figure.is-pending {
   color: var(--tertiary);
 }
 
-.mode-progress-figure.is-pending::before {
+.progress-figure.is-pending::before {
   background: transparent;
   box-shadow: inset 0 0 0 1.5px var(--line-strong);
 }
@@ -4321,6 +4321,41 @@ body.quiz-active .main-content { padding-bottom: 0; }
   min-height: 50px;
   background: var(--surface);
   border-style: dashed;
+}
+
+.content-choice--gauge {
+  display: grid;
+  align-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 10px 14px;
+}
+
+.content-choice-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  line-height: 1.2;
+}
+
+.content-choice-head strong {
+  margin-right: auto;
+  font-size: 16px;
+  font-weight: 730;
+  letter-spacing: -0.02em;
+}
+
+.content-choice-head small {
+  color: var(--secondary);
+  font-size: 11px;
+  font-weight: 660;
+  white-space: nowrap;
+}
+
+.content-choice-head .card-arrow {
+  align-self: center;
+  font-size: 16px;
+  line-height: 1;
 }
 
 .content-choice-copy strong,
@@ -4500,6 +4535,46 @@ body.quiz-active .main-content { padding-bottom: 0; }
     padding-bottom: 7px;
   }
 
+  .content-choice-list {
+    gap: 4px;
+  }
+
+  .content-choice--gauge {
+    gap: 4px;
+    padding: 6px 12px;
+  }
+
+  #study-importance-options-single .content-choice--gauge {
+    gap: 2px;
+    padding: 4px 11px;
+  }
+
+  #study-importance-options-single .content-choice-head {
+    line-height: 1.1;
+  }
+
+  #study-importance-options-single .progress-figure {
+    font-size: 9px;
+  }
+
+  .content-choice-head .card-arrow {
+    font-size: 14px;
+  }
+
+  .content-choice-head strong,
+  #study-importance-options-single .content-choice-head strong {
+    font-size: 14px;
+  }
+
+  .progress-gauge,
+  #study-importance-options-single .progress-gauge {
+    height: 7px;
+  }
+
+  .progress-figure {
+    font-size: 10px;
+  }
+
   .content-choice--secondary {
     min-height: 46px;
   }
@@ -4538,11 +4613,25 @@ body.quiz-active .main-content { padding-bottom: 0; }
     font-size: 15px;
   }
 
-  .mode-progress-gauge {
+  .progress-gauge {
     height: 8px;
   }
 
-  .mode-progress-figure {
+  .progress-figure {
     font-size: 10px;
   }
+}
+
+/* 重要度は行数が多いので、ゲージ付きの行をさらに詰めて1画面に収める */
+#study-importance-options-single .content-choice--gauge {
+  gap: 4px;
+  padding: 7px 14px;
+}
+
+#study-importance-options-single .progress-gauge {
+  height: 8px;
+}
+
+#study-importance-options-single .content-choice-head strong {
+  font-size: 15px;
 }

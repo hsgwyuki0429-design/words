@@ -147,7 +147,7 @@ test("範囲詳細には現行の英語5形式だけが並ぶ", () => {
   );
   const detailSource = functionSource("renderRangeDetail", "startStudyFromTarget");
   assert.match(detailSource, /dashboardTargetGroups\(\)/);
-  assert.match(detailSource, /modeProgressCard\(card, unit\)/);
+  assert.match(detailSource, /modeProgressCard\(card\)/);
 });
 
 test("the retired spelling_input format is not revived in the new flow", () => {
@@ -170,14 +170,35 @@ test("the range list shows range names only, with no rates or scores", () => {
   assert.match(indexSource, /id="dashboard-range-list"/);
 });
 
-test("形式カードの数値は何の数字かが分かる形で出す", () => {
+test("ゲージの数値は何の数字かが分かる形で出す", () => {
+  const gaugeSource = functionSource("progressGaugeMarkup", "selectionProgress");
+  assert.match(gaugeSource, /解答済み \$\{answeredPercent\}%（\$\{progress\.answeredItems\}\/\$\{progress\.totalItems\}）/);
+  assert.match(gaugeSource, /習得 \$\{masteredPercent\}%（\$\{progress\.masteredItems\}\/\$\{progress\.totalItems\}）/);
   const cardSource = functionSource("modeProgressCard", "renderRangeDetail");
-  assert.match(cardSource, /解答済み \$\{answeredPercent\}%（\$\{progress\.answeredItems\} \/ \$\{progress\.totalItems\}\$\{unit\}）/);
-  assert.match(cardSource, /習得 \$\{masteredPercent\}%（\$\{progress\.masteredItems\} \/ \$\{progress\.totalItems\}\$\{unit\}）/);
   assert.match(cardSource, /\$\{cycle\.cycleNumber\}周目 残り\$\{cycle\.remainingCount\}/);
   // 集計そのものは logic.js の純粋関数に任せる
   assert.match(cardSource, /summarizeRangeModeProgress\(\{/);
   assert.doesNotMatch(cardSource, /modeStats/);
+});
+
+test("学習内容と重要度のボタンにも形式カードと同じゲージを入れる", () => {
+  // 3画面が同じ progressGaugeMarkup を使う
+  assert.match(functionSource("modeProgressCard", "renderRangeDetail"), /\$\{progressGaugeMarkup\(progress\)\}/);
+  assert.match(functionSource("contentChoiceRow", "renderStudyContentMulti"), /\$\{progressGaugeMarkup\(progress\)\}/);
+  // 学習内容は「その形式 × その内容」、重要度は「その形式 × 選択中の内容 × その重要度」で集計
+  const contentSource = functionSource("renderStudyContent", "contentChoiceRow");
+  assert.match(contentSource, /progress: count\(content\) \? selectionProgress\(\{ types: \[content\] \}\) : null/);
+  assert.match(contentSource, /progress: selectionProgress\(\{ types: \[\.\.\.ENGLISH_CONTENT_TYPES\] \}\)/);
+  const importanceSource = functionSource("renderStudyImportance", "renderStudyImportanceSelect");
+  assert.match(importanceSource, /progress: selectionProgress\(\{ types \}\)/);
+  assert.match(importanceSource, /progress: count \? selectionProgress\(\{ types, importance: \[importance\] \}\) : null/);
+  // 仕組みは形式カードと同じ（同じ集計関数・同じ習得ラウンド）
+  const selectionSource = functionSource("selectionProgress", "modeProgressCard");
+  assert.match(selectionSource, /summarizeRangeModeProgress\(\{/);
+  assert.match(selectionSource, /masteredIdsForMode\(state\.studyProgress, mode, \{ criterion: masteryCriterion\(\) \}\)/);
+  assert.match(selectionSource, /exactStudyMode\(state\.studySelection\)/);
+  // ゲージ付きの行も 44px 以上
+  assert.match(stylesSource, /\.content-choice--gauge \{[^}]*min-height: 44px/);
 });
 
 test("tapping a format card settles range and format in one step", () => {
@@ -249,7 +270,7 @@ test("the mastery gauge is fed by the current mastery round, not by long-term hi
   assert.equal(withRound.masteredRate, 0.5);
 
   assert.match(appSource, /masteredIds: masteredIdsForMode\(state\.studyProgress, card\.mode, \{ criterion: masteryCriterion\(\) \}\)/);
-  assert.match(stylesSource, /\.mode-progress-mastered \{[\s\S]*?background: var\(--blue\)/);
+  assert.match(stylesSource, /\.progress-gauge-mastered \{[\s\S]*?background: var\(--blue\)/);
   // 習得条件をダッシュボードの描画へ直接書かない
   assert.doesNotMatch(
     functionSource("modeProgressCard", "renderRangeDetail"),
@@ -337,7 +358,7 @@ test("範囲一覧と形式カードは1画面に収まる高さで組む", () =
   // 形式カードは説明文と「この形式で学習する」を畳んで高さを抑える
   const cardSource = functionSource("modeProgressCard", "renderRangeDetail");
   assert.doesNotMatch(cardSource, /mode-progress-start|card\.detail/);
-  assert.match(stylesSource, /\.mode-progress-gauge \{[^}]*height: 10px/);
+  assert.match(stylesSource, /\.progress-gauge \{[^}]*height: 10px/);
   assert.match(stylesSource, /\.mode-group \{[^}]*margin-bottom: 10px/);
 });
 
@@ -375,4 +396,55 @@ test("範囲一覧の先頭に、2個分の幅を持つ全範囲ボタンを置�
   );
   // 範囲一覧には割合や成績を出さない方針は保つ
   assert.doesNotMatch(dashboardSource, /正答率|習得率|回答率|%/);
+});
+
+test("ゲージは重要度と学習内容でも絞り込める", () => {
+  const scoped = [
+    ...Array.from({ length: 10 }, (_, index) =>
+      ({ ...makeItem(`sss-${index}`), importance: "SSS" })),
+    ...Array.from({ length: 20 }, (_, index) =>
+      ({ ...makeItem(`b-${index}`), importance: "B" })),
+    ...Array.from({ length: 5 }, (_, index) =>
+      ({ ...makeItem(`phrase-${index}`, { type: "phrase" }), importance: "SSS" })),
+  ];
+  const history = historyFrom([
+    ["sss-0", "ja_to_en_input", true],
+    ["sss-1", "ja_to_en_input", true],
+    ["b-0", "ja_to_en_input", true],
+  ]);
+  const base = { items: scoped, history, ranges: ["Plastic"], mode: "ja_to_en_input" };
+
+  // 重要度で絞る
+  const sss = summarizeRangeModeProgress({ ...base, importance: ["SSS"] });
+  assert.equal(sss.totalItems, 15, "SSS は単語10＋熟語5");
+  assert.equal(sss.answeredItems, 2);
+  const b = summarizeRangeModeProgress({ ...base, importance: ["B"] });
+  assert.equal(b.totalItems, 20);
+  assert.equal(b.answeredItems, 1);
+
+  // 学習内容（項目種別）で絞る
+  const words = summarizeRangeModeProgress({ ...base, types: ["word"] });
+  assert.equal(words.totalItems, 30);
+  const phrases = summarizeRangeModeProgress({ ...base, types: ["phrase"] });
+  assert.equal(phrases.totalItems, 5);
+  assert.equal(phrases.answeredItems, 0);
+
+  // 重要度と学習内容の組み合わせ
+  const both = summarizeRangeModeProgress({ ...base, types: ["word"], importance: ["SSS"] });
+  assert.equal(both.totalItems, 10);
+  assert.equal(both.answeredItems, 2);
+  assert.equal(both.answeredRate, 0.2);
+
+  // 習得は習得ラウンドの masteredIds から
+  const mastered = summarizeRangeModeProgress({
+    ...base,
+    types: ["word"],
+    importance: ["SSS"],
+    masteredIds: ["sss-0", "b-0"],
+  });
+  assert.equal(mastered.masteredItems, 1, "絞り込みの外の b-0 は数えない");
+  assert.equal(mastered.masteredRate, 0.1);
+
+  // 絞り込みなしは従来どおり
+  assert.equal(summarizeRangeModeProgress(base).totalItems, 35);
 });

@@ -4,11 +4,9 @@ import { readFileSync } from "node:fs";
 
 import {
   ENGLISH_STUDY_MODES,
-  MASTERY_RULE,
   answeredCountForMode,
   dashboardStudyCards,
   hasAnsweredMode,
-  isMasteredForMode,
   mergeAttempt,
   progressForRangeAndMode,
   studyConfigForTarget,
@@ -164,7 +162,7 @@ test("the retired spelling_input format is not revived in the new flow", () => {
 });
 
 test("the range list shows range names only, with no rates or scores", () => {
-  const dashboardSource = functionSource("renderDashboard", "modeProgressCard");
+  const dashboardSource = functionSource("renderDashboard", "cardStudyProgress");
   assert.match(dashboardSource, /data-dashboard-range="\$\{escapeHtml\(range\)\}"/);
   assert.match(dashboardSource, /range-choice-name">\$\{escapeHtml\(range\)\}/);
   assert.doesNotMatch(dashboardSource, /formatPercent|answeredRate|masteredRate|accuracy|mastery/);
@@ -176,6 +174,7 @@ test("format cards state what each number means", () => {
   const cardSource = functionSource("modeProgressCard", "renderRangeDetail");
   assert.match(cardSource, /解答済み \$\{answeredPercent\}%（\$\{progress\.answeredItems\} \/ \$\{progress\.totalItems\}\$\{unit\}）/);
   assert.match(cardSource, /習得 \$\{masteredPercent\}%（\$\{progress\.masteredItems\} \/ \$\{progress\.totalItems\}\$\{unit\}）/);
+  assert.match(cardSource, /\$\{cycle\.cycleNumber\}周目 · 残り\$\{cycle\.remainingCount\}\$\{unit\}/);
   // 集計そのものは logic.js の純粋関数に任せる
   assert.match(cardSource, /summarizeRangeModeProgress\(\{/);
   assert.doesNotMatch(cardSource, /modeStats/);
@@ -199,9 +198,10 @@ test("tapping a format card settles range and format in one step", () => {
 
   const startSource = functionSource("startStudyFromTarget", "showToast");
   assert.match(startSource, /studyConfigForTarget\(\{/);
-  assert.match(startSource, /startSession\(config\)/);
-  // 範囲・出題方向・形式を聞き直すステップへ戻らないこと
-  assert.doesNotMatch(startSource, /setView\("study-(range-select|content|method|scope)"\)/);
+  assert.match(startSource, /state\.studySelection = config\.selection/);
+  // 次は「何を学習するか」。範囲・出題方向・形式は聞き直さない。
+  assert.match(startSource, /setView\(isRecallSubject\(\) \? "study-sort-kind" : "study-content"\)/);
+  assert.doesNotMatch(startSource, /setView\("study-(range-select|method|scope)"\)/);
   assert.match(appSource, /if \(target\.dataset\.studyTarget\) startStudyFromTarget\(target\.dataset\.studyTarget\)/);
 });
 
@@ -220,34 +220,47 @@ test("a dedicated multi-range entry reuses the existing multi-select flow", () =
   assert.match(appSource, /state\.filters\.ranges = wasAllSelected/);
 });
 
-test("mastery stays an undecided, swappable layer", () => {
-  assert.equal(MASTERY_RULE.decided, false);
-  const record = historyFrom([
+test("the mastery gauge is fed by the current mastery round, not by long-term history", () => {
+  const scoped = [makeItem("apple"), makeItem("berry")];
+  const history = historyFrom([
     ["apple", "ja_to_en_input", true],
     ["apple", "ja_to_en_input", true],
-  ]).get("apple");
-  assert.equal(isMasteredForMode(record, "ja_to_en_input"), null);
-  const progress = progressForRangeAndMode([makeItem("apple")], historyFrom([]), "Plastic", "ja_to_en_input");
-  assert.equal(progress.masteryDecided, false);
-  assert.equal(progress.masteredItems, null);
-  assert.equal(progress.masteredRate, null);
-  // UI と CSS は習得レイヤーを受け入れる形だけ用意しておく
-  assert.match(appSource, /mode-progress-mastered\$\{progress\.masteryDecided \? "" : " is-pending"\}/);
+    ["berry", "ja_to_en_input", true],
+  ]);
+  const noRound = summarizeRangeModeProgress({
+    items: scoped,
+    history,
+    ranges: ["Plastic"],
+    mode: "ja_to_en_input",
+  });
+  assert.equal(noRound.answeredItems, 2);
+  assert.equal(noRound.masteredItems, 0);
+  assert.equal(noRound.masteredRate, 0);
+
+  const withRound = summarizeRangeModeProgress({
+    items: scoped,
+    history,
+    ranges: ["Plastic"],
+    mode: "ja_to_en_input",
+    masteredIds: ["apple"],
+  });
+  assert.equal(withRound.answeredItems, 2);
+  assert.equal(withRound.masteredItems, 1);
+  assert.equal(withRound.masteredRate, 0.5);
+
+  assert.match(appSource, /masteredIds: masteredIdsForMode\(state\.studyProgress, card\.mode, \{ criterion: masteryCriterion\(\) \}\)/);
   assert.match(stylesSource, /\.mode-progress-mastered \{[\s\S]*?background: var\(--blue\)/);
-  assert.match(logicSource, /export function isMasteredForMode/);
-  // 習得条件をダッシュボードの描画・集計へ直接書かないこと
+  // 習得条件をダッシュボードの描画へ直接書かない
   assert.doesNotMatch(
-    functionSource("dashboardTargetGroups", "startStudyFromTarget"),
-    /currentCorrectStreak|bestCorrectStreak|lastResult|accuracyFor|連続正解/,
+    functionSource("modeProgressCard", "renderRangeDetail"),
+    /currentCorrectStreak|firstAttemptResults|連続正解/,
   );
 });
 
 test("importance, sorting and answer-status filters survive as secondary controls", () => {
   const advancedSource = functionSource("renderRangeDetailAdvanced", "startStudyFromTarget");
   assert.match(advancedSource, /data-detail-importance/);
-  assert.match(advancedSource, /data-detail-performance/);
   assert.match(advancedSource, /data-detail-sort/);
-  assert.match(advancedSource, /PERFORMANCE_LABELS/);
   assert.match(advancedSource, /detailSortOptions\(\)/);
   assert.match(indexSource, /id="range-detail-advanced"/);
   // 並び替えの選択肢（重要度・苦手順・ランダム・その他）は削っていない
@@ -256,8 +269,11 @@ test("importance, sorting and answer-status filters survive as secondary control
   assert.match(appSource, /"importance-desc": "重要度順"/);
   // 従来のステップ形式も残す
   assert.match(indexSource, /id="view-study-sort-kind"/);
-  assert.match(indexSource, /id="view-study-performance"/);
+  assert.match(indexSource, /id="view-study-importance-kind"/);
   assert.match(appSource, /data-open-step-flow"\)\) \{[\s\S]*?setView\("study-content"\)/);
+  // 回答状況を毎回選ばせる画面は通常フローから外す
+  assert.doesNotMatch(indexSource, /id="view-study-performance"/);
+  assert.doesNotMatch(appSource, /data-study-performance=/);
 });
 
 test("recall subjects share the same dashboard shape", () => {

@@ -15,7 +15,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icons/app-icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icons/app-icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=2026.9.3a" />
+    <link rel="stylesheet" href="./styles.css?v=2026.9.3b" />
   </head>
   <body>
     <div class="fx-backdrop" id="fx-backdrop" aria-hidden="true">
@@ -131,14 +131,23 @@
           </div>
         </section>
 
-        <section class="view" id="view-study-content" data-view="study-content" hidden>
-          <div class="page-heading selection-page-heading">
-            <button class="text-button back-link" type="button" data-view-target="study-range-select">← 範囲を選び直す</button>
-            <p class="eyebrow">STEP 2</p>
+        <section class="view compact-step-view" id="view-study-content" data-view="study-content" hidden>
+          <div class="page-heading selection-page-heading compact-step-heading">
+            <button class="text-button back-link" type="button" id="study-content-back" data-view-target="range-detail">← 形式を選び直す</button>
             <h1 id="study-content-heading">何を学習しますか？</h1>
-            <p id="study-content-copy">学習する教材の種類を選んでください。</p>
+            <p id="study-content-copy">押すとそのまま次へ進みます。</p>
           </div>
-          <div class="multi-select-grid content-select-grid" id="study-content-options"></div>
+          <div class="content-choice-list" id="study-content-options"></div>
+        </section>
+
+        <section class="view" id="view-study-content-multi" data-view="study-content-multi" hidden>
+          <div class="page-heading selection-page-heading">
+            <button class="text-button back-link" type="button" data-view-target="study-content">← 戻る</button>
+            <p class="eyebrow">MULTIPLE</p>
+            <h1>組み合わせを選ぶ</h1>
+            <p>単語・熟語・構文から複数選べます。</p>
+          </div>
+          <div class="multi-select-grid content-select-grid" id="study-content-multi-options"></div>
           <div class="sticky-action selection-next-action">
             <p class="selection-ready-copy" id="study-content-action-copy" hidden></p>
             <button class="primary-button" id="confirm-study-content" type="button" disabled>次へ <span aria-hidden="true">→</span></button>
@@ -147,7 +156,7 @@
 
         <section class="view" id="view-study-method" data-view="study-method" hidden>
           <div class="page-heading selection-page-heading">
-            <button class="text-button back-link" type="button" data-view-target="study-content">← 教材を選び直す</button>
+            <button class="text-button back-link" type="button" data-view-target="study-content">← 学習内容を選び直す</button>
             <p class="eyebrow">STEP 3</p>
             <h1 id="study-method-heading">出題方法を選ぶ</h1>
             <p id="study-method-copy">一回の学習では一つの方法に集中します。</p>
@@ -188,24 +197,13 @@
           </div>
         </section>
 
-        <section class="view" id="view-study-performance" data-view="study-performance" hidden>
-          <div class="page-heading selection-page-heading">
-            <button class="text-button back-link" type="button" data-back-before-performance>← 重要度を選び直す</button>
-            <p class="eyebrow">FILTER 3</p>
-            <h1>回答状況を絞り込む</h1>
-            <p id="study-performance-copy">今の条件に合う回答状況から選んでください。</p>
-          </div>
-          <div class="selection-grid" id="study-performance-options"></div>
-        </section>
-
-        <section class="view" id="view-study-sort-kind" data-view="study-sort-kind" hidden>
-          <div class="page-heading selection-page-heading">
-            <button class="text-button back-link" type="button" data-back-before-sort>← 回答状況を選び直す</button>
-            <p class="eyebrow">SORT</p>
+        <section class="view compact-step-view" id="view-study-sort-kind" data-view="study-sort-kind" hidden>
+          <div class="page-heading selection-page-heading compact-step-heading">
+            <button class="text-button back-link" type="button" data-back-before-sort>← 前へ戻る</button>
             <h1>並び替えを選ぶ</h1>
-            <p>問題を出す順番を選んでください。</p>
+            <p>押すとそのまま学習が始まります。</p>
           </div>
-          <div class="selection-grid sort-kind-grid" id="study-sort-kind-options"></div>
+          <div class="sort-kind-block" id="study-sort-kind-options"></div>
         </section>
 
         <section class="view" id="view-study-sort-other" data-view="study-sort-other" hidden>
@@ -401,6 +399,6 @@
     </aside>
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-    <script type="module" src="./src/app.js?v=2026.9.3a"></script>
+    <script type="module" src="./src/app.js?v=2026.9.3b"></script>
   </body>
 </html>

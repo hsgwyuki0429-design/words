@@ -16,12 +16,13 @@ function functionSource(name, nextName) {
   return appSource.slice(start, end);
 }
 
-test("previous-study resume UI and active snapshot behavior are removed", () => {
-  assert.doesNotMatch(appSource, /activeStudy|lastSessionConfig|studyProgress:|data-resume-active|前回の学習|途中から再開/);
+test("the old resume snapshot UI stays removed; resuming now comes from cycle state", () => {
+  assert.doesNotMatch(appSource, /activeStudy|lastSessionConfig|data-resume-active|前回の学習/);
   assert.doesNotMatch(indexSource, /resume-study-card/);
   assert.doesNotMatch(stylesSource, /\.resume-study-card|\.home-resume-top/);
   assert.match(appSource, /state\.recentStudies = normalizeRecentStudies/);
   assert.match(appSource, /recent-study-action">この条件で始める/);
+  assert.match(appSource, /pendingCycleItemIds\(progress\)/);
 });
 
 test("range and English content selections start with all items selected", () => {
@@ -43,7 +44,7 @@ test("an individual selection replaces the initial select-all state", () => {
 
 test("study sorting exposes workbook difficulty order", () => {
   assert.match(appSource, /"difficulty-level-desc": "難易度順"/);
-  assert.match(appSource, /key: "difficulty-level-desc"[\s\S]*?title: "難易度順"[\s\S]*?F → A/);
+  assert.match(appSource, /key: "difficulty-level-desc", title: "難易度順"/);
 });
 
 test("result screen shows only the three requested session records", () => {

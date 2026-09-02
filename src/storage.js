@@ -103,6 +103,31 @@ export async function recordAttempt(itemId, mode, correct, durationMs) {
   });
 }
 
+// 直前の回答を取り消すため、回答前のレコードをそのまま書き戻す／削除する。
+export async function putHistory(record) {
+  await openDatabase();
+  if (!record?.itemId) return null;
+  if (useFallback) {
+    const data = fallbackData();
+    data.history = { ...(data.history ?? {}), [record.itemId]: record };
+    writeFallback(data);
+    return record;
+  }
+  await transaction(HISTORY_STORE, "readwrite", (store) => store.put(record));
+  return record;
+}
+
+export async function removeHistory(itemId) {
+  await openDatabase();
+  if (useFallback) {
+    const data = fallbackData();
+    if (data.history) delete data.history[itemId];
+    writeFallback(data);
+    return;
+  }
+  await transaction(HISTORY_STORE, "readwrite", (store) => store.delete(itemId));
+}
+
 export async function getMeta(key, fallback = null) {
   await openDatabase();
   if (useFallback) return fallbackData().meta?.[key] ?? fallback;

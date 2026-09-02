@@ -16,12 +16,13 @@ function functionSource(name, nextName) {
   return appSource.slice(start, end);
 }
 
-test("previous-study resume UI and active snapshot behavior are removed", () => {
-  assert.doesNotMatch(appSource, /activeStudy|lastSessionConfig|studyProgress:|data-resume-active|前回の学習|途中から再開/);
+test("the old resume snapshot UI stays removed; resuming now comes from cycle state", () => {
+  assert.doesNotMatch(appSource, /activeStudy|lastSessionConfig|data-resume-active|前回の学習/);
   assert.doesNotMatch(indexSource, /resume-study-card/);
   assert.doesNotMatch(stylesSource, /\.resume-study-card|\.home-resume-top/);
   assert.match(appSource, /state\.recentStudies = normalizeRecentStudies/);
   assert.match(appSource, /recent-study-action">この条件で始める/);
+  assert.match(appSource, /pendingCycleItemIds\(progress\)/);
 });
 
 test("range and English content selections start with all items selected", () => {
@@ -43,11 +44,11 @@ test("an individual selection replaces the initial select-all state", () => {
 
 test("study sorting exposes workbook difficulty order", () => {
   assert.match(appSource, /"difficulty-level-desc": "難易度順"/);
-  assert.match(appSource, /key: "difficulty-level-desc"[\s\S]*?title: "難易度順"[\s\S]*?F → A/);
+  assert.match(appSource, /key: "difficulty-level-desc", title: "難易度順"/);
 });
 
 test("result screen shows only the three requested session records", () => {
-  const resultSource = functionSource("renderSessionComplete", "renderAnalysis");
+  const resultSource = functionSource("sessionResultMarkup", "renderSessionComplete");
   assert.match(resultSource, /isSelfGraded \? "習得" : "正解"/);
   assert.match(resultSource, /isSelfGraded \? "復習へ" : "間違い"/);
   assert.match(resultSource, /<span>学習時間<\/span><strong>\$\{formatSeconds\(summary\.durationMs\)\}/);
@@ -57,7 +58,7 @@ test("result screen shows only the three requested session records", () => {
 });
 
 test("result screen presents exactly one primary next action", () => {
-  const resultSource = functionSource("renderSessionComplete", "renderAnalysis");
+  const resultSource = functionSource("sessionResultMarkup", "renderSessionComplete");
   assert.match(resultSource, /heading: "間違えた問題を固めよう"/);
   assert.match(resultSource, /label: `間違えた\$\{reviewItems\.length\}問をもう一度`/);
   assert.match(resultSource, /attribute: "data-retry-wrong"/);
@@ -90,7 +91,7 @@ test("review items are deduplicated, counted, and limited to five initially", ()
 });
 
 test("review section is conditional and safely escapes user answers", () => {
-  const resultSource = functionSource("renderSessionComplete", "renderAnalysis");
+  const resultSource = functionSource("sessionResultMarkup", "renderSessionComplete");
   assert.match(resultSource, /\$\{reviewItems\.length \? `<section class="result-review-section"/);
   assert.match(resultSource, /reviewItems\.length > 5 && !session\.showAllReviewItems/);
   assert.match(resultSource, /escapeHtml\(reviewUserAnswer\(result\)\)/);
@@ -99,13 +100,20 @@ test("review section is conditional and safely escapes user answers", () => {
 });
 
 test("result navigation keeps actions visually distinct and routes correctly", () => {
-  const resultSource = functionSource("renderSessionComplete", "renderAnalysis");
+  const resultSource = functionSource("sessionResultMarkup", "renderSessionComplete");
   assert.match(resultSource, /class="secondary-button"[^>]*data-change-study>学習条件を変える/);
-  assert.match(resultSource, /class="text-button"[^>]*data-result-home>ホームへ戻る/);
+  assert.match(resultSource, /class="text-button"[^>]*data-dismiss-result>結果を閉じる/);
   assert.match(resultSource, /class="text-button"[^>]*data-view-analysis>詳しい分析を見る/);
   assert.match(appSource, /data-change-study[\s\S]*?setView\("study-range-select"\)/);
   assert.match(appSource, /data-view-analysis[\s\S]*?setView\("analysis"\)/);
-  assert.match(appSource, /data-result-home[\s\S]*?setView\("home"\)/);
-  assert.match(stylesSource, /\.result-shell\s*\{[\s\S]*?width:\s*min\(100%, 720px\)/);
-  assert.match(stylesSource, /\.result-shell\s*\{[\s\S]*?var\(--safe-bottom\)/);
+  assert.match(appSource, /data-dismiss-result[\s\S]*?renderDashboard\(\)/);
+  assert.match(stylesSource, /\.result-panel\s*\{[\s\S]*?width:\s*min\(100%, 720px\)/);
+  assert.match(stylesSource, /\.main-content\s*\{[\s\S]*?var\(--safe-bottom\)/);
+});
+
+test("finishing a session returns to the dashboard instead of a separate result page", () => {
+  const completeSource = functionSource("renderSessionComplete", "renderAnalysis");
+  assert.match(completeSource, /session\.complete = true;\s*\n\s*setView\("dashboard"\)/);
+  assert.match(appSource, /elements\.dashboardResult\.innerHTML = completed \? sessionResultMarkup\(completed\) : ""/);
+  assert.doesNotMatch(appSource, /elements\.quizContent\.innerHTML = `\s*<div class="result/);
 });

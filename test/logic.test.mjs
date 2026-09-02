@@ -151,7 +151,7 @@ test("saved legacy spelling study conditions migrate to keyboard input", () => {
   assert.deepEqual(normalized.contents, ["word"]);
 });
 
-test("choice and flashcard performance histories stay separate", () => {
+test("each of the five formats keeps a completely separate history scope", () => {
   const item = items.find((candidate) => candidate.type === "word");
   let record = mergeAttempt(null, {
     itemId: item.id,
@@ -166,41 +166,37 @@ test("choice and flashcard performance histories stay separate", () => {
     answeredAt: 200,
   });
   const history = new Map([[item.id, record]]);
-  const choiceModes = studyPerformanceModes({
-    subject: "english",
-    content: "word",
-    method: "ja_to_en_choice",
-  });
-  const flashcardModes = studyPerformanceModes({
-    subject: "english",
-    content: "word",
-    method: "en_to_ja_flashcard",
-  });
-  const choiceHistory = historyForModes(record, choiceModes);
-  const flashcardHistory = historyForModes(record, flashcardModes);
+  const modesFor = (method) => studyPerformanceModes({ subject: "english", content: "word", method });
 
-  assert.deepEqual(choiceModes, ["en_to_ja_choice", "ja_to_en_choice"]);
-  assert.deepEqual(flashcardModes, ["en_to_ja_flashcard", "ja_to_en_flashcard"]);
-  assert.equal(choiceHistory.totalAttempts, 1);
-  assert.equal(choiceHistory.wrongCount, 1);
-  assert.equal(choiceHistory.hasEverMissed, true);
-  assert.equal(flashcardHistory.totalAttempts, 1);
-  assert.equal(flashcardHistory.wrongCount, 0);
-  assert.equal(flashcardHistory.hasEverMissed, false);
+  // 出題方向をまたいでまとめない：英→日4択の履歴は日→英4択に混ざらない。
+  assert.deepEqual(modesFor("ja_to_en_choice"), ["ja_to_en_choice"]);
+  assert.deepEqual(modesFor("en_to_ja_choice"), ["en_to_ja_choice"]);
+  assert.deepEqual(modesFor("en_to_ja_flashcard"), ["en_to_ja_flashcard"]);
+  assert.deepEqual(modesFor("ja_to_en_flashcard"), ["ja_to_en_flashcard"]);
+  assert.deepEqual(modesFor("ja_to_en_input"), ["ja_to_en_input"]);
+  assert.deepEqual(studyPerformanceModes({ subject: "public", content: "term", method: "recall" }), ["public_recall"]);
+
+  assert.equal(historyForModes(record, modesFor("en_to_ja_choice")).wrongCount, 1);
+  assert.equal(historyForModes(record, modesFor("ja_to_en_choice")).totalAttempts, 0);
+  assert.equal(historyForModes(record, modesFor("ja_to_en_flashcard")).correctCount, 1);
+  assert.equal(historyForModes(record, modesFor("en_to_ja_flashcard")).totalAttempts, 0);
   assert.deepEqual(
     applyFilters([item], history, {
       performance: "everMissed",
-      performanceModes: choiceModes,
+      performanceModes: modesFor("en_to_ja_choice"),
     }),
     [item],
   );
   assert.deepEqual(
     applyFilters([item], history, {
       performance: "everMissed",
-      performanceModes: flashcardModes,
+      performanceModes: modesFor("ja_to_en_choice"),
     }),
     [],
   );
+  // 形式ごとの連続正解も modeStats 側で数える。
+  assert.equal(record.modeStats.ja_to_en_flashcard.currentCorrectStreak, 1);
+  assert.equal(record.modeStats.en_to_ja_choice.currentCorrectStreak, 0);
 });
 
 test("recent study conditions are normalized, deduplicated, and limited", () => {

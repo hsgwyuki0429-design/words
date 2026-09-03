@@ -398,3 +398,27 @@ test("PWAの新旧アセットが混在しないようバージョンが揃っ�
   }
   assert.match(appSource, new RegExp(`serviceWorker\\.register\\("\\./sw\\.js\\?v=${escaped}"`));
 });
+
+test("入力枠は縦に折り返さず、幅を詰めて横一列に並ぶ", () => {
+  // CSS が語数を見て詰められるよう、枠数を data 属性で出している。
+  const slots = functionSource("renderWordSlots", "updateCharacterCountDisplay");
+  assert.match(slots, /data-word-slot-count="\$\{plan\.slots\.length\}"/);
+
+  // 折り返す前に幅を詰めるため nowrap にしている。
+  assert.match(stylesSource, /\.word-slots\[data-word-slot-count\]\s*\{[\s\S]*?flex-wrap:\s*nowrap/);
+  // 下限が無いので、語数が増えても横あふれせずに1行へ収まる。
+  assert.match(stylesSource, /\.word-slot\s*\{[\s\S]*?flex:\s*0 1 112px[\s\S]*?min-width:\s*0/);
+  // スマホ幅で2枠ずつ折り返していた指定は残っていない。
+  assert.doesNotMatch(stylesSource, /flex-basis:\s*calc\(50% - 4px\)/);
+  assert.doesNotMatch(stylesSource, /\.word-slot--xlong\s*\{\s*flex-basis:\s*100%/);
+
+  // 枠が細くなる語数では、高さ・文字・アンダーバー・正誤マークも合わせて詰める。
+  for (const rule of [
+    /\.word-slots\[data-word-slot-count="7"\] \.word-slot\s*\{[\s\S]*?height:\s*60px/,
+    /\.word-slots\[data-word-slot-count="7"\] \.word-slot-input\s*\{[\s\S]*?height:\s*44px/,
+    /\.word-slots\[data-word-slot-count="7"\] \.word-slot-hint\s*\{[\s\S]*?height:\s*16px/,
+    /\.word-slots\[data-word-slot-count="7"\] \.word-slot-result\s*\{[\s\S]*?width:\s*16px/,
+  ]) {
+    assert.match(stylesSource, rule);
+  }
+});

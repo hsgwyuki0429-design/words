@@ -2200,13 +2200,19 @@ body.quiz-active .main-content { padding-bottom: 0; }
   margin: 0 auto 16px;
 }
 
+/* 語数が分かっている入力枠は、縦へ折り返す前に幅を詰めて横一列に並べる。 */
+.word-slots[data-word-slot-count] {
+  flex-wrap: nowrap;
+}
+
 .word-slot {
   position: relative;
   display: grid;
   grid-template-rows: 52px 18px;
   flex: 0 1 112px;
   width: 112px;
-  min-width: min(112px, 100%);
+  /* 語数が増えても縦へ折り返さず、幅を詰めて横一列に並べる。 */
+  min-width: 0;
   max-width: 100%;
   height: 74px;
   min-height: 74px;
@@ -2220,6 +2226,63 @@ body.quiz-active .main-content { padding-bottom: 0; }
 .word-slot--long {
   flex-basis: 148px;
   width: 148px;
+}
+
+/* 語数が多いほど1枠が細くなるので、縦長になりすぎないよう高さも詰める。 */
+.word-slots[data-word-slot-count="5"] .word-slot,
+.word-slots[data-word-slot-count="6"] .word-slot,
+.word-slots[data-word-slot-count="7"] .word-slot {
+  grid-template-rows: 44px 16px;
+  height: 60px;
+  min-height: 60px;
+  border-radius: 10px;
+}
+
+.word-slots[data-word-slot-count="5"] .word-slot-input,
+.word-slots[data-word-slot-count="6"] .word-slot-input,
+.word-slots[data-word-slot-count="7"] .word-slot-input {
+  height: 44px;
+}
+
+/* 枠を詰めた分、文字数のアンダーバーも切れないよう合わせて縮める。 */
+.word-slots[data-word-slot-count="5"] .word-slot-hint,
+.word-slots[data-word-slot-count="6"] .word-slot-hint,
+.word-slots[data-word-slot-count="7"] .word-slot-hint {
+  height: 16px;
+  min-height: 16px;
+  padding: 0 3px 3px;
+  font-size: 11px;
+}
+
+/* 細い枠では正誤マークが入力文字に重なるので、枠の角へ逃がす。 */
+.word-slots[data-word-slot-count="5"] .word-slot-result,
+.word-slots[data-word-slot-count="6"] .word-slot-result,
+.word-slots[data-word-slot-count="7"] .word-slot-result {
+  top: -7px;
+  right: -4px;
+  width: 16px;
+  height: 16px;
+  border: 1px solid #fff;
+  font-size: 10px;
+}
+
+/* 語数が多いほど1枠が細くなるので、中の文字も合わせて詰める。 */
+.word-slots[data-word-slot-count="4"] .word-slot-input,
+.word-slots[data-word-slot-count="5"] .word-slot-input {
+  padding: 0 5px;
+  font-size: 16px;
+}
+
+.word-slots[data-word-slot-count="6"] .word-slot-input,
+.word-slots[data-word-slot-count="7"] .word-slot-input {
+  padding: 0 3px;
+  font-size: 15px;
+}
+
+.word-slots[data-word-slot-count="6"] .word-slot-hint,
+.word-slots[data-word-slot-count="7"] .word-slot-hint {
+  letter-spacing: 0.04em;
+  font-size: 11px;
 }
 
 .word-slot--xlong {
@@ -2536,6 +2599,29 @@ body.quiz-active .main-content { padding-bottom: 0; }
 
   .quiz-shell.has-alphabet-keyboard .word-slot-input {
     height: 46px;
+  }
+
+  .quiz-shell.has-alphabet-keyboard .word-slots[data-word-slot-count="5"] .word-slot,
+  .quiz-shell.has-alphabet-keyboard .word-slots[data-word-slot-count="6"] .word-slot,
+  .quiz-shell.has-alphabet-keyboard .word-slots[data-word-slot-count="7"] .word-slot {
+    grid-template-rows: 40px 14px;
+    height: 54px;
+    min-height: 54px;
+  }
+
+  .quiz-shell.has-alphabet-keyboard .word-slots[data-word-slot-count="5"] .word-slot-input,
+  .quiz-shell.has-alphabet-keyboard .word-slots[data-word-slot-count="6"] .word-slot-input,
+  .quiz-shell.has-alphabet-keyboard .word-slots[data-word-slot-count="7"] .word-slot-input {
+    height: 40px;
+  }
+
+  .quiz-shell.has-alphabet-keyboard .word-slots[data-word-slot-count="5"] .word-slot-hint,
+  .quiz-shell.has-alphabet-keyboard .word-slots[data-word-slot-count="6"] .word-slot-hint,
+  .quiz-shell.has-alphabet-keyboard .word-slots[data-word-slot-count="7"] .word-slot-hint {
+    height: 14px;
+    min-height: 14px;
+    padding: 0 3px 2px;
+    font-size: 10px;
   }
 
   .quiz-shell.has-alphabet-keyboard .word-slot-hint {
@@ -3761,23 +3847,35 @@ body.quiz-active .main-content { padding-bottom: 0; }
   }
 
   .word-slots {
-    gap: 11px 7px;
+    gap: 11px 5px;
   }
 
   .word-slot {
-    flex-basis: calc(50% - 4px);
-    width: calc(50% - 4px);
-    min-width: min(92px, calc(50% - 4px));
-  }
-
-  .word-slot--xlong {
-    flex-basis: 100%;
-    width: 100%;
+    /* 2枠で折り返す代わりに、幅を詰めて横一列へ収める。 */
+    min-width: 0;
   }
 
   .word-slot-input {
-    padding: 0 6px;
+    padding: 0 5px;
     font-size: 15px;
+  }
+
+  .word-slots[data-word-slot-count="4"] .word-slot-input,
+  .word-slots[data-word-slot-count="5"] .word-slot-input {
+    padding: 0 3px;
+    font-size: 14px;
+  }
+
+  .word-slots[data-word-slot-count="6"] .word-slot-input,
+  .word-slots[data-word-slot-count="7"] .word-slot-input {
+    padding: 0 2px;
+    font-size: 13px;
+  }
+
+  .word-slot-optional {
+    left: 4px;
+    padding: 2px 4px;
+    font-size: 8px;
   }
 
   .alphabet-keyboard-row {

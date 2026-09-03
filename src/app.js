@@ -1,5 +1,6 @@
 import {
   ALL_MODES,
+  ALPHABET_KEYBOARD_ROWS,
   DEFAULT_MASTERY_CRITERION,
   ENGLISH_CONTENT_TYPES,
   ENGLISH_STUDY_MODES,
@@ -19,7 +20,9 @@ import {
   addRecentStudy,
   accuracyFor,
   advanceStudyProgress,
+  applyKeyboardKey,
   applyStudyAnswer,
+  clampSlotIndex,
   cloneStudyProgress,
   createStudyProgress,
   answersForMode,
@@ -28,12 +31,14 @@ import {
   buildSession,
   buildStudySession,
   characterHintForToken,
+  deleteKeyboardCharacter,
   distributeInputText,
   exactStudyMode,
   getHistory,
   historyForModes,
   isCycleComplete,
   masteredIdsForMode,
+  moveKeyboardSlot,
   inputPlanForQuestion,
   isAnswerCorrect,
   normalizeAnswer,
@@ -59,7 +64,7 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.5a";
+} from "./logic.js?v=2026.9.6a";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -78,7 +83,7 @@ import {
   recordAttempt,
   removeHistory,
   setMeta,
-} from "./storage.js?v=2026.9.5a";
+} from "./storage.js?v=2026.9.6a";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -86,7 +91,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.5a";
+} from "./quiz-gestures.js?v=2026.9.6a";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -97,7 +102,16 @@ const DEFAULT_SETTINGS = {
   shake: true,
   showSources: true,
   showCharacterCount: false,
+  // true にするとアプリ内キーボードを出さず、端末標準キーボードだけを使う。
+  // 既存の保存データにこのキーが無くても getMetaObject() が既定値で補う。
+  useSystemKeyboard: false,
   masteryCriterion: DEFAULT_MASTERY_CRITERION,
+};
+
+// アクティブな入力枠はDOMではなく、この入力UI専用の状態で管理する。
+const inputKeyboardState = {
+  activeSlotIndex: 0,
+  slotCount: 0,
 };
 
 const state = {
@@ -1051,6 +1065,7 @@ function renderSettings() {
     <section class="settings-card">
       <h2>学習画面</h2>
       ${toggle("showSources", "出典を表示", "回答後に教材と範囲を表示")}
+      ${toggle("useSystemKeyboard", "端末のキーボードを使う", "オフにすると、キーボード入力でアプリ内の小文字英字キーボードを表示します")}
     </section>
     <section class="settings-card">
       <h2>学習データ</h2><p>正誤履歴、最近の学習条件、設定をこの端末から削除します。</p>
@@ -2490,6 +2505,8 @@ function prepareQuestion({ enterFrom = null } = {}) {
   session.currentAnswer = "";
   session.currentSlotValues = null;
   session.currentCorrect = null;
+  // 新しい問題では最初の入力枠を選択状態に戻す。
+  resetInputKeyboardState();
   session.answered = false;
   session.revealed = false;
   session.cardEnterFrom = enterFrom;
@@ -2570,24 +2587,33 @@ function renderWordSlots(question, answered, currentAnswer) {
   const plan = question.inputPlan ?? inputPlanForQuestion(question.item, question.mode);
   const supplied = inputSlotValues(question, currentAnswer);
   const showCharacterCount = Boolean(state.settings.showCharacterCount);
+  const useAppKeyboard = !answered && shouldUseAlphabetKeyboard(question.mode);
+  // アプリ内キーボード使用中は端末キーボードを開かせない。切替後は通常入力へ戻す。
+  const keyboardAttributes = useAppKeyboard
+    ? 'inputmode="none" readonly'
+    : 'inputmode="text"';
+  inputKeyboardState.slotCount = plan.slots.length;
+  inputKeyboardState.activeSlotIndex = clampSlotIndex(inputKeyboardState.activeSlotIndex, plan.slots.length);
   const slotMarkup = new Map(plan.slots.map((slot, index) => {
     const value = supplied[index] ?? "";
-    const hintLength = characterHintForToken(slot.answer).replace(/['-]/g, "").length;
-    const sizeClass = hintLength > 14 ? " word-slot--xlong" : hintLength > 9 ? " word-slot--long" : "";
+    const activeClass = !answered && index === inputKeyboardState.activeSlotIndex ? " is-active-slot" : "";
+    // 正解の文字数をCSSへ渡し、枠の幅を文字数に合わせる。
+    const slotLength = Math.max(3, characterHintForToken(slot.answer).length);
     const resultClass = inputSlotResultClass(slot, value, answered, state.session.currentCorrect);
     const resultIcon = answered && resultClass
       ? `<span class="word-slot-result" aria-hidden="true">${resultClass.includes("is-wrong") ? "×" : resultClass.includes("is-correct") ? "✓" : ""}</span>`
       : "";
-    return [index, `<label class="word-slot${sizeClass}${resultClass}" data-word-slot-container>
+    return [index, `<label class="word-slot${resultClass}${activeClass}" style="--slot-length:${slotLength}" data-word-slot-container>
       ${slot.optional ? '<span class="word-slot-optional">任意</span>' : ""}
       <input
         class="word-slot-input"
         data-slot-index="${index}"
         data-hint-token="${escapeHtml(slot.answer)}"
         type="text"
-        inputmode="text"
+        ${keyboardAttributes}
         value="${escapeHtml(value)}"
         aria-label="${index + 1}語目${slot.optional ? "（任意）" : ""}"
+        aria-current="${!answered && index === inputKeyboardState.activeSlotIndex ? "true" : "false"}"
         ${answered && resultClass.includes("is-wrong") ? 'aria-invalid="true"' : ""}
         autocomplete="off"
         autocapitalize="none"
@@ -2631,6 +2657,123 @@ function ensureInputVisible(input = document.activeElement) {
   if (!input?.classList?.contains("word-slot-input")) return;
   const behavior = reducedMotionRequested() ? "auto" : "smooth";
   requestAnimationFrame(() => input.scrollIntoView({ block: "center", inline: "nearest", behavior }));
+}
+
+function isCoarsePointerDevice() {
+  return window.matchMedia?.("(pointer: coarse)").matches ?? false;
+}
+
+// アプリ内キーボードは ja_to_en_input の未回答状態、かつタッチ端末でだけ出す。
+// 4択・フラッシュカード・公共/保健の一問一答は question.mode が違うので対象外。
+function shouldUseAlphabetKeyboard(mode = state.session?.currentQuestion?.mode) {
+  if (mode !== "ja_to_en_input") return false;
+  if (state.settings.useSystemKeyboard) return false;
+  return isCoarsePointerDevice();
+}
+
+function wordSlotInputs() {
+  return [...elements.quizContent.querySelectorAll(".word-slot-input")];
+}
+
+function currentSlotValueList() {
+  return wordSlotInputs().map((input) => input.value);
+}
+
+function resetInputKeyboardState(slotCount = 0) {
+  inputKeyboardState.slotCount = slotCount;
+  inputKeyboardState.activeSlotIndex = 0;
+}
+
+function renderAlphabetKeyboard() {
+  const rows = ALPHABET_KEYBOARD_ROWS.map((row, rowIndex) => `
+    <div class="alphabet-keyboard-row alphabet-keyboard-row--${rowIndex + 1}">
+      ${row.map((key) => `<button class="alphabet-key" type="button" data-alphabet-key="${escapeHtml(key)}" aria-label="${escapeHtml(key)}">${escapeHtml(key)}</button>`).join("")}
+    </div>`).join("");
+  return `
+    <div class="alphabet-keyboard" data-alphabet-keyboard role="group" aria-label="英字キーボード">
+      ${rows}
+      <div class="alphabet-keyboard-row alphabet-keyboard-actions">
+        <button class="alphabet-key alphabet-key--action" type="button" data-alphabet-action="previous">前の語</button>
+        <button class="alphabet-key alphabet-key--action" type="button" data-alphabet-action="next">次の語</button>
+        <button class="alphabet-key alphabet-key--action" type="button" data-alphabet-action="delete" aria-label="削除">削除</button>
+        <button class="alphabet-key alphabet-key--submit" type="button" data-alphabet-action="submit">回答する</button>
+      </div>
+      <button class="alphabet-keyboard-switch" type="button" data-use-system-keyboard>端末キーボードを使う</button>
+    </div>`;
+}
+
+// 入力欄・文字数ヒント・アクティブ表示だけを局所更新する。renderQuiz() は呼ばない。
+function syncInputSlotState(values = null) {
+  const container = elements.quizContent.querySelector(".word-slots");
+  if (!container) return;
+  const inputs = [...container.querySelectorAll(".word-slot-input")];
+  inputKeyboardState.slotCount = inputs.length;
+  inputKeyboardState.activeSlotIndex = clampSlotIndex(inputKeyboardState.activeSlotIndex, inputs.length);
+  inputs.forEach((input, index) => {
+    if (Array.isArray(values) && values[index] !== undefined) input.value = values[index];
+    const active = index === inputKeyboardState.activeSlotIndex;
+    input.closest("[data-word-slot-container]")?.classList.toggle("is-active-slot", active);
+    input.setAttribute("aria-current", active ? "true" : "false");
+  });
+  if (state.session) state.session.currentSlotValues = inputs.map((input) => input.value.trim());
+  updateCharacterCountDisplay();
+}
+
+function activateInputSlot(index, { focus = true } = {}) {
+  const inputs = wordSlotInputs();
+  if (!inputs.length) return;
+  inputKeyboardState.activeSlotIndex = clampSlotIndex(index, inputs.length);
+  syncInputSlotState();
+  const input = inputs[inputKeyboardState.activeSlotIndex];
+  if (focus && input) {
+    input.focus({ preventScroll: true });
+    const caret = input.value.length;
+    try {
+      input.setSelectionRange(caret, caret);
+    } catch {
+      // readonly / 未対応の入力欄ではキャレット指定を諦める。
+    }
+  }
+  if (input) ensureInputVisible(input);
+}
+
+function applyAlphabetKey(key) {
+  if (state.session?.answered) return;
+  const result = applyKeyboardKey(currentSlotValueList(), inputKeyboardState.activeSlotIndex, key);
+  inputKeyboardState.activeSlotIndex = result.activeIndex;
+  syncInputSlotState(result.values);
+}
+
+function deleteAlphabetCharacter() {
+  if (state.session?.answered) return;
+  const result = deleteKeyboardCharacter(currentSlotValueList(), inputKeyboardState.activeSlotIndex);
+  inputKeyboardState.activeSlotIndex = result.activeIndex;
+  syncInputSlotState(result.values);
+}
+
+function moveActiveInputSlot(delta) {
+  if (state.session?.answered) return;
+  const inputs = wordSlotInputs();
+  if (!inputs.length) return;
+  activateInputSlot(moveKeyboardSlot(inputKeyboardState.activeSlotIndex, delta, inputs.length), { focus: false });
+}
+
+// 端末キーボードへの切替。値・フォーカス・ジェスチャー状態を壊さないよう、
+// renderQuiz() ではなく入力欄の属性だけを差し替える。
+function switchToSystemKeyboard() {
+  state.settings.useSystemKeyboard = true;
+  saveSettings();
+  elements.quizContent.querySelector("[data-alphabet-keyboard]")?.remove();
+  elements.quizContent.querySelector(".quiz-shell")?.classList.remove("has-alphabet-keyboard");
+  const inputs = wordSlotInputs();
+  inputs.forEach((input) => {
+    input.readOnly = false;
+    input.setAttribute("inputmode", "text");
+  });
+  const input = inputs[clampSlotIndex(inputKeyboardState.activeSlotIndex, inputs.length)];
+  input?.focus();
+  ensureInputVisible(input);
+  showToast("端末のキーボードに切り替えました");
 }
 
 function renderTextInput(answered, currentAnswer) {
@@ -3153,9 +3296,11 @@ function renderQuiz() {
   const feedbackArea = answered
     ? renderFeedback(question, session.currentAnswer, lastResult.correct)
     : "";
+  // 回答確定後は非表示。キーボードはスワイプ面の外側に置く。
+  const showAlphabetKeyboard = !answered && shouldUseAlphabetKeyboard(question.mode);
 
   elements.quizContent.innerHTML = `
-    <div class="quiz-shell${answered ? " quiz-answered" : ""}${isChoice ? " quiz-choice" : ""}${isKeyboardInput ? " quiz-keyboard-input" : ""}">
+    <div class="quiz-shell${answered ? " quiz-answered" : ""}${isChoice ? " quiz-choice" : ""}${isKeyboardInput ? " quiz-keyboard-input" : ""}${showAlphabetKeyboard ? " has-alphabet-keyboard" : ""}">
       <header class="quiz-header${isKeyboardInput ? " quiz-header--input" : ""}">
         <div class="quiz-header-left">
           <button class="icon-button" type="button" data-quit-quiz aria-label="学習を終了">×</button>
@@ -3188,6 +3333,7 @@ function renderQuiz() {
           ${answered && !isSwipeAdvance ? feedbackArea : ""}
         </div>
       </div>
+      ${showAlphabetKeyboard ? renderAlphabetKeyboard() : ""}
     </div>
     ${answered ? renderNextButton(isSwipeAdvance) : ""}`;
 
@@ -3198,7 +3344,10 @@ function renderQuiz() {
       window.scrollTo(0, 0);
       const firstInput = elements.quizContent.querySelector("input");
       firstInput?.focus({ preventScroll: true });
-      if (firstInput?.classList.contains("word-slot-input")) ensureInputVisible(firstInput);
+      if (firstInput?.classList.contains("word-slot-input")) {
+        activateInputSlot(inputKeyboardState.activeSlotIndex, { focus: false });
+        ensureInputVisible(firstInput);
+      }
     });
   } else {
     requestAnimationFrame(() => {
@@ -3730,7 +3879,10 @@ function distributeSlotText(startInput, text) {
   state.session.currentSlotValues = inputs.map((input) => input.value.trim());
   updateCharacterCountDisplay();
   const lastFilled = values.reduce((last, value, index) => value ? index : last, start);
-  inputs[Math.min(lastFilled + 1, inputs.length - 1)]?.focus();
+  const nextIndex = clampSlotIndex(lastFilled + 1, inputs.length);
+  inputKeyboardState.activeSlotIndex = nextIndex;
+  syncInputSlotState();
+  inputs[nextIndex]?.focus();
 }
 
 function bindEvents() {
@@ -3959,6 +4111,15 @@ function bindEvents() {
       saveSettings();
       updateCharacterCountDisplay();
     }
+    if (target.dataset.alphabetKey !== undefined) applyAlphabetKey(target.dataset.alphabetKey);
+    if (target.dataset.alphabetAction) {
+      const action = target.dataset.alphabetAction;
+      if (action === "delete") deleteAlphabetCharacter();
+      if (action === "previous") moveActiveInputSlot(-1);
+      if (action === "next") moveActiveInputSlot(1);
+      if (action === "submit") submitAnswer(currentTypedAnswer());
+    }
+    if (target.hasAttribute("data-use-system-keyboard")) switchToSystemKeyboard();
     if (target.hasAttribute("data-submit-input")) submitAnswer(currentTypedAnswer());
     if (target.dataset.recallGrade !== undefined) {
       const surface = elements.quizContent.querySelector("[data-quiz-gesture-surface]");
@@ -4094,7 +4255,10 @@ function bindEvents() {
   });
   elements.quizContent.addEventListener("focusin", (event) => {
     const input = event.target.closest(".word-slot-input");
-    if (input) ensureInputVisible(input);
+    if (!input) return;
+    // 押された枠をアクティブにする（focus はすでに移っているので再フォーカスしない）。
+    if (!state.session?.answered) activateInputSlot(Number(input.dataset.slotIndex), { focus: false });
+    ensureInputVisible(input);
   });
   window.visualViewport?.addEventListener("resize", () => ensureInputVisible());
 }
@@ -4138,7 +4302,7 @@ async function boot() {
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.5a").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.6a").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

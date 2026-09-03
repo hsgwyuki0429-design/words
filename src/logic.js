@@ -270,6 +270,61 @@ export function distributeInputText(plan, text, startIndex = 0) {
   return values;
 }
 
+/*
+ * アプリ内小文字英字キーボードの配列とキー操作。
+ * 採点は既存の normalizeAnswer() / isAnswerCorrect() だけを使い、ここでは
+ * 「どの入力枠に何を書き込むか」という純粋な状態遷移のみを扱う。
+ */
+export const ALPHABET_KEYBOARD_ROWS = Object.freeze([
+  Object.freeze(["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"]),
+  Object.freeze(["a", "s", "d", "f", "g", "h", "j", "k", "l"]),
+  Object.freeze(["'", "z", "x", "c", "v", "b", "n", "m", "-"]),
+]);
+
+const ALPHABET_KEY_SET = new Set(ALPHABET_KEYBOARD_ROWS.flat());
+
+export function alphabetKeyboardKeys() {
+  return ALPHABET_KEYBOARD_ROWS.flat();
+}
+
+export function isAlphabetKeyboardKey(key) {
+  return ALPHABET_KEY_SET.has(String(key ?? ""));
+}
+
+function normalizeSlotValues(values) {
+  return (Array.isArray(values) ? values : []).map((value) => String(value ?? ""));
+}
+
+export function clampSlotIndex(index, slotCount) {
+  const count = Math.max(0, Math.trunc(Number(slotCount) || 0));
+  if (!count) return 0;
+  const requested = Math.trunc(Number(index) || 0);
+  return Math.min(count - 1, Math.max(0, requested));
+}
+
+export function applyKeyboardKey(values, activeIndex, key) {
+  const list = normalizeSlotValues(values);
+  const index = clampSlotIndex(activeIndex, list.length);
+  if (!list.length || !isAlphabetKeyboardKey(key)) return { values: list, activeIndex: index };
+  list[index] = `${list[index]}${key}`;
+  return { values: list, activeIndex: index };
+}
+
+export function deleteKeyboardCharacter(values, activeIndex) {
+  const list = normalizeSlotValues(values);
+  if (!list.length) return { values: list, activeIndex: 0 };
+  let index = clampSlotIndex(activeIndex, list.length);
+  // 空欄で削除したときは前の枠へ戻り、その枠の末尾1文字を消す。
+  if (!list[index] && index > 0) index -= 1;
+  list[index] = list[index].slice(0, -1);
+  return { values: list, activeIndex: index };
+}
+
+export function moveKeyboardSlot(activeIndex, delta, slotCount) {
+  const current = Math.trunc(Number(activeIndex) || 0);
+  return clampSlotIndex(current + Math.trunc(Number(delta) || 0), slotCount);
+}
+
 export function emptyHistory(itemId) {
   return {
     itemId,

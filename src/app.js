@@ -64,7 +64,7 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.6a";
+} from "./logic.js?v=2026.9.7a";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -83,7 +83,7 @@ import {
   recordAttempt,
   removeHistory,
   setMeta,
-} from "./storage.js?v=2026.9.6a";
+} from "./storage.js?v=2026.9.7a";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -91,7 +91,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.6a";
+} from "./quiz-gestures.js?v=2026.9.7a";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -2099,7 +2099,7 @@ function setView(view) {
 function renderHeader() {
   const summary = summarizeHistory(state.items, state.history);
   elements.headerStatus.textContent = summary.attempts
-    ? `${summary.correct.toLocaleString()} 正解 / ${summary.attempts.toLocaleString()} 回答`
+    ? `累計 ${summary.correct.toLocaleString()}正解 / ${summary.attempts.toLocaleString()}回答`
     : `${state.items.length}${isRecallSubject() ? "問" : "語句"}`;
 }
 
@@ -4302,7 +4302,7 @@ async function boot() {
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.6a").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.7a").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

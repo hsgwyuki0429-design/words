@@ -2381,6 +2381,211 @@ body.quiz-active .main-content { padding-bottom: 0; }
   margin-top: 10px;
 }
 
+/* ---------------------------------------------------------------------------
+   アプリ内小文字英字キーボード
+   端末のキーボード設定に依存せず英字入力を出すため、ja_to_en_input の未回答中
+   だけカードの外側（data-quiz-gesture-surface の外）に3段QWERTYを表示する。
+   --------------------------------------------------------------------------- */
+.word-slot.is-active-slot {
+  background: #fff;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.2);
+}
+
+.word-slot-input[readonly] {
+  caret-color: var(--accent);
+  cursor: pointer;
+}
+
+.quiz-shell.has-alphabet-keyboard {
+  /* 画面をキーボード分だけ確実に確保し、はみ出す分はカード内だけをスクロールさせる。
+     こうするとキーボードがカード（スワイプ領域）へ重ならない。 */
+  display: flex;
+  overflow: hidden;
+  flex-direction: column;
+  height: 100dvh;
+  min-height: 100dvh;
+  max-height: 100dvh;
+  padding-bottom: 0;
+}
+
+.quiz-shell.has-alphabet-keyboard .quiz-card-stage {
+  /* キーボードの高さを引いた分だけカードを縮め、375×667でも1画面に収める。 */
+  --input-card-height: clamp(180px, calc(100dvh - 420px), 440px);
+  display: flex;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overscroll-behavior: contain;
+}
+
+.quiz-shell.has-alphabet-keyboard .quiz-gesture-card {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+
+.quiz-shell.has-alphabet-keyboard .swipe-input-card {
+  flex: 1 1 auto;
+}
+
+.alphabet-keyboard {
+  z-index: 3;
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  max-width: 100%;
+  margin-top: auto;
+  padding: 8px 4px calc(6px + var(--safe-bottom));
+  background: rgba(240, 240, 244, 0.97);
+  border-top: 1px solid var(--line);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.alphabet-keyboard-row {
+  display: flex;
+  gap: 5px;
+  justify-content: center;
+  width: 100%;
+}
+
+.alphabet-key {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 64px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0 2px;
+  color: var(--text);
+  background: #fff;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  box-shadow: 0 1px 0 rgba(23, 23, 25, 0.2);
+  font-size: 19px;
+  font-weight: 620;
+  line-height: 1;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  transition: transform 90ms ease, background-color 90ms ease;
+}
+
+.alphabet-key:active {
+  background: #d8d8de;
+  box-shadow: none;
+  transform: translateY(1px) scale(0.97);
+}
+
+.alphabet-keyboard-actions {
+  gap: 6px;
+}
+
+.alphabet-key--action {
+  max-width: none;
+  background: #e2e2e8;
+  font-size: 13px;
+  font-weight: 720;
+}
+
+.alphabet-key--submit {
+  flex: 1.5 1 0;
+  max-width: none;
+  color: #fff;
+  background: var(--accent);
+  border-color: transparent;
+  font-size: 14px;
+  font-weight: 780;
+}
+
+.alphabet-keyboard-switch {
+  align-self: center;
+  min-height: 32px;
+  padding: 0 12px;
+  color: var(--secondary);
+  background: transparent;
+  border: 0;
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+/* 375×667 のような低い画面では、キーボード表示中だけカードを詰めて1画面に寄せる。 */
+@media (max-height: 700px) {
+  .quiz-shell.has-alphabet-keyboard .swipe-input-card {
+    padding: 16px 14px;
+  }
+
+  .quiz-shell.has-alphabet-keyboard .swipe-input-card .question-instruction {
+    margin-bottom: 10px;
+  }
+
+  .quiz-shell.has-alphabet-keyboard .swipe-input-card h1 {
+    margin-bottom: 16px;
+    font-size: clamp(23px, 6.5vw, 32px);
+  }
+
+  .quiz-shell.has-alphabet-keyboard .word-slot {
+    grid-template-rows: 46px 16px;
+    height: 64px;
+    min-height: 64px;
+  }
+
+  .quiz-shell.has-alphabet-keyboard .word-slot-input {
+    height: 46px;
+  }
+
+  .quiz-shell.has-alphabet-keyboard .word-slot-hint {
+    height: 16px;
+    min-height: 16px;
+  }
+
+  .quiz-shell.has-alphabet-keyboard .alphabet-keyboard-switch {
+    min-height: 26px;
+  }
+}
+
+/* 横向きや低い画面では高さを圧縮して、問題文・入力欄・回答操作を成立させる。 */
+@media (orientation: landscape) and (max-height: 560px) {
+  .quiz-shell.has-alphabet-keyboard .quiz-card-stage {
+    --input-card-height: clamp(110px, calc(100dvh - 250px), 260px);
+  }
+
+  .alphabet-keyboard {
+    gap: 4px;
+    padding-top: 4px;
+  }
+
+  .alphabet-key {
+    height: 34px;
+    min-height: 34px;
+    font-size: 16px;
+  }
+
+  .alphabet-key--action,
+  .alphabet-key--submit {
+    font-size: 12px;
+  }
+
+  .alphabet-keyboard-switch {
+    min-height: 24px;
+    font-size: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .alphabet-key {
+    transition: none;
+  }
+
+  .alphabet-key:active {
+    transform: none;
+  }
+}
+
 .feedback-card {
   margin-top: 14px;
   padding: 22px;
@@ -3575,6 +3780,14 @@ body.quiz-active .main-content { padding-bottom: 0; }
     font-size: 15px;
   }
 
+  .alphabet-keyboard-row {
+    gap: 4px;
+  }
+
+  .alphabet-key {
+    font-size: 18px;
+  }
+
   .result-record-grid {
     gap: 7px;
   }
@@ -3610,6 +3823,24 @@ body.quiz-active .main-content { padding-bottom: 0; }
     padding-right: 10px;
     padding-left: 10px;
     font-size: 10px;
+  }
+
+  .alphabet-keyboard {
+    padding-right: 2px;
+    padding-left: 2px;
+  }
+
+  .alphabet-keyboard-row {
+    gap: 3px;
+  }
+
+  .alphabet-key {
+    border-radius: 7px;
+    font-size: 17px;
+  }
+
+  .alphabet-key--action {
+    font-size: 12px;
   }
 
   .result-context-list li {

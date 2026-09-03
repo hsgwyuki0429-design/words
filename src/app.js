@@ -2597,13 +2597,13 @@ function renderWordSlots(question, answered, currentAnswer) {
   const slotMarkup = new Map(plan.slots.map((slot, index) => {
     const value = supplied[index] ?? "";
     const activeClass = !answered && index === inputKeyboardState.activeSlotIndex ? " is-active-slot" : "";
-    const hintLength = characterHintForToken(slot.answer).replace(/['-]/g, "").length;
-    const sizeClass = hintLength > 14 ? " word-slot--xlong" : hintLength > 9 ? " word-slot--long" : "";
+    // 正解の文字数をCSSへ渡し、枠の幅を文字数に合わせる。
+    const slotLength = Math.max(3, characterHintForToken(slot.answer).length);
     const resultClass = inputSlotResultClass(slot, value, answered, state.session.currentCorrect);
     const resultIcon = answered && resultClass
       ? `<span class="word-slot-result" aria-hidden="true">${resultClass.includes("is-wrong") ? "×" : resultClass.includes("is-correct") ? "✓" : ""}</span>`
       : "";
-    return [index, `<label class="word-slot${sizeClass}${resultClass}${activeClass}" data-word-slot-container>
+    return [index, `<label class="word-slot${resultClass}${activeClass}" style="--slot-length:${slotLength}" data-word-slot-container>
       ${slot.optional ? '<span class="word-slot-optional">任意</span>' : ""}
       <input
         class="word-slot-input"

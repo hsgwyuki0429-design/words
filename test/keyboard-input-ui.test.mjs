@@ -62,7 +62,7 @@ test("character hints are absent while hidden and preserve typed values when tog
   assert.doesNotMatch(toggleHandler, /renderQuiz\(\)/);
   assert.equal(characterHintForToken("apple"), "_____");
   assert.equal(characterHintForToken("take care"), "________");
-  assert.match(stylesSource, /\.word-slot\s*\{[\s\S]*?height:\s*74px[\s\S]*?min-height:\s*74px/);
+  assert.match(stylesSource, /\.word-slot\s*\{[\s\S]*?height:\s*62px[\s\S]*?min-height:\s*62px/);
   assert.doesNotMatch(stylesSource, /\.show-character-count \.word-slot\s*\{/);
   assert.doesNotMatch(stylesSource, /\.show-character-count \.word-slot-input\s*\{/);
   assert.match(stylesSource, /\.word-slot-input:focus\s*\{[\s\S]*?box-shadow:\s*none/);
@@ -100,10 +100,19 @@ test("optional words and fixed notation remain answerable without typing notatio
   assert.match(slots, /segment\.kind === "slot"[\s\S]*?word-slot-fixed/);
 });
 
-test("keyboard boxes wrap without revealing exact length while hints are hidden", () => {
+test("入力枠の幅は正解の文字数に合わせ、文字数表示の切替では変わらない", () => {
+  const slots = functionSource("renderWordSlots", "updateCharacterCountDisplay");
+  assert.match(slots, /const slotLength = Math\.max\(3, characterHintForToken\(slot\.answer\)\.length\)/);
+  assert.match(slots, /style="--slot-length:\$\{slotLength\}"/);
   assert.match(stylesSource, /\.word-slots\s*\{[\s\S]*?display:\s*flex[\s\S]*?flex-wrap:\s*wrap/);
-  assert.match(stylesSource, /\.word-slot\s*\{[\s\S]*?flex:\s*0 1 112px[\s\S]*?width:\s*112px/);
-  assert.match(stylesSource, /\.word-slot--long\s*\{[\s\S]*?width:\s*148px/);
+  assert.match(stylesSource, /\.word-slots\s*\{[\s\S]*?--slot-char-width:\s*10px/);
+  assert.match(
+    stylesSource,
+    /\.word-slot\s*\{[\s\S]*?flex:\s*0 1 calc\(var\(--slot-length, 6\) \* var\(--slot-char-width\) \+ 18px\)/,
+  );
+  // 幅の指定は1か所だけ。長さごとの決め打ちクラスは持たない。
+  assert.doesNotMatch(stylesSource, /\.word-slot--long|\.word-slot--xlong/);
+  assert.doesNotMatch(appSource, /word-slot--long|word-slot--xlong/);
   assert.match(stylesSource, /\.word-slot-input\s*\{[\s\S]*?min-width:\s*0/);
   assert.match(stylesSource, /\.word-slot-fixed\s*\{[\s\S]*?overflow-wrap:\s*anywhere/);
   assert.doesNotMatch(stylesSource, /\.word-slot-input[^}]*text-transform\s*:/s);
@@ -407,18 +416,16 @@ test("入力枠は縦に折り返さず、幅を詰めて横一列に並ぶ", ()
   // 折り返す前に幅を詰めるため nowrap にしている。
   assert.match(stylesSource, /\.word-slots\[data-word-slot-count\]\s*\{[\s\S]*?flex-wrap:\s*nowrap/);
   // 下限が無いので、語数が増えても横あふれせずに1行へ収まる。
-  assert.match(stylesSource, /\.word-slot\s*\{[\s\S]*?flex:\s*0 1 112px[\s\S]*?min-width:\s*0/);
+  assert.match(stylesSource, /\.word-slot\s*\{[\s\S]*?flex:\s*0 1 calc\([\s\S]*?min-width:\s*0/);
   // スマホ幅で2枠ずつ折り返していた指定は残っていない。
   assert.doesNotMatch(stylesSource, /flex-basis:\s*calc\(50% - 4px\)/);
-  assert.doesNotMatch(stylesSource, /\.word-slot--xlong\s*\{\s*flex-basis:\s*100%/);
 
-  // 枠が細くなる語数では、高さ・文字・アンダーバー・正誤マークも合わせて詰める。
-  for (const rule of [
-    /\.word-slots\[data-word-slot-count="7"\] \.word-slot\s*\{[\s\S]*?height:\s*60px/,
-    /\.word-slots\[data-word-slot-count="7"\] \.word-slot-input\s*\{[\s\S]*?height:\s*44px/,
-    /\.word-slots\[data-word-slot-count="7"\] \.word-slot-hint\s*\{[\s\S]*?height:\s*16px/,
-    /\.word-slots\[data-word-slot-count="7"\] \.word-slot-result\s*\{[\s\S]*?width:\s*16px/,
-  ]) {
-    assert.match(stylesSource, rule);
-  }
+  // 語数が多いときは中の文字だけを詰める（枠の高さは1種類に揃える）。
+  assert.match(
+    stylesSource,
+    /\.word-slots\[data-word-slot-count="7"\] \.word-slot-input\s*\{[\s\S]*?font-size:\s*15px/,
+  );
+  assert.doesNotMatch(stylesSource, /\.word-slots\[data-word-slot-count="\d"\] \.word-slot\s*\{/);
+  // 正誤マークは枠が細くても入力文字に重ならないよう角へ置く。
+  assert.match(stylesSource, /\.word-slot-result\s*\{[\s\S]*?top:\s*-7px[\s\S]*?right:\s*-4px/);
 });

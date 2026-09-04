@@ -15,7 +15,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icons/app-icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icons/app-icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=2026.9.13a" />
+    <link rel="stylesheet" href="./styles.css?v=2026.9.14a" />
   </head>
   <body>
     <div class="fx-backdrop" id="fx-backdrop" aria-hidden="true">
@@ -84,7 +84,7 @@
             <span class="card-arrow" aria-hidden="true">›</span>
           </button>
           <div class="dashboard-links">
-            <button class="text-button" type="button" data-view-target="analysis">詳しい分析を見る</button>
+            <button class="text-button" type="button" data-view-target="analysis">学習の記録を見る</button>
             <button class="text-button" type="button" data-start-study>条件を細かく選んで学習する</button>
           </div>
         </section>
@@ -252,12 +252,6 @@
 
         <section class="view" id="view-analysis" data-view="analysis" hidden>
           <div class="dashboard-result" id="analysis-result" hidden></div>
-          <div class="page-heading">
-            <p class="eyebrow">PHASE 4 · ANALYSIS</p>
-            <h1>学習分析</h1>
-            <p>より詳しい統計です。範囲ごとの形式別進捗と学習開始はホーム画面にまとまっています。</p>
-          </div>
-          <div id="analysis-content"></div>
         </section>
 
         <section class="view" id="view-settings" data-view="settings" hidden>
@@ -386,6 +380,6 @@
     </aside>
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-    <script type="module" src="./src/app.js?v=2026.9.13a"></script>
+    <script type="module" src="./src/app.js?v=2026.9.14a"></script>
   </body>
 </html>

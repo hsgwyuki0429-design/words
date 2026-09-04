@@ -53,6 +53,8 @@ import {
   releaseDeferredReviews,
   studyConfigForTarget,
   studyModeForItem,
+  inProgressStudyEntries,
+  isStudyInProgress,
   studyProgressEntriesForMode,
   studyProgressKey,
   studyProgressSummary,
@@ -64,7 +66,7 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.8a";
+} from "./logic.js?v=2026.9.10a";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -83,7 +85,8 @@ import {
   recordAttempt,
   removeHistory,
   setMeta,
-} from "./storage.js?v=2026.9.8a";
+  stashMeta,
+} from "./storage.js?v=2026.9.10a";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -91,7 +94,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.8a";
+} from "./quiz-gestures.js?v=2026.9.10a";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -694,16 +697,19 @@ function renderStudyRangeSelect() {
   elements.studyRangeEyebrow.textContent = fromDashboard ? "MULTIPLE RANGES" : "STEP 1 · MULTIPLE";
   const ranges = currentRangeOrder();
   const allSelected = state.rangeSelectionMode === "all";
-  const allCard = `<button class="multi-select-card select-all-card${allSelected ? " selected" : ""}" type="button" data-study-range-all aria-pressed="${allSelected}">
+  const resumableRanges = rangesInProgress();
+  const allResumable = allRangesInProgress();
+  const allCard = `<button class="multi-select-card select-all-card${allSelected ? " selected" : ""}${allResumable ? " is-in-progress" : ""}" type="button" data-study-range-all aria-pressed="${allSelected}">
     <span class="multi-check" aria-hidden="true">${allSelected ? "✓" : ""}</span>
-    <span><strong>全選択</strong><small>すべての範囲（${state.items.length}${isRecallSubject() ? "問" : "語句"}）</small></span>
+    <span><strong>全選択</strong><small>すべての範囲（${state.items.length}${isRecallSubject() ? "問" : "語句"}）</small>${allResumable ? IN_PROGRESS_BADGE : ""}</span>
   </button>`;
   const rangeCards = ranges.map((range) => {
     const selected = !allSelected && state.filters.ranges.includes(range);
+    const resumable = resumableRanges.has(range);
     const count = state.items.filter((item) => item.range === range).length;
-    return `<button class="multi-select-card${selected ? " selected" : ""}" type="button" data-study-range="${escapeHtml(range)}" aria-pressed="${selected}">
+    return `<button class="multi-select-card${selected ? " selected" : ""}${resumable ? " is-in-progress" : ""}" type="button" data-study-range="${escapeHtml(range)}" aria-pressed="${selected}">
       <span class="multi-check" aria-hidden="true">${selected ? "✓" : ""}</span>
-      <span><strong>${escapeHtml(range)}</strong><small>${count}${isRecallSubject() ? "問" : "語句"}</small></span>
+      <span><strong>${escapeHtml(range)}</strong><small>${count}${isRecallSubject() ? "問" : "語句"}</small>${resumable ? IN_PROGRESS_BADGE : ""}</span>
     </button>`;
   }).join("");
   elements.studyRangeOptions.innerHTML = allCard + rangeCards;
@@ -821,6 +827,30 @@ function dashboardRanges() {
   return currentRangeOrder().filter((range) => state.items.some((item) => item.range === range));
 }
 
+// 学習途中の周回（いまの教科・いまの習得条件のもの）を最後に学習した順で返す。
+function inProgressEntries() {
+  return inProgressStudyEntries(state.studyProgress, {
+    subject: state.subject ?? "english",
+    criterion: masteryCriterion(),
+  });
+}
+
+// 学習途中の周回が対象にしている範囲。範囲ボタンのハイライトに使う。
+function rangesInProgress() {
+  const ranges = new Set();
+  inProgressEntries().forEach(({ meta }) => (meta.ranges ?? []).forEach((range) => ranges.add(range)));
+  return ranges;
+}
+
+// 全範囲を対象にした学習途中があるか（「全範囲」「全選択」ボタンのハイライト用）。
+function allRangesInProgress() {
+  const total = dashboardRanges().length;
+  if (!total) return false;
+  return inProgressEntries().some(({ meta }) => (meta.ranges ?? []).length >= total);
+}
+
+const IN_PROGRESS_BADGE = '<span class="in-progress-badge">学習途中</span>';
+
 function rangeDetailLabel(ranges = state.filters.ranges) {
   if (!ranges.length) return "範囲";
   if (ranges.length === 1) return ranges[0];
@@ -850,15 +880,20 @@ function renderDashboard() {
       : "範囲を選ぶと、5つの学習形式それぞれの現在地が見られます。";
   const ranges = dashboardRanges();
   const unit = isRecallSubject() ? "問" : "語句";
+  // 学習途中の範囲は赤枠で示し、続きから進められることを伝える。
+  const resumableRanges = rangesInProgress();
+  const allResumable = allRangesInProgress();
   elements.dashboardRangeList.innerHTML = [
-    `<button class="range-choice range-choice--all" type="button" data-dashboard-all-ranges>
+    `<button class="range-choice range-choice--all${allResumable ? " is-in-progress" : ""}" type="button" data-dashboard-all-ranges>
       <span class="range-choice-name">全範囲</span>
+      ${allResumable ? IN_PROGRESS_BADGE : ""}
       <span class="range-choice-detail">${ranges.length}範囲 ${state.items.length}${unit}</span>
       <span class="card-arrow" aria-hidden="true">›</span>
     </button>`,
     ...ranges.map((range) => `
-    <button class="range-choice" type="button" data-dashboard-range="${escapeHtml(range)}">
+    <button class="range-choice${resumableRanges.has(range) ? " is-in-progress" : ""}" type="button" data-dashboard-range="${escapeHtml(range)}">
       <span class="range-choice-name">${escapeHtml(range)}</span>
+      ${resumableRanges.has(range) ? IN_PROGRESS_BADGE : ""}
       <span class="card-arrow" aria-hidden="true">›</span>
     </button>`),
   ].join("");
@@ -942,12 +977,14 @@ function modeProgressCard(card) {
     mode: card.mode,
     masteredIds: masteredIdsForMode(state.studyProgress, card.mode, { criterion: masteryCriterion() }),
   });
+  // 表示中の範囲・条件に一致する周回が途中のときだけ、この形式をハイライトする。
+  const resumable = isStudyInProgress(entry?.progress);
   const cycleLabel = entry ? contentLabelFromProgressKey(entry.meta) : "";
   const cycleCopy = cycle
     ? `${cycleLabel ? `${cycleLabel} ` : ""}${cycle.masteryRound > 1 ? `R${cycle.masteryRound}· ` : ""}${cycle.cycleNumber}周目 残り${cycle.remainingCount}`
     : "";
   return `
-    <button class="mode-progress-card" type="button" data-study-target="${escapeHtml(card.key)}"${progress.totalItems ? "" : ' disabled aria-disabled="true"'}>
+    <button class="mode-progress-card${resumable ? " is-in-progress" : ""}" type="button" data-study-target="${escapeHtml(card.key)}"${progress.totalItems ? "" : ' disabled aria-disabled="true"'}>
       <span class="mode-progress-head">
         <strong>${escapeHtml(card.title)}</strong>
         ${progress.totalItems
@@ -989,6 +1026,29 @@ function startStudyFromTarget(key) {
   state.studyFlowMode = "dashboard";
   // 一問一答は形式カードの時点で学習内容も決まっているので重要度へ直行する。
   setView(isRecallSubject() ? "study-importance" : "study-content");
+}
+
+// 画面を離れる直前に、いまの周回を同期で控えへ逃がす。非同期の保存が
+// 間に合わなくても、次回の起動時に控えから復元される。
+function stashStudyProgress() {
+  const session = state.session;
+  const progress = session?.progressKey && session.progress
+    ? { ...state.studyProgress, [session.progressKey]: session.progress }
+    : state.studyProgress;
+  if (!progress || !Object.keys(progress).length) return;
+  stashMeta("studyProgress", progress);
+}
+
+// クイズから別の画面へ移るときの後始末。左上のマークからでも、×からでも
+// 同じ経路を通し、再出題タイマーを止めて学習途中の状態を保存し切る。
+function leaveQuiz() {
+  const session = state.session;
+  if (!session) return true;
+  if (session.results.length && !window.confirm("この学習を終了しますか？")) return false;
+  if (session.reviewTimer) clearTimeout(session.reviewTimer);
+  stashStudyProgress();
+  state.session = null;
+  return true;
 }
 
 function showToast(message) {
@@ -3416,21 +3476,8 @@ async function submitAnswer(
   session.currentAnswer = answer;
   session.currentCorrect = correct;
   session.answered = true;
-  let savedHistory = null;
-
-  try {
-    savedHistory = await recordAttempt(
-      question.item.id,
-      question.mode,
-      correct,
-      durationMs,
-    );
-    state.history.set(question.item.id, savedHistory);
-  } catch (error) {
-    console.error(error);
-    showToast("履歴の保存に失敗しました");
-  }
-
+  // 周回の進み具合は履歴の保存を待たずに先に確定させる。履歴の保存中に
+  // 画面を離れられても、どこまで進めたかは残るようにするため。
   if (session.progress) {
     session.progress = applyStudyAnswer(session.progress, {
       itemId: question.item.id,
@@ -3451,6 +3498,20 @@ async function submitAnswer(
     correctAnswer,
     reviewDelayMs: scheduledDelay,
   });
+
+  let savedHistory = null;
+  try {
+    savedHistory = await recordAttempt(
+      question.item.id,
+      question.mode,
+      correct,
+      durationMs,
+    );
+    state.history.set(question.item.id, savedHistory);
+  } catch (error) {
+    console.error(error);
+    showToast("履歴の保存に失敗しました");
+  }
 
   let pendingCorrectEffect = null;
   if (correct) {
@@ -3699,16 +3760,24 @@ function clearSessionResult() {
   setMeta(LAST_RESULT_META_KEY, null).catch(console.warn);
 }
 
-// 学習中のセッションが完了していればそれを、無ければ保存済みの前回結果を返す。
+// 学習中のセッションが完了していればそれを、無ければ保存済みの直近の結果を返す。
+// 教科をまたいでも「1番最近のリザルト」を出す（開始ボタンだけ同じ教科に限る）。
 function resultSession() {
-  if (state.session?.complete) return state.session;
-  const last = state.lastSessionResult;
-  return last && last.subject === (state.subject ?? "english") ? last : null;
+  return state.session?.complete ? state.session : state.lastSessionResult;
+}
+
+// 保存済みの結果がいまの教科のものなら、そこから学習を再開できる。
+function canStartFromResult(session) {
+  if (!session || session === state.session) return true;
+  return (session.subject ?? "english") === (state.subject ?? "english");
 }
 
 function sessionResultMarkup(session) {
   // 学習直後ではなく保存済みの結果を開いたときは、見出しで直前の学習だと示す。
   const isPastSession = session !== state.session;
+  const resultSubject = session.subject ?? state.subject ?? "english";
+  // 別の教科の結果は、その教科へ切り替えてからでないと続きを始められない。
+  const canStart = canStartFromResult(session);
   const summary = summarizeSession(session.results);
   const reviewItems = summarizeReviewItems(session.results);
   const visibleItems = session.showAllReviewItems ? reviewItems : reviewItems.slice(0, 5);
@@ -3728,7 +3797,7 @@ function sessionResultMarkup(session) {
       ? "自己採点"
       : MODE_LABELS[session.results[0]?.mode] ?? "学習";
   const resultContext = [
-    ["教科", SUBJECT_LABELS[state.subject] ?? "英語"],
+    ["教科", SUBJECT_LABELS[resultSubject] ?? "英語"],
     ["範囲", rangeLabel],
     ["教材", contentLabel],
     ["出題形式", methodLabel],
@@ -3806,10 +3875,10 @@ function sessionResultMarkup(session) {
       <section class="result-next-card" aria-labelledby="result-next-title">
         <div>
           <p class="eyebrow">NEXT STEP</p>
-          <h2 id="result-next-title">${primaryAction.heading}</h2>
-          <p>${primaryAction.detail}</p>
+          <h2 id="result-next-title">${canStart ? primaryAction.heading : "別の教科の学習結果です"}</h2>
+          <p>${canStart ? primaryAction.detail : `${escapeHtml(SUBJECT_LABELS[resultSubject] ?? "英語")}に切り替えると、ここから続きを始められます`}</p>
         </div>
-        <button class="primary-button result-primary-action" type="button" ${primaryAction.attribute}>${primaryAction.label}<span aria-hidden="true">→</span></button>
+        ${canStart ? `<button class="primary-button result-primary-action" type="button" ${primaryAction.attribute}>${primaryAction.label}<span aria-hidden="true">→</span></button>` : ""}
       </section>
       ${reviewItems.length ? `<section class="result-review-section" aria-labelledby="result-review-title">
         <div class="result-section-title"><div><p class="eyebrow">CHECK</p><h2 id="result-review-title">要確認問題</h2></div><span>${reviewItems.length}問</span></div>
@@ -3817,9 +3886,9 @@ function sessionResultMarkup(session) {
         ${reviewItems.length > 5 && !session.showAllReviewItems ? '<button class="text-button result-show-all" type="button" data-show-all-review>すべて表示</button>' : ""}
       </section>` : ""}
       <div class="result-other-actions">
-        ${nextCycle && reviewItems.length ? `<button class="secondary-button" type="button" data-continue-cycle>${newRound ? "新しいラウンドを始める" : `${nextCycle.cycleNumber}周目を始める`}（${nextCycle.targetCount}問）</button>` : ""}
+        ${canStart && nextCycle && reviewItems.length ? `<button class="secondary-button" type="button" data-continue-cycle>${newRound ? "新しいラウンドを始める" : `${nextCycle.cycleNumber}周目を始める`}（${nextCycle.targetCount}問）</button>` : ""}
         ${canUndoLastAnswer() ? '<button class="secondary-button result-undo-button" type="button" data-undo-answer>↶ 直前の回答を取り消す</button>' : ""}
-        <button class="secondary-button" type="button" data-change-study>学習条件を変える</button>
+        ${canStart ? '<button class="secondary-button" type="button" data-change-study>学習条件を変える</button>' : ""}
         <div class="result-text-actions">
           <button class="text-button" type="button" data-dismiss-result>結果を閉じる</button>
         </div>
@@ -3902,7 +3971,7 @@ function renderAnalysis() {
 
 function retryWrongItems() {
   const session = resultSession();
-  if (!session) return;
+  if (!session || !canStartFromResult(session)) return;
   const wrong = summarizeReviewItems(session?.results)
     .map((result) => ({ item: result.item, mode: result.mode }));
   if (!wrong.length) return;
@@ -3918,13 +3987,13 @@ function retryWrongItems() {
 
 function continueStudyCycle() {
   const session = resultSession();
-  if (!session?.config?.selection) return;
+  if (!session?.config?.selection || !canStartFromResult(session)) return;
   startSession({ ...session.config, itemIds: null });
 }
 
 function repeatCompletedSession() {
   const session = resultSession();
-  if (!session?.initialQueue?.length) return;
+  if (!session?.initialQueue?.length || !canStartFromResult(session)) return;
   beginSession(session.initialQueue.map((entry) => ({ item: entry.item, mode: entry.mode })), {
     selection: session.selection,
     config: session.config,
@@ -3964,13 +4033,20 @@ function bindEvents() {
     if (document.hidden) {
       resetMaxEffects({ keepAmbience: true });
       maxAudio.stopAll({ suspend: true });
+      stashStudyProgress();
     }
   });
+  // タブを閉じる・別ページへ移る直前にも、学習の進み具合を控えへ逃がす。
+  addEventListener("pagehide", stashStudyProgress);
 
   document.addEventListener("click", (event) => {
     const target = event.target.closest("button");
     if (!target) return;
-    if (target.dataset.viewTarget) setView(target.dataset.viewTarget);
+    if (target.dataset.viewTarget) {
+      // 学習中に左上のマークなどで画面を移るときも、学習の終了処理を通す。
+      if (state.view === "quiz" && !leaveQuiz()) return;
+      setView(target.dataset.viewTarget);
+    }
     if (target.dataset.period) {
       state.selectedPeriod = target.dataset.period;
       setMeta("selectedPeriod", state.selectedPeriod).catch(console.warn);
@@ -4193,11 +4269,7 @@ function bindEvents() {
       advanceAnsweredCard("right");
     }
     if (target.hasAttribute("data-quit-quiz")) {
-      if (!state.session.results.length || window.confirm("この学習を終了しますか？")) {
-        if (state.session.reviewTimer) clearTimeout(state.session.reviewTimer);
-        state.session = null;
-        setView("home");
-      }
+      if (leaveQuiz()) setView("home");
     }
     if (target.hasAttribute("data-retry-wrong")) retryWrongItems();
     if (target.hasAttribute("data-repeat-session")) repeatCompletedSession();
@@ -4368,7 +4440,7 @@ async function boot() {
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.8a").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.10a").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

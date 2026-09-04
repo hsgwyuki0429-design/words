@@ -126,9 +126,37 @@ test("the finished session result is stored and restored for the analysis view",
   assert.match(appSource, /setMeta\(LAST_RESULT_META_KEY, state\.lastSessionResult\)/);
   assert.match(appSource, /getMeta\("lastSessionResult", null\)/);
   assert.match(appSource, /state\.lastSessionResult = normalizeSessionResultSnapshot\(lastSessionResult\)/);
-  // 教科をまたいで前回の結果が出ないようにする。
+  // 教科に関係なく、いちばん新しい結果を分析画面に出す。
   assert.match(
-    functionSource("resultSession", "sessionResultMarkup"),
-    /last\.subject === \(state\.subject \?\? "english"\)/,
+    functionSource("resultSession", "canStartFromResult"),
+    /return state\.session\?\.complete \? state\.session : state\.lastSessionResult;/,
   );
+  // ただし別の教科の結果からは学習を始めさせない。
+  assert.match(
+    functionSource("canStartFromResult", "sessionResultMarkup"),
+    /\(session\.subject \?\? "english"\) === \(state\.subject \?\? "english"\)/,
+  );
+});
+
+test("学習中に画面を離れるときは、どの入口でも終了処理と保存を通す", () => {
+  const leaveSource = functionSource("leaveQuiz", "showToast");
+  assert.match(leaveSource, /window\.confirm\("この学習を終了しますか？"\)/);
+  assert.match(leaveSource, /clearTimeout\(session\.reviewTimer\)/);
+  assert.match(leaveSource, /stashStudyProgress\(\)/);
+  // 左上のマークなどビュー移動でも、×と同じ経路を通る。
+  assert.match(appSource, /if \(state\.view === "quiz" && !leaveQuiz\(\)\) return;/);
+  assert.match(appSource, /data-quit-quiz[\s\S]*?if \(leaveQuiz\(\)\) setView\("home"\)/);
+  // タブを閉じるときも周回を控えへ逃がす。
+  assert.match(appSource, /addEventListener\("pagehide", stashStudyProgress\)/);
+});
+
+test("周回の保存は履歴の保存を待たずに先に行う", () => {
+  const submitSource = appSource.slice(
+    appSource.indexOf("async function submitAnswer"),
+    appSource.indexOf("function undoButtonMarkup"),
+  );
+  const progressAt = submitSource.indexOf("persistStudyProgress(session.progressKey, session.progress)");
+  const recordAt = submitSource.indexOf("await recordAttempt(");
+  assert.ok(progressAt >= 0 && recordAt >= 0);
+  assert.ok(progressAt < recordAt, "周回の保存が履歴の保存より先であること");
 });

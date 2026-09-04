@@ -4258,6 +4258,34 @@ body.quiz-active .main-content { padding-bottom: 0; }
   border-color: var(--blue);
 }
 
+/* 学習途中の選択肢は赤枠と小さなラベルで示し、続きへ導く。
+   範囲を選び直したときは、その範囲に一致する周回だけがハイライトされる。 */
+.range-choice.is-in-progress,
+.multi-select-card.is-in-progress,
+.mode-progress-card.is-in-progress {
+  border-color: var(--red);
+  box-shadow: 0 0 0 1px var(--red);
+}
+
+.in-progress-badge {
+  flex: none;
+  align-self: center;
+  padding: 2px 7px;
+  color: var(--red);
+  background: rgba(217, 45, 32, 0.08);
+  border: 1px solid rgba(217, 45, 32, 0.35);
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 760;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.multi-select-card .in-progress-badge {
+  display: inline-block;
+  margin-top: 6px;
+}
+
 /* 「全範囲」だけは他のボタン2個分の横幅で先頭に置く（高さは同じ） */
 .range-choice--all {
   grid-column: 1 / -1;

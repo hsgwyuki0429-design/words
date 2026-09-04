@@ -3,9 +3,9 @@ import {
   allConnectionOptions, allMeaningOptions, conjugationOptions, gradeQuestion,
   questionsForMode, restoreKobunSession, splitForms, summarizeKobun, toggleForm,
   validateAuxiliaries, validateVocabulary,
-} from "./kobun-logic.js?v=2026.9.24a";
-import { mergeAttempt } from "./logic.js?v=2026.9.24a";
-import { getMetaObject, putHistory, setMeta, stashMeta } from "./storage.js?v=2026.9.24a";
+} from "./kobun-logic.js?v=2026.9.24b";
+import { mergeAttempt } from "./logic.js?v=2026.9.24b";
+import { getMetaObject, putHistory, setMeta, stashMeta } from "./storage.js?v=2026.9.24b";
 
 const META_KEY = "kobunStudy:v1";
 const escape = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
@@ -32,8 +32,8 @@ export function createKobunController({ root, getHistory, onQuizChange, onHeader
   async function load() {
     if (!loading) loading = (async () => {
       const [auxResponse, vocabResponse, progress] = await Promise.all([
-        fetch("./data/kobun-auxiliaries.json?v=2026.9.24a"),
-        fetch("./data/kobun-vocabulary.json?v=2026.9.24a"),
+        fetch("./data/kobun-auxiliaries.json?v=2026.9.24b"),
+        fetch("./data/kobun-vocabulary.json?v=2026.9.24b"),
         getMetaObject(META_KEY, {}),
       ]);
       if (!auxResponse.ok || !vocabResponse.ok) throw new Error("古文の教材を読み込めませんでした。通信を確認して再試行してください。");
@@ -117,7 +117,7 @@ export function createKobunController({ root, getHistory, onQuizChange, onHeader
     }).join("")}</div>`;
     if (screen === "reference") return heading("助動詞一覧", "表記の違う基本形・特殊な接続も確認できます", "auxiliary") + items.map((item) => `<details class="kb-reference"><summary>${escape(item.label)}<small>${escape(item.conjugationType)}</small></summary>
       <p><b>接続</b> ${escape(item.connections.join(" ／ "))}</p><p><b>意味</b> ${escape(item.meanings.join("・"))}</p>
-      <div class="kb-table-grid">${CONJUGATION_FORMS.map((form) => `<div class="kb-reference-cell"><small>${form}</small><strong>${escape(item.conjugation[form].join("／") || NO_CONJUGATION)}</strong></div>`).join("")}</div>
+      <table class="kb-reference-table"><caption>活用表</caption><thead><tr><th scope="col">活用形</th><th scope="col">形</th></tr></thead><tbody>${CONJUGATION_FORMS.map((form) => `<tr><th scope="row">${form}</th><td>${item.conjugation[form].length ? item.conjugation[form].map((value) => `<span>${escape(value)}</span>`).join('<span class="kb-form-separator">／</span>') : NO_CONJUGATION}</td></tr>`).join("")}</tbody></table>
       ${item.notes.map((note) => `<p class="kb-note">${escape(note)}</p>`).join("")}
       <small>出典：${escape(item.source.file)} · ${escape(item.source.sheet)} ${escape(item.source.range)}</small>
       ${item.audit.length ? `<details class="kb-audit"><summary>教材の訂正・補足 ${item.audit.length}件</summary>${item.audit.map((entry) => `<p>${escape(entry.reason)} <a href="${escape(entry.url)}" target="_blank" rel="noopener noreferrer">根拠（${entry.page}ページ）</a></p>`).join("")}</details>` : ""}</details>`).join("");

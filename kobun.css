@@ -67,10 +67,15 @@
 .kb-reference summary { padding: 12px 0; font-weight: 700; cursor: pointer; }
 .kb-reference summary small { font-weight: 400; margin-left: 12px; color: #6e6576; }
 .kb-reference > p { line-height: 1.7; }
-.kb-reference-cell { text-align: center; padding: 10px 2px; border-radius: 10px; background: #f6f2f9; }
-.kb-reference-cell small, .kb-reference-cell strong { display: block; }
-.kb-reference-cell small { font-size: 11px; margin-bottom: 8px; }
-.kb-reference-cell strong { font-size: 15px; }
+.kb-reference-table { width: 100%; table-layout: fixed; border-collapse: collapse; margin: 16px 0; font-size: 16px; }
+.kb-reference-table caption { text-align: left; font-weight: 700; margin-bottom: 10px; }
+.kb-reference-table th, .kb-reference-table td { border: 1px solid #dcd2e6; padding: 12px; text-align: left; vertical-align: middle; line-height: 1.6; }
+.kb-reference-table thead th { background: #ede5f5; color: #49345c; font-size: 13px; }
+.kb-reference-table th:first-child { width: 34%; }
+.kb-reference-table tbody th { background: #f8f5fb; font-size: 14px; font-weight: 600; }
+.kb-reference-table td { font-weight: 650; }
+.kb-reference-table td span { display: inline-block; }
+.kb-reference-table .kb-form-separator { margin: 0 4px; color: #82738e; font-weight: 400; }
 .kb-reference > small { display: block; color: #6e6576; font-size: 11px; margin: 16px 0 8px; line-height: 1.6; }
 .kb-audit { font-size: 13px; line-height: 1.7; }
 .kb-audit a { color: #69419a; }

@@ -66,7 +66,7 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.9a";
+} from "./logic.js?v=2026.9.10a";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -85,7 +85,8 @@ import {
   recordAttempt,
   removeHistory,
   setMeta,
-} from "./storage.js?v=2026.9.9a";
+  stashMeta,
+} from "./storage.js?v=2026.9.10a";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -93,7 +94,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.9a";
+} from "./quiz-gestures.js?v=2026.9.10a";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -1025,6 +1026,29 @@ function startStudyFromTarget(key) {
   state.studyFlowMode = "dashboard";
   // 一問一答は形式カードの時点で学習内容も決まっているので重要度へ直行する。
   setView(isRecallSubject() ? "study-importance" : "study-content");
+}
+
+// 画面を離れる直前に、いまの周回を同期で控えへ逃がす。非同期の保存が
+// 間に合わなくても、次回の起動時に控えから復元される。
+function stashStudyProgress() {
+  const session = state.session;
+  const progress = session?.progressKey && session.progress
+    ? { ...state.studyProgress, [session.progressKey]: session.progress }
+    : state.studyProgress;
+  if (!progress || !Object.keys(progress).length) return;
+  stashMeta("studyProgress", progress);
+}
+
+// クイズから別の画面へ移るときの後始末。左上のマークからでも、×からでも
+// 同じ経路を通し、再出題タイマーを止めて学習途中の状態を保存し切る。
+function leaveQuiz() {
+  const session = state.session;
+  if (!session) return true;
+  if (session.results.length && !window.confirm("この学習を終了しますか？")) return false;
+  if (session.reviewTimer) clearTimeout(session.reviewTimer);
+  stashStudyProgress();
+  state.session = null;
+  return true;
 }
 
 function showToast(message) {
@@ -3452,21 +3476,8 @@ async function submitAnswer(
   session.currentAnswer = answer;
   session.currentCorrect = correct;
   session.answered = true;
-  let savedHistory = null;
-
-  try {
-    savedHistory = await recordAttempt(
-      question.item.id,
-      question.mode,
-      correct,
-      durationMs,
-    );
-    state.history.set(question.item.id, savedHistory);
-  } catch (error) {
-    console.error(error);
-    showToast("履歴の保存に失敗しました");
-  }
-
+  // 周回の進み具合は履歴の保存を待たずに先に確定させる。履歴の保存中に
+  // 画面を離れられても、どこまで進めたかは残るようにするため。
   if (session.progress) {
     session.progress = applyStudyAnswer(session.progress, {
       itemId: question.item.id,
@@ -3487,6 +3498,20 @@ async function submitAnswer(
     correctAnswer,
     reviewDelayMs: scheduledDelay,
   });
+
+  let savedHistory = null;
+  try {
+    savedHistory = await recordAttempt(
+      question.item.id,
+      question.mode,
+      correct,
+      durationMs,
+    );
+    state.history.set(question.item.id, savedHistory);
+  } catch (error) {
+    console.error(error);
+    showToast("履歴の保存に失敗しました");
+  }
 
   let pendingCorrectEffect = null;
   if (correct) {
@@ -4008,13 +4033,20 @@ function bindEvents() {
     if (document.hidden) {
       resetMaxEffects({ keepAmbience: true });
       maxAudio.stopAll({ suspend: true });
+      stashStudyProgress();
     }
   });
+  // タブを閉じる・別ページへ移る直前にも、学習の進み具合を控えへ逃がす。
+  addEventListener("pagehide", stashStudyProgress);
 
   document.addEventListener("click", (event) => {
     const target = event.target.closest("button");
     if (!target) return;
-    if (target.dataset.viewTarget) setView(target.dataset.viewTarget);
+    if (target.dataset.viewTarget) {
+      // 学習中に左上のマークなどで画面を移るときも、学習の終了処理を通す。
+      if (state.view === "quiz" && !leaveQuiz()) return;
+      setView(target.dataset.viewTarget);
+    }
     if (target.dataset.period) {
       state.selectedPeriod = target.dataset.period;
       setMeta("selectedPeriod", state.selectedPeriod).catch(console.warn);
@@ -4237,11 +4269,7 @@ function bindEvents() {
       advanceAnsweredCard("right");
     }
     if (target.hasAttribute("data-quit-quiz")) {
-      if (!state.session.results.length || window.confirm("この学習を終了しますか？")) {
-        if (state.session.reviewTimer) clearTimeout(state.session.reviewTimer);
-        state.session = null;
-        setView("home");
-      }
+      if (leaveQuiz()) setView("home");
     }
     if (target.hasAttribute("data-retry-wrong")) retryWrongItems();
     if (target.hasAttribute("data-repeat-session")) repeatCompletedSession();
@@ -4412,7 +4440,7 @@ async function boot() {
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.9a").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.10a").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

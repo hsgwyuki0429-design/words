@@ -3,9 +3,9 @@ import {
   allConnectionOptions, allMeaningOptions, conjugationOptions, gradeQuestion,
   questionsForMode, restoreKobunSession, splitForms, summarizeKobun, toggleForm,
   validateAuxiliaries, validateVocabulary,
-} from "./kobun-logic.js?v=2026.9.25a";
-import { mergeAttempt, summarizeProgressGauge } from "./logic.js?v=2026.9.25a";
-import { getMetaObject, putHistory, setMeta, stashMeta } from "./storage.js?v=2026.9.25a";
+} from "./kobun-logic.js?v=2026.9.26a";
+import { mergeAttempt, summarizeProgressGauge } from "./logic.js?v=2026.9.26a";
+import { getMetaObject, putHistory, setMeta, stashMeta } from "./storage.js?v=2026.9.26a";
 
 const META_KEY = "kobunStudy:v1";
 const escape = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
@@ -32,8 +32,8 @@ export function createKobunController({ root, getHistory, onQuizChange, onHeader
   async function load() {
     if (!loading) loading = (async () => {
       const [auxResponse, vocabResponse, progress] = await Promise.all([
-        fetch("./data/kobun-auxiliaries.json?v=2026.9.25a"),
-        fetch("./data/kobun-vocabulary.json?v=2026.9.25a"),
+        fetch("./data/kobun-auxiliaries.json?v=2026.9.26a"),
+        fetch("./data/kobun-vocabulary.json?v=2026.9.26a"),
         getMetaObject(META_KEY, {}),
       ]);
       if (!auxResponse.ok || !vocabResponse.ok) throw new Error("古文の教材を読み込めませんでした。通信を確認して再試行してください。");
@@ -109,11 +109,11 @@ export function createKobunController({ root, getHistory, onQuizChange, onHeader
 
   function menuMarkup() {
     if (screen === "home") return heading("古文", "覚える内容を選ぶ", "subject") + `<div class="kb-menu">${KOBUN_CATEGORIES.map((category) => button(category.id,
-      `<span><span class="range-choice-name">${category.label}</span><small class="kb-category-copy">${category.id === "auxiliary" ? `${items.length}種類 · 5つの学習形式` : vocabulary.length ? `${vocabulary.length}語 · ${category.description}` : "教材準備中"}</small></span><span class="card-arrow" aria-hidden="true">›</span>`, "", "range-choice kb-category")).join("")}</div>`;
+      `<span><span class="range-choice-name">${category.label}</span><small class="kb-category-copy">${category.id === "auxiliary" ? `${items.length}種類 · 5つの学習形式` : vocabulary.length ? `${vocabulary.length}語句 · ${category.description}` : "教材準備中"}</small></span><span class="card-arrow" aria-hidden="true">›</span>`, "", "range-choice kb-category")).join("")}</div>`;
     if (screen === "auxiliary" || screen === "conjugation") return heading("助動詞", "学習する形式を選ぶ") + `<div class="mode-card-list kb-mode-list">${Object.keys(KOBUN_MODES).map(modeCard).join("")}</div><p class="kb-note">正解済みは、その形式の直近の回答ですべて正解した問題数です。</p>${button("reference", "助動詞一覧を確認", "", "kb-text-button")}`;
-    if (screen === "vocabulary") return heading("古文単語", "大切な意味をまとめて覚える") + (vocabulary.length
-      ? vocabulary.map((item) => `<details class="kb-reference"><summary>${escape(item.headword)}${item.reading ? `<small>${escape(item.reading)}</small>` : ""}</summary><ul>${item.meanings.map((meaning) => `<li>${escape(meaning)}</li>`).join("")}</ul></details>`).join("")
-      : `<div class="kb-empty"><h2>古文単語は準備中です</h2><p>教材追加後は、英単語と同じように選択式・フラッシュカード・入力式で学習できるようにします。</p><p>助動詞は今から学習できます。</p>${button("auxiliary", "助動詞を学習する", "", "kb-button kb-primary")}</div>`);
+    // 教材があるときはこの画面を出さずに学習画面へ渡すため、ここは未提供時の案内だけ。
+    if (screen === "vocabulary") return heading("古文単語", "大切な意味をまとめて覚える")
+      + `<div class="kb-empty"><h2>古文単語は準備中です</h2><p>教材追加後は、本文中の用例を見て意味と覚えるポイントを確かめるフラッシュカードで学習できるようにします。</p><p>助動詞は今から学習できます。</p>${button("auxiliary", "助動詞を学習する", "", "kb-button kb-primary")}</div>`;
     if (screen === "records") return heading("古文の学習記録", "正答率は全項目を答えきった回答の割合です") + `<div class="kb-menu">${Object.entries(KOBUN_MODES).map(([key, label]) => {
       const summary = summarizeKobun(items, getHistory(), key);
       return `<div class="kb-record"><h2>${label}</h2><strong>${summary.accuracy === null ? "未学習" : `${summary.accuracy}%`}</strong><p>${summary.correct}正解 / ${summary.attempts}回答 · 解答済み ${summary.answered} / ${summary.total}問</p>${button("start", "学習する", `data-kb-mode="${key}"`)}</div>`;
@@ -245,6 +245,11 @@ export function createKobunController({ root, getHistory, onQuizChange, onHeader
     if (!target || busy) return;
     const action = target.dataset.kbAction;
     if (action === "subject") { root.dispatchEvent(new CustomEvent("kobun-subject", { bubbles: true })); return; }
+    // 古文単語は英語・公共・保健と同じ学習画面（範囲 → 重要度 → 並び替え → カード）へ渡す。
+    if (action === "vocabulary" && vocabulary.length) {
+      root.dispatchEvent(new CustomEvent("kobun-vocabulary", { bubbles: true }));
+      return;
+    }
     if (action === "reload") { await show(screen); return; }
     if (action === "start") { start(target.dataset.kbMode); return; }
     if (action === "restart") { saved[mode] = null; start(mode); return; }

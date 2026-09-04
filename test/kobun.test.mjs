@@ -130,7 +130,7 @@ test("途中の回答・採点済み状態を復元し、存在しない問題ID
 });
 
 test("古文単語は英語フィールドなしで複数の意味とメタデータを保持できる", () => {
-  const word = { id: "kobun:vocab:aware", subject: "kobun", category: "vocabulary", headword: "あはれなり", meanings: ["しみじみと心を動かされる", "趣深い", "気の毒だ"], reading: "あはれなり", partOfSpeech: "形容動詞", conjugationType: "ナリ活用", importance: "S", ranges: ["教材1"], sources: [] };
+  const word = { id: "kobun:vocab:aware", subject: "kobun-vocab", category: "vocabulary", headword: "あはれなり", meanings: ["しみじみと心を動かされる", "趣深い", "気の毒だ"], reading: "あはれなり", partOfSpeech: "形容動詞", conjugationType: "ナリ活用", importance: "S", ranges: ["教材1"], sources: [] };
   assert.equal(validateVocabulary([word])[0].meanings.length, 3);
   assert.throws(() => validateVocabulary([{ ...word, meanings: "趣深い" }]));
 });

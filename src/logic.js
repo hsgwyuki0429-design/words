@@ -28,6 +28,28 @@ export const HEALTH_RANGE_ORDER = [
   "p.30–31",
   "p.34–35",
 ];
+export const KOBUN_VOCAB_RANGE_ORDER = [
+  "伊勢物語 芥川",
+  "伊勢物語 東下り",
+  "伊勢物語 筒井筒",
+  "徒然草 丹波に出雲",
+  "徒然草 花は盛りに",
+  "羅生門",
+  "今昔物語集 羅城門",
+];
+// 自己採点のカード（一問一答・重要語句）で学習する教科。英語と出題の作り方が違う。
+export const RECALL_SUBJECTS = ["public", "health", "kobun-vocab"];
+
+export function isRecallSubjectId(subject) {
+  return RECALL_SUBJECTS.includes(subject);
+}
+
+export function rangeOrderForSubject(subject) {
+  if (subject === "public") return PUBLIC_RANGE_ORDER;
+  if (subject === "health") return HEALTH_RANGE_ORDER;
+  if (subject === "kobun-vocab") return KOBUN_VOCAB_RANGE_ORDER;
+  return RANGE_ORDER;
+}
 
 export const MODE_LABELS = {
   en_to_ja_choice: "英語 → 日本語 4択",
@@ -40,6 +62,7 @@ export const MODE_LABELS = {
   phrase_blank_input: "熟語・語法穴埋め",
   public_recall: "公共 一問一答",
   health_recall: "保健 一問一答",
+  "kobun-vocab_recall": "古文単語 重要語句",
 };
 
 export const TYPE_LABELS = {
@@ -51,6 +74,7 @@ export const TYPE_LABELS = {
   "public-short": "短文回答",
   "health-term": "語句回答",
   "health-short": "短文回答",
+  "kobun-vocab-term": "重要語句",
 };
 
 export const ALL_MODES = Object.keys(MODE_LABELS);
@@ -442,6 +466,8 @@ function includesSearch(item, query) {
     item.lemma,
     (item.surfaceForms ?? []).join(" "),
     item.japanese,
+    item.term,
+    item.point,
     item.range,
     item.lesson,
     item.title,
@@ -539,11 +565,7 @@ export function sortItems(
   const importanceIndex = (item) => IMPORTANCE_ORDER.indexOf(item.importance);
   const difficultyIndex = (item) => DIFFICULTY_ORDER.indexOf(item.difficulty);
   const rangeIndex = (item) => {
-    const order = item.subject === "public"
-      ? PUBLIC_RANGE_ORDER
-      : item.subject === "health"
-        ? HEALTH_RANGE_ORDER
-        : RANGE_ORDER;
+    const order = rangeOrderForSubject(item.subject);
     const index = order.indexOf(item.range);
     return index < 0 ? order.length : index;
   };
@@ -700,6 +722,7 @@ export function buildQuestion(item, mode, pool, rng = Math.random, excludedChoic
   switch (mode) {
     case "public_recall":
     case "health_recall":
+    case "kobun-vocab_recall":
       return {
         ...base,
         prompt: item[`${item.subject}Question`] ?? item.recallQuestion ?? item.publicQuestion ?? item.english,
@@ -796,7 +819,7 @@ export function buildSession({
 }
 
 export function normalizeStudySelection(selection = {}) {
-  const subject = ["public", "health"].includes(selection.subject) ? selection.subject : "english";
+  const subject = isRecallSubjectId(selection.subject) ? selection.subject : "english";
   const recallSubject = subject !== "english";
   const contentOptions = recallSubject
     ? ["term", "short", "all"]
@@ -1021,11 +1044,7 @@ function masteryForRecord(record) {
 
 export function summarizeByRange(items, history) {
   const subject = items.find((item) => item.subject)?.subject;
-  const ranges = subject === "public"
-    ? PUBLIC_RANGE_ORDER
-    : subject === "health"
-      ? HEALTH_RANGE_ORDER
-      : RANGE_ORDER;
+  const ranges = rangeOrderForSubject(subject);
   return ranges.map((range) => {
     const rangeItems = items.filter((item) => item.range === range);
     const summary = summarizeHistory(rangeItems, history);
@@ -1107,6 +1126,36 @@ const RECALL_CONTENT_META = {
   short: { title: "短文回答", detail: "定義・理由・しくみなどを答える" },
   all: { title: "どっちとも", detail: "語句回答と短文回答をまとめて学習" },
 };
+// 古文単語は本文の用例そのものが問題になるため、公共・保健とは呼び名を分ける。
+const KOBUN_VOCAB_CONTENT_META = {
+  term: { title: "重要語句", detail: "本文の用例から意味と覚えるポイントを確かめる" },
+};
+
+// 古文単語の重要語句カードで使う、用例の区切り（下線とふりがな）。
+// 教材づくりの時点で決めた区切りをそのまま使い、無い場合だけ用例をそのまま1区間にする。
+export function vocabExampleSegments(item) {
+  const lines = item?.exampleLines?.length ? item.exampleLines : null;
+  if (lines) return lines.map((line) => ({ parts: line.parts.map((part) => ({ ...part })) }));
+  return [{ parts: [{ text: item?.example ?? item?.english ?? "", mark: false }] }];
+}
+
+// カードの大きさは変えずに文字だけ縮める。いま出している面の文字量から段階を決める。
+// 用例は文字が大きいぶん、裏面の文章より重く数える。
+export function vocabCardDensity(item, revealed = false) {
+  const example = vocabExampleSegments(item)
+    .reduce((sum, line) => sum + line.parts.reduce((count, part) => count + part.text.length, 0), 0);
+  const back = revealed ? (item?.japanese ?? "").length + (item?.point ?? "").length : 0;
+  const weight = example * 2 + back;
+  if (weight <= 60) return "roomy";
+  if (weight <= 110) return "normal";
+  if (weight <= 170) return "dense";
+  return "compact";
+}
+
+export function recallContentMetaFor(subject, content) {
+  return (subject === "kobun-vocab" ? KOBUN_VOCAB_CONTENT_META[content] : null)
+    ?? RECALL_CONTENT_META[content];
+}
 
 // 習得判定は「習得ラウンド／周回」状態から求める（下の周回エンジンを参照）。
 // 長期履歴（modeStats）は「一度でも解いたか」だけに使う。
@@ -1302,18 +1351,18 @@ export function summarizeRangeModes({
 }
 
 export function studyTargetsForDashboard({ subject = "english", contents = [] } = {}) {
-  if (subject === "public" || subject === "health") {
+  if (isRecallSubjectId(subject)) {
     const available = ["term", "short"].filter((content) => contents.includes(content));
     const list = available.length > 1 ? [...available, "all"] : available;
     return [{
       key: subject,
       direction: null,
-      label: "一問一答",
+      label: subject === "kobun-vocab" ? "重要語句カード" : "一問一答",
       cards: list.map((content) => ({
         key: `${subject}:${content}`,
         mode: `${subject}_recall`,
-        title: RECALL_CONTENT_META[content].title,
-        detail: RECALL_CONTENT_META[content].detail,
+        title: recallContentMetaFor(subject, content).title,
+        detail: recallContentMetaFor(subject, content).detail,
         types: content === "all"
           ? [`${subject}-term`, `${subject}-short`]
           : [`${subject}-${content}`],

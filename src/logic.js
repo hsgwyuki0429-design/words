@@ -1598,6 +1598,30 @@ export function studyProgressEntriesForMode(progressMap = {}, {
     .sort((left, right) => (right.progress.lastUpdatedAt ?? 0) - (left.progress.lastUpdatedAt ?? 0));
 }
 
+// 学習途中の周回：この周回で1問以上進めていて、まだ残りがある状態。
+// 始めただけ（1問も解いていない）や、周回を終えた状態は「途中」に含めない。
+export function isStudyInProgress(progress) {
+  if (!progress) return false;
+  const started = (progress.cycleSeenIds ?? []).length > 0
+    || (progress.pendingReviews ?? []).length > 0;
+  if (!started) return false;
+  return !isCycleComplete(progress);
+}
+
+// 学習途中の周回を、最後に学習した順で返す。キーは解析済みの meta として添える。
+export function inProgressStudyEntries(progressMap = {}, {
+  subject = null,
+  criterion = null,
+} = {}) {
+  const wantedCriterion = criterion ? normalizeMasteryCriterion(criterion) : null;
+  return Object.entries(progressMap ?? {})
+    .map(([key, progress]) => ({ key, meta: parseStudyProgressKey(key), progress }))
+    .filter(({ meta, progress }) => Boolean(meta) && isStudyInProgress(progress)
+      && (!subject || meta.subject === subject)
+      && (!wantedCriterion || normalizeMasteryCriterion(progress.criterion) === wantedCriterion))
+    .sort((left, right) => (right.progress.lastUpdatedAt ?? 0) - (left.progress.lastUpdatedAt ?? 0));
+}
+
 // 進捗ゲージの「習得」は、その形式で現在の習得ラウンド中に習得した語句の合計。
 // 学習内容の組み合わせが違っても同じ形式なら合算する（範囲は集計側で絞り込まれる）。
 export function masteredIdsForMode(progressMap = {}, mode, { criterion = null } = {}) {

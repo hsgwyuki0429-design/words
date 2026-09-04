@@ -126,9 +126,14 @@ test("the finished session result is stored and restored for the analysis view",
   assert.match(appSource, /setMeta\(LAST_RESULT_META_KEY, state\.lastSessionResult\)/);
   assert.match(appSource, /getMeta\("lastSessionResult", null\)/);
   assert.match(appSource, /state\.lastSessionResult = normalizeSessionResultSnapshot\(lastSessionResult\)/);
-  // 教科をまたいで前回の結果が出ないようにする。
+  // 教科に関係なく、いちばん新しい結果を分析画面に出す。
   assert.match(
-    functionSource("resultSession", "sessionResultMarkup"),
-    /last\.subject === \(state\.subject \?\? "english"\)/,
+    functionSource("resultSession", "canStartFromResult"),
+    /return state\.session\?\.complete \? state\.session : state\.lastSessionResult;/,
+  );
+  // ただし別の教科の結果からは学習を始めさせない。
+  assert.match(
+    functionSource("canStartFromResult", "sessionResultMarkup"),
+    /\(session\.subject \?\? "english"\) === \(state\.subject \?\? "english"\)/,
   );
 });

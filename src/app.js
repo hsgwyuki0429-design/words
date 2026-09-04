@@ -66,7 +66,7 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.10a";
+} from "./logic.js?v=2026.9.11a";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -86,7 +86,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.9.10a";
+} from "./storage.js?v=2026.9.11a";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -94,7 +94,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.10a";
+} from "./quiz-gestures.js?v=2026.9.11a";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -697,7 +697,6 @@ function renderStudyRangeSelect() {
   elements.studyRangeEyebrow.textContent = fromDashboard ? "MULTIPLE RANGES" : "STEP 1 · MULTIPLE";
   const ranges = currentRangeOrder();
   const allSelected = state.rangeSelectionMode === "all";
-  const resumableRanges = rangesInProgress();
   const allResumable = allRangesInProgress();
   const allCard = `<button class="multi-select-card select-all-card${allSelected ? " selected" : ""}${allResumable ? " is-in-progress" : ""}" type="button" data-study-range-all aria-pressed="${allSelected}">
     <span class="multi-check" aria-hidden="true">${allSelected ? "✓" : ""}</span>
@@ -705,11 +704,10 @@ function renderStudyRangeSelect() {
   </button>`;
   const rangeCards = ranges.map((range) => {
     const selected = !allSelected && state.filters.ranges.includes(range);
-    const resumable = resumableRanges.has(range);
     const count = state.items.filter((item) => item.range === range).length;
-    return `<button class="multi-select-card${selected ? " selected" : ""}${resumable ? " is-in-progress" : ""}" type="button" data-study-range="${escapeHtml(range)}" aria-pressed="${selected}">
+    return `<button class="multi-select-card${selected ? " selected" : ""}" type="button" data-study-range="${escapeHtml(range)}" aria-pressed="${selected}">
       <span class="multi-check" aria-hidden="true">${selected ? "✓" : ""}</span>
-      <span><strong>${escapeHtml(range)}</strong><small>${count}${isRecallSubject() ? "問" : "語句"}</small>${resumable ? IN_PROGRESS_BADGE : ""}</span>
+      <span><strong>${escapeHtml(range)}</strong><small>${count}${isRecallSubject() ? "問" : "語句"}</small></span>
     </button>`;
   }).join("");
   elements.studyRangeOptions.innerHTML = allCard + rangeCards;
@@ -835,10 +833,14 @@ function inProgressEntries() {
   });
 }
 
-// 学習途中の周回が対象にしている範囲。範囲ボタンのハイライトに使う。
+// その範囲だけを対象にした周回が途中の範囲。ボタンを押して実際に続きへ入れる
+// ものだけを光らせる（全範囲の周回は「全範囲」ボタンの担当なので含めない）。
 function rangesInProgress() {
   const ranges = new Set();
-  inProgressEntries().forEach(({ meta }) => (meta.ranges ?? []).forEach((range) => ranges.add(range)));
+  inProgressEntries().forEach(({ meta }) => {
+    const list = meta.ranges ?? [];
+    if (list.length === 1) ranges.add(list[0]);
+  });
   return ranges;
 }
 
@@ -4440,7 +4442,7 @@ async function boot() {
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.10a").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.11a").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

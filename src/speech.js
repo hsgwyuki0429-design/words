@@ -5,6 +5,27 @@
 
 export const ENGLISH_SPEECH_LANG = "en-US";
 
+// 読み上げの速さ。設定画面で 0.5〜1.5 の5段階から選ぶ。値は
+// SpeechSynthesisUtterance.rate に渡す倍率で、1 が各ブラウザの標準速度。
+export const SPEECH_RATE_OPTIONS = Object.freeze([
+  Object.freeze({ rate: 0.5, label: "×0.5", hint: "0.5倍速" }),
+  Object.freeze({ rate: 0.75, label: "×0.75", hint: "0.75倍速" }),
+  Object.freeze({ rate: 1, label: "×1.0", hint: "標準の速さ" }),
+  Object.freeze({ rate: 1.25, label: "×1.25", hint: "1.25倍速" }),
+  Object.freeze({ rate: 1.5, label: "×1.5", hint: "1.5倍速" }),
+]);
+
+export const DEFAULT_SPEECH_RATE = 1;
+
+// 保存済みの設定が古い・壊れていても、必ず用意した5段階のどれかに収める。
+// 文字列で保存されていても数値として扱う。
+export function normalizeSpeechRate(value) {
+  const rate = Number(value);
+  return SPEECH_RATE_OPTIONS.some((option) => option.rate === rate)
+    ? rate
+    : DEFAULT_SPEECH_RATE;
+}
+
 // 英語音声では読めない日本語の注記（`make A + 動詞原形` の「動詞原形」など）を落とす。
 const JAPANESE_PATTERN = /[　-〿぀-ヿ㐀-䶿一-鿿！-｠]+/g;
 
@@ -129,7 +150,7 @@ export function createEnglishSpeaker({
     },
     // 読み上げた場合だけ true。読み上げなかった理由（未対応・空文字・同じ問題）
     // では例外を投げず、呼び出し側の処理を止めない。
-    speak(text, { token = null, lang = ENGLISH_SPEECH_LANG } = {}) {
+    speak(text, { token = null, lang = ENGLISH_SPEECH_LANG, rate = 1 } = {}) {
       const engine = synthesis();
       const Utterance = getUtteranceClass?.();
       if (typeof engine?.speak !== "function" || typeof Utterance !== "function") return false;
@@ -145,6 +166,8 @@ export function createEnglishSpeaker({
         engine.cancel();
         const utterance = new Utterance(phrase);
         utterance.lang = lang;
+        // 仕様上の下限・上限を外れると読み上げごと失敗するブラウザがあるので丸める。
+        utterance.rate = Math.min(4, Math.max(0.5, Number(rate) || 1));
         const voice = pickEnglishVoice(voices, lang);
         if (voice) utterance.voice = voice;
         // 一時停止したまま復帰しないことがあるブラウザ向けの保険。

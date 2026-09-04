@@ -65,7 +65,7 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.20a";
+} from "./logic.js?v=2026.9.22a";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -85,7 +85,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.9.20a";
+} from "./storage.js?v=2026.9.22a";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -93,8 +93,13 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.20a";
-import { createEnglishSpeaker } from "./speech.js?v=2026.9.20a";
+} from "./quiz-gestures.js?v=2026.9.22a";
+import {
+  DEFAULT_SPEECH_RATE,
+  SPEECH_RATE_OPTIONS,
+  createEnglishSpeaker,
+  normalizeSpeechRate,
+} from "./speech.js?v=2026.9.22a";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -108,6 +113,7 @@ const DEFAULT_SETTINGS = {
   // true にするとアプリ内キーボードを出さず、端末標準キーボードだけを使う。
   // 既存の保存データにこのキーが無くても getMetaObject() が既定値で補う。
   useSystemKeyboard: false,
+  speechRate: DEFAULT_SPEECH_RATE,
   masteryCriterion: DEFAULT_MASTERY_CRITERION,
 };
 
@@ -1136,6 +1142,20 @@ function renderSettings() {
     </section>
     <section class="settings-card">
       <h2>学習画面</h2>
+      <div class="settings-row speech-rate-row">
+        <span><strong>英語の読み上げの速さ</strong><small>×1.0が標準の速さ。押すとその速さで試せます</small></span>
+        <div class="segmented-options compact-segments" role="radiogroup" aria-label="英語の読み上げの速さ">
+          ${SPEECH_RATE_OPTIONS.map((option) => `
+            <button
+              type="button"
+              role="radio"
+              aria-checked="${currentSpeechRate() === option.rate}"
+              aria-label="${escapeHtml(option.hint)}"
+              data-speech-rate="${option.rate}"
+              class="${currentSpeechRate() === option.rate ? "selected" : ""}"
+            >${escapeHtml(option.label)}</button>`).join("")}
+        </div>
+      </div>
       ${toggle("showSources", "出典を表示", "回答後に教材と範囲を表示")}
       ${toggle("useSystemKeyboard", "端末のキーボードを使う", "オフにすると、キーボード入力でアプリ内の小文字英字キーボードを表示します")}
     </section>
@@ -1181,6 +1201,8 @@ const maxAudio = createMaxAudioEngine();
 const englishSpeech = createEnglishSpeaker();
 // 1問につき1回だけ読むための通し番号。セッションをまたいでも増え続ける。
 let questionSpeechToken = 0;
+// 設定画面で速さを選んだときに読み上げる見本。
+const SPEECH_RATE_SAMPLE = "English pronunciation";
 let calloutTimer = 0;
 
 function prefersReducedMotion() {
@@ -2256,6 +2278,10 @@ function masteryCriterion() {
   return normalizeMasteryCriterion(state.settings.masteryCriterion);
 }
 
+function currentSpeechRate() {
+  return normalizeSpeechRate(state.settings.speechRate);
+}
+
 // 周回状態はメタ領域に組み合わせキーごとで保存する。件数は最終更新順で上限を設ける。
 function persistStudyProgress(key, progress) {
   if (!key || !progress) return;
@@ -2502,7 +2528,10 @@ function englishSpeechTiming(mode) {
 function speakQuestionEnglish(question, timing) {
   if (!question || englishSpeechTiming(question.mode) !== timing) return;
   questionSpeechToken += 1;
-  englishSpeech.speak(questionEnglishText(question), { token: questionSpeechToken });
+  englishSpeech.speak(questionEnglishText(question), {
+    token: questionSpeechToken,
+    rate: currentSpeechRate(),
+  });
 }
 
 function prepareQuestion({ enterFrom = null } = {}) {
@@ -4072,6 +4101,16 @@ function bindEvents() {
         triggerMaxEntrance("ON");
       }
     }
+    if (target.dataset.speechRate) {
+      state.settings.speechRate = normalizeSpeechRate(target.dataset.speechRate);
+      saveSettings();
+      renderSettings();
+      // 選んだ速さをその場で確かめられるように、タップの中で一度だけ読み上げる。
+      englishSpeech.speak(SPEECH_RATE_SAMPLE, {
+        token: (questionSpeechToken += 1),
+        rate: currentSpeechRate(),
+      });
+    }
     if (target.dataset.soundIntensity) {
       state.settings.soundIntensity = target.dataset.soundIntensity === "full" ? "full" : "gentle";
       saveSettings();
@@ -4418,6 +4457,7 @@ async function boot() {
         .filter(([, config]) => config),
     );
     state.settings.masteryCriterion = normalizeMasteryCriterion(state.settings.masteryCriterion);
+    state.settings.speechRate = normalizeSpeechRate(state.settings.speechRate);
     state.studyProgress = Object.fromEntries(
       Object.entries(studyProgress ?? {})
         .map(([key, value]) => [key, normalizeStudyProgress(value)])
@@ -4429,7 +4469,7 @@ async function boot() {
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.20a").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.22a").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

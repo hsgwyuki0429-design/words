@@ -715,7 +715,12 @@ h2 {
 .settings-row strong { display: block; font-size: 15px; }
 .settings-row small { display: block; margin-top: 3px; color: var(--secondary); }
 .sound-intensity-row .segmented-options { flex: 0 0 min(210px, 44%); margin-top: 0; }
-.sound-intensity-row .segmented-options button { min-height: 38px; padding-inline: 9px; font-size: 12px; }
+.sound-intensity-row .segmented-options button,
+.speech-rate-row .segmented-options button { min-height: 38px; padding-inline: 9px; font-size: 12px; }
+/* 読み上げの速さは5段階あるので、常に見出しの下へ1行で並べる */
+.speech-rate-row { align-items: flex-start; flex-direction: column; padding-block: 12px; }
+.speech-rate-row .segmented-options { width: 100%; margin-top: 8px; }
+.speech-rate-row .segmented-options button { flex: 1 0 40px; padding-inline: 4px; }
 .danger-button { color: var(--red); border-color: #f2b8b5; }
 
 .onboarding-backdrop {

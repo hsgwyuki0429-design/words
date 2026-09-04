@@ -1,0 +1,1759 @@
+{
+  "schemaVersion": 1,
+  "revision": "2026-09-04.1",
+  "subject": "kobun",
+  "items": [
+    {
+      "id": "kobun:aux:ru",
+      "subject": "kobun",
+      "category": "auxiliary",
+      "base": "る",
+      "label": "る",
+      "baseAliases": [],
+      "connections": [
+        "未然形"
+      ],
+      "meanings": [
+        "受身",
+        "可能",
+        "自発",
+        "尊敬"
+      ],
+      "conjugationType": "下二段型",
+      "conjugation": {
+        "未然形": [
+          "れ"
+        ],
+        "連用形": [
+          "れ"
+        ],
+        "終止形": [
+          "る"
+        ],
+        "連体形": [
+          "るる"
+        ],
+        "已然形": [
+          "るれ"
+        ],
+        "命令形": [
+          "れよ"
+        ]
+      },
+      "ranges": [
+        "助動詞基礎"
+      ],
+      "source": {
+        "file": "古文助動詞_活用表.xlsx",
+        "sheet": "助動詞活用表",
+        "range": "A5:J5",
+        "values": [
+          "未然形",
+          "る",
+          "受身・可能・自発・尊敬",
+          "下二段型",
+          "れ",
+          "れ",
+          "る",
+          "るる",
+          "るれ",
+          "れよ"
+        ]
+      },
+      "audit": [],
+      "notes": []
+    },
+    {
+      "id": "kobun:aux:raru",
+      "subject": "kobun",
+      "category": "auxiliary",
+      "base": "らる",
+      "label": "らる",
+      "baseAliases": [],
+      "connections": [
+        "未然形"
+      ],
+      "meanings": [
+        "受身",
+        "可能",
+        "自発",
+        "尊敬"
+      ],
+      "conjugationType": "下二段型",
+      "conjugation": {
+        "未然形": [
+          "られ"
+        ],
+        "連用形": [
+          "られ"
+        ],
+        "終止形": [
+          "らる"
+        ],
+        "連体形": [
+          "らるる"
+        ],
+        "已然形": [
+          "らるれ"
+        ],
+        "命令形": [
+          "られよ"
+        ]
+      },
+      "ranges": [
+        "助動詞基礎"
+      ],
+      "source": {
+        "file": "古文助動詞_活用表.xlsx",
+        "sheet": "助動詞活用表",
+        "range": "A6:J6",
+        "values": [
+          "未然形",
+          "らる",
+          "受身・可能・自発・尊敬",
+          "下二段型",
+          "られ",
+          "られ",
+          "らる",
+          "らるる",
+          "らるれ",
+          "られよ"
+        ]
+      },
+      "audit": [],
+      "notes": []
+    },
+    {
+      "id": "kobun:aux:su",
+      "subject": "kobun",
+      "category": "auxiliary",
+      "base": "す",
+      "label": "す",
+      "baseAliases": [],
+      "connections": [
+        "未然形"
+      ],
+      "meanings": [
+        "使役",
+        "尊敬"
+      ],
+      "conjugationType": "下二段型",
+      "conjugation": {
+        "未然形": [
+          "せ"
+        ],
+        "連用形": [
+          "せ"
+        ],
+        "終止形": [
+          "す"
+        ],
+        "連体形": [
+          "する"
+        ],
+        "已然形": [
+          "すれ"
+        ],
+        "命令形": [
+          "せよ"
+        ]
+      },
+      "ranges": [
+        "助動詞基礎"
+      ],
+      "source": {
+        "file": "古文助動詞_活用表.xlsx",
+        "sheet": "助動詞活用表",
+        "range": "A7:J7",
+        "values": [
+          "未然形",
+          "す",
+          "使役・尊敬",
+          "下二段型",
+          "せ",
+          "せ",
+          "す",
+          "する",
+          "すれ",
+          "せよ"
+        ]
+      },
+      "audit": [],
+      "notes": []
+    },
+    {
+      "id": "kobun:aux:sasu",
+      "subject": "kobun",
+      "category": "auxiliary",
+      "base": "さす",
+      "label": "さす",
+      "baseAliases": [],
+      "connections": [
+        "未然形"
+      ],
+      "meanings": [
+        "使役",
+        "尊敬"
+      ],
+      "conjugationType": "下二段型",
+      "conjugation": {
+        "未然形": [
+          "させ"
+        ],
+        "連用形": [
+          "させ"
+        ],
+        "終止形": [
+          "さす"
+        ],
+        "連体形": [
+          "さする"
+        ],
+        "已然形": [
+          "さすれ"
+        ],
+        "命令形": [
+          "させよ"
+        ]
+      },
+      "ranges": [
+        "助動詞基礎"
+      ],
+      "source": {
+        "file": "古文助動詞_活用表.xlsx",
+        "sheet": "助動詞活用表",
+        "range": "A8:J8",
+        "values": [
+          "未然形",
+          "さす",
+          "使役・尊敬",
+          "下二段型",
+          "させ",
+          "させ",
+          "さす",
+          "さする",
+          "さすれ",
+          "させよ"
+        ]
+      },
+      "audit": [],
+      "notes": []
+    },
+    {
+      "id": "kobun:aux:shimu",
+      "subject": "kobun",
+      "category": "auxiliary",
+      "base": "しむ",
+      "label": "しむ",
+      "baseAliases": [],
+      "connections": [
+        "未然形"
+      ],
+      "meanings": [
+        "使役",
+        "尊敬"
+      ],
+      "conjugationType": "下二段型",
+      "conjugation": {
+        "未然形": [
+          "しめ"
+        ],
+        "連用形": [
+          "しめ"
+        ],
+        "終止形": [
+          "しむ"
+        ],
+        "連体形": [
+          "しむる"
+        ],
+        "已然形": [
+          "しむれ"
+        ],
+        "命令形": [
+          "しめよ"
+        ]
+      },
+      "ranges": [
+        "助動詞基礎"
+      ],
+      "source": {
+        "file": "古文助動詞_活用表.xlsx",
+        "sheet": "助動詞活用表",
+        "range": "A9:J9",
+        "values": [
+          "未然形",
+          "しむ",
+          "使役・尊敬",
+          "下二段型",
+          "しめ",
+          "しめ",
+          "しむ",
+          "しむる",
+          "しむれ",
+          "しめよ"
+        ]
+      },
+      "audit": [],
+      "notes": []
+    },
+    {
+      "id": "kobun:aux:zu",
+      "subject": "kobun",
+      "category": "auxiliary",
+      "base": "ず",
+      "label": "ず",
+      "baseAliases": [],
+      "connections": [
+        "未然形"
+      ],
+      "meanings": [
+        "打消"
+      ],
+      "conjugationType": "特殊型",
+      "conjugation": {
+        "未然形": [
+          "ず",
+          "ざら"
+        ],
+        "連用形": [
+          "ず",
+          "ざり"
+        ],
+        "終止形": [
+          "ず"
+        ],
+        "連体形": [
+          "ぬ",
+          "ざる"
+        ],
+        "已然形": [
+          "ね",
+          "ざれ"
+        ],
+        "命令形": [
+          "ざれ"
+        ]
+      },
+      "ranges": [
+        "助動詞基礎"
+      ],
+      "source": {
+        "file": "古文助動詞_活用表.xlsx",
+        "sheet": "助動詞活用表",
+        "range": "A10:J10",
+        "values": [
+          "未然形",
+          "ず",
+          "打消",
+          "特殊型",
+          "ず／ざら",
+          "ず／ざり",
+          "ず",
+          "ぬ／ざる",
+          "ね／ざれ",
+          "ざれ"
+        ]
+      },
+      "audit": [],
+      "notes": []
+    },
+    {
+      "id": "kobun:aux:mu",
+      "subject": "kobun",
+      "category": "auxiliary",
+      "base": "む",
+      "label": "む（ん）",
+      "baseAliases": [
+        "ん"
+      ],
+      "connections": [
+        "未然形"
+      ],
+      "meanings": [
+        "推量",
+        "意志",
+        "適当",
+        "勧誘",
+        "仮定",
+        "婉曲"
+      ],
+      "conjugationType": "四段型",
+      "conjugation": {
+        "未然形": [],
+        "連用形": [],
+        "終止形": [
+          "む"
+        ],
+        "連体形": [
+          "む"
+        ],
+        "已然形": [
+          "め"
+        ],
+        "命令形": []
+      },
+      "ranges": [
+        "助動詞基礎"
+      ],
+      "source": {
+        "file": "古文助動詞_活用表.xlsx",
+        "sheet": "助動詞活用表",
+        "range": "A11:J11",
+        "values": [
+          "未然形",
+          "む（ん）",
+          "推量・意志・適当・勧誘・仮定・婉曲",
+          "四段型",
+          "○",
+          "○",
+          "む",
+          "む",
+          "め",
+          "○"
+        ]
+      },
+      "audit": [],
+      "notes": [
+        "基本形「む」の別表記「ん」も基本形入力で受け付ける。活用表は主表記で覚える。"
+      ]
+    },
+    {
+      "id": "kobun:aux:muzu",
+      "subject": "kobun",
+      "category": "auxiliary",
+      "base": "むず",
+      "label": "むず（んず）",
+      "baseAliases": [
+        "んず"
+      ],
+      "connections": [
+        "未然形"
+      ],
+      "meanings": [
+        "推量",
+        "意志",
+        "適当",
+        "勧誘",
+        "仮定",
+        "婉曲"
+      ],
+      "conjugationType": "サ変型",
+      "conjugation": {
+        "未然形": [],
+        "連用形": [],
+        "終止形": [
+          "むず"
+        ],
+        "連体形": [
+          "むずる"
+        ],
+        "已然形": [
+          "むずれ"
+        ],
+        "命令形": []
+      },
+      "ranges": [
+        "助動詞基礎"
+      ],
+      "source": {
+        "file": "古文助動詞_活用表.xlsx",
+        "sheet": "助動詞活用表",
+        "range": "A12:J12",
+        "values": [
+          "未然形",
+          "むず（んず）",
+          "推量・意志",
+          "サ変型",
+          "○",
+          "○",
+          "むず",
+          "むずる",
+          "むずれ",
+          "○"
+        ]
+      },
+      "audit": [
+        {
+          "field": "meanings",
+          "before": [
+            "推量",
+            "意志"
+          ],
+          "after": [
+            "推量",
+            "意志",
+            "適当",
+            "勧誘",
+            "仮定",
+            "婉曲"
+          ],
+          "reason": "主な意味2つだけでなく、「む」と同様の暗記事項を保持。",
+          "url": "https://www.kotomana-plus.net/dic-appendix/dk5/data/03_%E4%B8%BB%E8%A6%81%E5%8A%A9%E5%8B%95%E8%A9%9E%E6%B4%BB%E7%94%A8%E8%A1%A8.pdf",
+          "page": 1
+        }
+      ],
+      "notes": [
+        "基本形「むず」の別表記「んず」も基本形入力で受け付ける。活用表は主表記で覚える。"
+      ]
+    },
+    {
+      "id": "kobun:aux:ji",
+      "subject": "kobun",
+      "category": "auxiliary",
+      "base": "じ",
+      "label": "じ",
+      "baseAliases": [],
+      "connections": [
+        "未然形"
+      ],
+      "meanings": [
+        "打消推量",
+        "打消意志"
+      ],
+      "conjugationType": "無変化型",
+      "conjugation": {
+        "未然形": [],
+        "連用形": [],
+        "終止形": [
+          "じ"
+        ],
+        "連体形": [
+          "じ"
+        ],
+        "已然形": [
+          "じ"
+        ],
+        "命令形": []
+      },
+      "ranges": [
+        "助動詞基礎"
+      ],
+      "source": {
+        "file": "古文助動詞_活用表.xlsx",
+        "sheet": "助動詞活用表",
+        "range": "A13:J13",
+        "values": [
+          "未然形",
+          "じ",
+          "打消推量・打消意志",
+          "無変化型",
+          "○",
+          "○",
+          "じ",
+          "じ",
+          "じ",
+          "○"
+        ]
+      },
+      "audit": [],
+      "notes": []
+    },
+    {
+      "id": "kobun:aux:mashi",
+      "subject": "kobun",
+      "category": "auxiliary",
+      "base": "まし",
+      "label": "まし",
+      "baseAliases": [],
+      "connections": [
+        "未然形"
+      ],
+      "meanings": [
+        "反実仮想",
+        "ためらいの意志",
+        "実現不可能な希望"
+      ],
+      "conjugationType": "特殊型",
+      "conjugation": {
+        "未然形": [
+          "ませ",
+          "ましか"
+        ],
+        "連用形": [],
+        "終止形": [
+          "まし"
+        ],
+        "連体形": [
+          "まし"
+        ],
+        "已然形": [
+          "ましか"
+        ],
+        "命令形": []
+      },
+      "ranges": [
+        "助動詞基礎"
+      ],
+      "source": {
+        "file": "古文助動詞_活用表.xlsx",
+        "sheet": "助動詞活用表",
+        "range": "A14:J14",
+        "values": [
+          "未然形",
+          "まし",
+          "反実仮想・ためらいの意志・実現不可能な希望",
+          "特殊型",
+          "ませ／ましか",
+          "○",
+          "まし",
+          "まし",
+          "ましか",
+          "○"
+        ]
+      },
+      "audit": [],
+      "notes": []
+    },
+    {
+      "id": "kobun:aux:mahoshi",
+      "subject": "kobun",
+      "category": "auxiliary",
+      "base": "まほし",
+      "label": "まほし",
+      "baseAliases": [],
+      "connections": [
+        "未然形"
+      ],
+      "meanings": [
+        "希望"
+      ],
+      "conjugationType": "形容詞シク活用型",
+      "conjugation": {
+        "未然形": [
+          "まほしく",
+          "まほしから"
+        ],
+        "連用形": [
+          "まほしく",
+          "まほしかり"
+        ],
+        "終止形": [
+          "まほし"
+        ],
+        "連体形": [
+          "まほしき",
+          "まほしかる"
+        ],
+        "已然形": [
+          "まほしけれ"
+        ],
+        "命令形": []
+      },
+      "ranges": [
+        "助動詞基礎"
+      ],
+      "source": {
+        "file": "古文助動詞_活用表.xlsx",
+        "sheet": "助動詞活用表",
+        "range": "A15:J15",
+        "values": [
+          "未然形",
+          "まほし",
+          "希望",
+          "形容詞シク活用型",
+          "まほしく／まほしから",
+          "まほしく／まほしかり",
+          "まほし",
+          "まほしき／まほしかる",
+          "まほしけれ",
+          "○"
+        ]
+      },
+      "audit": [],
+      "notes": []
+    },
+    {
+      "id": "kobun:aux:ki",
+      "subject": "kobun",
+      "category": "auxiliary",
+      "base": "き",
+      "label": "き",
+      "baseAliases": [],
+      "connections": [
+        "連用形",
+        "カ変・サ変の未然形"
+      ],
+      "meanings": [
+        "過去"
+      ],
+      "conjugationType": "特殊型",
+      "conjugation": {
+        "未然形": [
+          "せ"
+        ],
+        "連用形": [],
+        "終止形": [
+          "き"
+        ],
+        "連体形": [
+          "し"
+        ],
+        "已然形": [
+          "しか"
+        ],
+        "命令形": []
+      },
+      "ranges": [
+        "助動詞基礎"
+      ],
+      "source": {
+        "file": "古文助動詞_活用表.xlsx",
+        "sheet": "助動詞活用表",
+        "range": "A16:J16",
+        "values": [
+          "連用形",
+          "き",
+          "過去（直接経験）",
+          "特殊型",
+          "せ",
+          "○",
+          "き",
+          "し",
+          "しか",
+          "○"
+        ]
+      },
+      "audit": [
+        {
+          "field": "connections",
+          "before": [
+            "連用形"
+          ],
+          "after": [
+            "連用形",
+            "カ変・サ変の未然形"
+          ],
+          "reason": "カ変・サ変では未然形にも接続する例外を明示。",
+          "url": "https://www.kotomana-plus.net/dic-appendix/dk5/data/03_%E4%B8%BB%E8%A6%81%E5%8A%A9%E5%8B%95%E8%A9%9E%E6%B4%BB%E7%94%A8%E8%A1%A8.pdf",
+          "page": 1
+        },
+        {
+          "field": "meanings",
+          "before": [
+            "過去（直接経験）"
+          ],
+          "after": [
+            "過去"
+          ],
+          "reason": "候補名は「過去」に統一し、直接経験の説明は注記へ分離。",
+          "url": "https://www.kotomana-plus.net/dic-appendix/dk5/data/03_%E4%B8%BB%E8%A6%81%E5%8A%A9%E5%8B%95%E8%A9%9E%E6%B4%BB%E7%94%A8%E8%A1%A8.pdf",
+          "page": 1
+        }
+      ],
+      "notes": [
+        "過去は直接経験・確実な過去。カ変・サ変では未然形に接続する場合もある。"
+      ]
+    },
+    {
+      "id": "kobun:aux:keri",
+      "subject": "kobun",
+      "category": "auxiliary",
+      "base": "けり",
+      "label": "けり",
+      "baseAliases": [],
+      "connections": [
+        "連用形"
+      ],
+      "meanings": [
+        "過去",
+        "詠嘆"
+      ],
+      "conjugationType": "ラ変型",
+      "conjugation": {
+        "未然形": [
+          "けら"
+        ],
+        "連用形": [],
+        "終止形": [
+          "けり"
+        ],
+        "連体形": [
+          "ける"
+        ],
+        "已然形": [
+          "けれ"
+        ],
+        "命令形": []
+      },
+      "ranges": [
+        "助動詞基礎"
+      ],
+      "source": {
+        "file": "古文助動詞_活用表.xlsx",
+        "sheet": "助動詞活用表",
+        "range": "A17:J17",
+        "values": [
+          "連用形",
+          "けり",
+          "過去・詠嘆",
+          "ラ変型",
+          "けら",
+          "○",
+          "けり",
+          "ける",
+          "けれ",
+          "○"
+        ]
+      },
+      "audit": [],
+      "notes": []
+    },
+    {
+      "id": "kobun:aux:tsu",
+      "subject": "kobun",
+      "category": "auxiliary",
+      "base": "つ",
+      "label": "つ",
+      "baseAliases": [],
+      "connections": [
+        "連用形"
+      ],
+      "meanings": [
+        "完了",
+        "強意",
+        "並列"
+      ],
+      "conjugationType": "下二段型",
+      "conjugation": {
+        "未然形": [
+          "て"
+        ],
+        "連用形": [
+          "て"
+        ],
+        "終止形": [
+          "つ"
+        ],
+        "連体形": [
+          "つる"
+        ],
+        "已然形": [
+          "つれ"
+        ],
+        "命令形": [
+          "てよ"
+        ]
+      },
+      "ranges": [
+        "助動詞基礎"
+      ],
+      "source": {
+        "file": "古文助動詞_活用表.xlsx",
+        "sheet": "助動詞活用表",
+        "range": "A18:J18",
+        "values": [
+          "連用形",
+          "つ",
+          "完了・強意・並列",
+          "下二段型",
+          "て",
+          "て",
+          "つ",
+          "つる",
+          "つれ",
+          "てよ"
+        ]
+      },
+      "audit": [],
+      "notes": []
+    },
+    {
+      "id": "kobun:aux:nu",
+      "subject": "kobun",
+      "category": "auxiliary",
+      "base": "ぬ",
+      "label": "ぬ",
+      "baseAliases": [],
+      "connections": [
+        "連用形"
+      ],
+      "meanings": [
+        "完了",
+        "強意",
+        "並列"
+      ],
+      "conjugationType": "ナ変型",
+      "conjugation": {
+        "未然形": [
+          "な"
+        ],
+        "連用形": [
+          "に"
+        ],
+        "終止形": [
+          "ぬ"
+        ],
+        "連体形": [
+          "ぬる"
+        ],
+        "已然形": [
+          "ぬれ"
+        ],
+        "命令形": [
+          "ね"
+        ]
+      },
+      "ranges": [
+        "助動詞基礎"
+      ],
+      "source": {
+        "file": "古文助動詞_活用表.xlsx",
+        "sheet": "助動詞活用表",
+        "range": "A19:J19",
+        "values": [
+          "連用形",
+          "ぬ",
+          "完了・強意・並列",
+          "ナ変型",
+          "な",
+          "に",
+          "ぬ",
+          "ぬる",
+          "ぬれ",
+          "ね"
+        ]
+      },
+      "audit": [],
+      "notes": []
+    },
+    {
+      "id": "kobun:aux:tari-perfect",
+      "subject": "kobun",
+      "category": "auxiliary",
+      "base": "たり",
+      "label": "たり（完了）",
+      "baseAliases": [],
+      "connections": [
+        "連用形"
+      ],
+      "meanings": [
+        "完了",
+        "存続"
+      ],
+      "conjugationType": "ラ変型",
+      "conjugation": {
+        "未然形": [
+          "たら"
+        ],
+        "連用形": [
+          "たり"
+        ],
+        "終止形": [
+          "たり"
+        ],
+        "連体形": [
+          "たる"
+        ],
+        "已然形": [
+          "たれ"
+        ],
+        "命令形": [
+          "たれ"
+        ]
+      },
+      "ranges": [
+        "助動詞基礎"
+      ],
+      "source": {
+        "file": "古文助動詞_活用表.xlsx",
+        "sheet": "助動詞活用表",
+        "range": "A20:J20",
+        "values": [
+          "連用形",
+          "たり（完了）",
+          "完了・存続",
+          "ラ変型",
+          "たら",
+          "たり",
+          "たり",
+          "たる",
+          "たれ",
+          "たれ"
+        ]
+      },
+      "audit": [],
+      "notes": []
+    },
+    {
+      "id": "kobun:aux:ri",
+      "subject": "kobun",
+      "category": "auxiliary",
+      "base": "り",
+      "label": "り",
+      "baseAliases": [],
+      "connections": [
+        "サ変未然形",
+        "四段已然形"
+      ],
+      "meanings": [
+        "完了",
+        "存続"
+      ],
+      "conjugationType": "ラ変型",
+      "conjugation": {
+        "未然形": [
+          "ら"
+        ],
+        "連用形": [
+          "り"
+        ],
+        "終止形": [
+          "り"
+        ],
+        "連体形": [
+          "る"
+        ],
+        "已然形": [
+          "れ"
+        ],
+        "命令形": [
+          "れ"
+        ]
+      },
+      "ranges": [
+        "助動詞基礎"
+      ],
+      "source": {
+        "file": "古文助動詞_活用表.xlsx",
+        "sheet": "助動詞活用表",
+        "range": "A21:J21",
+        "values": [
+          "サ変未然形・四段已然形",
+          "り",
+          "完了・存続",
+          "ラ変型",
+          "ら",
+          "り",
+          "り",
+          "る",
+          "れ",
+          "れ"
+        ]
+      },
+      "audit": [],
+      "notes": []
+    },
+    {
+      "id": "kobun:aux:beshi",
+      "subject": "kobun",
+      "category": "auxiliary",
+      "base": "べし",
+      "label": "べし",
+      "baseAliases": [],
+      "connections": [
+        "終止形",
+        "ラ変型の連体形"
+      ],
+      "meanings": [
+        "推量",
+        "意志",
+        "可能",
+        "当然",
+        "命令",
+        "適当"
+      ],
+      "conjugationType": "形容詞ク活用型",
+      "conjugation": {
+        "未然形": [
+          "べく",
+          "べから"
+        ],
+        "連用形": [
+          "べく",
+          "べかり"
+        ],
+        "終止形": [
+          "べし"
+        ],
+        "連体形": [
+          "べき",
+          "べかる"
+        ],
+        "已然形": [
+          "べけれ"
+        ],
+        "命令形": []
+      },
+      "ranges": [
+        "助動詞基礎"
+      ],
+      "source": {
+        "file": "古文助動詞_活用表.xlsx",
+        "sheet": "助動詞活用表",
+        "range": "A22:J22",
+        "values": [
+          "終止形※",
+          "べし",
+          "推量・意志・可能・当然・命令・適当",
+          "形容詞ク活用型",
+          "べく／べから",
+          "べく／べかり",
+          "べし",
+          "べき／べかる",
+          "べけれ",
+          "○"
+        ]
+      },
+      "audit": [],
+      "notes": [
+        "原則は終止形接続。ラ変型の活用語には連体形接続。接続問題では両方選ぶ。"
+      ]
+    },
+    {
+      "id": "kobun:aux:maji",
+      "subject": "kobun",
+      "category": "auxiliary",
+      "base": "まじ",
+      "label": "まじ",
+      "baseAliases": [],
+      "connections": [
+        "終止形",
+        "ラ変型の連体形"
+      ],
+      "meanings": [
+        "打消推量",
+        "打消意志",
+        "不可能",
+        "打消当然",
+        "禁止",
+        "不適当"
+      ],
+      "conjugationType": "形容詞シク活用型",
+      "conjugation": {
+        "未然形": [
+          "まじく",
+          "まじから"
+        ],
+        "連用形": [
+          "まじく",
+          "まじかり"
+        ],
+        "終止形": [
+          "まじ"
+        ],
+        "連体形": [
+          "まじき",
+          "まじかる"
+        ],
+        "已然形": [
+          "まじけれ"
+        ],
+        "命令形": []
+      },
+      "ranges": [
+        "助動詞基礎"
+      ],
+      "source": {
+        "file": "古文助動詞_活用表.xlsx",
+        "sheet": "助動詞活用表",
+        "range": "A23:J23",
+        "values": [
+          "終止形※",
+          "まじ",
+          "打消推量・打消意志・不可能・打消当然・禁止・不適当",
+          "形容詞シク活用型",
+          "まじく／まじから",
+          "まじく／まじかり",
+          "まじ",
+          "まじき／まじかる",
+          "まじけれ",
+          "○"
+        ]
+      },
+      "audit": [],
+      "notes": [
+        "原則は終止形接続。ラ変型の活用語には連体形接続。接続問題では両方選ぶ。"
+      ]
+    },
+    {
+      "id": "kobun:aux:ramu",
+      "subject": "kobun",
+      "category": "auxiliary",
+      "base": "らむ",
+      "label": "らむ",
+      "baseAliases": [],
+      "connections": [
+        "終止形",
+        "ラ変型の連体形"
+      ],
+      "meanings": [
+        "現在推量",
+        "現在の原因推量",
+        "伝聞",
+        "婉曲"
+      ],
+      "conjugationType": "四段型",
+      "conjugation": {
+        "未然形": [],
+        "連用形": [],
+        "終止形": [
+          "らむ"
+        ],
+        "連体形": [
+          "らむ"
+        ],
+        "已然形": [
+          "らめ"
+        ],
+        "命令形": []
+      },
+      "ranges": [
+        "助動詞基礎"
+      ],
+      "source": {
+        "file": "古文助動詞_活用表.xlsx",
+        "sheet": "助動詞活用表",
+        "range": "A24:J24",
+        "values": [
+          "終止形※",
+          "らむ",
+          "現在推量・現在の原因推量・伝聞・婉曲",
+          "四段型",
+          "○",
+          "○",
+          "らむ",
+          "らむ",
+          "らめ",
+          "○"
+        ]
+      },
+      "audit": [],
+      "notes": [
+        "原則は終止形接続。ラ変型の活用語には連体形接続。接続問題では両方選ぶ。"
+      ]
+    },
+    {
+      "id": "kobun:aux:kemu",
+      "subject": "kobun",
+      "category": "auxiliary",
+      "base": "けむ",
+      "label": "けむ",
+      "baseAliases": [],
+      "connections": [
+        "連用形"
+      ],
+      "meanings": [
+        "過去推量",
+        "過去の原因推量",
+        "伝聞",
+        "婉曲"
+      ],
+      "conjugationType": "四段型",
+      "conjugation": {
+        "未然形": [],
+        "連用形": [],
+        "終止形": [
+          "けむ"
+        ],
+        "連体形": [
+          "けむ"
+        ],
+        "已然形": [
+          "けめ"
+        ],
+        "命令形": []
+      },
+      "ranges": [
+        "助動詞基礎"
+      ],
+      "source": {
+        "file": "古文助動詞_活用表.xlsx",
+        "sheet": "助動詞活用表",
+        "range": "A25:J25",
+        "values": [
+          "終止形※",
+          "けむ",
+          "過去推量・過去の原因推量・伝聞・婉曲",
+          "四段型",
+          "○",
+          "○",
+          "けむ",
+          "けむ",
+          "けめ",
+          "○"
+        ]
+      },
+      "audit": [
+        {
+          "field": "connections",
+          "before": [
+            "終止形",
+            "ラ変型の連体形"
+          ],
+          "after": [
+            "連用形"
+          ],
+          "reason": "過去推量「けむ」は連用形接続。",
+          "url": "https://www.kotomana-plus.net/dic-appendix/dk5/data/03_%E4%B8%BB%E8%A6%81%E5%8A%A9%E5%8B%95%E8%A9%9E%E6%B4%BB%E7%94%A8%E8%A1%A8.pdf",
+          "page": 2
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "kobun:aux:rashi",
+      "subject": "kobun",
+      "category": "auxiliary",
+      "base": "らし",
+      "label": "らし",
+      "baseAliases": [],
+      "connections": [
+        "終止形",
+        "ラ変型の連体形"
+      ],
+      "meanings": [
+        "推定"
+      ],
+      "conjugationType": "無変化型",
+      "conjugation": {
+        "未然形": [],
+        "連用形": [],
+        "終止形": [
+          "らし"
+        ],
+        "連体形": [
+          "らし"
+        ],
+        "已然形": [
+          "らし"
+        ],
+        "命令形": []
+      },
+      "ranges": [
+        "助動詞基礎"
+      ],
+      "source": {
+        "file": "古文助動詞_活用表.xlsx",
+        "sheet": "助動詞活用表",
+        "range": "A26:J26",
+        "values": [
+          "終止形※",
+          "らし",
+          "推定",
+          "無変化型",
+          "○",
+          "○",
+          "らし",
+          "らし",
+          "らし",
+          "○"
+        ]
+      },
+      "audit": [],
+      "notes": [
+        "原則は終止形接続。ラ変型の活用語には連体形接続。接続問題では両方選ぶ。"
+      ]
+    },
+    {
+      "id": "kobun:aux:meri",
+      "subject": "kobun",
+      "category": "auxiliary",
+      "base": "めり",
+      "label": "めり",
+      "baseAliases": [],
+      "connections": [
+        "終止形",
+        "ラ変型の連体形"
+      ],
+      "meanings": [
+        "推定",
+        "婉曲"
+      ],
+      "conjugationType": "ラ変型",
+      "conjugation": {
+        "未然形": [],
+        "連用形": [
+          "めり"
+        ],
+        "終止形": [
+          "めり"
+        ],
+        "連体形": [
+          "める"
+        ],
+        "已然形": [
+          "めれ"
+        ],
+        "命令形": []
+      },
+      "ranges": [
+        "助動詞基礎"
+      ],
+      "source": {
+        "file": "古文助動詞_活用表.xlsx",
+        "sheet": "助動詞活用表",
+        "range": "A27:J27",
+        "values": [
+          "終止形※",
+          "めり",
+          "推定・婉曲",
+          "ラ変型",
+          "めら",
+          "めり",
+          "めり",
+          "める",
+          "めれ",
+          "○"
+        ]
+      },
+      "audit": [
+        {
+          "field": "conjugation.未然形",
+          "before": [
+            "めら"
+          ],
+          "after": [],
+          "reason": "「めり」に未然形はない。",
+          "url": "https://www.kotomana-plus.net/dic-appendix/dk5/data/03_%E4%B8%BB%E8%A6%81%E5%8A%A9%E5%8B%95%E8%A9%9E%E6%B4%BB%E7%94%A8%E8%A1%A8.pdf",
+          "page": 2
+        }
+      ],
+      "notes": [
+        "原則は終止形接続。ラ変型の活用語には連体形接続。接続問題では両方選ぶ。"
+      ]
+    },
+    {
+      "id": "kobun:aux:nari-hearsay",
+      "subject": "kobun",
+      "category": "auxiliary",
+      "base": "なり",
+      "label": "なり（伝聞・推定）",
+      "baseAliases": [],
+      "connections": [
+        "終止形",
+        "ラ変型の連体形"
+      ],
+      "meanings": [
+        "伝聞",
+        "推定"
+      ],
+      "conjugationType": "ラ変型",
+      "conjugation": {
+        "未然形": [],
+        "連用形": [
+          "なり"
+        ],
+        "終止形": [
+          "なり"
+        ],
+        "連体形": [
+          "なる"
+        ],
+        "已然形": [
+          "なれ"
+        ],
+        "命令形": []
+      },
+      "ranges": [
+        "助動詞基礎"
+      ],
+      "source": {
+        "file": "古文助動詞_活用表.xlsx",
+        "sheet": "助動詞活用表",
+        "range": "A28:J28",
+        "values": [
+          "終止形※",
+          "なり（伝聞・推定）",
+          "伝聞・推定",
+          "ラ変型",
+          "なら",
+          "なり",
+          "なり",
+          "なる",
+          "なれ",
+          "○"
+        ]
+      },
+      "audit": [
+        {
+          "field": "conjugation.未然形",
+          "before": [
+            "なら"
+          ],
+          "after": [],
+          "reason": "伝聞・推定「なり」に未然形はない。",
+          "url": "https://www.kotomana-plus.net/dic-appendix/dk5/data/03_%E4%B8%BB%E8%A6%81%E5%8A%A9%E5%8B%95%E8%A9%9E%E6%B4%BB%E7%94%A8%E8%A1%A8.pdf",
+          "page": 2
+        }
+      ],
+      "notes": [
+        "原則は終止形接続。ラ変型の活用語には連体形接続。接続問題では両方選ぶ。"
+      ]
+    },
+    {
+      "id": "kobun:aux:nari-copula",
+      "subject": "kobun",
+      "category": "auxiliary",
+      "base": "なり",
+      "label": "なり（断定）",
+      "baseAliases": [],
+      "connections": [
+        "連体形",
+        "体言"
+      ],
+      "meanings": [
+        "断定",
+        "存在"
+      ],
+      "conjugationType": "形容動詞ナリ活用型",
+      "conjugation": {
+        "未然形": [
+          "なら"
+        ],
+        "連用形": [
+          "なり",
+          "に"
+        ],
+        "終止形": [
+          "なり"
+        ],
+        "連体形": [
+          "なる"
+        ],
+        "已然形": [
+          "なれ"
+        ],
+        "命令形": [
+          "なれ"
+        ]
+      },
+      "ranges": [
+        "助動詞基礎"
+      ],
+      "source": {
+        "file": "古文助動詞_活用表.xlsx",
+        "sheet": "助動詞活用表",
+        "range": "A29:J29",
+        "values": [
+          "連体形・体言",
+          "なり（断定）",
+          "断定・存在",
+          "形容動詞ナリ活用型",
+          "なら",
+          "なり／に",
+          "なり",
+          "なる",
+          "なれ",
+          "なれ"
+        ]
+      },
+      "audit": [],
+      "notes": []
+    },
+    {
+      "id": "kobun:aux:tari-copula",
+      "subject": "kobun",
+      "category": "auxiliary",
+      "base": "たり",
+      "label": "たり（断定）",
+      "baseAliases": [],
+      "connections": [
+        "体言"
+      ],
+      "meanings": [
+        "断定"
+      ],
+      "conjugationType": "形容動詞タリ活用型",
+      "conjugation": {
+        "未然形": [
+          "たら"
+        ],
+        "連用形": [
+          "たり",
+          "と"
+        ],
+        "終止形": [
+          "たり"
+        ],
+        "連体形": [
+          "たる"
+        ],
+        "已然形": [
+          "たれ"
+        ],
+        "命令形": [
+          "たれ"
+        ]
+      },
+      "ranges": [
+        "助動詞基礎"
+      ],
+      "source": {
+        "file": "古文助動詞_活用表.xlsx",
+        "sheet": "助動詞活用表",
+        "range": "A30:J30",
+        "values": [
+          "連体形・体言",
+          "たり（断定）",
+          "断定",
+          "形容動詞タリ活用型",
+          "たら",
+          "たり／と",
+          "たり",
+          "たる",
+          "たれ",
+          "たれ"
+        ]
+      },
+      "audit": [
+        {
+          "field": "connections",
+          "before": [
+            "連体形",
+            "体言"
+          ],
+          "after": [
+            "体言"
+          ],
+          "reason": "断定「たり」は体言接続。",
+          "url": "https://www.kotomana-plus.net/dic-appendix/dk5/data/03_%E4%B8%BB%E8%A6%81%E5%8A%A9%E5%8B%95%E8%A9%9E%E6%B4%BB%E7%94%A8%E8%A1%A8.pdf",
+          "page": 2
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "kobun:aux:gotoshi",
+      "subject": "kobun",
+      "category": "auxiliary",
+      "base": "ごとし",
+      "label": "ごとし",
+      "baseAliases": [],
+      "connections": [
+        "連体形",
+        "体言",
+        "助詞「の」「が」"
+      ],
+      "meanings": [
+        "比況",
+        "例示",
+        "推定"
+      ],
+      "conjugationType": "形容詞ク活用型",
+      "conjugation": {
+        "未然形": [],
+        "連用形": [
+          "ごとく"
+        ],
+        "終止形": [
+          "ごとし"
+        ],
+        "連体形": [
+          "ごとき"
+        ],
+        "已然形": [],
+        "命令形": []
+      },
+      "ranges": [
+        "助動詞基礎"
+      ],
+      "source": {
+        "file": "古文助動詞_活用表.xlsx",
+        "sheet": "助動詞活用表",
+        "range": "A31:J31",
+        "values": [
+          "連体形・体言・助詞「の」「が」",
+          "ごとし",
+          "比況・例示・推定",
+          "形容詞ク活用型",
+          "○",
+          "ごとく",
+          "ごとし",
+          "ごとき",
+          "○",
+          "○"
+        ]
+      },
+      "audit": [],
+      "notes": []
+    },
+    {
+      "id": "kobun:aux:tashi",
+      "subject": "kobun",
+      "category": "auxiliary",
+      "base": "たし",
+      "label": "たし",
+      "baseAliases": [],
+      "connections": [
+        "連用形"
+      ],
+      "meanings": [
+        "希望"
+      ],
+      "conjugationType": "形容詞ク活用型",
+      "conjugation": {
+        "未然形": [
+          "たく",
+          "たから"
+        ],
+        "連用形": [
+          "たく",
+          "たかり"
+        ],
+        "終止形": [
+          "たし"
+        ],
+        "連体形": [
+          "たき",
+          "たかる"
+        ],
+        "已然形": [
+          "たけれ"
+        ],
+        "命令形": []
+      },
+      "ranges": [
+        "助動詞基礎"
+      ],
+      "source": {
+        "file": "古文助動詞_活用表.xlsx",
+        "sheet": "助動詞活用表",
+        "range": "A32:J32",
+        "values": [
+          "連用形",
+          "たし",
+          "希望",
+          "形容詞ク活用型",
+          "たく／たから",
+          "たく／たり",
+          "たし",
+          "たき／たる",
+          "たけれ",
+          "○"
+        ]
+      },
+      "audit": [
+        {
+          "field": "conjugation.連用形",
+          "before": [
+            "たく",
+            "たり"
+          ],
+          "after": [
+            "たく",
+            "たかり"
+          ],
+          "reason": "補助活用の誤記「たり」を「たかり」に訂正。",
+          "url": "https://www.kotomana-plus.net/dic-appendix/dk5/data/03_%E4%B8%BB%E8%A6%81%E5%8A%A9%E5%8B%95%E8%A9%9E%E6%B4%BB%E7%94%A8%E8%A1%A8.pdf",
+          "page": 1
+        },
+        {
+          "field": "conjugation.連体形",
+          "before": [
+            "たき",
+            "たる"
+          ],
+          "after": [
+            "たき",
+            "たかる"
+          ],
+          "reason": "補助活用の誤記「たる」を「たかる」に訂正。",
+          "url": "https://www.kotomana-plus.net/dic-appendix/dk5/data/03_%E4%B8%BB%E8%A6%81%E5%8A%A9%E5%8B%95%E8%A9%9E%E6%B4%BB%E7%94%A8%E8%A1%A8.pdf",
+          "page": 1
+        }
+      ],
+      "notes": []
+    }
+  ]
+}

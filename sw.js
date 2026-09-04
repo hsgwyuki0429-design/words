@@ -1,13 +1,19 @@
-const APP_VERSION = "2026.9.23a";
+const APP_VERSION = "2026.9.24b";
 const CACHE_NAME = `words-${APP_VERSION}`;
 const APP_SHELL = [
   "./",
   "./index.html",
   `./styles.css?v=${APP_VERSION}`,
+  `./kobun.css?v=${APP_VERSION}`,
+  `./src/kobun.js?v=${APP_VERSION}`,
+  `./src/kobun-logic.js?v=${APP_VERSION}`,
+  `./data/kobun-auxiliaries.json?v=${APP_VERSION}`,
+  `./data/kobun-vocabulary.json?v=${APP_VERSION}`,
   `./src/app.js?v=${APP_VERSION}`,
   "./src/audio.js?v=2026.2.18",
   "./src/max-cues.js?v=2026.2.18",
   `./src/logic.js?v=${APP_VERSION}`,
+  "./src/logic.js",
   `./src/quiz-gestures.js?v=${APP_VERSION}`,
   `./src/speech.js?v=${APP_VERSION}`,
   `./src/storage.js?v=${APP_VERSION}`,

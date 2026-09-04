@@ -4,6 +4,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node tools/check-data.mjs && node --test --test-isolation=none"
+    "test": "node tools/check-data.mjs && node --test"
   }
 }

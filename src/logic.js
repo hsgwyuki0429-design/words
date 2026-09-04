@@ -273,7 +273,9 @@ export function characterHintForToken(token) {
     .join("");
 }
 
-export function distributeInputText(plan, text, startIndex = 0) {
+// currentValues を渡すと、置き換えなかった枠の内容をそのまま残す。答え全体と
+// 一致したとき（貼り付けなど）だけは、余った枠を空にして並べ直す。
+export function distributeInputText(plan, text, startIndex = 0, currentValues = null) {
   const parts = String(text ?? "").trim().split(/\s+/).filter(Boolean);
   const values = Array.from({ length: plan?.slots?.length ?? 0 }, () => "");
   const start = Math.max(0, Number(startIndex) || 0);
@@ -288,10 +290,13 @@ export function distributeInputText(plan, text, startIndex = 0) {
     });
     return values;
   }
+  const distributed = Array.isArray(currentValues)
+    ? values.map((_, index) => String(currentValues[index] ?? ""))
+    : values;
   parts.forEach((part, offset) => {
-    if (values[start + offset] !== undefined) values[start + offset] = part;
+    if (distributed[start + offset] !== undefined) distributed[start + offset] = part;
   });
-  return values;
+  return distributed;
 }
 
 /*

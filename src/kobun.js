@@ -3,9 +3,9 @@ import {
   allConnectionOptions, allMeaningOptions, conjugationOptions, gradeQuestion,
   questionsForMode, restoreKobunSession, splitForms, summarizeKobun, toggleForm,
   validateAuxiliaries, validateVocabulary,
-} from "./kobun-logic.js?v=2026.9.26a";
-import { mergeAttempt, summarizeProgressGauge } from "./logic.js?v=2026.9.26a";
-import { getMetaObject, putHistory, setMeta, stashMeta } from "./storage.js?v=2026.9.26a";
+} from "./kobun-logic.js?v=2026.9.26b";
+import { mergeAttempt, summarizeProgressGauge } from "./logic.js?v=2026.9.26b";
+import { getMetaObject, putHistory, setMeta, stashMeta } from "./storage.js?v=2026.9.26b";
 
 const META_KEY = "kobunStudy:v1";
 const escape = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
@@ -32,8 +32,8 @@ export function createKobunController({ root, getHistory, onQuizChange, onHeader
   async function load() {
     if (!loading) loading = (async () => {
       const [auxResponse, vocabResponse, progress] = await Promise.all([
-        fetch("./data/kobun-auxiliaries.json?v=2026.9.26a"),
-        fetch("./data/kobun-vocabulary.json?v=2026.9.26a"),
+        fetch("./data/kobun-auxiliaries.json?v=2026.9.26b"),
+        fetch("./data/kobun-vocabulary.json?v=2026.9.26b"),
         getMetaObject(META_KEY, {}),
       ]);
       if (!auxResponse.ok || !vocabResponse.ok) throw new Error("古文の教材を読み込めませんでした。通信を確認して再試行してください。");

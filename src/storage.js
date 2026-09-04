@@ -11,7 +11,8 @@ const PENDING_KEY = "eicomi-words:pending";
 
 let databasePromise;
 let useFallback = false;
-let pendingRestored = false;
+// 控えの書き戻しは起動ごとに1回だけ。進行中の書き戻しは Promise で共有する。
+let pendingRestore = null;
 
 // 別タブでの削除・アップグレードなどで接続が閉じられた場合は、
 // 次のアクセスで開き直せるように接続をリセットする。
@@ -110,9 +111,15 @@ function removePending(kind, key) {
 }
 
 // 前回コミットできなかった書き込みを IndexedDB へ入れ直す。
+// 起動時は履歴とメタ情報の読み込みが同時に走るので、書き戻しは1回だけ実行し、
+// あとから来た呼び出しも同じ完了を待つ。待たずに読むと、控えより古い内容を
+// 読んでしまい、中断直前の学習状況が失われる。
 async function restorePending(database) {
-  if (pendingRestored) return;
-  pendingRestored = true;
+  if (!pendingRestore) pendingRestore = writeBackPending(database);
+  return pendingRestore;
+}
+
+async function writeBackPending(database) {
   const data = pendingData();
   const historyEntries = Object.values(data.history);
   const metaEntries = Object.entries(data.meta);

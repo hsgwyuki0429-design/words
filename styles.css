@@ -3243,7 +3243,23 @@ body.quiz-active .main-content { padding-bottom: 0; }
     display: none;
   }
 
-  /* 古文単語 重要語句のフラッシュカード
+  /* スワイプで自己採点できる幅では、代替の採点ボタンは読み上げ用に隠す。 */
+  .recall-grade-fallback {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+
+  .compact-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* 古文単語 重要語句のフラッシュカード
    カードの大きさは公共・保健と同じまま固定し、文字量に応じて data-density で
    文字だけを縮める（--vocab-scale が本文・意味・ポイントの倍率）。 */
 .vocab-recall-card {
@@ -3338,21 +3354,6 @@ body.quiz-active .main-content { padding-bottom: 0; }
   color: var(--secondary);
   font-size: 0.82rem;
   line-height: 1.7;
-}
-
-.recall-grade-fallback {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-  }
-
-  .compact-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
 }
 
 @media (max-width: 430px) {

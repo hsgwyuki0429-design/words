@@ -1,4 +1,4 @@
-import { createKobunController } from "./kobun.js?v=2026.9.26a";
+import { createKobunController } from "./kobun.js?v=2026.9.26b";
 import {
   ALL_MODES,
   ALPHABET_KEYBOARD_ROWS,
@@ -68,7 +68,7 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.26a";
+} from "./logic.js?v=2026.9.26b";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -88,7 +88,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.9.26a";
+} from "./storage.js?v=2026.9.26b";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -96,7 +96,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.26a";
+} from "./quiz-gestures.js?v=2026.9.26b";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
@@ -105,7 +105,7 @@ import {
   normalizeSpeechRate,
   normalizeSpeechVoiceURI,
   voiceKey,
-} from "./speech.js?v=2026.9.26a";
+} from "./speech.js?v=2026.9.26b";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -689,7 +689,9 @@ function renderStudyRangeSelect() {
   elements.studyRangeBack.dataset.viewTarget = "dashboard";
   elements.studyRangeBack.textContent = fromDashboard ? "← 範囲一覧へ戻る" : "← ダッシュボードへ戻る";
   elements.studyRangeEyebrow.textContent = fromDashboard ? "MULTIPLE RANGES" : "STEP 1 · MULTIPLE";
-  const ranges = currentRangeOrder();
+  // 出題できる範囲だけを並べる。「全範囲」ボタンと同じ集合にそろえておくと、
+  // どちらから入っても同じ周回のつづきになる。
+  const ranges = dashboardRanges();
   const allSelected = state.rangeSelectionMode === "all";
   const allResumable = allRangesInProgress();
   const allCard = `<button class="multi-select-card select-all-card${allSelected ? " selected" : ""}${allResumable ? " is-in-progress" : ""}" type="button" data-study-range-all aria-pressed="${allSelected}">
@@ -3445,10 +3447,18 @@ function recallCardBody(question, revealed) {
     ` : ""}`;
 }
 
+// 進み具合の分母は、待機中の再出題も数えた「今回まだ解く問題数」。
+// 再出題が決まった時点で分母に入れておくと、最後の1問を解いたあとに
+// 総数だけが増えていくような見え方にならない。
+function sessionQuestionTotal(session) {
+  return Math.max(1, (session?.queue?.length ?? 0) + (session?.deferredReviews?.length ?? 0));
+}
+
 function renderRecallQuiz() {
   const session = state.session;
   const question = session.currentQuestion;
-  const progress = Math.round((session.cursor / session.queue.length) * 100);
+  const questionTotal = sessionQuestionTotal(session);
+  const progress = Math.round((session.cursor / questionTotal) * 100);
   const revealed = session.revealed;
   const vocabCard = isKobunVocabSubject();
   elements.quizContent.innerHTML = `
@@ -3458,7 +3468,7 @@ function renderRecallQuiz() {
           <button class="icon-button" type="button" data-quit-quiz aria-label="学習を終了">×</button>
           ${undoButtonMarkup()}
         </div>
-        <div class="quiz-progress-copy"><strong>${session.cursor + 1}</strong> / ${session.queue.length}</div>
+        <div class="quiz-progress-copy"><strong>${session.cursor + 1}</strong> / ${questionTotal}</div>
         <span class="mode-pill">${TYPE_LABELS[question.item.type]}</span>
       </header>
       <div class="quiz-progress"><span style="width:${progress}%"></span></div>
@@ -3508,7 +3518,8 @@ function renderQuiz() {
   const comboChanged = state.combo !== lastRenderedCombo;
   lastRenderedCombo = state.combo;
   const lastResult = session.results.at(-1);
-  const progress = Math.round(((session.cursor + (answered ? 1 : 0)) / session.queue.length) * 100);
+  const questionTotal = sessionQuestionTotal(session);
+  const progress = Math.round(((session.cursor + (answered ? 1 : 0)) / questionTotal) * 100);
   const isChoice = question.mode.endsWith("choice");
   const isKeyboardInput = question.mode === "ja_to_en_input";
   const isSwipeAdvance = isSwipeAdvanceMode(question.mode);
@@ -3534,7 +3545,7 @@ function renderQuiz() {
           <button class="icon-button" type="button" data-quit-quiz aria-label="学習を終了">×</button>
           ${undoButtonMarkup()}
         </div>
-        <div class="quiz-progress-copy"><strong>${session.cursor + 1}</strong> / ${session.queue.length}</div>
+        <div class="quiz-progress-copy"><strong>${session.cursor + 1}</strong> / ${questionTotal}</div>
         ${isKeyboardInput ? `<div class="quiz-header-tools">
           <span class="mode-pill">${escapeHtml(question.label)}</span>
           <button class="character-count-toggle" type="button" data-toggle-character-count aria-pressed="${state.settings.showCharacterCount}">文字数：${state.settings.showCharacterCount ? "表示" : "非表示"}</button>
@@ -3582,7 +3593,13 @@ function renderQuiz() {
       window.scrollTo(0, 0);
       if (!isSwipeAdvance) {
         elements.quizContent.querySelector("[data-next-question]")?.focus({ preventScroll: true });
+        return;
       }
+      // 回答すると選択肢・入力欄が無効になり、フォーカスが本文の外へ落ちる。
+      // 回答済みカードへ移しておくと、EnterやSpaceでもそのまま次の問題へ進める。
+      elements.quizContent
+        .querySelector("[data-quiz-gesture-surface]")
+        ?.focus({ preventScroll: true });
     });
   }
 }
@@ -4214,14 +4231,16 @@ function repeatCompletedSession() {
 
 function distributeSlotText(startInput, text) {
   const inputs = [...elements.quizContent.querySelectorAll(".word-slot-input")];
-  const start = inputs.indexOf(startInput);
+  const start = Math.max(0, inputs.indexOf(startInput));
   const question = state.session?.currentQuestion;
   const plan = question?.inputPlan ?? (question ? inputPlanForQuestion(question.item, question.mode) : null);
-  const values = distributeInputText(plan, text, start);
+  // いま入っている値を渡し、置き換えなかった枠は消さない。先頭の枠に打ち直しても
+  // 2語目以降の入力が失われないようにするため。
+  const values = distributeInputText(plan, text, start, inputs.map((input) => input.value.trim()));
   values.forEach((value, index) => {
-    if (inputs[index] && (start === 0 || value)) inputs[index].value = value;
+    if (inputs[index]) inputs[index].value = value;
   });
-  state.session.currentSlotValues = inputs.map((input) => input.value.trim());
+  if (state.session) state.session.currentSlotValues = inputs.map((input) => input.value.trim());
   updateCharacterCountDisplay();
   const lastFilled = values.reduce((last, value, index) => value ? index : last, start);
   const nextIndex = clampSlotIndex(lastFilled + 1, inputs.length);
@@ -4321,7 +4340,7 @@ function bindEvents() {
     if (target.hasAttribute("data-dashboard-multi-range")) {
       state.rangeFlow = "dashboard";
       state.rangeSelectionMode = "all";
-      state.filters.ranges = [...currentRangeOrder()];
+      state.filters.ranges = dashboardRanges();
       setView("study-range-select");
     }
     if (target.dataset.studyTarget) startStudyFromTarget(target.dataset.studyTarget);
@@ -4384,7 +4403,7 @@ function bindEvents() {
     }
     if (target.hasAttribute("data-study-range-all")) {
       state.rangeSelectionMode = "all";
-      state.filters.ranges = [...currentRangeOrder()];
+      state.filters.ranges = dashboardRanges();
       renderStudyRangeSelect();
     }
     if (target.dataset.studyRange) {
@@ -4571,7 +4590,9 @@ function bindEvents() {
       }
       return;
     }
-    if (event.key === "Enter") {
+    // 回答済みカードにフォーカスがあるときは、Space でも次の問題へ進める。
+    const answeredCard = event.target.closest("[data-quiz-gesture-surface]");
+    if (event.key === "Enter" || (event.key === " " && answeredCard)) {
       event.preventDefault();
       if (state.session?.answered) advanceAnsweredCard("right");
       else if (!isSwipeAdvanceMode(mode)) submitAnswer(currentTypedAnswer());
@@ -4614,7 +4635,7 @@ async function boot() {
       fetch("./data/items.json?v=2026.08.31b"),
       fetch("./data/public-items.json?v=2026.09.01"),
       fetch("./data/health-items.json?v=2026.09.01"),
-      fetch("./data/kobun-vocabulary.json?v=2026.9.26a"),
+      fetch("./data/kobun-vocabulary.json?v=2026.9.26b"),
       loadHistory(),
       getMeta("selectedMode"),
       getMetaObject("settings", DEFAULT_SETTINGS),
@@ -4662,7 +4683,7 @@ async function boot() {
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.26a").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.26b").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

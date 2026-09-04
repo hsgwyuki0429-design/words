@@ -6,10 +6,15 @@ import {
   DEFAULT_SPEECH_RATE,
   ENGLISH_SPEECH_LANG,
   SPEECH_RATE_OPTIONS,
+  SPEECH_VOICE_AUTO,
   createEnglishSpeaker,
+  listEnglishVoices,
   normalizeSpeechRate,
+  normalizeSpeechVoiceURI,
   pickEnglishVoice,
+  scoreEnglishVoice,
   speechTextForEnglish,
+  utteranceTextForEnglish,
 } from "../src/speech.js";
 import { ENGLISH_CONTENT_TYPES } from "../src/logic.js";
 
@@ -105,7 +110,7 @@ test("教材データの英語はすべて読み上げ用テキストに変換�
 });
 
 test("英語の声を探し、無ければ lang 指定だけに任せる", () => {
-  const voice = (name, lang, isDefault = false) => ({ name, lang, default: isDefault });
+  const voice = (name, lang, isDefault = false) => ({ name, lang, default: isDefault, voiceURI: name });
   assert.equal(ENGLISH_SPEECH_LANG, "en-US");
   // 声が1つも無い／英語が無い環境では null（OS・ブラウザ標準へフォールバック）
   assert.equal(pickEnglishVoice([]), null);
@@ -119,9 +124,10 @@ test("英語の声を探し、無ければ lang 指定だけに任せる", () =>
   );
   // en-US が無ければ他の英語で代用する（en_GB のような表記ゆれも拾う）
   assert.equal(pickEnglishVoice([voice("Karen", "en-AU"), voice("Daniel", "en_GB", true)]).name, "Daniel");
-  // 特定の声の名前を必須条件にしない（選ぶときに voice.name を見ない）
+  // 名前は加点の手がかりにするだけで、必須条件にはしない。
+  // 手がかりを1つも持たない声しか無くても、英語ならきちんと選ぶ。
+  assert.equal(pickEnglishVoice([voice("voice 1", "en-US")]).name, "voice 1");
   const speechSource = readFileSync(new URL("../src/speech.js", import.meta.url), "utf8");
-  assert.doesNotMatch(speechSource, /voice\.name/);
   assert.match(speechSource, /normalizeLang\(voice\.lang\)\.startsWith\("en"\)/);
 });
 
@@ -129,7 +135,7 @@ test("読み上げの直前に必ず前の音声を止める", () => {
   const { speaker, engine, calls } = fakeSpeech({ voices: [{ name: "Samantha", lang: "en-US" }] });
   assert.equal(speaker.speak("apple", { token: 1 }), true);
   assert.deepEqual(calls.filter((call) => call !== "listen:voiceschanged"), ["cancel", "speak"]);
-  assert.equal(engine.spoken[0].text, "apple");
+  assert.equal(engine.spoken[0].text, "apple.", "文として読ませるため終止符を補う");
   assert.equal(engine.spoken[0].lang, "en-US");
   assert.equal(engine.spoken[0].voice.name, "Samantha");
 });
@@ -144,7 +150,7 @@ test("素早く連続でスワイプしても、最新の問題だけが読ま�
   // 読み上げのたびに cancel が入り、キューに積み増さない
   assert.equal(calls.filter((call) => call === "speak").length, 3);
   assert.ok(calls.filter((call) => call === "cancel").length >= 3);
-  assert.deepEqual(engine.spoken.map((utterance) => utterance.text), ["apple", "banana", "cherry"]);
+  assert.deepEqual(engine.spoken.map((utterance) => utterance.text), ["apple.", "banana.", "cherry."]);
 });
 
 test("同じ問題は二度読み上げない", () => {
@@ -339,13 +345,144 @@ test("設定画面から5段階の速さを選べる", () => {
   assert.match(appSource, /state\.settings\.speechRate = normalizeSpeechRate\(state\.settings\.speechRate\);/);
   assert.match(functionSource("currentSpeechRate", "persistStudyProgress"), /normalizeSpeechRate\(state\.settings\.speechRate\)/);
   // 読み上げ時に現在の設定を渡す
-  assert.match(functionSource("speakQuestionEnglish", "prepareQuestion"), /rate: currentSpeechRate\(\),/);
+  assert.match(functionSource("speakQuestionEnglish", "prepareQuestion"), /speechOptions\(questionSpeechToken\)/);
+  assert.match(functionSource("speechOptions", "persistStudyProgress"), /rate: currentSpeechRate\(\)/);
   // 端末へ保存し、選んだ速さをその場で試せる
   assert.match(appSource, /state\.settings\.speechRate = normalizeSpeechRate\(target\.dataset\.speechRate\);\n\s*saveSettings\(\);/);
-  assert.match(appSource, /englishSpeech\.speak\(SPEECH_RATE_SAMPLE, \{/);
+  assert.match(appSource, /englishSpeech\.speak\(SPEECH_RATE_SAMPLE, speechOptions\(/);
   assert.match(appSource, /const SPEECH_RATE_SAMPLE = "[A-Za-z ]+";/);
   // 効果音の強さと同じ見た目・同じ折り返しにする
   // 5段階あるので、画面幅によらず見出しの下へ1行で並べる
   assert.match(stylesSource, /\.speech-rate-row \{[^}]*flex-direction: column/);
   assert.match(stylesSource, /\.speech-rate-row \.segmented-options \{[^}]*width: 100%/);
+});
+
+
+test("エンジンへ渡す文には終止符を補い、単語1語でも文として読ませる", () => {
+  // 画面表示に使う speechTextForEnglish() は変えず、発話用でだけ補う
+  assert.equal(speechTextForEnglish("apple"), "apple");
+  assert.equal(utteranceTextForEnglish("apple"), "apple.");
+  assert.equal(utteranceTextForEnglish("take part in"), "take part in.");
+  // すでに終止符があるものは二重に付けない
+  assert.equal(utteranceTextForEnglish("Nice to meet you."), "Nice to meet you.");
+  assert.equal(utteranceTextForEnglish("How are you?"), "How are you?");
+  assert.equal(utteranceTextForEnglish("Look out!"), "Look out!");
+  // 読み上げ対象でないものは空のまま（終止符だけを読ませない）
+  for (const value of ["", "   ", "社会的協働", null, undefined, 123]) {
+    assert.equal(utteranceTextForEnglish(value), "");
+  }
+  // 教材データはすべて終止符付きの文にできる
+  const list = Array.isArray(items) ? items : items.items;
+  const englishItems = list.filter((item) => ENGLISH_CONTENT_TYPES.includes(item.type));
+  assert.ok(englishItems.every((item) => /[.!?]$/.test(utteranceTextForEnglish(item.english))));
+});
+
+test("音声にすると読めない略記・記号を整える", () => {
+  // 略記は展開する
+  assert.equal(speechTextForEnglish("give sth. to sb."), "give something to somebody");
+  assert.equal(speechTextForEnglish("remind sb of sth"), "remind somebody of something");
+  // 語の一部は展開しない
+  assert.equal(speechTextForEnglish("absorb"), "absorb");
+  assert.equal(speechTextForEnglish("establish"), "establish");
+  // 省略記号・伏せ字は読み上げない
+  assert.equal(speechTextForEnglish("as ~ as ..."), "as as");
+  assert.equal(speechTextForEnglish("look *forward* to"), "look forward to");
+  assert.equal(speechTextForEnglish("so … that"), "so that");
+});
+
+test("自然な声を点数で選び、特定の名前に依存しない", () => {
+  const base = { lang: "en-US", name: "Voice", voiceURI: "voice" };
+  // 望んだ地域 > クラウド合成 > 高品質を示す名前 > ブラウザの既定
+  const same = (voice) => scoreEnglishVoice({ ...base, ...voice });
+  assert.ok(same({ lang: "en-US" }) > same({ lang: "en-GB" }));
+  assert.ok(same({ localService: false }) > same({ localService: true }));
+  assert.ok(same({ name: "Microsoft Ava Online (Natural)" }) > same({ name: "Microsoft David" }));
+  assert.ok(same({ default: true }) > same({ default: false }));
+  // 端末内蔵の既定の声より、クラウドの自然音声を選ぶ
+  const voices = [
+    { name: "Microsoft David Desktop", lang: "en-US", voiceURI: "david", localService: true, default: true },
+    { name: "Google US English", lang: "en-US", voiceURI: "google", localService: false },
+  ];
+  assert.equal(pickEnglishVoice(voices).name, "Google US English");
+  // 一覧は点数の高い順。英語以外は混ぜない
+  const listed = listEnglishVoices([...voices, { name: "Kyoko", lang: "ja-JP", voiceURI: "kyoko" }]);
+  assert.deepEqual(listed.map((voice) => voice.name), ["Google US English", "Microsoft David Desktop"]);
+});
+
+test("設定で選んだ声を使い、その声が無ければ自動選択へ戻す", () => {
+  const voices = [
+    { name: "Samantha", lang: "en-US", voiceURI: "samantha", localService: false },
+    { name: "Daniel", lang: "en-GB", voiceURI: "daniel" },
+  ];
+  assert.equal(pickEnglishVoice(voices, "en-US", "daniel").name, "Daniel", "英語なら地域が違っても選べる");
+  assert.equal(pickEnglishVoice(voices, "en-US", SPEECH_VOICE_AUTO).name, "Samantha");
+  // 端末を変えて選んだ声が消えても、読み上げ自体は止めない
+  assert.equal(pickEnglishVoice(voices, "en-US", "missing-voice").name, "Samantha");
+  // 壊れた設定はすべて「自動」へ
+  for (const value of [undefined, null, "", "   ", 0, 1, {}, [], "x".repeat(301)]) {
+    assert.equal(normalizeSpeechVoiceURI(value), SPEECH_VOICE_AUTO, `${JSON.stringify(value)} は自動へ`);
+  }
+  assert.equal(normalizeSpeechVoiceURI(" samantha "), "samantha");
+  assert.equal(normalizeSpeechVoiceURI(SPEECH_VOICE_AUTO), SPEECH_VOICE_AUTO);
+  // 読み上げ時に指定が渡る
+  const { speaker, engine } = fakeSpeech({ voices });
+  speaker.speak("apple", { token: 1, voiceURI: "daniel" });
+  assert.equal(engine.spoken[0].voice.name, "Daniel");
+  speaker.speak("banana", { token: 2 });
+  assert.equal(engine.spoken[1].voice.name, "Samantha", "指定しなければ自動選択");
+});
+
+test("設定画面から英語の声を選べる", () => {
+  const stylesSource = readFileSync(new URL("../styles.css", import.meta.url), "utf8");
+  // 「学習画面」のカードで、速さの下に置く
+  const settingsSource = functionSource("renderSettings", "prefersReducedMotion");
+  assert.match(settingsSource, /\$\{speechVoiceRow\(\)\}/);
+  assert.ok(
+    settingsSource.indexOf("speechVoiceRow()") > settingsSource.indexOf("data-speech-rate"),
+    "速さの下に置く",
+  );
+  const rowSource = functionSource("speechVoiceRow", "renderSettings");
+  // 声が無い・未対応の環境では行ごと出さない
+  assert.match(rowSource, /if \(!voices\.length\) return "";/);
+  // 「自動」と、端末が返した声の名前をそのまま並べる
+  assert.match(rowSource, /SPEECH_VOICE_AUTO/);
+  assert.match(rowSource, /voiceKey\(voice\)/);
+  assert.match(rowSource, /escapeHtml/);
+  // 既定値を持ち、起動時に正規化する
+  assert.match(appSource, /speechVoiceURI: SPEECH_VOICE_AUTO,/);
+  assert.match(appSource, /state\.settings\.speechVoiceURI = normalizeSpeechVoiceURI\(state\.settings\.speechVoiceURI\);/);
+  // 選んだら端末へ保存し、その場で試せる
+  assert.match(appSource, /state\.settings\.speechVoiceURI = normalizeSpeechVoiceURI\(event\.target\.value\);\n\s*saveSettings\(\);/);
+  // 読み上げ時に現在の声を渡す
+  assert.match(functionSource("speechOptions", "persistStudyProgress"), /voiceURI: currentSpeechVoiceURI\(\)/);
+  // 声は名前が長いので、見出しの下へ全幅で置く
+  assert.match(stylesSource, /\.speech-voice-row \{[^}]*flex-direction: column/);
+  assert.match(stylesSource, /\.settings-select \{[^}]*width: 100%/);
+});
+
+test("声の一覧があとから届いたら設定画面を出し直す", () => {
+  const voices = [];
+  let changed = 0;
+  const engine = {
+    getVoices: () => voices,
+    addEventListener() {},
+    cancel() {},
+    speak() {},
+  };
+  const speaker = createEnglishSpeaker({
+    getSynthesis: () => engine,
+    getUtteranceClass: () => class {},
+    onWarning: () => {},
+    onVoicesChanged: () => { changed += 1; },
+  });
+  assert.deepEqual(speaker.englishVoices(), [], "届く前は空");
+  voices.push({ name: "Samantha", lang: "en-US", voiceURI: "samantha" });
+  speaker.prime();
+  assert.equal(changed, 1, "一覧が変わったら知らせる");
+  assert.deepEqual(speaker.englishVoices().map((voice) => voice.name), ["Samantha"]);
+  // 中身が同じなら何度呼ばれても通知しない（設定画面を無駄に描き直さない）
+  speaker.prime();
+  assert.equal(changed, 1);
+  // 設定画面を開いているときだけ描き直す
+  assert.match(appSource, /if \(state\.view === "settings"\) renderSettings\(\);/);
 });

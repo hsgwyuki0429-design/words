@@ -65,7 +65,7 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.22a";
+} from "./logic.js?v=2026.9.23a";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -85,7 +85,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.9.22a";
+} from "./storage.js?v=2026.9.23a";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -93,13 +93,16 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.22a";
+} from "./quiz-gestures.js?v=2026.9.23a";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
+  SPEECH_VOICE_AUTO,
   createEnglishSpeaker,
   normalizeSpeechRate,
-} from "./speech.js?v=2026.9.22a";
+  normalizeSpeechVoiceURI,
+  voiceKey,
+} from "./speech.js?v=2026.9.23a";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -114,6 +117,7 @@ const DEFAULT_SETTINGS = {
   // 既存の保存データにこのキーが無くても getMetaObject() が既定値で補う。
   useSystemKeyboard: false,
   speechRate: DEFAULT_SPEECH_RATE,
+  speechVoiceURI: SPEECH_VOICE_AUTO,
   masteryCriterion: DEFAULT_MASTERY_CRITERION,
 };
 
@@ -1094,6 +1098,25 @@ function saveSettings() {
   setMeta("settings", state.settings).catch(console.warn);
 }
 
+// 端末で使える英語の声から選ぶ行。声が1つも無い（または未対応の）環境では
+// 何も出さない。選べる声は端末ごとに違うので、名前は端末が返すものをそのまま出す。
+function speechVoiceRow() {
+  const voices = englishSpeech.englishVoices();
+  if (!voices.length) return "";
+  const selected = currentSpeechVoiceURI();
+  const known = voices.some((voice) => voiceKey(voice) === selected);
+  const option = (value, label, isSelected) =>
+    `<option value="${escapeHtml(value)}"${isSelected ? " selected" : ""}>${escapeHtml(label)}</option>`;
+  return `
+    <div class="settings-row speech-voice-row">
+      <span><strong>英語の声</strong><small>端末に入っている声から選べます。選ぶとその声で試せます</small></span>
+      <select class="settings-select" data-speech-voice aria-label="英語の声">
+        ${option(SPEECH_VOICE_AUTO, "自動（いちばん自然な声）", selected === SPEECH_VOICE_AUTO || !known)}
+        ${voices.map((voice) => option(voiceKey(voice), `${voice.name}（${voice.lang}）`, voiceKey(voice) === selected)).join("")}
+      </select>
+    </div>`;
+}
+
 function renderSettings() {
   const toggle = (key, title, detail) => `
     <label class="settings-row">
@@ -1156,6 +1179,7 @@ function renderSettings() {
             >${escapeHtml(option.label)}</button>`).join("")}
         </div>
       </div>
+      ${speechVoiceRow()}
       ${toggle("showSources", "出典を表示", "回答後に教材と範囲を表示")}
       ${toggle("useSystemKeyboard", "端末のキーボードを使う", "オフにすると、キーボード入力でアプリ内の小文字英字キーボードを表示します")}
     </section>
@@ -1198,7 +1222,13 @@ const fx = {
 
 const maxAudio = createMaxAudioEngine();
 // 問題の英語の読み上げ。Web Speech API が使えない端末では何もしない。
-const englishSpeech = createEnglishSpeaker();
+// 声の一覧はあとから届くことがあるので、届いたら設定画面を出し直して
+// 選べる声を最新にする。設定画面を開いていないときは何もしない。
+const englishSpeech = createEnglishSpeaker({
+  onVoicesChanged: () => {
+    if (state.view === "settings") renderSettings();
+  },
+});
 // 1問につき1回だけ読むための通し番号。セッションをまたいでも増え続ける。
 let questionSpeechToken = 0;
 // 設定画面で速さを選んだときに読み上げる見本。
@@ -2282,6 +2312,16 @@ function currentSpeechRate() {
   return normalizeSpeechRate(state.settings.speechRate);
 }
 
+function currentSpeechVoiceURI() {
+  return normalizeSpeechVoiceURI(state.settings.speechVoiceURI);
+}
+
+// 読み上げに使う設定をひとまとめにする。速さと声を渡し忘れないように、
+// 読み上げの呼び出しはすべてここを通す。
+function speechOptions(token) {
+  return { token, rate: currentSpeechRate(), voiceURI: currentSpeechVoiceURI() };
+}
+
 // 周回状態はメタ領域に組み合わせキーごとで保存する。件数は最終更新順で上限を設ける。
 function persistStudyProgress(key, progress) {
   if (!key || !progress) return;
@@ -2528,10 +2568,7 @@ function englishSpeechTiming(mode) {
 function speakQuestionEnglish(question, timing) {
   if (!question || englishSpeechTiming(question.mode) !== timing) return;
   questionSpeechToken += 1;
-  englishSpeech.speak(questionEnglishText(question), {
-    token: questionSpeechToken,
-    rate: currentSpeechRate(),
-  });
+  englishSpeech.speak(questionEnglishText(question), speechOptions(questionSpeechToken));
 }
 
 function prepareQuestion({ enterFrom = null } = {}) {
@@ -4106,10 +4143,7 @@ function bindEvents() {
       saveSettings();
       renderSettings();
       // 選んだ速さをその場で確かめられるように、タップの中で一度だけ読み上げる。
-      englishSpeech.speak(SPEECH_RATE_SAMPLE, {
-        token: (questionSpeechToken += 1),
-        rate: currentSpeechRate(),
-      });
+      englishSpeech.speak(SPEECH_RATE_SAMPLE, speechOptions((questionSpeechToken += 1)));
     }
     if (target.dataset.soundIntensity) {
       state.settings.soundIntensity = target.dataset.soundIntensity === "full" ? "full" : "gentle";
@@ -4333,6 +4367,13 @@ function bindEvents() {
   elements.listSearch.addEventListener("input", () => renderList(true));
 
   document.addEventListener("change", (event) => {
+    if (event.target.dataset?.speechVoice !== undefined) {
+      state.settings.speechVoiceURI = normalizeSpeechVoiceURI(event.target.value);
+      saveSettings();
+      // 選んだ声をその場で確かめられるように、一度だけ読み上げる。
+      englishSpeech.speak(SPEECH_RATE_SAMPLE, speechOptions((questionSpeechToken += 1)));
+      return;
+    }
     const setting = event.target.dataset?.setting;
     if (!setting || !(setting in state.settings)) return;
     state.settings[setting] = event.target.checked;
@@ -4458,6 +4499,7 @@ async function boot() {
     );
     state.settings.masteryCriterion = normalizeMasteryCriterion(state.settings.masteryCriterion);
     state.settings.speechRate = normalizeSpeechRate(state.settings.speechRate);
+    state.settings.speechVoiceURI = normalizeSpeechVoiceURI(state.settings.speechVoiceURI);
     state.studyProgress = Object.fromEntries(
       Object.entries(studyProgress ?? {})
         .map(([key, value]) => [key, normalizeStudyProgress(value)])
@@ -4469,7 +4511,7 @@ async function boot() {
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.22a").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.23a").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

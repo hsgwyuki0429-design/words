@@ -61,10 +61,11 @@ import {
   studyPerformanceModes,
   studyTargetsForDashboard,
   summarizeHistory,
+  summarizeProgressGauge,
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.18a";
+} from "./logic.js?v=2026.9.19a";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -84,7 +85,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.9.18a";
+} from "./storage.js?v=2026.9.19a";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -92,7 +93,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.18a";
+} from "./quiz-gestures.js?v=2026.9.19a";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -668,12 +669,15 @@ function renderStudyImportance() {
     minimumWrong: 0,
   }).length;
   const types = studyContentTypes();
+  // 直前の画面（学習内容）と同じ周回のバーを見せる。
+  const cycleNumber = selectedCycleNumber();
   const rows = [
     contentChoiceRow({
       title: "全重要度",
       detail: `${countFor(null)}${unit}`,
       attribute: 'data-study-importance-choice="all"',
       progress: selectionProgress({ types }),
+      cycleNumber,
     }),
     ...available.map((importance) => {
       const count = countFor(importance);
@@ -682,6 +686,7 @@ function renderStudyImportance() {
         detail: count ? `${count}${unit}` : "出題できません",
         attribute: `data-study-importance-choice="${importance}"${count ? "" : ' disabled aria-disabled="true"'}`,
         progress: count ? selectionProgress({ types, importance: [importance] }) : null,
+        cycleNumber,
       });
     }),
     contentChoiceRow({
@@ -818,6 +823,15 @@ function cycleNumberForContents(contentsKey) {
   return entry?.progress?.cycleNumber ?? 1;
 }
 
+// 重要度画面のように、学習内容が決まったあとの画面で使う周回番号。
+// 形式カード・学習内容と同じ本数・同じ色のバーになるようにそろえる。
+function selectedCycleNumber() {
+  const selection = state.studySelection ?? {};
+  return cycleNumberForContents(isRecallSubject()
+    ? selection.content ?? ""
+    : studyContentsKey(selection.contents ?? []));
+}
+
 function contentsInProgress() {
   const wantedRanges = studyContentsKey(state.filters.ranges);
   const mode = exactStudyMode(state.studySelection);
@@ -900,40 +914,31 @@ function cardStudyProgress(card) {
   })[0] ?? null;
 }
 
-// バーの色は周回ごとに変える。1周目・2周目（赤）・3周目…と変わり、
-// 5周目まで一巡したら最初の色へ戻る。
-const GAUGE_COLOR_COUNT = 5;
-
-function gaugeColorIndex(cycleNumber) {
-  return ((Math.max(1, cycleNumber) - 1) % GAUGE_COLOR_COUNT) + 1;
-}
-
 // 形式カード・学習内容・重要度で共通の進捗ゲージ。
 // 1本のトラックに「未回答（背景）」「解答済み（薄い塗り）」「習得（濃い塗り）」を重ね、
 // 周回が進むごとに新しいバーを下へ足していく（終えた周回のバーは満了のまま残す）。
+// バーの本数と幅は summarizeProgressGauge がそろえる。周回を重ねてもバーは
+// 上限までしか増えず、保存データが壊れていても幅が不正な値にならない。
 function progressGaugeMarkup(progress, cycleNumber = 1) {
-  const cycles = Math.max(1, Number(cycleNumber) || 1);
-  const answeredPercent = Math.round(progress.answeredRate * 100);
-  const masteredPercent = Math.round(progress.masteredRate * 100);
-  const currentColor = gaugeColorIndex(cycles);
-  const label = `${cycles}周目：解答済み ${answeredPercent}パーセント、習得 ${masteredPercent}パーセント`;
-  const finishedBars = Array.from({ length: cycles - 1 }, (unused, index) => `
-        <span class="progress-gauge is-finished" data-cycle="${gaugeColorIndex(index + 1)}" role="img" aria-label="${index + 1}周目は完了">
+  const gauge = summarizeProgressGauge(progress, cycleNumber);
+  const label = `${gauge.cycleNumber}周目：解答済み ${gauge.answeredPercent}パーセント、習得 ${gauge.masteredPercent}パーセント`;
+  const finishedBars = gauge.finishedBars.map((bar) => `
+        <span class="progress-gauge is-finished" data-cycle="${bar.colorIndex}" role="img" aria-label="${escapeHtml(bar.label)}">
           <span class="progress-gauge-answered" style="width:100%"></span>
           <span class="progress-gauge-mastered" style="width:100%"></span>
         </span>`).join("");
   return `
       <span class="progress-gauge-stack">
         ${finishedBars}
-        <span class="progress-gauge" data-cycle="${currentColor}" role="img" aria-label="${escapeHtml(label)}">
-          <span class="progress-gauge-answered" style="width:${answeredPercent}%"></span>
-          <span class="progress-gauge-mastered" style="width:${masteredPercent}%"></span>
+        <span class="progress-gauge" data-cycle="${gauge.colorIndex}" role="img" aria-label="${escapeHtml(label)}">
+          <span class="progress-gauge-answered" style="width:${gauge.answeredWidth}%"></span>
+          <span class="progress-gauge-mastered" style="width:${gauge.masteredWidth}%"></span>
         </span>
       </span>
-      <span class="progress-legend" data-cycle="${currentColor}">
-        ${cycles > 1 ? `<span class="progress-figure is-cycle">${cycles}周目</span>` : ""}
-        <span class="progress-figure is-answered">解答済み ${answeredPercent}%（${progress.answeredItems}/${progress.totalItems}）</span>
-        <span class="progress-figure is-mastered">習得 ${masteredPercent}%（${progress.masteredItems}/${progress.totalItems}）</span>
+      <span class="progress-legend" data-cycle="${gauge.colorIndex}">
+        ${gauge.cycleNumber > 1 ? `<span class="progress-figure is-cycle">${gauge.cycleNumber}周目</span>` : ""}
+        <span class="progress-figure is-answered">解答済み ${gauge.answeredPercent}%（${gauge.answeredItems}/${gauge.totalItems}）</span>
+        <span class="progress-figure is-mastered">習得 ${gauge.masteredPercent}%（${gauge.masteredItems}/${gauge.totalItems}）</span>
       </span>`;
 }
 
@@ -4375,7 +4380,7 @@ async function boot() {
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.18a").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.19a").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

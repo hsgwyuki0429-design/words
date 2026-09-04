@@ -4400,6 +4400,24 @@ body.quiz-active .main-content { padding-bottom: 0; }
   line-height: 1.65;
 }
 
+/* 重要度は行数が多いので、ゲージ付きの行をさらに詰めて1画面に収める */
+#study-importance-options-single .content-choice--gauge {
+  gap: 4px;
+  padding: 7px 14px;
+}
+
+#study-importance-options-single .progress-gauge {
+  height: 8px;
+}
+
+#study-importance-options-single .progress-gauge.is-finished {
+  height: 6px;
+}
+
+#study-importance-options-single .content-choice-head strong {
+  font-size: 15px;
+}
+
 @media (max-width: 760px) {
 
 }
@@ -4467,6 +4485,15 @@ body.quiz-active .main-content { padding-bottom: 0; }
     height: 7px;
   }
 
+  .progress-gauge.is-finished,
+  #study-importance-options-single .progress-gauge.is-finished {
+    height: 5px;
+  }
+
+  .progress-gauge-stack {
+    gap: 2px;
+  }
+
   .progress-figure {
     font-size: 10px;
   }
@@ -4516,18 +4543,4 @@ body.quiz-active .main-content { padding-bottom: 0; }
   .progress-figure {
     font-size: 10px;
   }
-}
-
-/* 重要度は行数が多いので、ゲージ付きの行をさらに詰めて1画面に収める */
-#study-importance-options-single .content-choice--gauge {
-  gap: 4px;
-  padding: 7px 14px;
-}
-
-#study-importance-options-single .progress-gauge {
-  height: 8px;
-}
-
-#study-importance-options-single .content-choice-head strong {
-  font-size: 15px;
 }

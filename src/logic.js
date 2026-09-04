@@ -1197,6 +1197,82 @@ export function summarizeRangeModeProgress({
   };
 }
 
+// 進捗ゲージの基調色は周回で変える。1周目・2周目（赤）・3周目…と変わり、
+// 5周目まで一巡したら最初の色へ戻る。
+export const GAUGE_COLOR_COUNT = 5;
+
+// 積み上げるバーの本数の上限（現在の周回を含む）。2周目以降は必ず
+// 「終えた周回1本＋現在の周回1本」になり、何周してもカードの高さは変わらない。
+// 選択画面は1画面に収める前提なので、伸び続けると項目が画面外へ出てしまう。
+export const GAUGE_MAX_BARS = 2;
+
+// 周回番号の表示上の上限。保存データが壊れていても（欠損・文字列・NaN・
+// 0以下・小数・Infinity）必ず1以上の整数にそろえ、桁が増えすぎて凡例が
+// 折り返さないようにする。
+export const GAUGE_MAX_CYCLE_NUMBER = 9999;
+
+export function normalizeCycleNumber(value) {
+  const number = Math.floor(Number(value));
+  if (!Number.isFinite(number) || number < 1) return 1;
+  return Math.min(number, GAUGE_MAX_CYCLE_NUMBER);
+}
+
+export function gaugeColorIndex(cycleNumber) {
+  return ((normalizeCycleNumber(cycleNumber) - 1) % GAUGE_COLOR_COUNT) + 1;
+}
+
+function safeCount(value) {
+  const number = Math.floor(Number(value));
+  if (!Number.isFinite(number) || number < 0) return 0;
+  return number;
+}
+
+function percentOf(count, total) {
+  if (!total) return 0;
+  return Math.min(100, Math.max(0, Math.round((count / total) * 100)));
+}
+
+// 進捗ゲージの描画に必要な値を、どんな保存データからでも安全に組み立てる。
+// 「解答済み」は長期履歴から、「習得」は現在の習得ラウンドからと出所が別なので、
+// 片方だけが欠けたり進んだりしていても破綻しないようにここでそろえる。
+export function summarizeProgressGauge(progress, cycleNumber = 1) {
+  const cycle = normalizeCycleNumber(cycleNumber);
+  const totalItems = safeCount(progress?.totalItems);
+  const answeredItems = Math.min(safeCount(progress?.answeredItems), totalItems);
+  const masteredItems = Math.min(safeCount(progress?.masteredItems), totalItems);
+  const answeredPercent = percentOf(answeredItems, totalItems);
+  const masteredPercent = percentOf(masteredItems, totalItems);
+  // 古い周回のバーは上限を超えたぶんを畳み、いちばん古い1本にまとめて示す。
+  const finishedCycles = cycle - 1;
+  const visibleFinished = Math.min(finishedCycles, Math.max(0, GAUGE_MAX_BARS - 1));
+  const collapsedCycles = finishedCycles - visibleFinished;
+  const finishedBars = Array.from({ length: visibleFinished }, (unused, index) => {
+    const barCycle = collapsedCycles + index + 1;
+    return {
+      cycleNumber: barCycle,
+      colorIndex: gaugeColorIndex(barCycle),
+      label: index === 0 && collapsedCycles > 0
+        ? `1〜${barCycle}周目は完了`
+        : `${barCycle}周目は完了`,
+    };
+  });
+  return {
+    cycleNumber: cycle,
+    colorIndex: gaugeColorIndex(cycle),
+    totalItems,
+    answeredItems,
+    masteredItems,
+    answeredPercent,
+    masteredPercent,
+    // 未回答 ⊇ 解答済み ⊇ 習得 の包含関係を保つ。習得が解答済みを上回る
+    // データが来ても、薄い塗りが濃い塗りに隠れて消えないようにする。
+    answeredWidth: Math.max(answeredPercent, masteredPercent),
+    masteredWidth: masteredPercent,
+    finishedBars,
+    collapsedCycles,
+  };
+}
+
 export function progressForRangeAndMode(items, history, range, mode, options = {}) {
   return summarizeRangeModeProgress({
     ...options,

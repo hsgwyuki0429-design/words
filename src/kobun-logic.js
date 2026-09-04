@@ -5,11 +5,11 @@ export const KOBUN_MODES = {
   kobun_meaning: "意味",
   kobun_table_select: "活用表・埋める式",
   kobun_table_input: "活用表・タイプ式",
-  kobun_base_input: "活用形 → 基本形",
+  kobun_base_input: "基本形識別",
 };
 export const KOBUN_CATEGORIES = [
-  { id: "vocabulary", label: "古文単語", description: "一語に複数の意味を覚える" },
   { id: "auxiliary", label: "助動詞", description: "接続・意味・活用・基本形識別" },
+  { id: "vocabulary", label: "古文単語", description: "一語に複数の意味を覚える" },
 ];
 export const NO_CONJUGATION = "○";
 
@@ -142,7 +142,8 @@ export function summarizeKobun(items, history, mode) {
   const stats = questions.map((question) => history.get(question.id)?.modeStats?.[mode]);
   const attempts = stats.reduce((sum, stat) => sum + (stat?.attempts ?? 0), 0);
   const correct = stats.reduce((sum, stat) => sum + (stat?.correct ?? 0), 0);
-  return { total: questions.length, answered: stats.filter((stat) => stat?.attempts > 0).length, attempts, correct, accuracy: attempts ? Math.round(correct / attempts * 100) : null };
+  const correctItems = stats.filter((stat) => stat?.attempts > 0 && stat.lastResult === "correct").length;
+  return { total: questions.length, answered: stats.filter((stat) => stat?.attempts > 0).length, correctItems, attempts, correct, accuracy: attempts ? Math.round(correct / attempts * 100) : null };
 }
 
 export function restoreKobunSession(saved, questions) {

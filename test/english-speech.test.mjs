@@ -3,9 +3,13 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 import {
+  DEFAULT_SPEECH_RATE_KEY,
   ENGLISH_SPEECH_LANG,
+  SPEECH_RATE_OPTIONS,
   createEnglishSpeaker,
+  normalizeSpeechRateKey,
   pickEnglishVoice,
+  speechRateFor,
   speechTextForEnglish,
 } from "../src/speech.js";
 import { ENGLISH_CONTENT_TYPES } from "../src/logic.js";
@@ -32,6 +36,7 @@ function fakeSpeech({ voices = [], failOnSpeak = false } = {}) {
       this.text = text;
       this.lang = "";
       this.voice = null;
+      this.rate = 1;
     }
   }
   const engine = {
@@ -266,4 +271,63 @@ test("学習をやめたら読み上げも止める", () => {
 
 test("speech.js はオフラインでも使えるようキャッシュへ入れる", () => {
   assert.match(swSource, /`\.\/src\/speech\.js\?v=\$\{APP_VERSION\}`/);
+});
+
+
+test("読み上げの速さは3段階から選び、壊れた設定は「ふつう」に戻す", () => {
+  assert.deepEqual(
+    SPEECH_RATE_OPTIONS.map((option) => option.key),
+    ["slow", "normal", "fast"],
+  );
+  assert.deepEqual(SPEECH_RATE_OPTIONS.map((option) => option.label), ["ゆっくり", "ふつう", "はやい"]);
+  assert.equal(DEFAULT_SPEECH_RATE_KEY, "normal");
+  assert.equal(speechRateFor("normal"), 1, "「ふつう」はブラウザの標準速度");
+  assert.ok(speechRateFor("slow") < 1 && speechRateFor("fast") > 1);
+  // 保存済みの設定が古い・壊れていても既定へ収める
+  for (const value of [undefined, null, "", "x", 0.7, 2, {}, []]) {
+    assert.equal(normalizeSpeechRateKey(value), DEFAULT_SPEECH_RATE_KEY, `${JSON.stringify(value)} は既定へ`);
+  }
+});
+
+test("選んだ速さを utterance.rate に渡す", () => {
+  const { speaker, engine } = fakeSpeech();
+  speaker.speak("apple", { token: 1, rate: speechRateFor("slow") });
+  speaker.speak("banana", { token: 2, rate: speechRateFor("fast") });
+  speaker.speak("cherry", { token: 3 });
+  assert.deepEqual(engine.spoken.map((utterance) => utterance.rate), [0.7, 1.3, 1], "既定は等速");
+  // 仕様外の値でも読み上げごと失敗しないよう丸める
+  speaker.speak("date", { token: 4, rate: 99 });
+  speaker.speak("fig", { token: 5, rate: 0 });
+  speaker.speak("grape", { token: 6, rate: Number.NaN });
+  assert.deepEqual(engine.spoken.slice(3).map((utterance) => utterance.rate), [4, 1, 1]);
+});
+
+test("設定画面から速さを選べる", () => {
+  const stylesSource = readFileSync(new URL("../styles.css", import.meta.url), "utf8");
+  const settingsSource = functionSource("renderSettings", "prefersReducedMotion");
+  // 「学習画面」のカードに3択を出す
+  assert.match(settingsSource, /英語の読み上げの速さ/);
+  assert.match(settingsSource, /SPEECH_RATE_OPTIONS\.map\(\(option\)/);
+  assert.match(settingsSource, /data-speech-rate="\$\{option\.key\}"/);
+  assert.match(settingsSource, /aria-checked="\$\{speechRateKey\(\) === option\.key\}"/);
+  assert.ok(
+    settingsSource.indexOf("data-speech-rate") < settingsSource.indexOf("showSources"),
+    "学習画面のカードに入れる",
+  );
+  // 既定値を持ち、起動時に正規化する
+  assert.match(appSource, /speechRate: DEFAULT_SPEECH_RATE_KEY,/);
+  assert.match(appSource, /state\.settings\.speechRate = normalizeSpeechRateKey\(state\.settings\.speechRate\);/);
+  assert.match(functionSource("speechRateKey", "persistStudyProgress"), /normalizeSpeechRateKey\(state\.settings\.speechRate\)/);
+  // 読み上げ時に現在の設定を渡す
+  assert.match(
+    functionSource("speakQuestionEnglish", "prepareQuestion"),
+    /rate: speechRateFor\(state\.settings\.speechRate\),/,
+  );
+  // 端末へ保存し、選んだ速さをその場で試せる
+  assert.match(appSource, /state\.settings\.speechRate = normalizeSpeechRateKey\(target\.dataset\.speechRate\);\n\s*saveSettings\(\);/);
+  assert.match(appSource, /englishSpeech\.speak\(SPEECH_RATE_SAMPLE, \{/);
+  assert.match(appSource, /const SPEECH_RATE_SAMPLE = "[A-Za-z ]+";/);
+  // 効果音の強さと同じ見た目・同じ折り返しにする
+  assert.match(stylesSource, /\.speech-rate-row \.segmented-options \{[^}]*flex: 0 0 min\(210px, 44%\)/);
+  assert.match(stylesSource, /\.speech-rate-row \{ width: 100%; flex-basis: auto; \}|\.speech-rate-row \.segmented-options \{ width: 100%; flex-basis: auto; \}/);
 });

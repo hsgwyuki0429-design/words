@@ -1570,18 +1570,24 @@ export function isStudyInProgress(progress) {
   return !isCycleComplete(progress);
 }
 
-// 学習途中の周回を、最後に学習した順で返す。キーは解析済みの meta として添える。
-export function inProgressStudyEntries(progressMap = {}, {
+// この教科・この習得条件の周回を、最後に学習した順で返す。周回の途中かどうかは
+// 問わない。キーは解析済みの meta として添える。
+export function studyEntriesByRecency(progressMap = {}, {
   subject = null,
   criterion = null,
 } = {}) {
   const wantedCriterion = criterion ? normalizeMasteryCriterion(criterion) : null;
   return Object.entries(progressMap ?? {})
     .map(([key, progress]) => ({ key, meta: parseStudyProgressKey(key), progress }))
-    .filter(({ meta, progress }) => Boolean(meta) && isStudyInProgress(progress)
+    .filter(({ meta, progress }) => Boolean(meta) && Boolean(progress)
       && (!subject || meta.subject === subject)
       && (!wantedCriterion || normalizeMasteryCriterion(progress.criterion) === wantedCriterion))
     .sort((left, right) => (right.progress.lastUpdatedAt ?? 0) - (left.progress.lastUpdatedAt ?? 0));
+}
+
+export function inProgressStudyEntries(progressMap = {}, options = {}) {
+  return studyEntriesByRecency(progressMap, options)
+    .filter(({ progress }) => isStudyInProgress(progress));
 }
 
 // 進捗ゲージの「習得」は、その形式で現在の習得ラウンド中に習得した語句の合計。

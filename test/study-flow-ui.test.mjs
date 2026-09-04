@@ -190,3 +190,13 @@ test("分析画面は学習の記録だけを見せ、統計の一覧は持た�
   );
   assert.match(appSource, /: emptyResultMarkup\(\);/);
 });
+
+test("単語帳の絞り込みと並び替えは廃止され、検索だけが残る", () => {
+  assert.doesNotMatch(indexSource, /list-open-filter|id="list-sort"|filter-sheet|filter-backdrop/);
+  assert.doesNotMatch(appSource, /openFilter|closeFilter|collectFilterForm|listSortKey/);
+  assert.doesNotMatch(stylesSource, /\.filter-sheet|\.filter-chip|\.sheet-backdrop/);
+  assert.match(indexSource, /id="list-search"/);
+  // 並びは重要度順に固定し、検索だけで絞る。
+  assert.match(appSource, /const LIST_SORT_KEY = "importance-desc";/);
+  assert.match(appSource, /filteredItems\(\{ \.\.\.emptyFilters\(\), search \}\)/);
+});

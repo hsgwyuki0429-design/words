@@ -63,7 +63,7 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.14a";
+} from "./logic.js?v=2026.9.15a";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -83,7 +83,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.9.14a";
+} from "./storage.js?v=2026.9.15a";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -91,7 +91,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.14a";
+} from "./quiz-gestures.js?v=2026.9.15a";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -135,7 +135,6 @@ const state = {
     search: "",
   },
   sortKey: "importance-desc",
-  listSortKey: "importance-desc",
   listLimit: 60,
   session: null,
   // 直前に完了した学習のリザルト（保存済み。分析画面で前回分として表示する）
@@ -187,7 +186,6 @@ const elements = Object.fromEntries(
     "study-sort-kind-options",
     "study-sort-other-options",
     "list-search",
-    "list-sort",
     "list-count",
     "list-eyebrow",
     "list-title",
@@ -211,38 +209,12 @@ const elements = Object.fromEntries(
     "fx-crack",
     "max-callout",
     "onboarding",
-    "filter-backdrop",
-    "filter-sheet",
-    "filter-form",
-    "filter-ranges",
-    "filter-importance",
-    "filter-types",
-    "filter-performance",
-    "filter-performance-fieldset",
-    "filter-minimum-wrong",
-    "filter-tags",
-    "filter-preview-count",
     "toast",
   ].map((id) => [
     id.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()),
     document.getElementById(id),
   ]),
 );
-
-const PERFORMANCE_LABELS = {
-  all: "全部",
-  unanswered: "未回答",
-  answered: "回答済み",
-  everCorrect: "正解したことがある",
-  everMissed: "間違えたことのある",
-  neverMissed: "間違えたことがない",
-  lastCorrect: "最後に正解",
-  lastWrong: "最後に不正解",
-  accuracyUnder50: "正答率50%未満",
-  accuracyUnder70: "正答率70%未満",
-  accuracyUnder80: "正答率80%未満",
-  accuracyAtLeast90: "正答率90%以上",
-};
 
 const OTHER_SORT_OPTIONS = [
   ["random", "ランダム"],
@@ -429,13 +401,6 @@ function selectSubject(subject) {
     : isPublicSubject()
       ? "重要語句"
       : "単語帳";
-  const levelOption = elements.listSort.querySelector('option[value="difficulty-level-desc"]');
-  const englishOption = elements.listSort.querySelector('option[value="alpha-en"]');
-  const japaneseOption = elements.listSort.querySelector('option[value="alpha-ja"]');
-  levelOption.hidden = isRecallSubject();
-  englishOption.textContent = isRecallSubject() ? "問題順" : "A–Z";
-  japaneseOption.textContent = isRecallSubject() ? "答え順" : "あいうえお順";
-  if (isRecallSubject() && state.listSortKey === "difficulty-level-desc") state.listSortKey = "importance-desc";
   state.rangeFlow = "dashboard";
   setView("dashboard");
   if (!state.settings.effectsMode) elements.onboarding.hidden = false;
@@ -2147,17 +2112,6 @@ function renderHeader() {
     : `${state.items.length}${isRecallSubject() ? "問" : "語句"}`;
 }
 
-function activeFilterLabels(filters = state.filters) {
-  const labels = [];
-  if (filters.ranges.length) labels.push(filters.ranges.join("・"));
-  if (filters.importance.length) labels.push(filters.importance.join(" + "));
-  if (filters.types.length) labels.push(filters.types.map((type) => TYPE_LABELS[type]).join("・"));
-  if (filters.performance !== "all") labels.push(PERFORMANCE_LABELS[filters.performance]);
-  if (filters.minimumWrong > 0) labels.push(`ミス ${filters.minimumWrong}回以上`);
-  if (filters.tags.length) labels.push(filters.tags.join("・"));
-  return labels;
-}
-
 function filteredItems(filters = state.filters) {
   const { modes: _ignoredModes, ...withoutModes } = filters;
   return applyFilters(state.items, state.history, withoutModes);
@@ -2173,16 +2127,18 @@ function learningItems(filters = state.filters, selection = state.studySelection
     .filter((item) => studyModeForItem(item, selection));
 }
 
+// 単語帳は検索だけで絞り、並びは重要度順に固定する。
+const LIST_SORT_KEY = "importance-desc";
+
 function renderList(resetLimit = false) {
   if (resetLimit) state.listLimit = 60;
-  const filters = { ...state.filters, search: elements.listSearch.value.trim() };
+  const search = elements.listSearch.value.trim();
   const items = sortItems(
-    filteredItems(filters),
+    filteredItems({ ...emptyFilters(), search }),
     state.history,
-    state.listSortKey,
+    LIST_SORT_KEY,
   );
   elements.listCount.textContent = `${items.length.toLocaleString()}${isRecallSubject() ? "問" : "語句"}`;
-  elements.listSort.value = state.listSortKey;
   elements.wordList.classList.toggle("public-question-list", isRecallSubject());
   elements.wordList.innerHTML = items.slice(0, state.listLimit).map((item) => {
     const record = getHistory(state.history, item.id);
@@ -2229,85 +2185,6 @@ function renderList(resetLimit = false) {
   elements.loadMore.hidden = state.listLimit >= items.length;
   elements.loadMore.dataset.total = String(items.length);
   renderHeader();
-}
-
-function checkInput(name, value, label, checked) {
-  return `
-    <label class="filter-chip">
-      <input type="checkbox" name="${name}" value="${escapeHtml(value)}" ${checked ? "checked" : ""} />
-      <span>${escapeHtml(label)}</span>
-    </label>`;
-}
-
-function renderFilterForm() {
-  elements.filterRanges.innerHTML = currentRangeOrder().map((range) =>
-    checkInput("ranges", range, range, state.filters.ranges.includes(range)),
-  ).join("");
-  elements.filterImportance.innerHTML = currentImportanceOrder().map((importance) =>
-    checkInput(
-      "importance",
-      importance,
-      importance,
-      state.filters.importance.includes(importance),
-    ),
-  ).join("");
-  elements.filterTypes.innerHTML = "";
-  elements.filterTags.innerHTML = "";
-  elements.filterPerformanceFieldset.hidden = false;
-  elements.filterPerformance.value = state.filters.performance;
-  elements.filterMinimumWrong.value = String(state.filters.minimumWrong);
-  renderFilterPreview();
-}
-
-function valuesFor(name) {
-  return [...elements.filterForm.querySelectorAll(`input[name="${name}"]:checked`)].map(
-    (input) => input.value,
-  );
-}
-
-function collectFilterForm() {
-  return {
-    ...state.filters,
-    ranges: valuesFor("ranges"),
-    importance: valuesFor("importance"),
-    types: [],
-    tags: [],
-    performance: elements.filterPerformance.value,
-    minimumWrong: Math.max(0, Number(elements.filterMinimumWrong.value || 0)),
-  };
-}
-
-function renderFilterPreview() {
-  const draft = collectFilterForm();
-  const items = filteredItems(draft);
-  elements.filterPreviewCount.textContent = items.length.toLocaleString();
-}
-
-function openFilter() {
-  renderFilterForm();
-  elements.filterBackdrop.hidden = false;
-  elements.filterSheet.hidden = false;
-  document.body.classList.add("sheet-open");
-  document.getElementById("close-filter").focus();
-}
-
-function closeFilter() {
-  elements.filterBackdrop.hidden = true;
-  elements.filterSheet.hidden = true;
-  document.body.classList.remove("sheet-open");
-}
-
-function resetFilters() {
-  state.filters = {
-    ...state.filters,
-    ranges: [],
-    importance: [],
-    types: [],
-    tags: [],
-    performance: "all",
-    minimumWrong: 0,
-  };
-  renderFilterForm();
 }
 
 function cloneSessionConfig(config) {
@@ -4144,7 +4021,6 @@ function bindEvents() {
       setView("study-range-select");
     }
     if (target.dataset.studyTarget) startStudyFromTarget(target.dataset.studyTarget);
-    if (target.hasAttribute("data-open-performance-detail")) openFilter();
     if (target.dataset.studyContentChoice) {
       applyContentChoice(target.dataset.studyContentChoice);
       setView(state.studyFlowMode === "dashboard" ? "study-importance" : "study-method");
@@ -4261,14 +4137,6 @@ function bindEvents() {
       state.sortKey = target.dataset.studySort;
       startSession();
     }
-    if (target.id === "open-filter" || target.id === "list-open-filter") openFilter();
-    if (target.id === "close-filter") closeFilter();
-    if (target.id === "reset-filter") resetFilters();
-    if (target.id === "apply-filter") {
-      state.filters = collectFilterForm();
-      closeFilter();
-      state.view === "list" ? renderList(true) : renderHeader();
-    }
     if (target.id === "load-more") {
       state.listLimit += 60;
       renderList(false);
@@ -4340,13 +4208,7 @@ function bindEvents() {
     }
   });
 
-  elements.listSort.addEventListener("change", () => {
-    state.listSortKey = elements.listSort.value;
-    renderList(true);
-  });
   elements.listSearch.addEventListener("input", () => renderList(true));
-  elements.filterForm.addEventListener("input", renderFilterPreview);
-  elements.filterBackdrop.addEventListener("click", closeFilter);
 
   document.addEventListener("change", (event) => {
     const setting = event.target.dataset?.setting;
@@ -4481,7 +4343,7 @@ async function boot() {
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.14a").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.15a").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

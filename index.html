@@ -15,7 +15,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icons/app-icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icons/app-icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=2026.9.14a" />
+    <link rel="stylesheet" href="./styles.css?v=2026.9.15a" />
   </head>
   <body>
     <div class="fx-backdrop" id="fx-backdrop" aria-hidden="true">
@@ -208,24 +208,12 @@
               <p class="eyebrow" id="list-eyebrow">WORD BOOK</p>
               <h1 id="list-title">単語帳</h1>
             </div>
-            <button class="secondary-button compact" id="list-open-filter" type="button">絞り込み</button>
           </div>
           <div class="list-toolbar">
             <label class="search-field">
               <span aria-hidden="true">⌕</span>
               <input id="list-search" type="search" placeholder="英語・日本語で検索" autocomplete="off" />
             </label>
-            <select class="select-control compact-select" id="list-sort" aria-label="一覧の並び替え">
-              <option value="importance-desc">重要度順</option>
-              <option value="difficulty-level-desc">難易度順</option>
-              <option value="difficulty">苦手順</option>
-              <option value="wrong-desc">ミスが多い順</option>
-              <option value="accuracy-asc">正答率が低い順</option>
-              <option value="range">範囲順</option>
-              <option value="registration">登録順</option>
-              <option value="alpha-en">A–Z</option>
-              <option value="alpha-ja">あいうえお順</option>
-            </select>
           </div>
           <div class="list-count" id="list-count"></div>
           <div class="word-list" id="word-list"></div>
@@ -323,63 +311,7 @@
       </section>
     </div>
 
-    <div class="sheet-backdrop" id="filter-backdrop" hidden></div>
-    <aside class="filter-sheet" id="filter-sheet" aria-modal="true" aria-labelledby="filter-title" hidden>
-      <div class="sheet-handle" aria-hidden="true"></div>
-      <div class="sheet-heading">
-        <div>
-          <p class="eyebrow">FILTER</p>
-          <h2 id="filter-title">絞り込み</h2>
-        </div>
-        <button class="icon-button" id="close-filter" type="button" aria-label="閉じる">×</button>
-      </div>
-      <form id="filter-form">
-        <fieldset>
-          <legend>範囲</legend>
-          <div class="filter-chip-grid" id="filter-ranges"></div>
-        </fieldset>
-        <fieldset>
-          <legend>重要度</legend>
-          <div class="filter-chip-grid compact-grid" id="filter-importance"></div>
-        </fieldset>
-        <fieldset hidden>
-          <legend>種類</legend>
-          <div class="filter-chip-grid" id="filter-types"></div>
-        </fieldset>
-        <fieldset id="filter-performance-fieldset">
-          <legend>成績</legend>
-          <select class="select-control" id="filter-performance" name="performance">
-            <option value="all">全て</option>
-            <option value="unanswered">未回答</option>
-            <option value="answered">回答済み</option>
-            <option value="everCorrect">正解したことがある</option>
-            <option value="everMissed">一度でも間違えた</option>
-            <option value="neverMissed">間違えたことがない</option>
-            <option value="lastCorrect">最後に正解</option>
-            <option value="lastWrong">最後に不正解</option>
-            <option value="accuracyUnder50">正答率50%未満</option>
-            <option value="accuracyUnder70">正答率70%未満</option>
-            <option value="accuracyUnder80">正答率80%未満</option>
-            <option value="accuracyAtLeast90">正答率90%以上</option>
-          </select>
-          <label class="number-field" for="filter-minimum-wrong">
-            <span>最低間違い回数</span>
-            <input id="filter-minimum-wrong" type="number" min="0" max="999" value="0" inputmode="numeric" />
-          </label>
-        </fieldset>
-        <fieldset hidden>
-          <legend>タグ</legend>
-          <div class="filter-chip-grid compact-grid" id="filter-tags"></div>
-        </fieldset>
-      </form>
-      <div class="filter-preview"><strong id="filter-preview-count">0</strong>項目が該当</div>
-      <div class="sheet-actions">
-        <button class="secondary-button" id="reset-filter" type="button">リセット</button>
-        <button class="primary-button" id="apply-filter" type="button">この条件を使う</button>
-      </div>
-    </aside>
-
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-    <script type="module" src="./src/app.js?v=2026.9.14a"></script>
+    <script type="module" src="./src/app.js?v=2026.9.15a"></script>
   </body>
 </html>

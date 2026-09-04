@@ -61,10 +61,11 @@ import {
   studyPerformanceModes,
   studyTargetsForDashboard,
   summarizeHistory,
+  summarizeProgressGauge,
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.18a";
+} from "./logic.js?v=2026.9.20a";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -84,7 +85,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.9.18a";
+} from "./storage.js?v=2026.9.20a";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -92,7 +93,8 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.18a";
+} from "./quiz-gestures.js?v=2026.9.20a";
+import { createEnglishSpeaker } from "./speech.js?v=2026.9.20a";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -668,12 +670,15 @@ function renderStudyImportance() {
     minimumWrong: 0,
   }).length;
   const types = studyContentTypes();
+  // 直前の画面（学習内容）と同じ周回のバーを見せる。
+  const cycleNumber = selectedCycleNumber();
   const rows = [
     contentChoiceRow({
       title: "全重要度",
       detail: `${countFor(null)}${unit}`,
       attribute: 'data-study-importance-choice="all"',
       progress: selectionProgress({ types }),
+      cycleNumber,
     }),
     ...available.map((importance) => {
       const count = countFor(importance);
@@ -682,6 +687,7 @@ function renderStudyImportance() {
         detail: count ? `${count}${unit}` : "出題できません",
         attribute: `data-study-importance-choice="${importance}"${count ? "" : ' disabled aria-disabled="true"'}`,
         progress: count ? selectionProgress({ types, importance: [importance] }) : null,
+        cycleNumber,
       });
     }),
     contentChoiceRow({
@@ -818,6 +824,15 @@ function cycleNumberForContents(contentsKey) {
   return entry?.progress?.cycleNumber ?? 1;
 }
 
+// 重要度画面のように、学習内容が決まったあとの画面で使う周回番号。
+// 形式カード・学習内容と同じ本数・同じ色のバーになるようにそろえる。
+function selectedCycleNumber() {
+  const selection = state.studySelection ?? {};
+  return cycleNumberForContents(isRecallSubject()
+    ? selection.content ?? ""
+    : studyContentsKey(selection.contents ?? []));
+}
+
 function contentsInProgress() {
   const wantedRanges = studyContentsKey(state.filters.ranges);
   const mode = exactStudyMode(state.studySelection);
@@ -900,40 +915,31 @@ function cardStudyProgress(card) {
   })[0] ?? null;
 }
 
-// バーの色は周回ごとに変える。1周目・2周目（赤）・3周目…と変わり、
-// 5周目まで一巡したら最初の色へ戻る。
-const GAUGE_COLOR_COUNT = 5;
-
-function gaugeColorIndex(cycleNumber) {
-  return ((Math.max(1, cycleNumber) - 1) % GAUGE_COLOR_COUNT) + 1;
-}
-
 // 形式カード・学習内容・重要度で共通の進捗ゲージ。
 // 1本のトラックに「未回答（背景）」「解答済み（薄い塗り）」「習得（濃い塗り）」を重ね、
 // 周回が進むごとに新しいバーを下へ足していく（終えた周回のバーは満了のまま残す）。
+// バーの本数と幅は summarizeProgressGauge がそろえる。周回を重ねてもバーは
+// 上限までしか増えず、保存データが壊れていても幅が不正な値にならない。
 function progressGaugeMarkup(progress, cycleNumber = 1) {
-  const cycles = Math.max(1, Number(cycleNumber) || 1);
-  const answeredPercent = Math.round(progress.answeredRate * 100);
-  const masteredPercent = Math.round(progress.masteredRate * 100);
-  const currentColor = gaugeColorIndex(cycles);
-  const label = `${cycles}周目：解答済み ${answeredPercent}パーセント、習得 ${masteredPercent}パーセント`;
-  const finishedBars = Array.from({ length: cycles - 1 }, (unused, index) => `
-        <span class="progress-gauge is-finished" data-cycle="${gaugeColorIndex(index + 1)}" role="img" aria-label="${index + 1}周目は完了">
+  const gauge = summarizeProgressGauge(progress, cycleNumber);
+  const label = `${gauge.cycleNumber}周目：解答済み ${gauge.answeredPercent}パーセント、習得 ${gauge.masteredPercent}パーセント`;
+  const finishedBars = gauge.finishedBars.map((bar) => `
+        <span class="progress-gauge is-finished" data-cycle="${bar.colorIndex}" role="img" aria-label="${escapeHtml(bar.label)}">
           <span class="progress-gauge-answered" style="width:100%"></span>
           <span class="progress-gauge-mastered" style="width:100%"></span>
         </span>`).join("");
   return `
       <span class="progress-gauge-stack">
         ${finishedBars}
-        <span class="progress-gauge" data-cycle="${currentColor}" role="img" aria-label="${escapeHtml(label)}">
-          <span class="progress-gauge-answered" style="width:${answeredPercent}%"></span>
-          <span class="progress-gauge-mastered" style="width:${masteredPercent}%"></span>
+        <span class="progress-gauge" data-cycle="${gauge.colorIndex}" role="img" aria-label="${escapeHtml(label)}">
+          <span class="progress-gauge-answered" style="width:${gauge.answeredWidth}%"></span>
+          <span class="progress-gauge-mastered" style="width:${gauge.masteredWidth}%"></span>
         </span>
       </span>
-      <span class="progress-legend" data-cycle="${currentColor}">
-        ${cycles > 1 ? `<span class="progress-figure is-cycle">${cycles}周目</span>` : ""}
-        <span class="progress-figure is-answered">解答済み ${answeredPercent}%（${progress.answeredItems}/${progress.totalItems}）</span>
-        <span class="progress-figure is-mastered">習得 ${masteredPercent}%（${progress.masteredItems}/${progress.totalItems}）</span>
+      <span class="progress-legend" data-cycle="${gauge.colorIndex}">
+        ${gauge.cycleNumber > 1 ? `<span class="progress-figure is-cycle">${gauge.cycleNumber}周目</span>` : ""}
+        <span class="progress-figure is-answered">解答済み ${gauge.answeredPercent}%（${gauge.answeredItems}/${gauge.totalItems}）</span>
+        <span class="progress-figure is-mastered">習得 ${gauge.masteredPercent}%（${gauge.masteredItems}/${gauge.totalItems}）</span>
       </span>`;
 }
 
@@ -1047,6 +1053,7 @@ function leaveQuiz() {
   if (!session) return true;
   if (session.results.length && !window.confirm("この学習を終了しますか？")) return false;
   if (session.reviewTimer) clearTimeout(session.reviewTimer);
+  englishSpeech.stop();
   stashStudyProgress();
   state.session = null;
   return true;
@@ -1170,6 +1177,10 @@ const fx = {
 };
 
 const maxAudio = createMaxAudioEngine();
+// 問題の英語の読み上げ。Web Speech API が使えない端末では何もしない。
+const englishSpeech = createEnglishSpeaker();
+// 1問につき1回だけ読むための通し番号。セッションをまたいでも増え続ける。
+let questionSpeechToken = 0;
 let calloutTimer = 0;
 
 function prefersReducedMotion() {
@@ -2375,6 +2386,9 @@ function beginSession(queue, {
   };
   state.combo = 0;
   setView("quiz");
+  // 学習開始のタップから続けて呼ばれるので、最初の問題の読み上げも
+  // ユーザー操作の中で始まる（iOS Safari の再生制限を満たす）。
+  englishSpeech.prime();
   prepareQuestion();
 }
 
@@ -2467,6 +2481,30 @@ function startSession(overrides = {}) {
   });
 }
 
+// 読み上げる英語。単語・熟語・構文だけを対象にする。公共・保健の一問一答は
+// english 欄にも日本語の設問が入っているため読み上げない。
+function questionEnglishText(question) {
+  const item = question?.item;
+  if (!item || !ENGLISH_CONTENT_TYPES.includes(item.type)) return "";
+  return typeof item.english === "string" ? item.english : "";
+}
+
+// 英語をいつ読み上げるか。英語が問題文になる形式（英語→日本語）は問題を
+// 開いたとき、英語が答えになる形式（日本語→英語・入力式）は解答したとき、
+// またはフラッシュカードで答え面を開いたとき。答えを先に聞かせない。
+function englishSpeechTiming(mode) {
+  if (typeof mode !== "string") return null;
+  return mode.startsWith("en_to_ja") ? "prompt" : "answer";
+}
+
+// 画面に出しているものと同じ question から読み上げるので、表示と音声が
+// ずれない。timing が合う場面でしか鳴らないので、1つの場面で二度は読まない。
+function speakQuestionEnglish(question, timing) {
+  if (!question || englishSpeechTiming(question.mode) !== timing) return;
+  questionSpeechToken += 1;
+  englishSpeech.speak(questionEnglishText(question), { token: questionSpeechToken });
+}
+
 function prepareQuestion({ enterFrom = null } = {}) {
   const session = state.session;
   const entry = session.queue[session.cursor];
@@ -2484,6 +2522,8 @@ function prepareQuestion({ enterFrom = null } = {}) {
   session.lastReviewDelayMs = null;
   session.questionStartedAt = performance.now();
   renderQuiz();
+  // 英語が問題文の形式だけ、ここで1回読み上げる。
+  speakQuestionEnglish(session.currentQuestion, "prompt");
 }
 
 function sourceLine(item) {
@@ -3104,6 +3144,8 @@ function toggleRecallFace() {
   if (!currentQuizGesturePolicy().tapEnabled) return;
   session.revealed = !session.revealed;
   renderQuiz();
+  // 答え面を開いたときに、その答えの英語を読み上げる（日本語→英語のカード）。
+  if (session.revealed) speakQuestionEnglish(session.currentQuestion, "answer");
 }
 
 async function transitionToNextCard(surface, direction, session) {
@@ -3126,6 +3168,9 @@ async function handleRecallSwipe({ surface, direction }) {
     await animateSwipeCancel({ surface });
     return;
   }
+  // ここから先は次の問題へ進むことが確定したスワイプ。いま読み上げ中の英語を
+  // すぐ止め、次の問題の読み上げ（prepareQuestion）へ引き継ぐ。
+  englishSpeech.stop();
   session.isTransitioning = true;
   const reviewDelayMs = action === "three-minutes"
     ? WRONG_REVIEW_DELAY_MS
@@ -3149,6 +3194,8 @@ async function handleChoiceNextSwipe({ surface, direction }) {
     await animateSwipeCancel({ surface });
     return;
   }
+  // 次の問題へ進むことが確定したスワイプだけが、ここへ来る。
+  englishSpeech.stop();
   session.isTransitioning = true;
   try {
     await transitionToNextCard(surface, direction, session);
@@ -3382,6 +3429,10 @@ async function submitAnswer(
   session.currentAnswer = answer;
   session.currentCorrect = correct;
   session.answered = true;
+  // 英語が答えになる形式は、解答して答えが出たここで読み上げる。履歴の保存を
+  // 待たずに呼ぶので、タップ・キー操作から途切れずにつながる。
+  // フラッシュカード・一問一答は答え面を開いた時点で読むため、ここでは読まない。
+  if (!isRecallMode(question.mode)) speakQuestionEnglish(question, "answer");
   // 周回の進み具合は履歴の保存を待たずに先に確定させる。履歴の保存中に
   // 画面を離れられても、どこまで進めたかは残るようにするため。
   if (session.progress) {
@@ -4357,6 +4408,9 @@ async function boot() {
     state.settings = settings;
     state.settings.soundIntensity = state.settings.soundIntensity === "full" ? "full" : "gentle";
     installMaxEffectsLab();
+    // 声一覧は取得までに時間がかかるブラウザがあるので、起動時に頼んでおく。
+    // 届くのを待たないため、出題やスワイプが遅くなることはない。
+    englishSpeech.prime();
     state.bestCombo = Number(bestCombo) || 0;
     state.studyConfigs = Object.fromEntries(
       Object.entries(studyConfigs ?? {})
@@ -4375,7 +4429,7 @@ async function boot() {
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.18a").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.20a").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

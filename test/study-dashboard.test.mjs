@@ -4,13 +4,17 @@ import { readFileSync } from "node:fs";
 
 import {
   ENGLISH_STUDY_MODES,
+  GAUGE_COLOR_COUNT,
+  GAUGE_MAX_BARS,
   answeredCountForMode,
   dashboardStudyCards,
+  gaugeColorIndex,
   hasAnsweredMode,
   mergeAttempt,
   progressForRangeAndMode,
   studyConfigForTarget,
   studyTargetsForDashboard,
+  summarizeProgressGauge,
   summarizeRangeModeProgress,
   summarizeRangeModes,
 } from "../src/logic.js";
@@ -172,8 +176,8 @@ test("the range list shows range names only, with no rates or scores", () => {
 
 test("ゲージの数値は何の数字かが分かる形で出す", () => {
   const gaugeSource = functionSource("progressGaugeMarkup", "selectionProgress");
-  assert.match(gaugeSource, /解答済み \$\{answeredPercent\}%（\$\{progress\.answeredItems\}\/\$\{progress\.totalItems\}）/);
-  assert.match(gaugeSource, /習得 \$\{masteredPercent\}%（\$\{progress\.masteredItems\}\/\$\{progress\.totalItems\}）/);
+  assert.match(gaugeSource, /解答済み \$\{gauge\.answeredPercent\}%（\$\{gauge\.answeredItems\}\/\$\{gauge\.totalItems\}）/);
+  assert.match(gaugeSource, /習得 \$\{gauge\.masteredPercent\}%（\$\{gauge\.masteredItems\}\/\$\{gauge\.totalItems\}）/);
   const cardSource = functionSource("modeProgressCard", "renderRangeDetail");
   assert.match(cardSource, /\$\{cycle\.cycleNumber\}周目 残り\$\{cycle\.remainingCount\}/);
   // 集計そのものは logic.js の純粋関数に任せる
@@ -458,11 +462,110 @@ test("ゲージは重要度と学習内容でも絞り込める", () => {
 test("周回ごとに新しいバーを積み、基調色を変える", () => {
   const gaugeSource = functionSource("progressGaugeMarkup", "recallTypesForContent");
   // 終えた周回のバーは満了のまま残し、現在の周回のバーを最後に置く。
-  assert.match(gaugeSource, /const finishedBars = Array\.from\(\{ length: cycles - 1 \}/);
-  assert.match(gaugeSource, /class="progress-gauge is-finished" data-cycle="\$\{gaugeColorIndex\(index \+ 1\)\}"/);
-  assert.match(gaugeSource, /class="progress-gauge" data-cycle="\$\{currentColor\}"/);
+  assert.match(gaugeSource, /const finishedBars = gauge\.finishedBars\.map\(\(bar\)/);
+  assert.match(gaugeSource, /class="progress-gauge is-finished" data-cycle="\$\{bar\.colorIndex\}"/);
+  assert.match(gaugeSource, /class="progress-gauge" data-cycle="\$\{gauge\.colorIndex\}"/);
   // 2周目は赤。色は5周で一巡する。
   assert.match(stylesSource, /\.progress-gauge\[data-cycle="2"\][\s\S]*?--gauge-strong: var\(--red\)/);
   assert.match(stylesSource, /\.progress-gauge\[data-cycle="3"\][\s\S]*?--gauge-strong: #7c3aed/);
-  assert.match(appSource, /const GAUGE_COLOR_COUNT = 5;/);
+  assert.equal(GAUGE_COLOR_COUNT, 5);
+  assert.equal(gaugeColorIndex(1), 1);
+  assert.equal(gaugeColorIndex(2), 2);
+  assert.equal(gaugeColorIndex(GAUGE_COLOR_COUNT + 1), 1, "色は5周で一巡する");
+  // 集計そのものは logic.js の純粋関数に任せる
+  assert.match(gaugeSource, /summarizeProgressGauge\(progress, cycleNumber\)/);
+
+  const gauge = summarizeProgressGauge(
+    { totalItems: 10, answeredItems: 6, masteredItems: 3 },
+    2,
+  );
+  assert.equal(gauge.cycleNumber, 2);
+  assert.equal(gauge.colorIndex, 2, "2周目は赤");
+  assert.deepEqual(gauge.finishedBars.map((bar) => bar.cycleNumber), [1], "1周目のバーが残る");
+  assert.equal(gauge.answeredPercent, 60);
+  assert.equal(gauge.masteredPercent, 30);
+});
+
+test("周回をいくら重ねてもバーは増え続けない", () => {
+  // 積み上げ続けるとカードが伸びて1画面に収まらなくなるので、
+  // 古い周回は畳んでいちばん古い1本にまとめる。
+  for (const cycleNumber of [1, 2, 3, 4, 12, 137, 9999]) {
+    const gauge = summarizeProgressGauge({ totalItems: 8, answeredItems: 4, masteredItems: 2 }, cycleNumber);
+    assert.ok(
+      gauge.finishedBars.length <= GAUGE_MAX_BARS - 1,
+      `${cycleNumber}周目でもバーは${GAUGE_MAX_BARS}本以内（${gauge.finishedBars.length + 1}本）`,
+    );
+    assert.equal(gauge.cycleNumber, cycleNumber, "周回番号そのものは丸めない");
+  }
+  // 2周目以降はバーの本数が変わらない＝カードの高さが増えない
+  const second = summarizeProgressGauge({ totalItems: 8, answeredItems: 4, masteredItems: 2 }, 2);
+  const many = summarizeProgressGauge({ totalItems: 8, answeredItems: 4, masteredItems: 2 }, 400);
+  assert.equal(many.finishedBars.length, second.finishedBars.length);
+  assert.equal(many.collapsedCycles, 398);
+  assert.deepEqual(many.finishedBars.map((bar) => bar.cycleNumber), [399]);
+  assert.equal(many.finishedBars[0].label, "1〜399周目は完了", "畳んだぶんも読み上げで分かる");
+  // 凡例には周回番号がそのまま出るので、本数を畳んでも何周目かは分かる
+  const gaugeSource = functionSource("progressGaugeMarkup", "recallTypesForContent");
+  assert.match(gaugeSource, /progress-figure is-cycle">\$\{gauge\.cycleNumber\}周目/);
+});
+
+test("壊れた保存データでもゲージの幅は0〜100%に収まる", () => {
+  const broken = [
+    undefined,
+    null,
+    {},
+    { totalItems: 0, answeredItems: 0, masteredItems: 0 },
+    { totalItems: 10, answeredItems: -4, masteredItems: Number.NaN },
+    { totalItems: 10, answeredItems: 40, masteredItems: 40 },
+    { totalItems: "10", answeredItems: "5", masteredItems: "2" },
+    { totalItems: Number.POSITIVE_INFINITY, answeredItems: 3, masteredItems: 1 },
+  ];
+  const cycles = [undefined, null, 0, -3, 1.7, Number.NaN, "4", Number.POSITIVE_INFINITY];
+  for (const progress of broken) {
+    for (const cycleNumber of cycles) {
+      const gauge = summarizeProgressGauge(progress, cycleNumber);
+      for (const width of [gauge.answeredWidth, gauge.masteredWidth, gauge.answeredPercent, gauge.masteredPercent]) {
+        assert.ok(Number.isFinite(width) && width >= 0 && width <= 100, `幅が0〜100%に収まる（${width}）`);
+      }
+      assert.ok(Number.isInteger(gauge.cycleNumber) && gauge.cycleNumber >= 1);
+      assert.ok(gauge.answeredItems <= gauge.totalItems, "解答済みは分母を超えない");
+      assert.ok(gauge.masteredItems <= gauge.totalItems, "習得は分母を超えない");
+      assert.ok(gauge.finishedBars.length <= GAUGE_MAX_BARS - 1);
+    }
+  }
+});
+
+test("習得が解答済みを上回っても薄い塗りが消えない", () => {
+  // 「解答済み」は長期履歴、「習得」は周回状態と出所が別なので、
+  // 履歴だけを取りこぼした端末では習得のほうが多くなり得る。
+  const gauge = summarizeProgressGauge({ totalItems: 10, answeredItems: 1, masteredItems: 7 }, 1);
+  assert.equal(gauge.answeredPercent, 10, "数値は履歴どおりに出す");
+  assert.equal(gauge.masteredPercent, 70);
+  assert.equal(gauge.answeredWidth, 70, "包含関係が崩れないよう薄い塗りを広げる");
+  assert.ok(gauge.answeredWidth >= gauge.masteredWidth);
+});
+
+test("低い画面向けの詰めが、重要度の個別指定に打ち消されない", () => {
+  // 同じ詳細度なので、あとに書いたほうが勝つ。重要度の指定はメディアクエリより
+  // 前に置いておかないと、iPhone SE などで行が詰まらず1画面に収まらなくなる。
+  const importanceIndex = stylesSource.indexOf("#study-importance-options-single .content-choice--gauge");
+  const shortScreenIndex = stylesSource.indexOf("@media (max-height: 720px)");
+  assert.ok(importanceIndex > 0 && shortScreenIndex > 0);
+  assert.ok(
+    importanceIndex < shortScreenIndex,
+    "重要度の個別指定は低い画面向けのメディアクエリより前に置く",
+  );
+  const shortScreen = stylesSource.slice(shortScreenIndex);
+  assert.match(shortScreen, /#study-importance-options-single \.progress-gauge \{[^}]*height: 7px/);
+  assert.match(shortScreen, /#study-importance-options-single \.progress-gauge\.is-finished \{[^}]*height: 5px/);
+});
+
+test("重要度のゲージも形式カード・学習内容と同じ周回を指す", () => {
+  const importanceSource = functionSource("renderStudyImportance", "renderStudyImportanceSelect");
+  assert.match(importanceSource, /const cycleNumber = selectedCycleNumber\(\);/);
+  // ゲージを出す行にはすべて周回番号を渡す
+  assert.equal((importanceSource.match(/cycleNumber,/g) ?? []).length, 2);
+  const selectedSource = functionSource("selectedCycleNumber", "contentsInProgress");
+  assert.match(selectedSource, /cycleNumberForContents\(/);
+  assert.match(selectedSource, /studyContentsKey\(selection\.contents \?\? \[\]\)/);
 });

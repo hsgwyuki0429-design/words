@@ -677,7 +677,7 @@ h2 {
   left: 0;
   z-index: 30;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   min-height: calc(70px + var(--safe-bottom));
   padding: 5px max(12px, env(safe-area-inset-right)) var(--safe-bottom)
     max(12px, env(safe-area-inset-left));

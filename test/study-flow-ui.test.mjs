@@ -200,3 +200,13 @@ test("単語帳の絞り込みと並び替えは廃止され、検索だけが�
   assert.match(appSource, /const LIST_SORT_KEY = "importance-desc";/);
   assert.match(appSource, /filteredItems\(\{ \.\.\.emptyFilters\(\), search \}\)/);
 });
+
+test("「条件を細かく選んで学習する」の入口は廃止される", () => {
+  assert.doesNotMatch(indexSource, /data-start-study|条件学習|条件を細かく選んで学習する/);
+  assert.doesNotMatch(appSource, /data-start-study|STUDY_FLOW_VIEWS|data-nav-active/);
+  // ボトムナビは4つになる。
+  assert.match(stylesSource, /\.bottom-nav \{[\s\S]*?grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
+  // 範囲をまとめて選ぶ導線と、結果からの「学習条件を変える」は残る。
+  assert.match(indexSource, /data-dashboard-multi-range/);
+  assert.match(appSource, /data-change-study[\s\S]*?setView\("study-range-select"\)/);
+});

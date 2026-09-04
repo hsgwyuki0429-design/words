@@ -64,7 +64,7 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.7a";
+} from "./logic.js?v=2026.9.8a";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -83,7 +83,7 @@ import {
   recordAttempt,
   removeHistory,
   setMeta,
-} from "./storage.js?v=2026.9.7a";
+} from "./storage.js?v=2026.9.8a";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -91,7 +91,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.7a";
+} from "./quiz-gestures.js?v=2026.9.8a";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -138,6 +138,8 @@ const state = {
   listSortKey: "importance-desc",
   listLimit: 60,
   session: null,
+  // 直前に完了した学習のリザルト（保存済み。分析画面で前回分として表示する）
+  lastSessionResult: null,
   settings: { ...DEFAULT_SETTINGS },
   combo: 0,
   bestCombo: 0,
@@ -196,6 +198,7 @@ const elements = Object.fromEntries(
     "word-list",
     "load-more",
     "quiz-content",
+    "analysis-result",
     "analysis-content",
     "settings-content",
     "bottom-nav",
@@ -829,8 +832,9 @@ function rangeDetailLabel(ranges = state.filters.ranges) {
 function renderDashboard() {
   const completed = state.session?.complete ? state.session : null;
   const hour = new Date().getHours();
-  elements.dashboardResult.hidden = !completed;
-  elements.dashboardResult.innerHTML = completed ? sessionResultMarkup(completed) : "";
+  // リザルトは分析画面にまとめて表示するため、ここでは出さない。
+  elements.dashboardResult.hidden = true;
+  elements.dashboardResult.innerHTML = "";
   elements.dashboardEyebrow.textContent = completed
     ? "NEXT STUDY"
     : isPublicSubject()
@@ -3580,6 +3584,7 @@ async function undoLastAnswer() {
   session.results = session.results.slice(0, undo.resultsLength);
   session.cycleAdvanced = undo.cycleAdvanced;
   session.completedProgressSummary = null;
+  if (session.complete) clearSessionResult();
   session.complete = false;
   session.showAllReviewItems = false;
   session.isTransitioning = false;
@@ -3645,10 +3650,65 @@ function completeSession(session) {
     session.cycleAdvanced = true;
     persistStudyProgress(session.progressKey, session.progress);
   }
+  persistSessionResult(session);
   renderSessionComplete();
 }
 
+const LAST_RESULT_META_KEY = "lastSessionResult";
+
+// 学習結果は端末に保存し、次に分析画面を開いたときに直前の学習として見せる。
+function sessionResultSnapshot(session) {
+  return {
+    subject: state.subject ?? "english",
+    finishedAt: Date.now(),
+    startedAt: session.startedAt ?? null,
+    complete: true,
+    results: session.results.map((result) => ({ ...result })),
+    selection: session.selection ? normalizeStudySelection(session.selection) : null,
+    config: cloneSessionConfig(session.config),
+    progress: session.progress ? cloneStudyProgress(session.progress) : null,
+    progressKey: session.progressKey ?? null,
+    poolItemIds: session.poolItemIds ? [...session.poolItemIds] : null,
+    initialQueue: (session.initialQueue ?? []).map((entry) => ({ ...entry })),
+    completedProgressSummary: session.completedProgressSummary ?? null,
+    cycleAdvanced: Boolean(session.cycleAdvanced),
+    showAllReviewItems: false,
+  };
+}
+
+function normalizeSessionResultSnapshot(raw) {
+  if (!raw || typeof raw !== "object") return null;
+  if (!Array.isArray(raw.results) || !raw.results.length) return null;
+  return {
+    ...raw,
+    complete: true,
+    progress: raw.progress ? normalizeStudyProgress(raw.progress) : null,
+    initialQueue: Array.isArray(raw.initialQueue) ? raw.initialQueue : [],
+    showAllReviewItems: false,
+  };
+}
+
+function persistSessionResult(session) {
+  state.lastSessionResult = sessionResultSnapshot(session);
+  setMeta(LAST_RESULT_META_KEY, state.lastSessionResult).catch(console.warn);
+}
+
+function clearSessionResult() {
+  if (!state.lastSessionResult) return;
+  state.lastSessionResult = null;
+  setMeta(LAST_RESULT_META_KEY, null).catch(console.warn);
+}
+
+// 学習中のセッションが完了していればそれを、無ければ保存済みの前回結果を返す。
+function resultSession() {
+  if (state.session?.complete) return state.session;
+  const last = state.lastSessionResult;
+  return last && last.subject === (state.subject ?? "english") ? last : null;
+}
+
 function sessionResultMarkup(session) {
+  // 学習直後ではなく保存済みの結果を開いたときは、見出しで直前の学習だと示す。
+  const isPastSession = session !== state.session;
   const summary = summarizeSession(session.results);
   const reviewItems = summarizeReviewItems(session.results);
   const visibleItems = session.showAllReviewItems ? reviewItems : reviewItems.slice(0, 5);
@@ -3728,14 +3788,14 @@ function sessionResultMarkup(session) {
     <section class="result-panel" aria-labelledby="result-panel-title">
       <header class="result-complete-header">
         <span class="result-complete-mark" aria-hidden="true">✓</span>
-        <p class="eyebrow">SESSION COMPLETE</p>
-        <h1 id="result-panel-title">今回の学習結果</h1>
-        <ul class="result-context-list" aria-label="今回の学習条件">
+        <p class="eyebrow">${isPastSession ? "LAST SESSION" : "SESSION COMPLETE"}</p>
+        <h1 id="result-panel-title">${isPastSession ? "直前の学習結果" : "今回の学習結果"}</h1>
+        <ul class="result-context-list" aria-label="学習条件">
           ${resultContext.map(([label, value]) => `<li><span>${label}</span><strong>${escapeHtml(value)}</strong></li>`).join("")}
         </ul>
       </header>
       <section class="result-record" aria-labelledby="result-record-title">
-        <h2 id="result-record-title">今回の記録</h2>
+        <h2 id="result-record-title">${isPastSession ? "この学習の記録" : "今回の記録"}</h2>
         <div class="result-record-grid">
           <div><span>${isSelfGraded ? "習得" : "正解"}</span><strong>${summary.correct}</strong></div>
           <div><span>${isSelfGraded ? "復習へ" : "間違い"}</span><strong>${summary.wrong}</strong></div>
@@ -3762,18 +3822,17 @@ function sessionResultMarkup(session) {
         <button class="secondary-button" type="button" data-change-study>学習条件を変える</button>
         <div class="result-text-actions">
           <button class="text-button" type="button" data-dismiss-result>結果を閉じる</button>
-          <button class="text-button" type="button" data-view-analysis>詳しい分析を見る</button>
         </div>
       </div>
     </section>`;
 }
 
-// 学習終了後はダッシュボードへ戻り、上に結果・下に次の学習範囲を並べる。
+// 学習終了後は分析画面を開き、その先頭に今回の結果を表示する。
 function renderSessionComplete() {
   const session = state.session;
   if (!session) return;
   session.complete = true;
-  setView("dashboard");
+  setView("analysis");
   const summary = summarizeSession(session.results);
   if (summary.total && summary.correct === summary.total) {
     const sssOnly = session.results.every((result) => result.item.importance === "SSS");
@@ -3788,6 +3847,10 @@ function renderSessionComplete() {
 }
 
 function renderAnalysis() {
+  // 学習直後は今回の結果を、それ以外は保存してある前回の結果を先頭に出す。
+  const completed = resultSession();
+  elements.analysisResult.hidden = !completed;
+  elements.analysisResult.innerHTML = completed ? sessionResultMarkup(completed) : "";
   const overall = summarizeHistory(state.items, state.history);
   const ranges = summarizeByRange(state.items, state.history);
   const modes = summarizeByMode(state.items, state.history)
@@ -3838,7 +3901,8 @@ function renderAnalysis() {
 }
 
 function retryWrongItems() {
-  const session = state.session;
+  const session = resultSession();
+  if (!session) return;
   const wrong = summarizeReviewItems(session?.results)
     .map((result) => ({ item: result.item, mode: result.mode }));
   if (!wrong.length) return;
@@ -3853,13 +3917,13 @@ function retryWrongItems() {
 }
 
 function continueStudyCycle() {
-  const session = state.session;
+  const session = resultSession();
   if (!session?.config?.selection) return;
   startSession({ ...session.config, itemIds: null });
 }
 
 function repeatCompletedSession() {
-  const session = state.session;
+  const session = resultSession();
   if (!session?.initialQueue?.length) return;
   beginSession(session.initialQueue.map((entry) => ({ item: entry.item, mode: entry.mode })), {
     selection: session.selection,
@@ -4148,9 +4212,12 @@ function bindEvents() {
         showToast("習得条件を変更したため、進捗判定を新しく開始します");
       }
     }
-    if (target.hasAttribute("data-show-all-review") && state.session?.complete) {
-      state.session.showAllReviewItems = true;
-      renderDashboard();
+    if (target.hasAttribute("data-show-all-review")) {
+      const completed = resultSession();
+      if (completed) {
+        completed.showAllReviewItems = true;
+        renderAnalysis();
+      }
     }
     if (target.hasAttribute("data-change-study")) {
       state.session = null;
@@ -4159,13 +4226,10 @@ function bindEvents() {
       state.studyFlowMode = "step";
       setView("study-range-select");
     }
-    if (target.hasAttribute("data-view-analysis")) {
-      state.session = null;
-      setView("analysis");
-    }
     if (target.hasAttribute("data-dismiss-result")) {
       state.session = null;
-      renderDashboard();
+      clearSessionResult();
+      setView("dashboard");
     }
   });
 
@@ -4266,7 +4330,7 @@ function bindEvents() {
 async function boot() {
   bindEvents();
   try {
-    const [response, publicResponse, healthResponse, history, selectedMode, settings, bestCombo, selectedPeriod, recentStudies, studyProgress] = await Promise.all([
+    const [response, publicResponse, healthResponse, history, selectedMode, settings, bestCombo, selectedPeriod, recentStudies, studyProgress, lastSessionResult] = await Promise.all([
       fetch("./data/items.json?v=2026.08.31b"),
       fetch("./data/public-items.json?v=2026.09.01"),
       fetch("./data/health-items.json?v=2026.09.01"),
@@ -4277,6 +4341,7 @@ async function boot() {
       getMeta("selectedPeriod", null),
       getMeta("recentStudies", []),
       getMetaObject("studyProgress", {}),
+      getMeta("lastSessionResult", null),
     ]);
     if (!response.ok) throw new Error(`教材データを読み込めませんでした (${response.status})`);
     if (!publicResponse.ok) throw new Error(`公共データを読み込めませんでした (${publicResponse.status})`);
@@ -4298,11 +4363,12 @@ async function boot() {
         .map(([key, value]) => [key, normalizeStudyProgress(value)])
         .filter(([, value]) => value),
     );
+    state.lastSessionResult = normalizeSessionResultSnapshot(lastSessionResult);
     state.selectedPeriod = selectedPeriod === "2026.2" ? selectedPeriod : null;
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.7a").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.8a").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

@@ -23,7 +23,11 @@ const APP_SHELL = [
   "./data/public-items.json?v=2026.09.01",
   "./data/health-items.json?v=2026.09.01",
   "./manifest.webmanifest",
-  "./icons/app-icon.svg"
+  "./icons/app-icon.svg",
+  "./icons/app-icon-192.png",
+  "./icons/app-icon-512.png",
+  "./icons/app-icon-maskable-512.png",
+  "./icons/apple-touch-icon.png"
 ];
 
 self.addEventListener("install", (event) => {

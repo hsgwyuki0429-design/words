@@ -3902,6 +3902,27 @@ function completeSession(session) {
 
 const LAST_RESULT_META_KEY = "lastSessionResult";
 
+// 控えに残すのは結果画面で使う項目だけ。教材の項目をまるごと抱えると
+// 1回の保存が数MBになり、保存のたびに画面が固まってしまう。学習をやり直すときは
+// ここに残したIDから、いま読み込んでいる教材を引き当てる。
+function slimResultItem(item) {
+  if (!item) return null;
+  return {
+    id: item.id,
+    range: item.range,
+    type: item.type,
+    importance: item.importance,
+    english: item.english,
+    japanese: item.japanese,
+  };
+}
+
+// 保存した結果から学習をやり直すとき、IDから現在の教材の項目を引き当てる。
+// 教材の更新で消えた項目は、そのまま落とす。
+function itemsByIdForCurrentSubject() {
+  return new Map(state.items.map((item) => [item.id, item]));
+}
+
 // 学習結果は端末に保存し、次に分析画面を開いたときに直前の学習として見せる。
 function sessionResultSnapshot(session) {
   return {
@@ -3909,13 +3930,15 @@ function sessionResultSnapshot(session) {
     finishedAt: Date.now(),
     startedAt: session.startedAt ?? null,
     complete: true,
-    results: session.results.map((result) => ({ ...result })),
+    results: session.results.map((result) => ({ ...result, item: slimResultItem(result.item) })),
     selection: session.selection ? normalizeStudySelection(session.selection) : null,
     config: cloneSessionConfig(session.config),
     progress: session.progress ? cloneStudyProgress(session.progress) : null,
     progressKey: session.progressKey ?? null,
     poolItemIds: session.poolItemIds ? [...session.poolItemIds] : null,
-    initialQueue: (session.initialQueue ?? []).map((entry) => ({ ...entry })),
+    initialQueue: (session.initialQueue ?? [])
+      .map((entry) => ({ itemId: entry.itemId ?? entry.item?.id ?? null, mode: entry.mode }))
+      .filter((entry) => entry.itemId),
     completedProgressSummary: session.completedProgressSummary ?? null,
     cycleAdvanced: Boolean(session.cycleAdvanced),
     showAllReviewItems: false,
@@ -4201,9 +4224,14 @@ function emptyResultMarkup() {
 function retryWrongItems() {
   const session = resultSession();
   if (!session || !canStartFromResult(session)) return;
+  const pool = itemsByIdForCurrentSubject();
   const wrong = summarizeReviewItems(session?.results)
-    .map((result) => ({ item: result.item, mode: result.mode }));
-  if (!wrong.length) return;
+    .map((result) => ({ item: pool.get(result.itemId), mode: result.mode }))
+    .filter((entry) => entry.item);
+  if (!wrong.length) {
+    showToast("この条件に合う問題がありません");
+    return;
+  }
   beginSession(wrong, {
     selection: session.selection,
     config: {
@@ -4223,7 +4251,15 @@ function continueStudyCycle() {
 function repeatCompletedSession() {
   const session = resultSession();
   if (!session?.initialQueue?.length || !canStartFromResult(session)) return;
-  beginSession(session.initialQueue.map((entry) => ({ item: entry.item, mode: entry.mode })), {
+  const pool = itemsByIdForCurrentSubject();
+  const queue = session.initialQueue
+    .map((entry) => ({ item: pool.get(entry.itemId ?? entry.item?.id), mode: entry.mode }))
+    .filter((entry) => entry.item);
+  if (!queue.length) {
+    showToast("この条件に合う問題がありません");
+    return;
+  }
+  beginSession(queue, {
     selection: session.selection,
     config: session.config,
   });

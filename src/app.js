@@ -59,13 +59,11 @@ import {
   studyProgressSummary,
   studyPerformanceModes,
   studyTargetsForDashboard,
-  summarizeByMode,
-  summarizeByRange,
   summarizeHistory,
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.13a";
+} from "./logic.js?v=2026.9.14a";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -85,7 +83,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.9.13a";
+} from "./storage.js?v=2026.9.14a";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -93,7 +91,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.13a";
+} from "./quiz-gestures.js?v=2026.9.14a";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -199,7 +197,6 @@ const elements = Object.fromEntries(
     "load-more",
     "quiz-content",
     "analysis-result",
-    "analysis-content",
     "settings-content",
     "bottom-nav",
     "effects-canvas",
@@ -291,13 +288,6 @@ const MODE_META = {
   health_recall: { icon: "保", tags: ["自己採点", "一問一答"] },
 };
 
-const ACTIVE_ENGLISH_STUDY_MODES = [
-  "en_to_ja_choice",
-  "ja_to_en_choice",
-  "ja_to_en_input",
-  "en_to_ja_flashcard",
-  "ja_to_en_flashcard",
-];
 
 const STUDY_CONTENT_META = {
   word: { icon: "Aa", title: "単語", detail: "英単語を中心に学習", tags: ["単語"] },
@@ -3985,58 +3975,33 @@ function renderAnalysis() {
   // 保存してある直近の結果は、その下に続けて見せる。
   const resume = state.session?.complete ? null : resumableStudy();
   const completed = resultSession();
-  elements.analysisResult.hidden = !resume && !completed;
-  elements.analysisResult.innerHTML = [
-    resume ? resumeStudyMarkup(resume) : "",
-    completed ? sessionResultMarkup(completed) : "",
-  ].join("");
-  const overall = summarizeHistory(state.items, state.history);
-  const ranges = summarizeByRange(state.items, state.history);
-  const modes = summarizeByMode(state.items, state.history)
-    .filter((stat) => isRecallSubject() || ACTIVE_ENGLISH_STUDY_MODES.includes(stat.mode));
-  const itemUnit = isRecallSubject() ? "問" : "語句";
-  const rangeMarkup = ranges.map((stat) => `
-    <article class="analysis-row">
-      <div>
-        <strong>${escapeHtml(stat.range)}</strong>
-        <small>${stat.answeredItems} / ${stat.itemCount}${itemUnit}を学習</small>
-      </div>
-      <div class="analysis-progress" aria-label="定着度 ${formatPercent(stat.mastery)}">
-        <span style="width:${Math.round(stat.mastery * 100)}%"></span>
-      </div>
-      <div class="analysis-numbers">
-        <strong>${formatPercent(stat.accuracy)}</strong>
-        <small>${stat.wrong}ミス</small>
-      </div>
-    </article>`).join("");
-  const modeMarkup = modes.map((stat) => `
-    <article class="mode-analysis-card${state.selectedMode === stat.mode ? " selected" : ""}">
-      <div class="mode-analysis-heading">
-        <span class="mode-card-icon" aria-hidden="true">${MODE_META[stat.mode].icon}</span>
-        <div><strong>${escapeHtml(stat.label)}</strong><small>${stat.attempts}回答</small></div>
-      </div>
-      <div class="mode-analysis-score">${formatPercent(stat.accuracy)}</div>
-      <div class="item-tags">${renderTags(MODE_META[stat.mode].tags)}</div>
-      <p>${stat.attempts ? `${stat.wrong}ミス・平均 ${formatSeconds(stat.averageDurationMs)}` : "まだ学習していません"}</p>
-      <button class="secondary-button compact" type="button" data-start-study>学習条件を選ぶ</button>
-    </article>`).join("");
-
-  elements.analysisContent.innerHTML = `
-    <section class="analysis-stat-grid" aria-label="全体の学習結果">
-      <div><span>正答率</span><strong>${formatPercent(overall.accuracy)}</strong></div>
-      <div><span>回答</span><strong>${overall.attempts.toLocaleString()}</strong></div>
-      <div><span>学習済み</span><strong>${overall.answeredItems}</strong></div>
-      <div><span>要復習</span><strong>${overall.weakItems}</strong></div>
-    </section>
-    <section class="analysis-section">
-      <div class="section-heading"><div><p class="eyebrow">BY RANGE</p><h2>範囲別分析</h2></div></div>
-      <div class="analysis-table">${rangeMarkup}</div>
-    </section>
-    <section class="analysis-section">
-      <div class="section-heading"><div><p class="eyebrow">BY MODE</p><h2>形式別分析</h2></div></div>
-      <div class="mode-analysis-grid">${modeMarkup}</div>
-    </section>`;
+  elements.analysisResult.hidden = false;
+  elements.analysisResult.innerHTML = resume || completed
+    ? [
+        resume ? resumeStudyMarkup(resume) : "",
+        completed ? sessionResultMarkup(completed) : "",
+      ].join("")
+    : emptyResultMarkup();
   renderHeader();
+}
+
+// 学習の記録も学習途中のセットも無いときの案内。
+function emptyResultMarkup() {
+  return `
+    <section class="result-panel" aria-labelledby="result-empty-title">
+      <header class="result-complete-header">
+        <p class="eyebrow">NO RECORD</p>
+        <h1 id="result-empty-title">まだ学習の記録がありません</h1>
+      </header>
+      <section class="result-next-card" aria-labelledby="result-empty-next">
+        <div>
+          <p class="eyebrow">NEXT STEP</p>
+          <h2 id="result-empty-next">学習を始めましょう</h2>
+          <p>学習を終えると、ここに結果が残ります</p>
+        </div>
+        <button class="primary-button result-primary-action" type="button" data-view-target="dashboard">学習する範囲を選ぶ<span aria-hidden="true">→</span></button>
+      </section>
+    </section>`;
 }
 
 function retryWrongItems() {
@@ -4516,7 +4481,7 @@ async function boot() {
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.13a").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.14a").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

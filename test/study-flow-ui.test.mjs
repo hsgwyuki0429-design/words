@@ -179,3 +179,14 @@ test("周回の保存は履歴の保存を待たずに先に行う", () => {
   assert.ok(progressAt >= 0 && recordAt >= 0);
   assert.ok(progressAt < recordAt, "周回の保存が履歴の保存より先であること");
 });
+
+test("分析画面は学習の記録だけを見せ、統計の一覧は持たない", () => {
+  assert.doesNotMatch(appSource, /summarizeByRange|summarizeByMode|analysisContent/);
+  assert.doesNotMatch(indexSource, /id="analysis-content"|学習分析/);
+  // 記録も学習途中のセットも無いときは、学習への入口を案内する。
+  assert.match(
+    functionSource("emptyResultMarkup", "retryWrongItems"),
+    /まだ学習の記録がありません[\s\S]*?data-view-target="dashboard"/,
+  );
+  assert.match(appSource, /: emptyResultMarkup\(\);/);
+});

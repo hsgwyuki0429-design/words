@@ -9,6 +9,12 @@ const FALLBACK_KEY = "eicomi-words:fallback";
 let databasePromise;
 let useFallback = false;
 
+// 別タブでの削除・アップグレードなどで接続が閉じられた場合は、
+// 次のアクセスで開き直せるように接続をリセットする。
+function resetConnection() {
+  databasePromise = undefined;
+}
+
 function openDatabase() {
   if (databasePromise) return databasePromise;
   databasePromise = new Promise((resolve, reject) => {
@@ -26,10 +32,19 @@ function openDatabase() {
         database.createObjectStore(META_STORE, { keyPath: "key" });
       }
     };
-    request.onsuccess = () => resolve(request.result);
+    request.onsuccess = () => {
+      const database = request.result;
+      database.onclose = resetConnection;
+      database.onversionchange = () => {
+        database.close();
+        resetConnection();
+      };
+      resolve(database);
+    };
     request.onerror = () => reject(request.error);
+    request.onblocked = () => reject(new Error("IndexedDB open was blocked"));
   }).catch((error) => {
-    console.warn("IndexedDB could not be opened; using localStorage.", error);
+    console.warn("IndexedDB を開けなかったため localStorage を使います。", error);
     useFallback = true;
     return null;
   });
@@ -45,19 +60,65 @@ function fallbackData() {
 }
 
 function writeFallback(data) {
-  localStorage.setItem(FALLBACK_KEY, JSON.stringify(data));
+  try {
+    localStorage.setItem(FALLBACK_KEY, JSON.stringify(data));
+    return true;
+  } catch (error) {
+    console.warn("localStorage への保存に失敗しました。", error);
+    return false;
+  }
+}
+
+// IndexedDB への書き込みが失敗した場合は localStorage へ切り替えて保存し直す。
+// 保存が一度でも失敗したまま黙って進むと、学習結果が消えてしまうため。
+function switchToFallback(error) {
+  console.warn("IndexedDB への保存に失敗したため localStorage へ切り替えます。", error);
+  useFallback = true;
+  resetConnection();
+}
+
+// 書き込みは request.onsuccess ではなく transaction の complete まで待つ。
+// complete 前に画面を閉じるとコミットされず、保存されないことがあるため。
+function runTransaction(database, storeName, mode, operation) {
+  return new Promise((resolve, reject) => {
+    let tx;
+    try {
+      tx = database.transaction(storeName, mode);
+    } catch (error) {
+      reject(error);
+      return;
+    }
+    tx.oncomplete = () => resolve(box?.value);
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error ?? new Error("transaction aborted"));
+    let box;
+    try {
+      box = operation(tx.objectStore(storeName), tx);
+    } catch (error) {
+      try {
+        tx.abort();
+      } catch {
+        // 既に異常終了している場合は何もしない。
+      }
+      reject(error);
+    }
+  });
+}
+
+// 単一リクエストの結果を transaction 完了まで持ち越すための入れ物。
+function requestBox(store, operation) {
+  const box = { value: undefined };
+  const request = operation(store);
+  request.onsuccess = () => {
+    box.value = request.result;
+  };
+  return box;
 }
 
 async function transaction(storeName, mode, operation) {
   const database = await openDatabase();
   if (!database || useFallback) return null;
-  return new Promise((resolve, reject) => {
-    const tx = database.transaction(storeName, mode);
-    const store = tx.objectStore(storeName);
-    const request = operation(store);
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
+  return runTransaction(database, storeName, mode, (store) => requestBox(store, operation));
 }
 
 export async function loadHistory() {
@@ -66,73 +127,100 @@ export async function loadHistory() {
     const data = fallbackData();
     return new Map(Object.entries(data.history ?? {}));
   }
-  const records = await transaction(HISTORY_STORE, "readonly", (store) =>
-    store.getAll(),
-  );
-  return new Map((records ?? []).map((record) => [record.itemId, record]));
+  try {
+    const records = await transaction(HISTORY_STORE, "readonly", (store) => store.getAll());
+    return new Map((records ?? []).map((record) => [record.itemId, record]));
+  } catch (error) {
+    switchToFallback(error);
+    const data = fallbackData();
+    return new Map(Object.entries(data.history ?? {}));
+  }
+}
+
+function recordAttemptToFallback(itemId, mode, correct, durationMs) {
+  const data = fallbackData();
+  const current = data.history?.[itemId] ?? emptyHistory(itemId);
+  const next = mergeAttempt(current, { itemId, mode, correct, durationMs });
+  data.history = { ...(data.history ?? {}), [itemId]: next };
+  if (!writeFallback(data)) throw new Error("回答履歴を保存できませんでした");
+  return next;
 }
 
 export async function recordAttempt(itemId, mode, correct, durationMs) {
-  await openDatabase();
-  if (useFallback) {
-    const data = fallbackData();
-    const current = data.history?.[itemId] ?? emptyHistory(itemId);
-    const next = mergeAttempt(current, { itemId, mode, correct, durationMs });
-    data.history = { ...(data.history ?? {}), [itemId]: next };
-    writeFallback(data);
-    return next;
-  }
-
   const database = await openDatabase();
-  return new Promise((resolve, reject) => {
-    const tx = database.transaction(HISTORY_STORE, "readwrite");
-    const store = tx.objectStore(HISTORY_STORE);
-    const getRequest = store.get(itemId);
-    getRequest.onsuccess = () => {
-      const next = mergeAttempt(getRequest.result, {
-        itemId,
-        mode,
-        correct,
-        durationMs,
-      });
-      const putRequest = store.put(next);
-      putRequest.onsuccess = () => resolve(next);
-      putRequest.onerror = () => reject(putRequest.error);
-    };
-    getRequest.onerror = () => reject(getRequest.error);
-  });
+  if (useFallback || !database) return recordAttemptToFallback(itemId, mode, correct, durationMs);
+
+  try {
+    return await runTransaction(database, HISTORY_STORE, "readwrite", (store) => {
+      const box = { value: undefined };
+      const getRequest = store.get(itemId);
+      getRequest.onsuccess = () => {
+        const next = mergeAttempt(getRequest.result, {
+          itemId,
+          mode,
+          correct,
+          durationMs,
+        });
+        box.value = next;
+        store.put(next);
+      };
+      return box;
+    });
+  } catch (error) {
+    switchToFallback(error);
+    return recordAttemptToFallback(itemId, mode, correct, durationMs);
+  }
 }
 
 // 直前の回答を取り消すため、回答前のレコードをそのまま書き戻す／削除する。
 export async function putHistory(record) {
-  await openDatabase();
   if (!record?.itemId) return null;
-  if (useFallback) {
+  await openDatabase();
+  const writeToFallback = () => {
     const data = fallbackData();
     data.history = { ...(data.history ?? {}), [record.itemId]: record };
-    writeFallback(data);
+    if (!writeFallback(data)) throw new Error("回答履歴を保存できませんでした");
     return record;
+  };
+  if (useFallback) return writeToFallback();
+  try {
+    await transaction(HISTORY_STORE, "readwrite", (store) => store.put(record));
+    return record;
+  } catch (error) {
+    switchToFallback(error);
+    return writeToFallback();
   }
-  await transaction(HISTORY_STORE, "readwrite", (store) => store.put(record));
-  return record;
 }
 
 export async function removeHistory(itemId) {
   await openDatabase();
-  if (useFallback) {
+  const removeFromFallback = () => {
     const data = fallbackData();
     if (data.history) delete data.history[itemId];
-    writeFallback(data);
+    if (!writeFallback(data)) throw new Error("回答履歴を保存できませんでした");
+  };
+  if (useFallback) {
+    removeFromFallback();
     return;
   }
-  await transaction(HISTORY_STORE, "readwrite", (store) => store.delete(itemId));
+  try {
+    await transaction(HISTORY_STORE, "readwrite", (store) => store.delete(itemId));
+  } catch (error) {
+    switchToFallback(error);
+    removeFromFallback();
+  }
 }
 
 export async function getMeta(key, fallback = null) {
   await openDatabase();
   if (useFallback) return fallbackData().meta?.[key] ?? fallback;
-  const record = await transaction(META_STORE, "readonly", (store) => store.get(key));
-  return record?.value ?? fallback;
+  try {
+    const record = await transaction(META_STORE, "readonly", (store) => store.get(key));
+    return record?.value ?? fallback;
+  } catch (error) {
+    switchToFallback(error);
+    return fallbackData().meta?.[key] ?? fallback;
+  }
 }
 
 export async function getMetaObject(key, defaults = {}) {
@@ -143,23 +231,35 @@ export async function getMetaObject(key, defaults = {}) {
 
 export async function setMeta(key, value) {
   await openDatabase();
-  if (useFallback) {
+  const writeToFallback = () => {
     const data = fallbackData();
     data.meta = { ...(data.meta ?? {}), [key]: value };
-    writeFallback(data);
+    if (!writeFallback(data)) throw new Error(`${key} を保存できませんでした`);
+  };
+  if (useFallback) {
+    writeToFallback();
     return;
   }
-  await transaction(META_STORE, "readwrite", (store) => store.put({ key, value }));
+  try {
+    await transaction(META_STORE, "readwrite", (store) => store.put({ key, value }));
+  } catch (error) {
+    switchToFallback(error);
+    writeToFallback();
+  }
 }
 
 export async function clearAllData() {
   await openDatabase();
-  if (useFallback) {
+  try {
     localStorage.removeItem(FALLBACK_KEY);
-    return;
+  } catch (error) {
+    console.warn("localStorage を消去できませんでした。", error);
   }
-  await Promise.all([
-    transaction(HISTORY_STORE, "readwrite", (store) => store.clear()),
-    transaction(META_STORE, "readwrite", (store) => store.clear()),
-  ]);
+  if (useFallback) return;
+  try {
+    await transaction(HISTORY_STORE, "readwrite", (store) => store.clear());
+    await transaction(META_STORE, "readwrite", (store) => store.clear());
+  } catch (error) {
+    console.warn("IndexedDB を消去できませんでした。", error);
+  }
 }

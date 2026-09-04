@@ -103,17 +103,32 @@ test("result navigation keeps actions visually distinct and routes correctly", (
   const resultSource = functionSource("sessionResultMarkup", "renderSessionComplete");
   assert.match(resultSource, /class="secondary-button"[^>]*data-change-study>学習条件を変える/);
   assert.match(resultSource, /class="text-button"[^>]*data-dismiss-result>結果を閉じる/);
-  assert.match(resultSource, /class="text-button"[^>]*data-view-analysis>詳しい分析を見る/);
+  assert.doesNotMatch(resultSource, /data-view-analysis/);
   assert.match(appSource, /data-change-study[\s\S]*?setView\("study-range-select"\)/);
-  assert.match(appSource, /data-view-analysis[\s\S]*?setView\("analysis"\)/);
-  assert.match(appSource, /data-dismiss-result[\s\S]*?renderDashboard\(\)/);
+  assert.match(appSource, /data-dismiss-result[\s\S]*?clearSessionResult\(\)[\s\S]*?setView\("dashboard"\)/);
   assert.match(stylesSource, /\.result-panel\s*\{[\s\S]*?width:\s*min\(100%, 720px\)/);
   assert.match(stylesSource, /\.main-content\s*\{[\s\S]*?var\(--safe-bottom\)/);
 });
 
-test("finishing a session returns to the dashboard instead of a separate result page", () => {
+test("finishing a session opens the analysis view with the result on top", () => {
   const completeSource = functionSource("renderSessionComplete", "renderAnalysis");
-  assert.match(completeSource, /session\.complete = true;\s*\n\s*setView\("dashboard"\)/);
-  assert.match(appSource, /elements\.dashboardResult\.innerHTML = completed \? sessionResultMarkup\(completed\) : ""/);
+  assert.match(completeSource, /session\.complete = true;\s*\n\s*setView\("analysis"\)/);
+  assert.match(appSource, /elements\.analysisResult\.innerHTML = completed \? sessionResultMarkup\(completed\) : ""/);
+  assert.match(indexSource, /<div class="dashboard-result" id="analysis-result" hidden><\/div>/);
+  // ダッシュボードには結果を出さない。
+  assert.match(appSource, /elements\.dashboardResult\.innerHTML = "";/);
   assert.doesNotMatch(appSource, /elements\.quizContent\.innerHTML = `\s*<div class="result/);
+});
+
+test("the finished session result is stored and restored for the analysis view", () => {
+  assert.match(appSource, /const LAST_RESULT_META_KEY = "lastSessionResult"/);
+  assert.match(appSource, /persistSessionResult\(session\);\s*\n\s*renderSessionComplete\(\)/);
+  assert.match(appSource, /setMeta\(LAST_RESULT_META_KEY, state\.lastSessionResult\)/);
+  assert.match(appSource, /getMeta\("lastSessionResult", null\)/);
+  assert.match(appSource, /state\.lastSessionResult = normalizeSessionResultSnapshot\(lastSessionResult\)/);
+  // 教科をまたいで前回の結果が出ないようにする。
+  assert.match(
+    functionSource("resultSession", "sessionResultMarkup"),
+    /last\.subject === \(state\.subject \?\? "english"\)/,
+  );
 });

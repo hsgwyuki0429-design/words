@@ -1,3 +1,4 @@
+import { createKobunController } from "./kobun.js?v=2026.9.24a";
 import {
   ALL_MODES,
   ALPHABET_KEYBOARD_ROWS,
@@ -65,7 +66,7 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.23a";
+} from "./logic.js?v=2026.9.24a";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -85,7 +86,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.9.23a";
+} from "./storage.js?v=2026.9.24a";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -93,7 +94,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.23a";
+} from "./quiz-gestures.js?v=2026.9.24a";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
@@ -102,7 +103,7 @@ import {
   normalizeSpeechRate,
   normalizeSpeechVoiceURI,
   voiceKey,
-} from "./speech.js?v=2026.9.23a";
+} from "./speech.js?v=2026.9.24a";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -229,6 +230,19 @@ const elements = Object.fromEntries(
   ]),
 );
 
+const kobun = createKobunController({
+  root: document.getElementById("view-kobun"),
+  getHistory: () => state.history,
+  onQuizChange: (active) => {
+    document.body.classList.toggle("kobun-quiz-active", active);
+    if (state.view === "kobun") {
+      elements.bottomNav.hidden = active;
+      elements.appHeader.hidden = active;
+    }
+  },
+  onHeaderChange: (label) => { if (state.subject === "kobun") elements.headerStatus.textContent = label; },
+});
+
 const OTHER_SORT_OPTIONS = [
   ["random", "ランダム"],
   ["importance-asc", "重要度が低い順"],
@@ -258,6 +272,7 @@ const SUBJECT_LABELS = {
   english: "英語",
   public: "公共",
   health: "保健",
+  kobun: "古文",
 };
 
 const MODE_META = {
@@ -393,6 +408,15 @@ function resetStudyFlow() {
 }
 
 function selectSubject(subject) {
+  if (subject === "kobun") {
+    state.subject = "kobun";
+    state.items = [];
+    elements.navListButton.dataset.viewTarget = "list";
+    elements.navListLabel.textContent = "助動詞一覧";
+    setView("dashboard");
+    if (!state.settings.effectsMode) elements.onboarding.hidden = false;
+    return;
+  }
   state.subject = ["public", "health"].includes(subject) ? subject : "english";
   state.items = isPublicSubject()
     ? state.publicItems
@@ -2156,6 +2180,13 @@ function correctEffect(special = "") {
 const STUDY_PROGRESS_LIMIT = 40;
 
 function setView(view) {
+  if (!kobun.canLeave()) return;
+  let kobunScreen = null;
+  if (state.subject === "kobun" && ["home", "dashboard", "list", "analysis"].includes(view)) {
+    kobunScreen = view === "list" ? "reference" : view === "analysis" ? "records" : "home";
+    view = "kobun";
+  }
+  if (view !== "kobun") kobun.hide();
   if (view === "home") view = "dashboard";
   if (view === "range-detail" && !state.filters.ranges.length) view = "dashboard";
   if (view === "list" && isHealthSubject()) view = "health-notes";
@@ -2179,6 +2210,7 @@ function setView(view) {
     button.classList.toggle(
       "active",
       button.dataset.viewTarget === view ||
+        (view === "kobun" && button.dataset.viewTarget === (kobunScreen === "reference" ? "list" : kobunScreen === "records" ? "analysis" : "dashboard")) ||
         (button.dataset.viewTarget === "dashboard" && view === "range-detail"),
     );
   });
@@ -2203,10 +2235,15 @@ function setView(view) {
   if (view === "list") renderList(true);
   if (view === "analysis") renderAnalysis();
   if (view === "settings") renderSettings();
+  if (view === "kobun") kobun.show(kobunScreen ?? "home");
   applySettings();
 }
 
 function renderHeader() {
+  if (state.subject === "kobun") {
+    elements.headerStatus.textContent = "古文";
+    return;
+  }
   const summary = summarizeHistory(state.items, state.history);
   elements.headerStatus.textContent = summary.attempts
     ? `累計 ${summary.correct.toLocaleString()}正解 / ${summary.attempts.toLocaleString()}回答`
@@ -4086,6 +4123,7 @@ function distributeSlotText(startInput, text) {
 }
 
 function bindEvents() {
+  document.addEventListener("kobun-subject", () => setView("subject"));
   addEventListener("resize", markFxResize, { passive: true });
   addEventListener("orientationchange", markFxResize, { passive: true });
   quizGestureController = bindQuizGestures(elements.quizContent, {
@@ -4511,7 +4549,7 @@ async function boot() {
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.23a").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.24a").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

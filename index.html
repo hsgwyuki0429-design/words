@@ -9,13 +9,14 @@
     <meta name="apple-mobile-web-app-title" content="Words" />
     <meta
       name="description"
-      content="英語の語句学習と公共・保健の一問一答に対応した定期テスト対策アプリ"
+      content="英語・古文の基礎暗記と公共・保健の一問一答に対応した定期テスト対策アプリ"
     />
-    <title>Words — 英語・公共・保健対策</title>
+    <title>Words — 英語・古文・公共・保健対策</title>
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icons/app-icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icons/app-icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=2026.9.23a" />
+    <link rel="stylesheet" href="./styles.css?v=2026.9.24a" />
+    <link rel="stylesheet" href="./kobun.css?v=2026.9.24a" />
   </head>
   <body>
     <div class="fx-backdrop" id="fx-backdrop" aria-hidden="true">
@@ -67,9 +68,16 @@
                 <span><strong>保健</strong><small>一問一答 282問</small></span>
                 <span aria-hidden="true">›</span>
               </button>
+              <button class="subject-button kobun" type="button" data-subject="kobun">
+                <span class="subject-icon" aria-hidden="true">古</span>
+                <span><strong>古文</strong><small>古文単語・助動詞</small></span>
+                <span aria-hidden="true">›</span>
+              </button>
             </div>
           </div>
         </section>
+
+        <section class="view kobun-view" id="view-kobun" data-view="kobun" aria-label="古文学習" hidden></section>
 
         <section class="view dashboard-view" id="view-dashboard" data-view="dashboard" hidden>
           <div class="page-heading dashboard-heading">
@@ -307,6 +315,6 @@
     </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-    <script type="module" src="./src/app.js?v=2026.9.23a"></script>
+    <script type="module" src="./src/app.js?v=2026.9.24a"></script>
   </body>
 </html>

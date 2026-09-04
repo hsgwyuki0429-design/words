@@ -17,6 +17,20 @@ export const SPEECH_RATE_OPTIONS = Object.freeze([
 
 export const DEFAULT_SPEECH_RATE = 1;
 
+// 声の設定。"auto" のときは端末で使える中から自動で選ぶ。個別に選んだときは
+// その声の識別子（voiceURI。無ければ name）を保存する。
+export const SPEECH_VOICE_AUTO = "auto";
+
+// 保存済みの設定が壊れていても必ず文字列に収める。空文字・長すぎる値・
+// 文字列以外はすべて「自動」に戻す。選んだ声が今の端末に無い場合も、
+// 読み上げ時に自動選択へ落ちるのでここでは弾かない。
+export function normalizeSpeechVoiceURI(value) {
+  if (typeof value !== "string") return SPEECH_VOICE_AUTO;
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.length > 300) return SPEECH_VOICE_AUTO;
+  return trimmed;
+}
+
 // 保存済みの設定が古い・壊れていても、必ず用意した5段階のどれかに収める。
 // 文字列で保存されていても数値として扱う。
 export function normalizeSpeechRate(value) {
@@ -51,6 +65,13 @@ export function speechTextForEnglish(value) {
   // 文字列以外（オブジェクト・数値・欠損）は読み上げない。
   const cleaned = (typeof value === "string" ? value : "")
     .replace(JAPANESE_PATTERN, " ")
+    // 略記は音声にすると読めないので展開する（give sth. to sb. → give something to somebody）
+    .replace(/\bsth\b\.?/gi, "something")
+    .replace(/\bsb\b\.?/gi, "somebody")
+    // 省略記号・伏せ字は読み上げない（as ~ as → as as ではなく as, as）
+    .replace(/[~〜～]/g, " ")
+    .replace(/[…*＊]/g, " ")
+    .replace(/\.{2,}/g, " ")
     // 引用符は読み上げない（known as “garbage beach” → known as garbage beach）
     .replace(/[“”"«»]/g, " ")
     // 任意扱いの括弧は中身だけ読む（help A (to) do → help A to do）
@@ -68,29 +89,84 @@ export function speechTextForEnglish(value) {
   return /[A-Za-z]/.test(cleaned) ? cleaned : "";
 }
 
-// 利用できる英語の声を選ぶ。"Samantha" や "Google US English" のような
-// 特定の名前には依存しない（OS・ブラウザごとに用意される声が違うため）。
-// 見つからなければ null を返し、lang 指定だけで標準の声へ委ねる。
-export function pickEnglishVoice(voices = [], preferredLang = ENGLISH_SPEECH_LANG) {
-  const list = (Array.isArray(voices) ? voices : [])
-    .filter((voice) => voice && typeof voice.lang === "string");
-  const english = list.filter((voice) => normalizeLang(voice.lang).startsWith("en"));
+// 実際にエンジンへ渡す文字列。単語1語だけだと辞書読みのような平坦な音に
+// なるエンジンが多いので、終止符を補って文として読ませる。画面表示や
+// speechTextForEnglish() の結果は変えないので、テキスト比較には影響しない。
+export function utteranceTextForEnglish(value) {
+  const phrase = speechTextForEnglish(value);
+  if (!phrase) return "";
+  return /[.!?]$/.test(phrase) ? phrase : `${phrase}.`;
+}
+
+// 同じ英語でも、端末には機械的な声と自然な声が混ざって入っている。
+// 特定の声の名前を必須条件にはせず（OS・ブラウザごとに顔ぶれが違うため）、
+// 品質の手がかりを点数にして高いものから選ぶ。手がかりが1つも無い環境でも、
+// 英語の声でありさえすれば必ずどれかが選ばれる。
+const NATURAL_VOICE_HINT = /(natural|neural|enhanced|premium|online|siri)/i;
+
+// 声の識別子。voiceURI が使えない環境では name で代用する。
+export function voiceKey(voice) {
+  const uri = typeof voice?.voiceURI === "string" ? voice.voiceURI.trim() : "";
+  if (uri) return uri;
+  const name = typeof voice?.name === "string" ? voice.name.trim() : "";
+  return name || "";
+}
+
+// 声の good さの点数。大きいほど優先する。
+export function scoreEnglishVoice(voice, preferredLang = ENGLISH_SPEECH_LANG) {
+  if (!voice) return -1;
+  let score = 0;
+  // 望んだ地域（既定は en-US）を最優先。en-GB などより先に選ぶ。
+  if (normalizeLang(voice.lang) === normalizeLang(preferredLang)) score += 8;
+  // 端末内蔵ではない声＝クラウド合成で、ほぼ確実に自然な音質。
+  if (voice.localService === false) score += 4;
+  // 高品質版であることを示す名前の手がかり。あくまで加点で、必須ではない。
+  if (NATURAL_VOICE_HINT.test(typeof voice.name === "string" ? voice.name : "")) score += 2;
+  // 手がかりが並んだときだけ、ブラウザの既定の声を優先する。
+  if (voice.default) score += 1;
+  return score;
+}
+
+// 設定画面に出すための英語の声の一覧。点数の高い順で、同点なら端末が返した
+// 並びのまま。英語以外は混ぜない。
+export function listEnglishVoices(voices = [], preferredLang = ENGLISH_SPEECH_LANG) {
+  return (Array.isArray(voices) ? voices : [])
+    .filter((voice) => voice && typeof voice.lang === "string" && voiceKey(voice))
+    .filter((voice) => normalizeLang(voice.lang).startsWith("en"))
+    .map((voice, index) => ({ voice, index, score: scoreEnglishVoice(voice, preferredLang) }))
+    .sort((left, right) => (right.score - left.score) || (left.index - right.index))
+    .map((entry) => entry.voice);
+}
+
+// 読み上げに使う声を決める。設定で選ばれた声があればそれを使い、その声が
+// 今の端末に無ければ自動選択へ落ちる。英語の声が1つも無ければ null を返し、
+// lang 指定だけで標準の声へ委ねる。
+export function pickEnglishVoice(
+  voices = [],
+  preferredLang = ENGLISH_SPEECH_LANG,
+  preferredVoiceURI = SPEECH_VOICE_AUTO,
+) {
+  const english = listEnglishVoices(voices, preferredLang);
   if (!english.length) return null;
-  const wanted = normalizeLang(preferredLang);
-  const exact = english.filter((voice) => normalizeLang(voice.lang) === wanted);
-  return exact.find((voice) => voice.default)
-    ?? exact[0]
-    ?? english.find((voice) => voice.default)
-    ?? english[0];
+  const wanted = normalizeSpeechVoiceURI(preferredVoiceURI);
+  if (wanted !== SPEECH_VOICE_AUTO) {
+    const chosen = english.find((voice) => voiceKey(voice) === wanted);
+    if (chosen) return chosen;
+  }
+  return english[0];
 }
 
 export function createEnglishSpeaker({
   getSynthesis = defaultSynthesis,
   getUtteranceClass = defaultUtteranceClass,
   onWarning = (error) => console.warn("英語の読み上げを実行できませんでした。", error),
+  // 声一覧が入れ替わったときの通知。設定画面の声の選択肢を出し直すために使う。
+  onVoicesChanged = null,
 } = {}) {
   let voices = [];
   let voicesBound = false;
+  // onVoicesChanged の通知中かどうか。通知からの再入を防ぐ。
+  let notifying = false;
   // 直前に読み上げた問題の識別子。再描画などで同じ問題が二度読まれるのを防ぐ。
   let lastToken = null;
 
@@ -107,7 +183,20 @@ export function createEnglishSpeaker({
     if (typeof engine?.getVoices !== "function") return;
     try {
       const list = engine.getVoices();
-      if (Array.isArray(list) && list.length) voices = list;
+      if (!Array.isArray(list) || !list.length) return;
+      const changed = list.length !== voices.length
+        || list.some((voice, index) => voiceKey(voice) !== voiceKey(voices[index]));
+      voices = list;
+      // 一覧が変わったときだけ知らせる。中身が同じなら何もしない。
+      // 通知先が声一覧を読みに来ても入れ子にならないよう、通知中は知らせない。
+      if (changed && !notifying) {
+        notifying = true;
+        try {
+          onVoicesChanged?.();
+        } finally {
+          notifying = false;
+        }
+      }
     } catch (error) {
       // 声一覧が取れなくても lang 指定だけで読み上げられるので、ここでは止めない。
       onWarning?.(error);
@@ -132,6 +221,11 @@ export function createEnglishSpeaker({
     supported() {
       return typeof synthesis()?.speak === "function";
     },
+    // 設定画面に出す英語の声の一覧。まだ届いていなければ空配列。
+    englishVoices(lang = ENGLISH_SPEECH_LANG) {
+      if (!voices.length) refreshVoices();
+      return listEnglishVoices(voices, lang);
+    },
     // 声一覧の用意だけを行う。読み上げはしないので、どこから呼んでも副作用がない。
     prime() {
       bindVoicesChanged();
@@ -150,11 +244,16 @@ export function createEnglishSpeaker({
     },
     // 読み上げた場合だけ true。読み上げなかった理由（未対応・空文字・同じ問題）
     // では例外を投げず、呼び出し側の処理を止めない。
-    speak(text, { token = null, lang = ENGLISH_SPEECH_LANG, rate = 1 } = {}) {
+    speak(text, {
+      token = null,
+      lang = ENGLISH_SPEECH_LANG,
+      rate = 1,
+      voiceURI = SPEECH_VOICE_AUTO,
+    } = {}) {
       const engine = synthesis();
       const Utterance = getUtteranceClass?.();
       if (typeof engine?.speak !== "function" || typeof Utterance !== "function") return false;
-      const phrase = speechTextForEnglish(text);
+      const phrase = utteranceTextForEnglish(text);
       if (!phrase) return false;
       // 1問につき1回だけ。同じ問題の再描画では読み直さない。
       if (token !== null && token === lastToken) return false;
@@ -168,7 +267,7 @@ export function createEnglishSpeaker({
         utterance.lang = lang;
         // 仕様上の下限・上限を外れると読み上げごと失敗するブラウザがあるので丸める。
         utterance.rate = Math.min(4, Math.max(0.5, Number(rate) || 1));
-        const voice = pickEnglishVoice(voices, lang);
+        const voice = pickEnglishVoice(voices, lang, voiceURI);
         if (voice) utterance.voice = voice;
         // 一時停止したまま復帰しないことがあるブラウザ向けの保険。
         if (engine.paused && typeof engine.resume === "function") engine.resume();

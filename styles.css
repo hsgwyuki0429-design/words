@@ -721,6 +721,21 @@ h2 {
 .speech-rate-row { align-items: flex-start; flex-direction: column; padding-block: 12px; }
 .speech-rate-row .segmented-options { width: 100%; margin-top: 8px; }
 .speech-rate-row .segmented-options button { flex: 1 0 40px; padding-inline: 4px; }
+/* 声の名前は端末ごとに長さがまちまちなので、見出しの下へ全幅で置く */
+.speech-voice-row { align-items: flex-start; flex-direction: column; padding-block: 12px; }
+.settings-select {
+  width: 100%;
+  margin-top: 8px;
+  min-height: 44px;
+  padding: 0 12px;
+  color: inherit;
+  background: #f7f7f9;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 640;
+  font-family: inherit;
+}
 .danger-button { color: var(--red); border-color: #f2b8b5; }
 
 .onboarding-backdrop {

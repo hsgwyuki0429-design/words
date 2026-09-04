@@ -2489,9 +2489,18 @@ function questionEnglishText(question) {
   return typeof item.english === "string" ? item.english : "";
 }
 
-// 表示した問題と同じデータから読み上げる。呼び出しは prepareQuestion() の
-// 1か所だけなので、画面と音声がずれることも、同じ問題を二度読むこともない。
-function speakQuestionEnglish(question) {
+// 英語をいつ読み上げるか。英語が問題文になる形式（英語→日本語）は問題を
+// 開いたとき、英語が答えになる形式（日本語→英語・入力式）は解答したとき、
+// またはフラッシュカードで答え面を開いたとき。答えを先に聞かせない。
+function englishSpeechTiming(mode) {
+  if (typeof mode !== "string") return null;
+  return mode.startsWith("en_to_ja") ? "prompt" : "answer";
+}
+
+// 画面に出しているものと同じ question から読み上げるので、表示と音声が
+// ずれない。timing が合う場面でしか鳴らないので、1つの場面で二度は読まない。
+function speakQuestionEnglish(question, timing) {
+  if (!question || englishSpeechTiming(question.mode) !== timing) return;
   questionSpeechToken += 1;
   englishSpeech.speak(questionEnglishText(question), { token: questionSpeechToken });
 }
@@ -2513,8 +2522,8 @@ function prepareQuestion({ enterFrom = null } = {}) {
   session.lastReviewDelayMs = null;
   session.questionStartedAt = performance.now();
   renderQuiz();
-  // 画面に出したあと、同じ question から英語を1回だけ読み上げる。
-  speakQuestionEnglish(session.currentQuestion);
+  // 英語が問題文の形式だけ、ここで1回読み上げる。
+  speakQuestionEnglish(session.currentQuestion, "prompt");
 }
 
 function sourceLine(item) {
@@ -3135,6 +3144,8 @@ function toggleRecallFace() {
   if (!currentQuizGesturePolicy().tapEnabled) return;
   session.revealed = !session.revealed;
   renderQuiz();
+  // 答え面を開いたときに、その答えの英語を読み上げる（日本語→英語のカード）。
+  if (session.revealed) speakQuestionEnglish(session.currentQuestion, "answer");
 }
 
 async function transitionToNextCard(surface, direction, session) {
@@ -3418,6 +3429,10 @@ async function submitAnswer(
   session.currentAnswer = answer;
   session.currentCorrect = correct;
   session.answered = true;
+  // 英語が答えになる形式は、解答して答えが出たここで読み上げる。履歴の保存を
+  // 待たずに呼ぶので、タップ・キー操作から途切れずにつながる。
+  // フラッシュカード・一問一答は答え面を開いた時点で読むため、ここでは読まない。
+  if (!isRecallMode(question.mode)) speakQuestionEnglish(question, "answer");
   // 周回の進み具合は履歴の保存を待たずに先に確定させる。履歴の保存中に
   // 画面を離れられても、どこまで進めたかは残るようにするため。
   if (session.progress) {

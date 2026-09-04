@@ -188,22 +188,43 @@ test("voiceschanged で声一覧を後から受け取る", () => {
   assert.equal(engine.spoken[1].voice.name, "Google US English");
 });
 
-test("読み上げは prepareQuestion の1か所だけから呼ぶ", () => {
-  // 再描画のたびに読み上げると同じ問題が何度も読まれるので、renderQuiz には入れない
-  assert.equal((appSource.match(/speakQuestionEnglish\(/g) ?? []).length, 2, "定義1つと呼び出し1つ");
+test("英語→日本語は問題を開いたとき、日本語→英語は答えが出たときに読む", () => {
+  // 形式ごとの読み上げどきを1か所で決める
+  const timingSource = functionSource("englishSpeechTiming", "speakQuestionEnglish");
+  assert.match(timingSource, /mode\.startsWith\("en_to_ja"\) \? "prompt" : "answer"/);
+  // 問題を開いた時点で読むのは英語が問題文の形式だけ
   const prepareSource = functionSource("prepareQuestion", "sourceLine");
-  assert.match(prepareSource, /renderQuiz\(\);\n\s*\/\/[^\n]*\n\s*speakQuestionEnglish\(session\.currentQuestion\);/);
-  // 画面と音声が同じ question を参照する
-  assert.match(prepareSource, /session\.currentQuestion = buildQuestion\(/);
+  assert.match(prepareSource, /speakQuestionEnglish\(session\.currentQuestion, "prompt"\);/);
+  // 4択・入力式は解答した時点で答えの英語を読む
+  const submitSource = functionSource("submitAnswer", "injectDueReviews");
+  assert.match(submitSource, /if \(!isRecallMode\(question\.mode\)\) speakQuestionEnglish\(question, "answer"\);/);
+  // 履歴の保存（await）より前に呼び、タップ・キー操作から途切れさせない
+  assert.ok(
+    submitSource.indexOf('speakQuestionEnglish(question, "answer")') < submitSource.indexOf("await recordAttempt"),
+    "await recordAttempt より前に読み上げる",
+  );
+  // フラッシュカードは答え面を開いた時点で読む
+  const toggleSource = functionSource("toggleRecallFace", "transitionToNextCard");
+  assert.match(toggleSource, /if \(session\.revealed\) speakQuestionEnglish\(session\.currentQuestion, "answer"\);/);
+});
+
+test("読み上げの呼び出しは3つの場面だけに限る", () => {
+  // 再描画のたびに読み上げると同じ問題が何度も読まれるので、renderQuiz には入れない
+  assert.equal(
+    (appSource.match(/speakQuestionEnglish\(/g) ?? []).length,
+    4,
+    "定義1つと、問題表示・解答・答え面の3か所",
+  );
+  assert.match(functionSource("prepareQuestion", "sourceLine"), /session\.currentQuestion = buildQuestion\(/);
   assert.doesNotMatch(functionSource("renderQuiz", "currentTypedAnswer"), /speakQuestionEnglish|englishSpeech/);
   assert.doesNotMatch(functionSource("renderRecallQuiz", "renderQuiz"), /speakQuestionEnglish|englishSpeech/);
 });
 
 test("読み上げ対象は単語・熟語・構文だけに絞る", () => {
-  const source = functionSource("questionEnglishText", "speakQuestionEnglish");
+  const source = functionSource("questionEnglishText", "englishSpeechTiming");
   assert.match(source, /ENGLISH_CONTENT_TYPES\.includes\(item\.type\)/);
   assert.match(source, /item\.english/);
-  // 1問につき1回だけ読むための通し番号
+  // 1回の場面につき1回だけ読むための通し番号
   assert.match(functionSource("speakQuestionEnglish", "prepareQuestion"), /questionSpeechToken \+= 1;/);
   assert.match(appSource, /let questionSpeechToken = 0;/);
 });

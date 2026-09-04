@@ -63,7 +63,7 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.15a";
+} from "./logic.js?v=2026.9.16a";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -83,7 +83,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.9.15a";
+} from "./storage.js?v=2026.9.16a";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -91,7 +91,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.15a";
+} from "./quiz-gestures.js?v=2026.9.16a";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -2036,18 +2036,6 @@ function correctEffect(special = "") {
 
 const STUDY_PROGRESS_LIMIT = 40;
 
-const STUDY_FLOW_VIEWS = [
-  "study-content",
-  "study-method",
-  "study-scope",
-  "study-range-select",
-  "study-importance",
-  "study-importance-select",
-  "study-content-multi",
-  "study-sort-kind",
-  "study-sort-other",
-];
-
 function setView(view) {
   if (view === "home") view = "dashboard";
   if (view === "range-detail" && !state.filters.ranges.length) view = "dashboard";
@@ -2073,12 +2061,6 @@ function setView(view) {
       "active",
       button.dataset.viewTarget === view ||
         (button.dataset.viewTarget === "dashboard" && view === "range-detail"),
-    );
-  });
-  document.querySelectorAll("[data-nav-active]").forEach((button) => {
-    button.classList.toggle(
-      "active",
-      button.dataset.navActive === "study-flow" && STUDY_FLOW_VIEWS.includes(view),
     );
   });
   elements.bottomNav.hidden = ["quiz", "period", "subject"].includes(view);
@@ -3996,12 +3978,6 @@ function bindEvents() {
         .then(() => location.reload())
         .catch(() => showToast("データを削除できませんでした"));
     }
-    if (target.hasAttribute("data-start-study")) {
-      resetStudyFlow();
-      state.rangeFlow = "study";
-      state.studyFlowMode = "step";
-      setView("study-range-select");
-    }
     if (target.hasAttribute("data-dashboard-all-ranges")) {
       state.filters.ranges = dashboardRanges();
       state.rangeSelectionMode = "all";
@@ -4343,7 +4319,7 @@ async function boot() {
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.15a").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.16a").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

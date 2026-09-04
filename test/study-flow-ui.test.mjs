@@ -16,13 +16,31 @@ function functionSource(name, nextName) {
   return appSource.slice(start, end);
 }
 
-test("the old resume snapshot UI stays removed; resuming now comes from cycle state", () => {
+test("学習を始める画面の履歴は廃止され、続きは周回の状態から始める", () => {
   assert.doesNotMatch(appSource, /activeStudy|lastSessionConfig|data-resume-active|前回の学習/);
-  assert.doesNotMatch(indexSource, /resume-study-card/);
-  assert.doesNotMatch(stylesSource, /\.resume-study-card|\.home-resume-top/);
-  assert.match(appSource, /state\.recentStudies = normalizeRecentStudies/);
-  assert.match(appSource, /recent-study-action">この条件で始める/);
+  assert.doesNotMatch(indexSource, /resume-study-card|recent-study/);
+  assert.doesNotMatch(stylesSource, /\.resume-study-card|\.home-resume-top|\.recent-study/);
+  // 履歴の一覧は持たず、周回ごとの学習条件だけを控える。
+  // 旧データは起動時に引き継ぐだけで、画面には出さない。
+  assert.doesNotMatch(appSource, /state\.recentStudies|addRecentStudy|renderRecentStudies/);
+  assert.match(appSource, /adoptLegacyStudyConfigs\(legacyRecentStudies\)/);
+  assert.match(appSource, /persistStudyConfig\(key, \{ \.\.\.config, selection \}\)/);
   assert.match(appSource, /pendingCycleItemIds\(progress\)/);
+});
+
+test("学習途中のセットは分析画面から続きを始められる", () => {
+  // 完走直後は今回の結果、それ以外は途中のセットを優先する。
+  assert.match(appSource, /const resume = state\.session\?\.complete \? null : resumableStudy\(\);/);
+  // 続きのカードの下に、学習直後や保存済みの結果を続けて見せる。
+  assert.match(appSource, /resume \? resumeStudyMarkup\(resume\) : ""/);
+  assert.match(appSource, /completed \? sessionResultMarkup\(completed\) : ""/);
+  // 条件の控えが残っているものだけを続きの対象にする。
+  assert.match(
+    functionSource("resumableStudy", "resumeStudyMarkup"),
+    /const config = entry \? state\.studyConfigs\[entry\.key\] : null;/,
+  );
+  assert.match(appSource, /data-resume-study>続きを始める/);
+  assert.match(appSource, /data-resume-study"\)\) \{[\s\S]*?startSession\(resume\.config\)/);
 });
 
 test("range and English content selections start with all items selected", () => {
@@ -113,10 +131,11 @@ test("result navigation keeps actions visually distinct and routes correctly", (
 test("finishing a session opens the analysis view with the result on top", () => {
   const completeSource = functionSource("renderSessionComplete", "renderAnalysis");
   assert.match(completeSource, /session\.complete = true;\s*\n\s*setView\("analysis"\)/);
-  assert.match(appSource, /elements\.analysisResult\.innerHTML = completed \? sessionResultMarkup\(completed\) : ""/);
+  assert.match(appSource, /completed \? sessionResultMarkup\(completed\) : ""/);
   assert.match(indexSource, /<div class="dashboard-result" id="analysis-result" hidden><\/div>/);
   // ダッシュボードには結果を出さない。
-  assert.match(appSource, /elements\.dashboardResult\.innerHTML = "";/);
+  assert.doesNotMatch(appSource, /dashboardResult/);
+  assert.doesNotMatch(indexSource, /id="dashboard-result"/);
   assert.doesNotMatch(appSource, /elements\.quizContent\.innerHTML = `\s*<div class="result/);
 });
 

@@ -15,7 +15,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icons/app-icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icons/app-icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=2026.9.12a" />
+    <link rel="stylesheet" href="./styles.css?v=2026.9.13a" />
   </head>
   <body>
     <div class="fx-backdrop" id="fx-backdrop" aria-hidden="true">
@@ -72,7 +72,6 @@
         </section>
 
         <section class="view dashboard-view" id="view-dashboard" data-view="dashboard" hidden>
-          <div class="dashboard-result" id="dashboard-result" hidden></div>
           <div class="page-heading dashboard-heading">
             <p class="eyebrow" id="dashboard-eyebrow">STUDY DASHBOARD</p>
             <h1 id="dashboard-title">学習する範囲を選ぶ</h1>
@@ -84,16 +83,6 @@
             <span><strong>複数の範囲を選ぶ</strong><small>いくつかの範囲をまとめて学習する</small></span>
             <span class="card-arrow" aria-hidden="true">›</span>
           </button>
-          <section class="recent-study-section" id="recent-study-section" aria-labelledby="recent-study-title" hidden>
-            <div class="recent-study-heading">
-              <div>
-                <p class="eyebrow">HISTORY</p>
-                <h2 id="recent-study-title">最近の学習条件</h2>
-              </div>
-              <small>ワンタップですぐ開始</small>
-            </div>
-            <div class="recent-study-list" id="recent-study-list"></div>
-          </section>
           <div class="dashboard-links">
             <button class="text-button" type="button" data-view-target="analysis">詳しい分析を見る</button>
             <button class="text-button" type="button" data-start-study>条件を細かく選んで学習する</button>
@@ -397,6 +386,6 @@
     </aside>
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-    <script type="module" src="./src/app.js?v=2026.9.12a"></script>
+    <script type="module" src="./src/app.js?v=2026.9.13a"></script>
   </body>
 </html>

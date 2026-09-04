@@ -17,7 +17,6 @@ import {
   ONE_HOUR_REVIEW_DELAY_MS,
   STUDY_CONTENT_LABELS,
   STUDY_METHOD_LABELS,
-  addRecentStudy,
   accuracyFor,
   advanceStudyProgress,
   applyKeyboardKey,
@@ -48,8 +47,7 @@ import {
   reviewDelayForAnswer,
   sortItems,
   normalizeStudySelection,
-  normalizeRecentStudies,
-  recentStudyConfigKey,
+  normalizeRecentStudyConfig,
   releaseDeferredReviews,
   studyConfigForTarget,
   studyModeForItem,
@@ -67,7 +65,7 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.12a";
+} from "./logic.js?v=2026.9.13a";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -87,7 +85,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.9.12a";
+} from "./storage.js?v=2026.9.13a";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -95,7 +93,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.12a";
+} from "./quiz-gestures.js?v=2026.9.13a";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -147,7 +145,8 @@ const state = {
   settings: { ...DEFAULT_SETTINGS },
   combo: 0,
   bestCombo: 0,
-  recentStudies: [],
+  // 学習途中の周回から続きを始めるための、周回キーごとの学習条件。
+  studyConfigs: {},
   importanceFilterMode: null,
   rangeSelectionMode: null,
   contentSelectionMode: null,
@@ -164,15 +163,12 @@ const elements = Object.fromEntries(
     "dashboard-eyebrow",
     "dashboard-title",
     "dashboard-copy",
-    "dashboard-result",
     "dashboard-range-list",
     "range-detail-title",
     "range-detail-copy",
     "range-detail-groups",
     "study-range-back",
     "study-range-eyebrow",
-    "recent-study-section",
-    "recent-study-list",
     "study-content-heading",
     "study-content-copy",
     "study-content-options",
@@ -473,7 +469,8 @@ function studyContentLabel(selection = state.studySelection) {
   return normalized.contents.map((content) => STUDY_CONTENT_LABELS[content]).join("＋") || "教材";
 }
 
-function recentStudyRangeLabel(config) {
+// 学習条件から範囲の見出しを作る（続きのカードで使う）。
+function configRangeLabel(config) {
   const ranges = config.filters?.ranges ?? [];
   const allRanges = config.subject === "public"
     ? PUBLIC_RANGE_ORDER
@@ -483,44 +480,6 @@ function recentStudyRangeLabel(config) {
   if (!ranges.length || allRanges.every((range) => ranges.includes(range))) return "全範囲";
   if (ranges.length <= 2) return ranges.join("・");
   return `${ranges.slice(0, 2).join("・")}＋ほか${ranges.length - 2}`;
-}
-
-function recentStudyTimeLabel(lastUsedAt) {
-  if (!lastUsedAt) return "履歴";
-  return new Intl.DateTimeFormat("ja-JP", {
-    month: "numeric",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(lastUsedAt));
-}
-
-function renderRecentStudies() {
-  const entries = state.recentStudies.slice(0, 4);
-  elements.recentStudySection.hidden = entries.length === 0;
-  if (!entries.length) {
-    elements.recentStudyList.innerHTML = "";
-    return;
-  }
-  elements.recentStudyList.innerHTML = entries.map((entry, index) => {
-    const config = entry.config;
-    const importance = config.filters.importance.length
-      ? `重要度：${config.filters.importance.join("・")}`
-      : "重要度：全部";
-    const performance = `回答：${PERFORMANCE_LABELS[config.filters.performance] ?? "全部"}`;
-    const sort = STUDY_SORT_LABELS[config.sortKey] ?? "選択した順番";
-    return `
-      <button class="recent-study-button subject-${escapeHtml(config.subject)}" type="button" data-recent-study-index="${index}">
-        <span class="recent-study-meta">
-          <span class="recent-subject">${escapeHtml(SUBJECT_LABELS[config.subject] ?? "英語")}</span>
-          <time>${escapeHtml(recentStudyTimeLabel(entry.lastUsedAt))}</time>
-        </span>
-        <strong>${escapeHtml(studyContentLabel(config.selection))}</strong>
-        <span class="recent-study-method">${escapeHtml(STUDY_METHOD_LABELS[config.selection.method])}</span>
-        <small>${escapeHtml([recentStudyRangeLabel(config), importance, performance, sort].join(" · "))}</small>
-        <span class="recent-study-action">この条件で始める <span aria-hidden="true">→</span></span>
-      </button>`;
-  }).join("");
 }
 
 function selectionCard({ icon, title, detail, tags, dataAttribute }) {
@@ -897,9 +856,6 @@ function rangeDetailLabel(ranges = state.filters.ranges) {
 function renderDashboard() {
   const completed = state.session?.complete ? state.session : null;
   const hour = new Date().getHours();
-  // リザルトは分析画面にまとめて表示するため、ここでは出さない。
-  elements.dashboardResult.hidden = true;
-  elements.dashboardResult.innerHTML = "";
   elements.dashboardEyebrow.textContent = completed
     ? "NEXT STUDY"
     : isPublicSubject()
@@ -932,7 +888,6 @@ function renderDashboard() {
       <span class="card-arrow" aria-hidden="true">›</span>
     </button>`),
   ].join("");
-  renderRecentStudies();
   renderHeader();
 }
 
@@ -2397,6 +2352,18 @@ function persistStudyProgress(key, progress) {
   setMeta("studyProgress", state.studyProgress).catch(console.warn);
 }
 
+// 学習途中の周回から続きを始められるよう、条件を周回キーごとに控える。
+// 周回状態が消えたキーは一緒に落とす。
+function persistStudyConfig(key, config) {
+  const normalized = config ? normalizeRecentStudyConfig(config) : null;
+  if (!key || !normalized) return;
+  state.studyConfigs = Object.fromEntries(
+    Object.entries({ ...state.studyConfigs, [key]: normalized })
+      .filter(([storedKey]) => storedKey === key || storedKey in state.studyProgress),
+  );
+  setMeta("studyConfigs", state.studyConfigs).catch(console.warn);
+}
+
 function storedStudyProgress(key, { itemIds = null } = {}) {
   if (!key) return null;
   return normalizeStudyProgress(state.studyProgress[key], {
@@ -2582,8 +2549,7 @@ function startSession(overrides = {}) {
     return;
   }
   persistStudyProgress(key, activeProgress);
-  state.recentStudies = addRecentStudy(state.recentStudies, config);
-  setMeta("recentStudies", state.recentStudies).catch(console.warn);
+  persistStudyConfig(key, { ...config, selection });
   state.studySelection = selection;
   if (restarted) showToast("習得条件を変更したため、進捗判定を新しく開始します");
   beginSession(built.queue, {
@@ -3795,6 +3761,70 @@ function clearSessionResult() {
   setMeta(LAST_RESULT_META_KEY, null).catch(console.warn);
 }
 
+// 以前の「最近の学習条件」しか持っていない端末でも、その条件から周回キーを
+// 割り出して控えに移し、学習途中のセットを続けられるようにする。
+function adoptLegacyStudyConfigs(entries) {
+  if (!Array.isArray(entries) || !entries.length) return;
+  entries.forEach((entry) => {
+    const config = normalizeRecentStudyConfig(entry?.config ?? entry);
+    if (!config) return;
+    const key = studyProgressKey({
+      subject: config.subject,
+      selection: config.selection,
+      filters: config.filters,
+    });
+    if (!key || !(key in state.studyProgress) || key in state.studyConfigs) return;
+    state.studyConfigs[key] = config;
+  });
+  setMeta("studyConfigs", state.studyConfigs).catch(console.warn);
+}
+
+// 学習途中の周回があれば、その続きを始められるようにする。条件の控えが
+// 残っているものだけを対象にする（控えが無いと同じ条件で始め直せないため）。
+function resumableStudy() {
+  const entry = inProgressEntries()[0];
+  const config = entry ? state.studyConfigs[entry.key] : null;
+  return config ? { entry, config } : null;
+}
+
+function resumeStudyMarkup({ entry, config }) {
+  const cycle = studyProgressSummary(entry.progress);
+  const contentLabel = contentLabelFromProgressKey(entry.meta) || "教材";
+  const methodLabel = STUDY_METHOD_LABELS[config.selection.method] ?? "学習";
+  const context = [
+    ["教科", SUBJECT_LABELS[config.subject] ?? "英語"],
+    ["範囲", configRangeLabel(config)],
+    ["教材", contentLabel],
+    ["出題形式", methodLabel],
+  ];
+  return `
+    <section class="result-panel" aria-labelledby="resume-panel-title">
+      <header class="result-complete-header">
+        <p class="eyebrow">CONTINUE</p>
+        <h1 id="resume-panel-title">学習途中のセットがあります</h1>
+        <ul class="result-context-list" aria-label="学習条件">
+          ${context.map(([label, value]) => `<li><span>${label}</span><strong>${escapeHtml(value)}</strong></li>`).join("")}
+        </ul>
+      </header>
+      <section class="result-record" aria-labelledby="resume-record-title">
+        <h2 id="resume-record-title">${cycle.masteryRound > 1 ? `R${cycle.masteryRound}・` : ""}${cycle.cycleNumber}周目の途中</h2>
+        <div class="result-record-grid">
+          <div><span>今回の対象</span><strong>${cycle.targetCount}</strong></div>
+          <div><span>正解済み</span><strong>${cycle.correctCount}</strong></div>
+          <div><span>残り</span><strong>${cycle.remainingCount}</strong></div>
+        </div>
+      </section>
+      <section class="result-next-card" aria-labelledby="resume-next-title">
+        <div>
+          <p class="eyebrow">NEXT STEP</p>
+          <h2 id="resume-next-title">続きから学習する</h2>
+          <p>まだ正解していない${cycle.remainingCount}問から再開します</p>
+        </div>
+        <button class="primary-button result-primary-action" type="button" data-resume-study>続きを始める<span aria-hidden="true">→</span></button>
+      </section>
+    </section>`;
+}
+
 // 学習中のセッションが完了していればそれを、無ければ保存済みの直近の結果を返す。
 // 教科をまたいでも「1番最近のリザルト」を出す（開始ボタンだけ同じ教科に限る）。
 function resultSession() {
@@ -3951,10 +3981,15 @@ function renderSessionComplete() {
 }
 
 function renderAnalysis() {
-  // 学習直後は今回の結果を、それ以外は保存してある前回の結果を先頭に出す。
+  // 学習途中のセットがあれば、その続きを先頭に出す。学習直後の結果や
+  // 保存してある直近の結果は、その下に続けて見せる。
+  const resume = state.session?.complete ? null : resumableStudy();
   const completed = resultSession();
-  elements.analysisResult.hidden = !completed;
-  elements.analysisResult.innerHTML = completed ? sessionResultMarkup(completed) : "";
+  elements.analysisResult.hidden = !resume && !completed;
+  elements.analysisResult.innerHTML = [
+    resume ? resumeStudyMarkup(resume) : "",
+    completed ? sessionResultMarkup(completed) : "",
+  ].join("");
   const overall = summarizeHistory(state.items, state.history);
   const ranges = summarizeByRange(state.items, state.history);
   const modes = summarizeByMode(state.items, state.history)
@@ -4145,13 +4180,6 @@ function bindEvents() {
     }
     if (target.dataset.studyTarget) startStudyFromTarget(target.dataset.studyTarget);
     if (target.hasAttribute("data-open-performance-detail")) openFilter();
-    if (target.dataset.recentStudyIndex !== undefined) {
-      const entry = state.recentStudies[Number(target.dataset.recentStudyIndex)];
-      if (entry?.config) {
-        if (entry.config.subject !== state.subject) selectSubject(entry.config.subject);
-        startSession(entry.config);
-      }
-    }
     if (target.dataset.studyContentChoice) {
       applyContentChoice(target.dataset.studyContentChoice);
       setView(state.studyFlowMode === "dashboard" ? "study-importance" : "study-method");
@@ -4306,6 +4334,13 @@ function bindEvents() {
     if (target.hasAttribute("data-quit-quiz")) {
       if (leaveQuiz()) setView("home");
     }
+    if (target.hasAttribute("data-resume-study")) {
+      const resume = resumableStudy();
+      if (resume) {
+        if (resume.config.subject !== state.subject) selectSubject(resume.config.subject);
+        startSession(resume.config);
+      }
+    }
     if (target.hasAttribute("data-retry-wrong")) retryWrongItems();
     if (target.hasAttribute("data-repeat-session")) repeatCompletedSession();
     if (target.hasAttribute("data-continue-cycle")) continueStudyCycle();
@@ -4437,7 +4472,7 @@ function bindEvents() {
 async function boot() {
   bindEvents();
   try {
-    const [response, publicResponse, healthResponse, history, selectedMode, settings, bestCombo, selectedPeriod, recentStudies, studyProgress, lastSessionResult] = await Promise.all([
+    const [response, publicResponse, healthResponse, history, selectedMode, settings, bestCombo, selectedPeriod, studyConfigs, legacyRecentStudies, studyProgress, lastSessionResult] = await Promise.all([
       fetch("./data/items.json?v=2026.08.31b"),
       fetch("./data/public-items.json?v=2026.09.01"),
       fetch("./data/health-items.json?v=2026.09.01"),
@@ -4446,6 +4481,7 @@ async function boot() {
       getMetaObject("settings", DEFAULT_SETTINGS),
       getMeta("bestCombo", 0),
       getMeta("selectedPeriod", null),
+      getMetaObject("studyConfigs", {}),
       getMeta("recentStudies", []),
       getMetaObject("studyProgress", {}),
       getMeta("lastSessionResult", null),
@@ -4463,19 +4499,24 @@ async function boot() {
     state.settings.soundIntensity = state.settings.soundIntensity === "full" ? "full" : "gentle";
     installMaxEffectsLab();
     state.bestCombo = Number(bestCombo) || 0;
-    state.recentStudies = normalizeRecentStudies(Array.isArray(recentStudies) ? recentStudies : []);
+    state.studyConfigs = Object.fromEntries(
+      Object.entries(studyConfigs ?? {})
+        .map(([key, config]) => [key, normalizeRecentStudyConfig(config)])
+        .filter(([, config]) => config),
+    );
     state.settings.masteryCriterion = normalizeMasteryCriterion(state.settings.masteryCriterion);
     state.studyProgress = Object.fromEntries(
       Object.entries(studyProgress ?? {})
         .map(([key, value]) => [key, normalizeStudyProgress(value)])
         .filter(([, value]) => value),
     );
+    adoptLegacyStudyConfigs(legacyRecentStudies);
     state.lastSessionResult = normalizeSessionResultSnapshot(lastSessionResult);
     state.selectedPeriod = selectedPeriod === "2026.2" ? selectedPeriod : null;
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.12a").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.13a").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

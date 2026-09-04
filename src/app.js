@@ -65,7 +65,7 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.19a";
+} from "./logic.js?v=2026.9.20a";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -85,7 +85,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.9.19a";
+} from "./storage.js?v=2026.9.20a";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -93,7 +93,8 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.19a";
+} from "./quiz-gestures.js?v=2026.9.20a";
+import { createEnglishSpeaker } from "./speech.js?v=2026.9.20a";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -1052,6 +1053,7 @@ function leaveQuiz() {
   if (!session) return true;
   if (session.results.length && !window.confirm("この学習を終了しますか？")) return false;
   if (session.reviewTimer) clearTimeout(session.reviewTimer);
+  englishSpeech.stop();
   stashStudyProgress();
   state.session = null;
   return true;
@@ -1175,6 +1177,10 @@ const fx = {
 };
 
 const maxAudio = createMaxAudioEngine();
+// 問題の英語の読み上げ。Web Speech API が使えない端末では何もしない。
+const englishSpeech = createEnglishSpeaker();
+// 1問につき1回だけ読むための通し番号。セッションをまたいでも増え続ける。
+let questionSpeechToken = 0;
 let calloutTimer = 0;
 
 function prefersReducedMotion() {
@@ -2380,6 +2386,9 @@ function beginSession(queue, {
   };
   state.combo = 0;
   setView("quiz");
+  // 学習開始のタップから続けて呼ばれるので、最初の問題の読み上げも
+  // ユーザー操作の中で始まる（iOS Safari の再生制限を満たす）。
+  englishSpeech.prime();
   prepareQuestion();
 }
 
@@ -2472,6 +2481,21 @@ function startSession(overrides = {}) {
   });
 }
 
+// 読み上げる英語。単語・熟語・構文だけを対象にする。公共・保健の一問一答は
+// english 欄にも日本語の設問が入っているため読み上げない。
+function questionEnglishText(question) {
+  const item = question?.item;
+  if (!item || !ENGLISH_CONTENT_TYPES.includes(item.type)) return "";
+  return typeof item.english === "string" ? item.english : "";
+}
+
+// 表示した問題と同じデータから読み上げる。呼び出しは prepareQuestion() の
+// 1か所だけなので、画面と音声がずれることも、同じ問題を二度読むこともない。
+function speakQuestionEnglish(question) {
+  questionSpeechToken += 1;
+  englishSpeech.speak(questionEnglishText(question), { token: questionSpeechToken });
+}
+
 function prepareQuestion({ enterFrom = null } = {}) {
   const session = state.session;
   const entry = session.queue[session.cursor];
@@ -2489,6 +2513,8 @@ function prepareQuestion({ enterFrom = null } = {}) {
   session.lastReviewDelayMs = null;
   session.questionStartedAt = performance.now();
   renderQuiz();
+  // 画面に出したあと、同じ question から英語を1回だけ読み上げる。
+  speakQuestionEnglish(session.currentQuestion);
 }
 
 function sourceLine(item) {
@@ -3131,6 +3157,9 @@ async function handleRecallSwipe({ surface, direction }) {
     await animateSwipeCancel({ surface });
     return;
   }
+  // ここから先は次の問題へ進むことが確定したスワイプ。いま読み上げ中の英語を
+  // すぐ止め、次の問題の読み上げ（prepareQuestion）へ引き継ぐ。
+  englishSpeech.stop();
   session.isTransitioning = true;
   const reviewDelayMs = action === "three-minutes"
     ? WRONG_REVIEW_DELAY_MS
@@ -3154,6 +3183,8 @@ async function handleChoiceNextSwipe({ surface, direction }) {
     await animateSwipeCancel({ surface });
     return;
   }
+  // 次の問題へ進むことが確定したスワイプだけが、ここへ来る。
+  englishSpeech.stop();
   session.isTransitioning = true;
   try {
     await transitionToNextCard(surface, direction, session);
@@ -4362,6 +4393,9 @@ async function boot() {
     state.settings = settings;
     state.settings.soundIntensity = state.settings.soundIntensity === "full" ? "full" : "gentle";
     installMaxEffectsLab();
+    // 声一覧は取得までに時間がかかるブラウザがあるので、起動時に頼んでおく。
+    // 届くのを待たないため、出題やスワイプが遅くなることはない。
+    englishSpeech.prime();
     state.bestCombo = Number(bestCombo) || 0;
     state.studyConfigs = Object.fromEntries(
       Object.entries(studyConfigs ?? {})
@@ -4380,7 +4414,7 @@ async function boot() {
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.19a").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.20a").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

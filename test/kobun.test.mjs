@@ -134,3 +134,15 @@ test("古文単語は英語フィールドなしで複数の意味とメタデ�
   assert.equal(validateVocabulary([word])[0].meanings.length, 3);
   assert.throws(() => validateVocabulary([{ ...word, meanings: "趣深い" }]));
 });
+
+test("バーは回答回数ではなく問題数で進み、直近の誤答と別形式を区別する", () => {
+  const id = find("keri").id;
+  const history = new Map();
+  for (let index = 0; index < 3; index += 1) history.set(id, mergeAttempt(history.get(id), { itemId: id, mode: "kobun_meaning", correct: true }));
+  assert.equal(summarizeKobun(items, history, "kobun_meaning").answered, 1);
+  assert.equal(summarizeKobun(items, history, "kobun_meaning").correctItems, 1);
+  assert.equal(summarizeKobun(items, history, "kobun_connection").answered, 0);
+  history.set(id, mergeAttempt(history.get(id), { itemId: id, mode: "kobun_meaning", correct: false }));
+  assert.equal(summarizeKobun(items, history, "kobun_meaning").answered, 1);
+  assert.equal(summarizeKobun(items, history, "kobun_meaning").correctItems, 0);
+});

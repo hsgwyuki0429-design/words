@@ -4262,6 +4262,7 @@ body.quiz-active .main-content { padding-bottom: 0; }
    範囲を選び直したときは、その範囲に一致する周回だけがハイライトされる。 */
 .range-choice.is-in-progress,
 .multi-select-card.is-in-progress,
+.content-choice.is-in-progress,
 .mode-progress-card.is-in-progress {
   border-color: var(--red);
   box-shadow: 0 0 0 1px var(--red);
@@ -4285,6 +4286,9 @@ body.quiz-active .main-content { padding-bottom: 0; }
   display: inline-block;
   margin-top: 6px;
 }
+
+/* 学習内容の行は「◯◯語句」の右、矢印の手前に置く */
+.content-choice-head .in-progress-badge { align-self: baseline; }
 
 /* 「全範囲」だけは他のボタン2個分の横幅で先頭に置く（高さは同じ） */
 .range-choice--all {

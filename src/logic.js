@@ -1360,6 +1360,11 @@ function sortedKeyList(values) {
   return uniqueIds(values).sort((left, right) => left.localeCompare(right, "ja"));
 }
 
+// 進捗キーに入る学習内容の並び。ボタン側と突き合わせるために使う。
+export function studyContentsKey(contents = []) {
+  return sortedKeyList(contents).join("+");
+}
+
 // 周回状態の単位：教科・範囲・学習内容・正確な形式・対象を変える絞り込み。
 // 並び替えは対象集合を変えないのでキーに含めない。
 export function studyProgressKey({ subject = null, selection = {}, filters = {} } = {}) {

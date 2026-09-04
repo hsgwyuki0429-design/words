@@ -55,6 +55,7 @@ import {
   studyModeForItem,
   inProgressStudyEntries,
   isStudyInProgress,
+  studyContentsKey,
   studyProgressEntriesForMode,
   studyProgressKey,
   studyProgressSummary,
@@ -66,7 +67,7 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.11a";
+} from "./logic.js?v=2026.9.12a";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -86,7 +87,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.9.11a";
+} from "./storage.js?v=2026.9.12a";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -94,7 +95,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.11a";
+} from "./quiz-gestures.js?v=2026.9.12a";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -559,6 +560,8 @@ function renderStudyContent() {
   elements.studyContentHeading.textContent = isRecallSubject()
     ? "どの問題を学習しますか？"
     : "何を学習しますか？";
+  // 続きのある学習内容（単語・熟語・構文・全選択）を赤枠で示す。
+  const resumableContents = contentsInProgress();
   if (isRecallSubject()) {
     const recallContents = recallContentMeta();
     elements.studyContentCopy.textContent = "";
@@ -569,6 +572,7 @@ function renderStudyContent() {
         detail: meta.detail,
         attribute: `data-study-content="${content}"`,
         progress: selectionProgress({ types: recallTypesForContent(content) }),
+        inProgress: resumableContents.has(content),
       }))
       .join("");
     return;
@@ -584,12 +588,14 @@ function renderStudyContent() {
       detail: count(content) ? `${count(content)}語句` : "出題できません",
       attribute: `data-study-content-choice="${content}"${count(content) ? "" : ' disabled aria-disabled="true"'}`,
       progress: count(content) ? selectionProgress({ types: [content] }) : null,
+      inProgress: resumableContents.has(studyContentsKey([content])),
     })),
     contentChoiceRow({
       title: "全選択",
       detail: `${baseItems.length}語句`,
       attribute: 'data-study-content-choice="all"',
       progress: selectionProgress({ types: [...ENGLISH_CONTENT_TYPES] }),
+      inProgress: resumableContents.has(studyContentsKey([...ENGLISH_CONTENT_TYPES])),
     }),
     contentChoiceRow({
       title: "その他",
@@ -600,16 +606,26 @@ function renderStudyContent() {
   ].join("");
 }
 
-function contentChoiceRow({ title, detail, attribute, variant = "primary", progress = null }) {
+function contentChoiceRow({
+  title,
+  detail,
+  attribute,
+  variant = "primary",
+  progress = null,
+  inProgress = false,
+}) {
   const classes = [
     "content-choice",
     variant === "secondary" ? "content-choice--secondary" : "",
     progress ? "content-choice--gauge" : "",
+    inProgress ? "is-in-progress" : "",
   ].filter(Boolean).join(" ");
+  const badge = inProgress ? IN_PROGRESS_BADGE : "";
   if (!progress) {
     return `
     <button class="${classes}" type="button" ${attribute}>
       <span class="content-choice-copy"><strong>${escapeHtml(title)}</strong><small>${escapeHtml(detail)}</small></span>
+      ${badge}
       <span class="card-arrow" aria-hidden="true">›</span>
     </button>`;
   }
@@ -618,6 +634,7 @@ function contentChoiceRow({ title, detail, attribute, variant = "primary", progr
       <span class="content-choice-head">
         <strong>${escapeHtml(title)}</strong>
         <small>${escapeHtml(detail)}</small>
+        ${badge}
         <span class="card-arrow" aria-hidden="true">›</span>
       </span>${progressGaugeMarkup(progress)}
     </button>`;
@@ -833,22 +850,38 @@ function inProgressEntries() {
   });
 }
 
-// その範囲だけを対象にした周回が途中の範囲。ボタンを押して実際に続きへ入れる
-// ものだけを光らせる（全範囲の周回は「全範囲」ボタンの担当なので含めない）。
-function rangesInProgress() {
-  const ranges = new Set();
-  inProgressEntries().forEach(({ meta }) => {
-    const list = meta.ranges ?? [];
-    if (list.length === 1) ranges.add(list[0]);
-  });
-  return ranges;
+// 範囲ボタンのハイライトは、いちばん最近まで学習していた周回ひとつだけを指す。
+// 途中の周回をいくつも抱えていても、続きの入口は迷わずひとつになる。
+function latestInProgressRanges() {
+  return inProgressEntries()[0]?.meta.ranges ?? [];
 }
 
-// 全範囲を対象にした学習途中があるか（「全範囲」「全選択」ボタンのハイライト用）。
+// その範囲だけを対象にした周回なら、その範囲ボタンから続きへ入れる。
+function rangesInProgress() {
+  const list = latestInProgressRanges();
+  return new Set(list.length === 1 ? list : []);
+}
+
+// 全範囲を対象にした周回なら、「全範囲」「全選択」ボタンの担当になる。
 function allRangesInProgress() {
   const total = dashboardRanges().length;
   if (!total) return false;
-  return inProgressEntries().some(({ meta }) => (meta.ranges ?? []).length >= total);
+  return latestInProgressRanges().length >= total;
+}
+
+// いま選んでいる範囲（形式まで決まっていればその形式）に一致する、
+// 学習途中の周回が対象にしている学習内容。単語・熟語・構文・全選択の
+// どれを選べば続きになるかを示すために使う。
+function contentsInProgress() {
+  const wantedRanges = studyContentsKey(state.filters.ranges);
+  const mode = exactStudyMode(state.studySelection);
+  const contents = new Set();
+  inProgressEntries().forEach(({ meta }) => {
+    if (studyContentsKey(meta.ranges ?? []) !== wantedRanges) return;
+    if (mode && meta.mode !== mode) return;
+    contents.add(meta.contents);
+  });
+  return contents;
 }
 
 const IN_PROGRESS_BADGE = '<span class="in-progress-badge">学習途中</span>';
@@ -4442,7 +4475,7 @@ async function boot() {
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.11a").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.12a").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

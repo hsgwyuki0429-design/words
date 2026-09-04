@@ -73,7 +73,12 @@ test("押した先で実際に続けられるボタンだけをハイライト�
   assert.match(appSource, /class="range-choice\$\{resumableRanges\.has\(range\) \? " is-in-progress" : ""\}/);
   assert.match(
     functionSource("rangesInProgress", "allRangesInProgress"),
-    /if \(list\.length === 1\) ranges\.add\(list\[0\]\);/,
+    /const list = latestInProgressRanges\(\);[\s\S]*?list\.length === 1 \? list : \[\]/,
+  );
+  // 途中の周回が複数あっても、範囲ボタンはいちばん新しいものだけを指す。
+  assert.match(
+    functionSource("latestInProgressRanges", "rangesInProgress"),
+    /inProgressEntries\(\)\[0\]\?\.meta\.ranges/,
   );
   // 形式カードは、いま選んでいる範囲・条件に一致する周回のときだけ光る。
   assert.match(appSource, /const resumable = isStudyInProgress\(entry\?\.progress\);/);
@@ -95,4 +100,16 @@ test("全範囲の周回は「全範囲」ボタンだけを光らせ、個別�
     entries.flatMap(({ meta }) => (meta.ranges.length === 1 ? meta.ranges : [])),
   );
   assert.equal(singleRangeOnly.size, 0);
+});
+
+test("続きのある学習内容（単語・熟語・構文・全選択）もハイライトする", () => {
+  const source = functionSource("contentsInProgress", "rangeDetailLabel");
+  // 範囲が一致し、形式が決まっていれば形式も一致する周回だけを見る。
+  assert.match(source, /if \(studyContentsKey\(meta\.ranges \?\? \[\]\) !== wantedRanges\) return;/);
+  assert.match(source, /if \(mode && meta\.mode !== mode\) return;/);
+  assert.match(source, /contents\.add\(meta\.contents\);/);
+  // 単体の内容も「全選択」も、進捗キーと同じ並びで突き合わせる。
+  assert.match(appSource, /inProgress: resumableContents\.has\(studyContentsKey\(\[content\]\)\)/);
+  assert.match(appSource, /inProgress: resumableContents\.has\(studyContentsKey\(\[\.\.\.ENGLISH_CONTENT_TYPES\]\)\)/);
+  assert.match(stylesSource, /\.content-choice\.is-in-progress,/);
 });

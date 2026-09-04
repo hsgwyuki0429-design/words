@@ -9,7 +9,7 @@ export const KOBUN_MODES = {
 };
 export const KOBUN_CATEGORIES = [
   { id: "auxiliary", label: "助動詞", description: "接続・意味・活用・基本形識別" },
-  { id: "vocabulary", label: "古文単語", description: "一語に複数の意味を覚える" },
+  { id: "vocabulary", label: "古文単語", description: "本文の用例から意味と覚えるポイントを確かめる" },
 ];
 export const NO_CONJUGATION = "○";
 
@@ -77,7 +77,7 @@ export function validateAuxiliaries(items) {
 export function validateVocabulary(items) {
   const ids = new Set();
   for (const item of items) {
-    if (!item.id?.startsWith("kobun:vocab:") || ids.has(item.id) || item.subject !== "kobun" || item.category !== "vocabulary" || !item.headword || !Array.isArray(item.meanings) || !item.meanings.length || item.meanings.some((value) => typeof value !== "string" || !value.trim())) {
+    if (!item.id?.startsWith("kobun:vocab:") || ids.has(item.id) || item.subject !== "kobun-vocab" || item.category !== "vocabulary" || !item.headword || !Array.isArray(item.meanings) || !item.meanings.length || item.meanings.some((value) => typeof value !== "string" || !value.trim())) {
       throw new Error("古文単語の見出し・複数の意味・識別情報を確認してください");
     }
     ids.add(item.id);

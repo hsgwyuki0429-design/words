@@ -1,4 +1,4 @@
-import { createKobunController } from "./kobun.js?v=2026.9.25a";
+import { createKobunController } from "./kobun.js?v=2026.9.26a";
 import {
   ALL_MODES,
   ALPHABET_KEYBOARD_ROWS,
@@ -7,11 +7,13 @@ import {
   ENGLISH_STUDY_MODES,
   MASTERY_CRITERIA,
   MASTERY_CRITERION_LABELS,
-  HEALTH_RANGE_ORDER,
   IMPORTANCE_ORDER,
   MODE_LABELS,
-  PUBLIC_RANGE_ORDER,
-  RANGE_ORDER,
+  vocabCardDensity,
+  vocabExampleSegments,
+  isRecallSubjectId,
+  rangeOrderForSubject,
+  recallContentMetaFor,
   TYPE_LABELS,
   UNKNOWN_CHOICE,
   WRONG_REVIEW_DELAY_MS,
@@ -66,7 +68,7 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.25a";
+} from "./logic.js?v=2026.9.26a";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -86,7 +88,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.9.25a";
+} from "./storage.js?v=2026.9.26a";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -94,7 +96,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.25a";
+} from "./quiz-gestures.js?v=2026.9.26a";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
@@ -103,7 +105,7 @@ import {
   normalizeSpeechRate,
   normalizeSpeechVoiceURI,
   voiceKey,
-} from "./speech.js?v=2026.9.25a";
+} from "./speech.js?v=2026.9.26a";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -133,6 +135,7 @@ const state = {
   englishItems: [],
   publicItems: [],
   healthItems: [],
+  kobunVocabItems: [],
   subject: null,
   selectedPeriod: null,
   history: new Map(),
@@ -273,6 +276,7 @@ const SUBJECT_LABELS = {
   public: "公共",
   health: "保健",
   kobun: "古文",
+  "kobun-vocab": "古文単語",
 };
 
 const MODE_META = {
@@ -286,6 +290,7 @@ const MODE_META = {
   phrase_blank_input: { icon: "…", tags: ["穴埋め", "熟語・語法"] },
   public_recall: { icon: "公", tags: ["自己採点", "一問一答"] },
   health_recall: { icon: "保", tags: ["自己採点", "一問一答"] },
+  "kobun-vocab_recall": { icon: "古", tags: ["自己採点", "重要語句"] },
 };
 
 
@@ -353,8 +358,17 @@ function isHealthSubject() {
   return state.subject === "health";
 }
 
+function isKobunVocabSubject() {
+  return state.subject === "kobun-vocab";
+}
+
 function isRecallSubject() {
-  return isPublicSubject() || isHealthSubject();
+  return isRecallSubjectId(state.subject);
+}
+
+// 公共・保健は「問」、古典の重要語句と英語は「語句」で数える。
+function recallUnit() {
+  return isRecallSubject() && !isKobunVocabSubject() ? "問" : "語句";
 }
 
 function recallQuestion(item) {
@@ -366,9 +380,7 @@ function recallAnswer(item) {
 }
 
 function currentRangeOrder() {
-  if (isPublicSubject()) return PUBLIC_RANGE_ORDER;
-  if (isHealthSubject()) return HEALTH_RANGE_ORDER;
-  return RANGE_ORDER;
+  return rangeOrderForSubject(state.subject);
 }
 
 function currentImportanceOrder() {
@@ -417,17 +429,25 @@ function selectSubject(subject) {
     if (!state.settings.effectsMode) elements.onboarding.hidden = false;
     return;
   }
-  state.subject = ["public", "health"].includes(subject) ? subject : "english";
+  state.subject = isRecallSubjectId(subject) ? subject : "english";
   state.items = isPublicSubject()
     ? state.publicItems
     : isHealthSubject()
       ? state.healthItems
-      : state.englishItems;
+      : isKobunVocabSubject()
+        ? state.kobunVocabItems
+        : state.englishItems;
   resetStudyFlow();
   elements.listSearch.value = "";
-  elements.listSearch.placeholder = isRecallSubject() ? "問題・答えで検索" : "英語・日本語で検索";
-  elements.listEyebrow.textContent = isRecallSubject() ? "QUESTION & ANSWER" : "WORD BOOK";
-  elements.listTitle.textContent = isRecallSubject() ? "一問一答" : "単語帳";
+  elements.listSearch.placeholder = isKobunVocabSubject()
+    ? "語句・用例・意味で検索"
+    : isRecallSubject() ? "問題・答えで検索" : "英語・日本語で検索";
+  elements.listEyebrow.textContent = isKobunVocabSubject()
+    ? "KOBUN WORDS"
+    : isRecallSubject() ? "QUESTION & ANSWER" : "WORD BOOK";
+  elements.listTitle.textContent = isKobunVocabSubject()
+    ? "重要語句一覧"
+    : isRecallSubject() ? "一問一答" : "単語帳";
   elements.navListButton.dataset.viewTarget = isHealthSubject()
     ? "health-notes"
     : isPublicSubject()
@@ -437,7 +457,9 @@ function selectSubject(subject) {
     ? "まとめノート"
     : isPublicSubject()
       ? "重要語句"
-      : "単語帳";
+      : isKobunVocabSubject()
+        ? "語句一覧"
+        : "単語帳";
   state.rangeFlow = "dashboard";
   setView("dashboard");
   if (!state.settings.effectsMode) elements.onboarding.hidden = false;
@@ -452,6 +474,7 @@ function selectionIsComplete(selection = state.studySelection) {
 
 function studyContentLabel(selection = state.studySelection) {
   const normalized = normalizeStudySelection(selection);
+  if (normalized.subject === "kobun-vocab") return "重要語句";
   if (normalized.subject !== "english") {
     return normalized.content === "all"
       ? "語句回答＋短文回答"
@@ -464,11 +487,7 @@ function studyContentLabel(selection = state.studySelection) {
 // 学習条件から範囲の見出しを作る（続きのカードで使う）。
 function configRangeLabel(config) {
   const ranges = config.filters?.ranges ?? [];
-  const allRanges = config.subject === "public"
-    ? PUBLIC_RANGE_ORDER
-    : config.subject === "health"
-      ? HEALTH_RANGE_ORDER
-      : RANGE_ORDER;
+  const allRanges = rangeOrderForSubject(config.subject);
   if (!ranges.length || allRanges.every((range) => ranges.includes(range))) return "全範囲";
   if (ranges.length <= 2) return ranges.join("・");
   return `${ranges.slice(0, 2).join("・")}＋ほか${ranges.length - 2}`;
@@ -491,7 +510,10 @@ function recallContentMeta() {
   const termCount = state.items.filter((item) => item.answerFormat === "term").length;
   const shortCount = state.items.filter((item) => item.answerFormat === "short").length;
   const meta = {};
-  if (termCount) {
+  if (termCount && isKobunVocabSubject()) {
+    const { title, detail } = recallContentMetaFor("kobun-vocab", "term");
+    meta.term = { icon: "語", title, detail, tags: [`${termCount}語句`] };
+  } else if (termCount) {
     meta.term = { icon: "語", title: "語句回答問題", detail: "用語・人物・制度名・年号など", tags: [`${termCount}問`] };
   }
   if (shortCount) {
@@ -672,14 +694,14 @@ function renderStudyRangeSelect() {
   const allResumable = allRangesInProgress();
   const allCard = `<button class="multi-select-card select-all-card${allSelected ? " selected" : ""}${allResumable ? " is-in-progress" : ""}" type="button" data-study-range-all aria-pressed="${allSelected}">
     <span class="multi-check" aria-hidden="true">${allSelected ? "✓" : ""}</span>
-    <span><strong>全選択</strong><small>すべての範囲（${state.items.length}${isRecallSubject() ? "問" : "語句"}）</small>${allResumable ? studyBadgeMarkup() : ""}</span>
+    <span><strong>全選択</strong><small>すべての範囲（${state.items.length}${recallUnit()}）</small>${allResumable ? studyBadgeMarkup() : ""}</span>
   </button>`;
   const rangeCards = ranges.map((range) => {
     const selected = !allSelected && state.filters.ranges.includes(range);
     const count = state.items.filter((item) => item.range === range).length;
     return `<button class="multi-select-card${selected ? " selected" : ""}" type="button" data-study-range="${escapeHtml(range)}" aria-pressed="${selected}">
       <span class="multi-check" aria-hidden="true">${selected ? "✓" : ""}</span>
-      <span><strong>${escapeHtml(range)}</strong><small>${count}${isRecallSubject() ? "問" : "語句"}</small></span>
+      <span><strong>${escapeHtml(range)}</strong><small>${count}${recallUnit()}</small></span>
     </button>`;
   }).join("");
   elements.studyRangeOptions.innerHTML = allCard + rangeCards;
@@ -696,7 +718,7 @@ function renderStudyRangeSelect() {
 // 「何を学習しますか？」と同じ1列リスト。全重要度だけは一番上に置く。
 function renderStudyImportance() {
   const available = currentImportanceOrder();
-  const unit = isRecallSubject() ? "問" : "語句";
+  const unit = recallUnit();
   const countFor = (importance) => learningItems({
     ...state.filters,
     importance: importance ? [importance] : [],
@@ -740,7 +762,7 @@ function renderStudyImportanceSelect() {
     const count = learningItems({ ...state.filters, importance: [importance] }).length;
     return `<button class="multi-select-card importance-option${selected ? " selected" : ""}" type="button" data-study-importance="${importance}" aria-pressed="${selected}">
       <span class="multi-check" aria-hidden="true">${selected ? "✓" : ""}</span>
-      <span><strong>${importance}</strong><small>${count}${isRecallSubject() ? "問" : "語句"}</small></span>
+      <span><strong>${importance}</strong><small>${count}${recallUnit()}</small></span>
     </button>`;
   }).join("");
   elements.confirmStudyImportance.disabled = state.filters.importance.length === 0;
@@ -901,15 +923,19 @@ function renderDashboard() {
       ? "PUBLIC · 2026.2"
       : isHealthSubject()
         ? "HEALTH · 2026.2"
-        : hour < 11 ? "Good morning." : hour < 18 ? "Good afternoon." : "Good evening.";
+        : isKobunVocabSubject()
+          ? "KOBUN · 2026.2"
+          : hour < 11 ? "Good morning." : hour < 18 ? "Good afternoon." : "Good evening.";
   elements.dashboardTitle.textContent = completed ? "次の学習範囲" : "学習する範囲を選ぶ";
   elements.dashboardCopy.textContent = completed
     ? "結果を確認したら、そのまま次の範囲へ進めます。"
-    : isRecallSubject()
-      ? "範囲を選ぶと、一問一答の現在地が見られます。"
-      : "範囲を選ぶと、5つの学習形式それぞれの現在地が見られます。";
+    : isKobunVocabSubject()
+      ? "作品を選ぶと、重要語句カードの現在地が見られます。"
+      : isRecallSubject()
+        ? "範囲を選ぶと、一問一答の現在地が見られます。"
+        : "範囲を選ぶと、5つの学習形式それぞれの現在地が見られます。";
   const ranges = dashboardRanges();
-  const unit = isRecallSubject() ? "問" : "語句";
+  const unit = recallUnit();
   // 学習途中の範囲は赤枠で示し、続きから進められることを伝える。
   const resumableRanges = rangesInProgress();
   const allResumable = allRangesInProgress();
@@ -930,12 +956,14 @@ function renderDashboard() {
   renderHeader();
 }
 
-function contentLabelFromProgressKey(meta) {
+function contentLabelFromProgressKey(meta, subject = state.subject) {
   const contents = String(meta?.contents ?? "").split("+").filter(Boolean);
   if (!contents.length) return "";
   if (contents.length >= ENGLISH_CONTENT_TYPES.length) return "全内容";
   return contents
-    .map((content) => STUDY_CONTENT_META[content]?.title ?? STUDY_CONTENT_LABELS[content] ?? content)
+    .map((content) => STUDY_CONTENT_META[content]?.title
+      ?? (isRecallSubjectId(subject) ? recallContentMetaFor(subject, content)?.title : null)
+      ?? STUDY_CONTENT_LABELS[content] ?? content)
     .join("＋");
 }
 
@@ -2247,7 +2275,7 @@ function renderHeader() {
   const summary = summarizeHistory(state.items, state.history);
   elements.headerStatus.textContent = summary.attempts
     ? `累計 ${summary.correct.toLocaleString()}正解 / ${summary.attempts.toLocaleString()}回答`
-    : `${state.items.length}${isRecallSubject() ? "問" : "語句"}`;
+    : `${state.items.length}${recallUnit()}`;
 }
 
 function filteredItems(filters = state.filters) {
@@ -2276,11 +2304,28 @@ function renderList(resetLimit = false) {
     state.history,
     LIST_SORT_KEY,
   );
-  elements.listCount.textContent = `${items.length.toLocaleString()}${isRecallSubject() ? "問" : "語句"}`;
+  elements.listCount.textContent = `${items.length.toLocaleString()}${recallUnit()}`;
   elements.wordList.classList.toggle("public-question-list", isRecallSubject());
   elements.wordList.innerHTML = items.slice(0, state.listLimit).map((item) => {
     const record = getHistory(state.history, item.id);
     const accuracy = accuracyFor(record);
+    if (isKobunVocabSubject()) {
+      return `
+        <article class="public-question-card vocab-question-card">
+          <div class="public-question-meta">
+            <span class="importance-badge importance-${item.importance.toLowerCase()}">${item.importance}</span>
+            <span class="type-label">${TYPE_LABELS[item.type]}</span>
+            <span class="public-range">${escapeHtml(item.range)}</span>
+          </div>
+          <h2 class="vocab-example" lang="ja">${vocabExampleMarkup(item)}</h2>
+          <div class="public-list-answer"><span>意味</span><strong>${escapeHtml(item.japanese)}</strong></div>
+          ${item.point ? `<p class="vocab-list-point">${escapeHtml(item.point)}</p>` : ""}
+          <div class="public-list-footer">
+            <span>${escapeHtml(item.work ?? item.range)}</span>
+            <span>${record.totalAttempts ? `${record.wrongCount}ミス・${formatPercent(accuracy)}` : "未回答"}</span>
+          </div>
+        </article>`;
+    }
     if (isRecallSubject()) {
       return `
         <article class="public-question-card">
@@ -2986,7 +3031,7 @@ function previewPromptForEntry(entry) {
   const item = entry?.item;
   const mode = entry?.mode;
   if (!item || !mode) return "";
-  if (mode === "public_recall" || mode === "health_recall") {
+  if (mode.endsWith("_recall")) {
     return item[`${item.subject}Question`] ?? item.recallQuestion ?? item.publicQuestion ?? item.english ?? "";
   }
   if (mode === "en_to_ja_flashcard" || mode === "en_to_ja_choice") return item.english ?? "";
@@ -3335,11 +3380,77 @@ function renderComboPill(changed) {
   return `<div class="combo-pill${heat}${pop}"><span class="combo-pill-text" data-text="${escapeHtml(text)}">${escapeHtml(text)}</span></div>`;
 }
 
+// 古文単語の重要語句は、本文の短い用例に下線とふりがなを付けたものを表に出す。
+// 下線とふりがなの位置は教材づくりの時点で決めてあるので、ここでは組み立てるだけ。
+function vocabExampleMarkup(item) {
+  return vocabExampleSegments(item).map((line) => `<span class="vocab-example-line">${line.parts.map((part) => {
+    const text = part.reading
+      ? `<ruby>${escapeHtml(part.text)}<rt>${escapeHtml(part.reading)}</rt></ruby>`
+      : escapeHtml(part.text);
+    return part.mark ? `<span class="vocab-term">${text}</span>` : text;
+  }).join("")}</span>`).join("");
+}
+
+function vocabCardBody(item, revealed) {
+  const formats = item.formats?.length ? `／${item.formats.join("・")}` : "";
+  return `
+    <p class="question-instruction">${revealed ? "答え" : "下線部の意味は？"}</p>
+    <h1 class="vocab-example" lang="ja">${vocabExampleMarkup(item)}</h1>
+    ${item.termMarked === false
+      ? `<p class="vocab-term-hint">語句：${escapeHtml(item.term)}${item.reading ? `（${escapeHtml(item.reading)}）` : ""}</p>`
+      : ""}
+    ${revealed ? `
+      <div class="public-recall-answer vocab-answer" aria-live="polite">
+        <span class="vocab-answer-label">本文中での意味</span>
+        <strong>${escapeHtml(item.japanese)}</strong>
+      </div>
+      ${item.point ? `<div class="vocab-point"><span class="vocab-point-label">覚えるポイント</span><p>${escapeHtml(item.point)}</p></div>` : ""}
+      <p class="public-recall-source vocab-range">${escapeHtml(item.work ?? item.range)}${state.settings.showSources ? escapeHtml(formats) : ""}</p>
+    ` : ""}`;
+}
+
+// カードの大きさは変えないので、はみ出しそうなときは文字だけを縮めて収める。
+// data-density で見当をつけたうえで、実際の描画がはみ出す分だけさらに小さくする。
+const VOCAB_MIN_SCALE = 0.55;
+
+function vocabCardOverflow(card) {
+  const box = card.getBoundingClientRect();
+  return [...card.children].reduce((over, child) => {
+    const rect = child.getBoundingClientRect();
+    if (!rect.height) return over;
+    return Math.max(over, box.top - rect.top, rect.bottom - box.bottom);
+  }, 0);
+}
+
+function fitVocabCard() {
+  const card = elements.quizContent.querySelector(".vocab-recall-card");
+  if (!card) return;
+  let scale = Number.parseFloat(getComputedStyle(card).getPropertyValue("--vocab-scale")) || 1;
+  while (scale > VOCAB_MIN_SCALE && vocabCardOverflow(card) > 1) {
+    scale = Math.max(VOCAB_MIN_SCALE, scale - 0.05);
+    card.style.setProperty("--vocab-scale", scale.toFixed(2));
+  }
+}
+
+function recallCardBody(question, revealed) {
+  if (isKobunVocabSubject()) return vocabCardBody(question.item, revealed);
+  return `
+    <p class="question-instruction">${revealed ? "答え" : "問題"}</p>
+    <h1>${escapeHtml(question.prompt)}</h1>
+    ${revealed ? `
+      <div class="public-recall-answer" aria-live="polite">
+        <strong>${escapeHtml(question.answer)}</strong>
+      </div>
+      ${state.settings.showSources ? `<p class="public-recall-source">${escapeHtml(question.item.sourceDetail)}</p>` : ""}
+    ` : ""}`;
+}
+
 function renderRecallQuiz() {
   const session = state.session;
   const question = session.currentQuestion;
   const progress = Math.round((session.cursor / session.queue.length) * 100);
   const revealed = session.revealed;
+  const vocabCard = isKobunVocabSubject();
   elements.quizContent.innerHTML = `
     <div class="quiz-shell public-quiz${revealed ? " answer-revealed" : ""}">
       <header class="quiz-header">
@@ -3354,7 +3465,8 @@ function renderRecallQuiz() {
       <div class="quiz-card-stage recall-card-stage${revealed ? " is-swipe-ready" : ""}">
         ${revealed ? renderCardPreview("recall") : ""}
         <article
-          class="public-recall-card quiz-gesture-card"
+          class="public-recall-card quiz-gesture-card${vocabCard ? " vocab-recall-card" : ""}"
+          ${vocabCard ? `data-density="${vocabCardDensity(question.item, revealed)}"` : ""}
           data-quiz-gesture-surface
           data-gesture-state="${revealed ? "recall-answer" : "recall-question"}"
           role="button"
@@ -3365,15 +3477,10 @@ function renderRecallQuiz() {
           <div class="public-recall-meta">
             <span class="importance-badge importance-${question.item.importance.toLowerCase()}">${question.item.importance}</span>
             <span>${escapeHtml(question.item.range)}</span>
-            ${question.item.number ? `<span>Q${question.item.number}</span>` : ""}
+            ${!vocabCard && question.item.number ? `<span>Q${question.item.number}</span>` : ""}
           </div>
-          <p class="question-instruction">${revealed ? "答え" : "問題"}</p>
-          <h1>${escapeHtml(question.prompt)}</h1>
+          ${recallCardBody(question, revealed)}
           ${revealed ? `
-            <div class="public-recall-answer" aria-live="polite">
-              <strong>${escapeHtml(question.answer)}</strong>
-            </div>
-            ${state.settings.showSources ? `<p class="public-recall-source">${escapeHtml(question.item.sourceDetail)}</p>` : ""}
             ${renderRecallSwipeHints()}
             <span class="quiz-tap-hint quiz-tap-hint-back" aria-hidden="true">tap</span>
           ` : '<span class="quiz-tap-hint" aria-hidden="true">tap</span>'}
@@ -3382,6 +3489,7 @@ function renderRecallQuiz() {
       ${revealed ? renderRecallGradeFallback() : ""}
     </div>`;
   activateRenderedGestureCard();
+  if (vocabCard) fitVocabCard();
   requestAnimationFrame(() => window.scrollTo(0, 0));
 }
 
@@ -3848,7 +3956,7 @@ function resumableStudy() {
 
 function resumeStudyMarkup({ entry, config }) {
   const cycle = studyProgressSummary(entry.progress);
-  const contentLabel = contentLabelFromProgressKey(entry.meta) || "教材";
+  const contentLabel = contentLabelFromProgressKey(entry.meta, config.subject) || "教材";
   const methodLabel = STUDY_METHOD_LABELS[config.selection.method] ?? "学習";
   const context = [
     ["教科", SUBJECT_LABELS[config.subject] ?? "英語"],
@@ -4124,6 +4232,8 @@ function distributeSlotText(startInput, text) {
 
 function bindEvents() {
   document.addEventListener("kobun-subject", () => setView("subject"));
+  // 古文の「古文単語」からは、他教科と共通の学習画面へ切り替える。
+  document.addEventListener("kobun-vocabulary", () => selectSubject("kobun-vocab"));
   addEventListener("resize", markFxResize, { passive: true });
   addEventListener("orientationchange", markFxResize, { passive: true });
   quizGestureController = bindQuizGestures(elements.quizContent, {
@@ -4500,10 +4610,11 @@ function bindEvents() {
 async function boot() {
   bindEvents();
   try {
-    const [response, publicResponse, healthResponse, history, selectedMode, settings, bestCombo, selectedPeriod, studyConfigs, legacyRecentStudies, studyProgress, lastSessionResult] = await Promise.all([
+    const [response, publicResponse, healthResponse, vocabResponse, history, selectedMode, settings, bestCombo, selectedPeriod, studyConfigs, legacyRecentStudies, studyProgress, lastSessionResult] = await Promise.all([
       fetch("./data/items.json?v=2026.08.31b"),
       fetch("./data/public-items.json?v=2026.09.01"),
       fetch("./data/health-items.json?v=2026.09.01"),
+      fetch("./data/kobun-vocabulary.json?v=2026.9.26a"),
       loadHistory(),
       getMeta("selectedMode"),
       getMetaObject("settings", DEFAULT_SETTINGS),
@@ -4517,9 +4628,11 @@ async function boot() {
     if (!response.ok) throw new Error(`教材データを読み込めませんでした (${response.status})`);
     if (!publicResponse.ok) throw new Error(`公共データを読み込めませんでした (${publicResponse.status})`);
     if (!healthResponse.ok) throw new Error(`保健データを読み込めませんでした (${healthResponse.status})`);
+    if (!vocabResponse.ok) throw new Error(`古文単語データを読み込めませんでした (${vocabResponse.status})`);
     state.englishItems = await response.json();
     state.publicItems = await publicResponse.json();
     state.healthItems = await healthResponse.json();
+    state.kobunVocabItems = (await vocabResponse.json()).items;
     state.items = state.englishItems;
     state.history = history;
     state.selectedMode = ALL_MODES.includes(selectedMode) ? selectedMode : null;
@@ -4549,7 +4662,7 @@ async function boot() {
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.25a").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.26a").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

@@ -3,6 +3,7 @@ import fs from "node:fs";
 
 import {
   ALL_MODES,
+  KOBUN_VOCAB_RANGE_ORDER,
   HEALTH_RANGE_ORDER,
   PUBLIC_RANGE_ORDER,
   RANGE_ORDER,
@@ -13,6 +14,7 @@ import {
 const items = JSON.parse(fs.readFileSync(new URL("../data/items.json", import.meta.url), "utf8"));
 const publicItems = JSON.parse(fs.readFileSync(new URL("../data/public-items.json", import.meta.url), "utf8"));
 const healthItems = JSON.parse(fs.readFileSync(new URL("../data/health-items.json", import.meta.url), "utf8"));
+const kobunVocabulary = JSON.parse(fs.readFileSync(new URL("../data/kobun-vocabulary.json", import.meta.url), "utf8")).items;
 
 assert.equal(items.length, 1314, "Workbook must contain 1,314 unique English entries");
 assert.equal(new Set(items.map((item) => item.id)).size, items.length, "IDs must be unique");
@@ -205,3 +207,58 @@ assert.deepEqual(
   "All eight health ranges are required in textbook order",
 );
 console.log(`Health data check passed: ${healthItems.length} questions across ${HEALTH_RANGE_ORDER.length} ranges.`);
+
+assert.equal(kobunVocabulary.length, 360, "Kobun vocabulary must contain the 360 audited terms");
+assert.equal(new Set(kobunVocabulary.map((item) => item.id)).size, kobunVocabulary.length, "Kobun vocabulary IDs must be unique");
+assert.deepEqual(
+  Object.fromEntries(["S", "A", "B", "C", "D"].map((importance) => [
+    importance,
+    kobunVocabulary.filter((item) => item.importance === importance).length,
+  ])),
+  { S: 98, A: 156, B: 62, C: 28, D: 16 },
+  "Kobun vocabulary importance counts must match the source tally",
+);
+for (const item of kobunVocabulary) {
+  for (const field of ["id", "number", "importance", "term", "headword", "example", "japanese", "point", "work", "range"]) {
+    assert.ok(item[field], `${item.id}: ${field} is required`);
+  }
+  assert.equal(item.subject, "kobun-vocab", `${item.id}: subject must be kobun-vocab`);
+  assert.equal(item.category, "vocabulary", `${item.id}: category must be vocabulary`);
+  assert.equal(item.type, "kobun-vocab-term", `${item.id}: kobun vocabulary items are all term cards`);
+  assert.equal(item.answerFormat, "term", `${item.id}: answerFormat must be term`);
+  // 教材に難易度の指定がないため、難易度順の並び替えからは外している。
+  assert.equal(item.difficulty, "—", `${item.id}: kobun vocabulary has no difficulty level`);
+  assert.deepEqual(item.questionModes, ["kobun-vocab_recall"], `${item.id}: kobun vocabulary mode is required`);
+  assert.ok(KOBUN_VOCAB_RANGE_ORDER.includes(item.range), `${item.id}: unknown work ${item.range}`);
+  assert.equal(item.recallQuestion, item.example, `${item.id}: the card front must show the example`);
+  assert.equal(item.recallAnswer, item.japanese, `${item.id}: the card back must show the meaning`);
+  assert.equal(item.acceptedAnswers[0], item.recallAnswer, `${item.id}: accepted answer must match`);
+  assert.deepEqual(item.meanings, [item.japanese], `${item.id}: the vocabulary meaning must match the card answer`);
+  const exampleLines = item.example.split(/[／/]/).map((value) => value.trim()).filter(Boolean);
+  assert.equal(item.exampleLines.length, exampleLines.length, `${item.id}: every example line is needed`);
+  item.exampleLines.forEach((line, index) => {
+    assert.ok(line.parts.length >= 1, `${item.id}: every example line needs parts`);
+    assert.equal(
+      line.parts.map((part) => part.text).join(""),
+      exampleLines[index],
+      `${item.id}: the underlined parts must rebuild the example exactly`,
+    );
+  });
+  assert.equal(
+    item.termMarked,
+    item.exampleLines.some((line) => line.parts.some((part) => part.mark)),
+    `${item.id}: termMarked must describe whether the term is underlined`,
+  );
+}
+// 用例の中に語句が見つからなかった（教科書と表記が違う）語句だけ、表に語句を添える。
+assert.equal(
+  kobunVocabulary.filter((item) => !item.termMarked).length,
+  3,
+  "Only the three terms whose example uses a different spelling may skip the underline",
+);
+assert.deepEqual(
+  [...new Set(kobunVocabulary.map((item) => item.range))],
+  KOBUN_VOCAB_RANGE_ORDER,
+  "All seven works are required in reading order",
+);
+console.log(`Kobun vocabulary check passed: ${kobunVocabulary.length} terms across ${KOBUN_VOCAB_RANGE_ORDER.length} works.`);

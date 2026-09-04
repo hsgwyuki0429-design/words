@@ -3243,7 +3243,104 @@ body.quiz-active .main-content { padding-bottom: 0; }
     display: none;
   }
 
-  .recall-grade-fallback {
+  /* 古文単語 重要語句のフラッシュカード
+   カードの大きさは公共・保健と同じまま固定し、文字量に応じて data-density で
+   文字だけを縮める（--vocab-scale が本文・意味・ポイントの倍率）。 */
+.vocab-recall-card {
+  --vocab-scale: 1;
+  /* 画面が低い端末では、カードの高さだけ画面に合わせる（文字を潰しすぎないため）。 */
+  height: min(620px, max(64dvh, 100dvh - 176px));
+  overflow: hidden;
+  padding: clamp(1rem, 4vw, 3rem) clamp(1.1rem, 5vw, 3.5rem);
+}
+.vocab-recall-card[data-density="normal"] { --vocab-scale: 0.88; }
+.vocab-recall-card[data-density="dense"] { --vocab-scale: 0.75; }
+.vocab-recall-card[data-density="compact"] { --vocab-scale: 0.63; }
+.vocab-recall-card .question-instruction {
+  margin: calc(clamp(0.8rem, 2.5vh, 1.6rem) * var(--vocab-scale)) 0
+    calc(0.6rem * var(--vocab-scale));
+}
+.vocab-example {
+  margin: 0 auto calc(clamp(0.9rem, 3vh, 1.7rem) * var(--vocab-scale));
+  max-width: 720px;
+  font-size: calc(clamp(1.35rem, 4.6vw, 2.5rem) * var(--vocab-scale));
+  font-weight: 700;
+  /* ふりがなが入るぶん行間を広げる。 */
+  line-height: 2.1;
+  letter-spacing: 0.01em;
+  text-align: center;
+}
+.vocab-example-line { display: block; }
+.vocab-example-line + .vocab-example-line { margin-top: 0.45em; }
+.vocab-example ruby { ruby-position: over; }
+.vocab-example rt {
+  color: var(--secondary);
+  font-size: 0.46em;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+/* 問われている語句のアンダーライン。連続する区間は隣り合って1本につながる。 */
+.vocab-term {
+  padding-bottom: 0.06em;
+  border-bottom: 0.08em solid #0f766e;
+}
+.vocab-term-hint {
+  margin: 0 auto clamp(0.7rem, 2vh, 1.1rem);
+  color: var(--secondary);
+  font-size: calc(0.86rem * var(--vocab-scale));
+  text-align: center;
+}
+.vocab-recall-card .vocab-answer {
+  display: grid;
+  gap: 0.3rem;
+  padding: calc(clamp(0.9rem, 3.4vw, 1.6rem) * var(--vocab-scale));
+  text-align: left;
+}
+.vocab-answer-label,
+.vocab-point-label {
+  font-size: calc(0.72rem * max(var(--vocab-scale), 0.82));
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  opacity: 0.72;
+}
+.vocab-recall-card .vocab-answer strong {
+  font-size: calc(clamp(1.1rem, 3.6vw, 1.7rem) * var(--vocab-scale));
+  line-height: 1.6;
+}
+.vocab-point {
+  display: grid;
+  gap: 0.25rem;
+  width: min(100%, 680px);
+  margin: calc(clamp(0.55rem, 2vh, 1rem) * var(--vocab-scale)) auto 0;
+  color: var(--secondary);
+  text-align: left;
+}
+.vocab-point p {
+  margin: 0;
+  font-size: calc(clamp(0.82rem, 2.6vw, 1rem) * var(--vocab-scale));
+  line-height: 1.75;
+}
+.vocab-range { margin-top: calc(clamp(0.5rem, 1.8vh, 0.9rem) * var(--vocab-scale)); }
+/* スワイプの案内も、文字を縮めたカードでは同じ割合だけ詰める。 */
+.vocab-recall-card .recall-gesture-guide {
+  margin-top: calc(clamp(18px, 4vh, 30px) * var(--vocab-scale));
+  padding-top: calc(14px * var(--vocab-scale));
+}
+
+/* 語句一覧でも同じ下線とふりがなを使う。 */
+.vocab-question-card h2.vocab-example {
+  margin: 0.9rem 0;
+  font-size: clamp(1rem, 3vw, 1.25rem);
+  text-align: left;
+}
+.vocab-list-point {
+  margin: 0.75rem 0 0;
+  color: var(--secondary);
+  font-size: 0.82rem;
+  line-height: 1.7;
+}
+
+.recall-grade-fallback {
     position: absolute;
     width: 1px;
     height: 1px;

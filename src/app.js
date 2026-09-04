@@ -63,7 +63,7 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.16a";
+} from "./logic.js?v=2026.9.17a";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -83,7 +83,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.9.16a";
+} from "./storage.js?v=2026.9.17a";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -91,7 +91,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.16a";
+} from "./quiz-gestures.js?v=2026.9.17a";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -487,6 +487,7 @@ function renderStudyContent() {
         attribute: `data-study-content="${content}"`,
         progress: selectionProgress({ types: recallTypesForContent(content) }),
         inProgress: resumableContents.has(content),
+        cycleNumber: cycleNumberForContents(content),
       }))
       .join("");
     return;
@@ -503,6 +504,7 @@ function renderStudyContent() {
       attribute: `data-study-content-choice="${content}"${count(content) ? "" : ' disabled aria-disabled="true"'}`,
       progress: count(content) ? selectionProgress({ types: [content] }) : null,
       inProgress: resumableContents.has(studyContentsKey([content])),
+      cycleNumber: cycleNumberForContents(studyContentsKey([content])),
     })),
     contentChoiceRow({
       title: "全選択",
@@ -510,6 +512,7 @@ function renderStudyContent() {
       attribute: 'data-study-content-choice="all"',
       progress: selectionProgress({ types: [...ENGLISH_CONTENT_TYPES] }),
       inProgress: resumableContents.has(studyContentsKey([...ENGLISH_CONTENT_TYPES])),
+      cycleNumber: cycleNumberForContents(studyContentsKey([...ENGLISH_CONTENT_TYPES])),
     }),
     contentChoiceRow({
       title: "その他",
@@ -527,6 +530,7 @@ function contentChoiceRow({
   variant = "primary",
   progress = null,
   inProgress = false,
+  cycleNumber = 1,
 }) {
   const classes = [
     "content-choice",
@@ -550,7 +554,7 @@ function contentChoiceRow({
         <small>${escapeHtml(detail)}</small>
         ${badge}
         <span class="card-arrow" aria-hidden="true">›</span>
-      </span>${progressGaugeMarkup(progress)}
+      </span>${progressGaugeMarkup(progress, cycleNumber)}
     </button>`;
 }
 
@@ -786,6 +790,19 @@ function allRangesInProgress() {
 // いま選んでいる範囲（形式まで決まっていればその形式）に一致する、
 // 学習途中の周回が対象にしている学習内容。単語・熟語・構文・全選択の
 // どれを選べば続きになるかを示すために使う。
+// いま選んでいる範囲・形式で、その学習内容が何周目かを返す（バーの本数と色に使う）。
+function cycleNumberForContents(contentsKey) {
+  const mode = exactStudyMode(state.studySelection);
+  if (!mode) return 1;
+  const entry = studyProgressEntriesForMode(state.studyProgress, {
+    mode,
+    ranges: state.filters.ranges,
+    filters: state.filters,
+    criterion: masteryCriterion(),
+  }).find(({ meta }) => meta.contents === contentsKey);
+  return entry?.progress?.cycleNumber ?? 1;
+}
+
 function contentsInProgress() {
   const wantedRanges = studyContentsKey(state.filters.ranges);
   const mode = exactStudyMode(state.studySelection);
@@ -865,18 +882,38 @@ function cardStudyProgress(card) {
   })[0] ?? null;
 }
 
+// バーの色は周回ごとに変える。1周目・2周目（赤）・3周目…と変わり、
+// 5周目まで一巡したら最初の色へ戻る。
+const GAUGE_COLOR_COUNT = 5;
+
+function gaugeColorIndex(cycleNumber) {
+  return ((Math.max(1, cycleNumber) - 1) % GAUGE_COLOR_COUNT) + 1;
+}
+
 // 形式カード・学習内容・重要度で共通の進捗ゲージ。
-// 1本のトラックに「未回答（背景）」「解答済み（薄い塗り）」「習得（濃い塗り）」を重ねる。
-function progressGaugeMarkup(progress) {
+// 1本のトラックに「未回答（背景）」「解答済み（薄い塗り）」「習得（濃い塗り）」を重ね、
+// 周回が進むごとに新しいバーを下へ足していく（終えた周回のバーは満了のまま残す）。
+function progressGaugeMarkup(progress, cycleNumber = 1) {
+  const cycles = Math.max(1, Number(cycleNumber) || 1);
   const answeredPercent = Math.round(progress.answeredRate * 100);
   const masteredPercent = Math.round(progress.masteredRate * 100);
-  const label = `解答済み ${answeredPercent}パーセント、習得 ${masteredPercent}パーセント`;
+  const currentColor = gaugeColorIndex(cycles);
+  const label = `${cycles}周目：解答済み ${answeredPercent}パーセント、習得 ${masteredPercent}パーセント`;
+  const finishedBars = Array.from({ length: cycles - 1 }, (unused, index) => `
+        <span class="progress-gauge is-finished" data-cycle="${gaugeColorIndex(index + 1)}" role="img" aria-label="${index + 1}周目は完了">
+          <span class="progress-gauge-answered" style="width:100%"></span>
+          <span class="progress-gauge-mastered" style="width:100%"></span>
+        </span>`).join("");
   return `
-      <span class="progress-gauge" role="img" aria-label="${escapeHtml(label)}">
-        <span class="progress-gauge-answered" style="width:${answeredPercent}%"></span>
-        <span class="progress-gauge-mastered" style="width:${masteredPercent}%"></span>
+      <span class="progress-gauge-stack">
+        ${finishedBars}
+        <span class="progress-gauge" data-cycle="${currentColor}" role="img" aria-label="${escapeHtml(label)}">
+          <span class="progress-gauge-answered" style="width:${answeredPercent}%"></span>
+          <span class="progress-gauge-mastered" style="width:${masteredPercent}%"></span>
+        </span>
       </span>
-      <span class="progress-legend">
+      <span class="progress-legend" data-cycle="${currentColor}">
+        ${cycles > 1 ? `<span class="progress-figure is-cycle">${cycles}周目</span>` : ""}
         <span class="progress-figure is-answered">解答済み ${answeredPercent}%（${progress.answeredItems}/${progress.totalItems}）</span>
         <span class="progress-figure is-mastered">習得 ${masteredPercent}%（${progress.masteredItems}/${progress.totalItems}）</span>
       </span>`;
@@ -937,7 +974,7 @@ function modeProgressCard(card) {
           : '<span class="mode-progress-cycle">出題できません</span>'}
         <span class="card-arrow" aria-hidden="true">›</span>
       </span>
-${progressGaugeMarkup(progress)}
+${progressGaugeMarkup(progress, cycle?.cycleNumber ?? 1)}
     </button>`;
 }
 
@@ -4319,7 +4356,7 @@ async function boot() {
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.16a").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.17a").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

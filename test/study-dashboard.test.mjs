@@ -183,8 +183,14 @@ test("ゲージの数値は何の数字かが分かる形で出す", () => {
 
 test("学習内容と重要度のボタンにも形式カードと同じゲージを入れる", () => {
   // 3画面が同じ progressGaugeMarkup を使う
-  assert.match(functionSource("modeProgressCard", "renderRangeDetail"), /\$\{progressGaugeMarkup\(progress\)\}/);
-  assert.match(functionSource("contentChoiceRow", "renderStudyContentMulti"), /\$\{progressGaugeMarkup\(progress\)\}/);
+  assert.match(
+    functionSource("modeProgressCard", "renderRangeDetail"),
+    /\$\{progressGaugeMarkup\(progress, cycle\?\.cycleNumber \?\? 1\)\}/,
+  );
+  assert.match(
+    functionSource("contentChoiceRow", "renderStudyContentMulti"),
+    /\$\{progressGaugeMarkup\(progress, cycleNumber\)\}/,
+  );
   // 学習内容は「その形式 × その内容」、重要度は「その形式 × 選択中の内容 × その重要度」で集計
   const contentSource = functionSource("renderStudyContent", "contentChoiceRow");
   assert.match(contentSource, /progress: count\(content\) \? selectionProgress\(\{ types: \[content\] \}\) : null/);
@@ -270,7 +276,7 @@ test("the mastery gauge is fed by the current mastery round, not by long-term hi
   assert.equal(withRound.masteredRate, 0.5);
 
   assert.match(appSource, /masteredIds: masteredIdsForMode\(state\.studyProgress, card\.mode, \{ criterion: masteryCriterion\(\) \}\)/);
-  assert.match(stylesSource, /\.progress-gauge-mastered \{[\s\S]*?background: var\(--blue\)/);
+  assert.match(stylesSource, /\.progress-gauge-mastered \{[\s\S]*?background: var\(--gauge-strong\)/);
   // 習得条件をダッシュボードの描画へ直接書かない
   assert.doesNotMatch(
     functionSource("modeProgressCard", "renderRangeDetail"),
@@ -447,4 +453,16 @@ test("ゲージは重要度と学習内容でも絞り込める", () => {
 
   // 絞り込みなしは従来どおり
   assert.equal(summarizeRangeModeProgress(base).totalItems, 35);
+});
+
+test("周回ごとに新しいバーを積み、基調色を変える", () => {
+  const gaugeSource = functionSource("progressGaugeMarkup", "recallTypesForContent");
+  // 終えた周回のバーは満了のまま残し、現在の周回のバーを最後に置く。
+  assert.match(gaugeSource, /const finishedBars = Array\.from\(\{ length: cycles - 1 \}/);
+  assert.match(gaugeSource, /class="progress-gauge is-finished" data-cycle="\$\{gaugeColorIndex\(index \+ 1\)\}"/);
+  assert.match(gaugeSource, /class="progress-gauge" data-cycle="\$\{currentColor\}"/);
+  // 2周目は赤。色は5周で一巡する。
+  assert.match(stylesSource, /\.progress-gauge\[data-cycle="2"\][\s\S]*?--gauge-strong: var\(--red\)/);
+  assert.match(stylesSource, /\.progress-gauge\[data-cycle="3"\][\s\S]*?--gauge-strong: #7c3aed/);
+  assert.match(appSource, /const GAUGE_COLOR_COUNT = 5;/);
 });

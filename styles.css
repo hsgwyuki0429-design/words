@@ -4007,6 +4007,13 @@ body.quiz-active .main-content { padding-bottom: 0; }
 }
 
 /* 1本のトラックに「未回答（背景）」「解答済み（薄い塗り）」「習得（濃い塗り）」を重ねる */
+/* 周回ごとに1本ずつ積むので、束ねて縦に並べる */
+.progress-gauge-stack {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+}
+
 .progress-gauge {
   position: relative;
   display: block;
@@ -4015,6 +4022,44 @@ body.quiz-active .main-content { padding-bottom: 0; }
   height: 10px;
   background: #e7e7eb;
   border-radius: 999px;
+}
+
+/* 終えた周回のバーは満了のまま、細く控えめに残す */
+.progress-gauge.is-finished {
+  height: 6px;
+  opacity: 0.7;
+}
+
+/* バーの基調色は周回で変える。2周目は赤、3周目以降も変わり、
+   5周目まで一巡したら最初の色へ戻る。 */
+.progress-gauge,
+.progress-legend {
+  --gauge-strong: var(--blue);
+  --gauge-soft: rgba(10, 102, 216, 0.26);
+}
+
+.progress-gauge[data-cycle="2"],
+.progress-legend[data-cycle="2"] {
+  --gauge-strong: var(--red);
+  --gauge-soft: rgba(217, 45, 32, 0.26);
+}
+
+.progress-gauge[data-cycle="3"],
+.progress-legend[data-cycle="3"] {
+  --gauge-strong: #7c3aed;
+  --gauge-soft: rgba(124, 58, 237, 0.26);
+}
+
+.progress-gauge[data-cycle="4"],
+.progress-legend[data-cycle="4"] {
+  --gauge-strong: #0f7b46;
+  --gauge-soft: rgba(15, 123, 70, 0.26);
+}
+
+.progress-gauge[data-cycle="5"],
+.progress-legend[data-cycle="5"] {
+  --gauge-strong: #b45309;
+  --gauge-soft: rgba(180, 83, 9, 0.26);
 }
 
 .progress-gauge-answered,
@@ -4029,11 +4074,11 @@ body.quiz-active .main-content { padding-bottom: 0; }
 }
 
 .progress-gauge-answered {
-  background: rgba(10, 102, 216, 0.26);
+  background: var(--gauge-soft);
 }
 
 .progress-gauge-mastered {
-  background: var(--blue);
+  background: var(--gauge-strong);
 }
 
 .progress-legend {
@@ -4060,11 +4105,21 @@ body.quiz-active .main-content { padding-bottom: 0; }
 }
 
 .progress-figure.is-answered::before {
-  background: rgba(10, 102, 216, 0.32);
+  background: var(--gauge-soft);
 }
 
 .progress-figure.is-mastered::before {
-  background: var(--blue);
+  background: var(--gauge-strong);
+}
+
+/* 何周目のバーなのかを凡例の先頭に置く */
+.progress-figure.is-cycle {
+  color: var(--gauge-strong);
+  font-weight: 760;
+}
+
+.progress-figure.is-cycle::before {
+  display: none;
 }
 
 /* 習得判定が未確定の間は凡例も控えめにしておく */

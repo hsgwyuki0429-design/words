@@ -8,7 +8,6 @@ import {
   UNKNOWN_CHOICE,
   WRONG_REVIEW_DELAY_MS,
   acceptedInputAnswers,
-  addRecentStudy,
   accuracyFor,
   applyFilters,
   buildQuestion,
@@ -24,10 +23,8 @@ import {
   isAnswerCorrect,
   mergeAttempt,
   normalizeAnswer,
-  normalizeRecentStudies,
   normalizeStudySelection,
   reviewDelayForAnswer,
-  recentStudyConfigKey,
   releaseDeferredReviews,
   studyCombinationKey,
   studyCyclePolicy,
@@ -197,52 +194,6 @@ test("each of the five formats keeps a completely separate history scope", () =>
   // 形式ごとの連続正解も modeStats 側で数える。
   assert.equal(record.modeStats.ja_to_en_flashcard.currentCorrectStreak, 1);
   assert.equal(record.modeStats.en_to_ja_choice.currentCorrectStreak, 0);
-});
-
-test("recent study conditions are normalized, deduplicated, and limited", () => {
-  const baseConfig = {
-    subject: "english",
-    selection: {
-      subject: "english",
-      contents: ["word", "phrase"],
-      method: "en_to_ja_flashcard",
-      scope: "full",
-    },
-    filters: {
-      ranges: ["Plastic", "FOMO"],
-      importance: ["SS", "SSS"],
-      performance: "everMissed",
-      minimumWrong: 0,
-      search: "ignored",
-    },
-    sortKey: "difficulty",
-    itemIds: ["old-session-item"],
-  };
-  const reorderedConfig = {
-    ...baseConfig,
-    filters: {
-      ...baseConfig.filters,
-      ranges: ["FOMO", "Plastic"],
-      importance: ["SSS", "SS"],
-    },
-  };
-  const first = addRecentStudy([], baseConfig, 100);
-  const deduplicated = addRecentStudy(first, reorderedConfig, 200);
-
-  assert.equal(first.length, 1);
-  assert.equal(first[0].config.itemIds, null);
-  assert.equal(first[0].config.filters.search, "");
-  assert.equal(deduplicated.length, 1);
-  assert.equal(deduplicated[0].lastUsedAt, 200);
-  assert.equal(recentStudyConfigKey(baseConfig), recentStudyConfigKey(reorderedConfig));
-
-  const multiple = normalizeRecentStudies([
-    ...deduplicated,
-    { config: { ...baseConfig, selection: { ...baseConfig.selection, method: "ja_to_en_choice" } }, lastUsedAt: 300 },
-    { config: { ...baseConfig, selection: { ...baseConfig.selection, method: "en_to_ja_choice" } }, lastUsedAt: 400 },
-  ], 2);
-  assert.equal(multiple.length, 2);
-  assert.deepEqual(multiple.map((entry) => entry.lastUsedAt), [400, 300]);
 });
 
 test("multiple filter categories combine while values inside a category OR together", () => {

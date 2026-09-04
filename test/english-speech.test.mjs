@@ -3,13 +3,12 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 import {
-  DEFAULT_SPEECH_RATE_KEY,
+  DEFAULT_SPEECH_RATE,
   ENGLISH_SPEECH_LANG,
   SPEECH_RATE_OPTIONS,
   createEnglishSpeaker,
-  normalizeSpeechRateKey,
+  normalizeSpeechRate,
   pickEnglishVoice,
-  speechRateFor,
   speechTextForEnglish,
 } from "../src/speech.js";
 import { ENGLISH_CONTENT_TYPES } from "../src/logic.js";
@@ -274,60 +273,79 @@ test("speech.js はオフラインでも使えるようキャッシュへ入れ�
 });
 
 
-test("読み上げの速さは3段階から選び、壊れた設定は「ふつう」に戻す", () => {
+test("読み上げの速さは0.5〜1.5の5段階", () => {
   assert.deepEqual(
-    SPEECH_RATE_OPTIONS.map((option) => option.key),
-    ["slow", "normal", "fast"],
+    SPEECH_RATE_OPTIONS.map((option) => option.rate),
+    [0.5, 0.75, 1, 1.25, 1.5],
   );
-  assert.deepEqual(SPEECH_RATE_OPTIONS.map((option) => option.label), ["ゆっくり", "ふつう", "はやい"]);
-  assert.equal(DEFAULT_SPEECH_RATE_KEY, "normal");
-  assert.equal(speechRateFor("normal"), 1, "「ふつう」はブラウザの標準速度");
-  assert.ok(speechRateFor("slow") < 1 && speechRateFor("fast") > 1);
-  // 保存済みの設定が古い・壊れていても既定へ収める
-  for (const value of [undefined, null, "", "x", 0.7, 2, {}, []]) {
-    assert.equal(normalizeSpeechRateKey(value), DEFAULT_SPEECH_RATE_KEY, `${JSON.stringify(value)} は既定へ`);
+  assert.deepEqual(
+    SPEECH_RATE_OPTIONS.map((option) => option.label),
+    ["×0.5", "×0.75", "×1.0", "×1.25", "×1.5"],
+  );
+  // 等間隔で、両端が 0.5 と 1.5
+  const rates = SPEECH_RATE_OPTIONS.map((option) => option.rate);
+  assert.equal(Math.min(...rates), 0.5);
+  assert.equal(Math.max(...rates), 1.5);
+  assert.deepEqual(rates.slice(1).map((rate, index) => Number((rate - rates[index]).toFixed(2))), [0.25, 0.25, 0.25, 0.25]);
+  // 読み上げでは使わないが、画面読み上げソフト向けの説明を全段階に持たせる
+  assert.ok(SPEECH_RATE_OPTIONS.every((option) => typeof option.hint === "string" && option.hint));
+  assert.equal(DEFAULT_SPEECH_RATE, 1, "既定はブラウザの標準速度");
+});
+
+test("壊れた速さの設定は標準速度へ戻す", () => {
+  for (const value of ["0.5", "1.25", 0.75, 1.5]) {
+    assert.equal(normalizeSpeechRate(value), Number(value), `${JSON.stringify(value)} はそのまま`);
+  }
+  // 段階から外れた値・数値でない値はすべて既定へ
+  for (const value of [undefined, null, "", "x", "slow", 0, -1, 0.7, 1.3, 2, 99, Number.NaN, {}, []]) {
+    assert.equal(normalizeSpeechRate(value), DEFAULT_SPEECH_RATE, `${JSON.stringify(value)} は既定へ`);
   }
 });
 
 test("選んだ速さを utterance.rate に渡す", () => {
   const { speaker, engine } = fakeSpeech();
-  speaker.speak("apple", { token: 1, rate: speechRateFor("slow") });
-  speaker.speak("banana", { token: 2, rate: speechRateFor("fast") });
-  speaker.speak("cherry", { token: 3 });
-  assert.deepEqual(engine.spoken.map((utterance) => utterance.rate), [0.7, 1.3, 1], "既定は等速");
+  SPEECH_RATE_OPTIONS.forEach((option, index) => {
+    speaker.speak("apple", { token: index + 1, rate: option.rate });
+  });
+  assert.deepEqual(
+    engine.spoken.map((utterance) => utterance.rate),
+    SPEECH_RATE_OPTIONS.map((option) => option.rate),
+  );
+  // 指定しなければ等速
+  speaker.speak("banana", { token: 90 });
+  assert.equal(engine.spoken.at(-1).rate, 1);
   // 仕様外の値でも読み上げごと失敗しないよう丸める
-  speaker.speak("date", { token: 4, rate: 99 });
-  speaker.speak("fig", { token: 5, rate: 0 });
-  speaker.speak("grape", { token: 6, rate: Number.NaN });
-  assert.deepEqual(engine.spoken.slice(3).map((utterance) => utterance.rate), [4, 1, 1]);
+  speaker.speak("cherry", { token: 91, rate: 99 });
+  speaker.speak("date", { token: 92, rate: 0 });
+  speaker.speak("fig", { token: 93, rate: Number.NaN });
+  assert.deepEqual(engine.spoken.slice(-3).map((utterance) => utterance.rate), [4, 1, 1]);
 });
 
-test("設定画面から速さを選べる", () => {
+test("設定画面から5段階の速さを選べる", () => {
   const stylesSource = readFileSync(new URL("../styles.css", import.meta.url), "utf8");
   const settingsSource = functionSource("renderSettings", "prefersReducedMotion");
   // 「学習画面」のカードに3択を出す
   assert.match(settingsSource, /英語の読み上げの速さ/);
   assert.match(settingsSource, /SPEECH_RATE_OPTIONS\.map\(\(option\)/);
-  assert.match(settingsSource, /data-speech-rate="\$\{option\.key\}"/);
-  assert.match(settingsSource, /aria-checked="\$\{speechRateKey\(\) === option\.key\}"/);
+  assert.match(settingsSource, /data-speech-rate="\$\{option\.rate\}"/);
+  assert.match(settingsSource, /aria-checked="\$\{currentSpeechRate\(\) === option\.rate\}"/);
+  assert.match(settingsSource, /aria-label="\$\{escapeHtml\(option\.hint\)\}"/);
   assert.ok(
     settingsSource.indexOf("data-speech-rate") < settingsSource.indexOf("showSources"),
     "学習画面のカードに入れる",
   );
   // 既定値を持ち、起動時に正規化する
-  assert.match(appSource, /speechRate: DEFAULT_SPEECH_RATE_KEY,/);
-  assert.match(appSource, /state\.settings\.speechRate = normalizeSpeechRateKey\(state\.settings\.speechRate\);/);
-  assert.match(functionSource("speechRateKey", "persistStudyProgress"), /normalizeSpeechRateKey\(state\.settings\.speechRate\)/);
+  assert.match(appSource, /speechRate: DEFAULT_SPEECH_RATE,/);
+  assert.match(appSource, /state\.settings\.speechRate = normalizeSpeechRate\(state\.settings\.speechRate\);/);
+  assert.match(functionSource("currentSpeechRate", "persistStudyProgress"), /normalizeSpeechRate\(state\.settings\.speechRate\)/);
   // 読み上げ時に現在の設定を渡す
-  assert.match(
-    functionSource("speakQuestionEnglish", "prepareQuestion"),
-    /rate: speechRateFor\(state\.settings\.speechRate\),/,
-  );
+  assert.match(functionSource("speakQuestionEnglish", "prepareQuestion"), /rate: currentSpeechRate\(\),/);
   // 端末へ保存し、選んだ速さをその場で試せる
-  assert.match(appSource, /state\.settings\.speechRate = normalizeSpeechRateKey\(target\.dataset\.speechRate\);\n\s*saveSettings\(\);/);
+  assert.match(appSource, /state\.settings\.speechRate = normalizeSpeechRate\(target\.dataset\.speechRate\);\n\s*saveSettings\(\);/);
   assert.match(appSource, /englishSpeech\.speak\(SPEECH_RATE_SAMPLE, \{/);
   assert.match(appSource, /const SPEECH_RATE_SAMPLE = "[A-Za-z ]+";/);
   // 効果音の強さと同じ見た目・同じ折り返しにする
-  assert.match(stylesSource, /\.speech-rate-row \.segmented-options \{[^}]*flex: 0 0 min\(210px, 44%\)/);
-  assert.match(stylesSource, /\.speech-rate-row \{ width: 100%; flex-basis: auto; \}|\.speech-rate-row \.segmented-options \{ width: 100%; flex-basis: auto; \}/);
+  // 5段階あるので、画面幅によらず見出しの下へ1行で並べる
+  assert.match(stylesSource, /\.speech-rate-row \{[^}]*flex-direction: column/);
+  assert.match(stylesSource, /\.speech-rate-row \.segmented-options \{[^}]*width: 100%/);
 });

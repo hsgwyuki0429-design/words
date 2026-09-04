@@ -65,7 +65,7 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.21a";
+} from "./logic.js?v=2026.9.22a";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -85,7 +85,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.9.21a";
+} from "./storage.js?v=2026.9.22a";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -93,14 +93,13 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.21a";
+} from "./quiz-gestures.js?v=2026.9.22a";
 import {
-  DEFAULT_SPEECH_RATE_KEY,
+  DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
   createEnglishSpeaker,
-  normalizeSpeechRateKey,
-  speechRateFor,
-} from "./speech.js?v=2026.9.21a";
+  normalizeSpeechRate,
+} from "./speech.js?v=2026.9.22a";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -114,7 +113,7 @@ const DEFAULT_SETTINGS = {
   // true にするとアプリ内キーボードを出さず、端末標準キーボードだけを使う。
   // 既存の保存データにこのキーが無くても getMetaObject() が既定値で補う。
   useSystemKeyboard: false,
-  speechRate: DEFAULT_SPEECH_RATE_KEY,
+  speechRate: DEFAULT_SPEECH_RATE,
   masteryCriterion: DEFAULT_MASTERY_CRITERION,
 };
 
@@ -1144,15 +1143,16 @@ function renderSettings() {
     <section class="settings-card">
       <h2>学習画面</h2>
       <div class="settings-row speech-rate-row">
-        <span><strong>英語の読み上げの速さ</strong><small>押すと今の速さで試せます</small></span>
+        <span><strong>英語の読み上げの速さ</strong><small>×1.0が標準の速さ。押すとその速さで試せます</small></span>
         <div class="segmented-options compact-segments" role="radiogroup" aria-label="英語の読み上げの速さ">
           ${SPEECH_RATE_OPTIONS.map((option) => `
             <button
               type="button"
               role="radio"
-              aria-checked="${speechRateKey() === option.key}"
-              data-speech-rate="${option.key}"
-              class="${speechRateKey() === option.key ? "selected" : ""}"
+              aria-checked="${currentSpeechRate() === option.rate}"
+              aria-label="${escapeHtml(option.hint)}"
+              data-speech-rate="${option.rate}"
+              class="${currentSpeechRate() === option.rate ? "selected" : ""}"
             >${escapeHtml(option.label)}</button>`).join("")}
         </div>
       </div>
@@ -2278,8 +2278,8 @@ function masteryCriterion() {
   return normalizeMasteryCriterion(state.settings.masteryCriterion);
 }
 
-function speechRateKey() {
-  return normalizeSpeechRateKey(state.settings.speechRate);
+function currentSpeechRate() {
+  return normalizeSpeechRate(state.settings.speechRate);
 }
 
 // 周回状態はメタ領域に組み合わせキーごとで保存する。件数は最終更新順で上限を設ける。
@@ -2530,7 +2530,7 @@ function speakQuestionEnglish(question, timing) {
   questionSpeechToken += 1;
   englishSpeech.speak(questionEnglishText(question), {
     token: questionSpeechToken,
-    rate: speechRateFor(state.settings.speechRate),
+    rate: currentSpeechRate(),
   });
 }
 
@@ -4102,13 +4102,13 @@ function bindEvents() {
       }
     }
     if (target.dataset.speechRate) {
-      state.settings.speechRate = normalizeSpeechRateKey(target.dataset.speechRate);
+      state.settings.speechRate = normalizeSpeechRate(target.dataset.speechRate);
       saveSettings();
       renderSettings();
       // 選んだ速さをその場で確かめられるように、タップの中で一度だけ読み上げる。
       englishSpeech.speak(SPEECH_RATE_SAMPLE, {
         token: (questionSpeechToken += 1),
-        rate: speechRateFor(state.settings.speechRate),
+        rate: currentSpeechRate(),
       });
     }
     if (target.dataset.soundIntensity) {
@@ -4457,7 +4457,7 @@ async function boot() {
         .filter(([, config]) => config),
     );
     state.settings.masteryCriterion = normalizeMasteryCriterion(state.settings.masteryCriterion);
-    state.settings.speechRate = normalizeSpeechRateKey(state.settings.speechRate);
+    state.settings.speechRate = normalizeSpeechRate(state.settings.speechRate);
     state.studyProgress = Object.fromEntries(
       Object.entries(studyProgress ?? {})
         .map(([key, value]) => [key, normalizeStudyProgress(value)])
@@ -4469,7 +4469,7 @@ async function boot() {
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.21a").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.22a").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

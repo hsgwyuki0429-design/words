@@ -714,10 +714,13 @@ h2 {
 .settings-row:first-of-type { border-top: 0; }
 .settings-row strong { display: block; font-size: 15px; }
 .settings-row small { display: block; margin-top: 3px; color: var(--secondary); }
-.sound-intensity-row .segmented-options,
-.speech-rate-row .segmented-options { flex: 0 0 min(210px, 44%); margin-top: 0; }
+.sound-intensity-row .segmented-options { flex: 0 0 min(210px, 44%); margin-top: 0; }
 .sound-intensity-row .segmented-options button,
 .speech-rate-row .segmented-options button { min-height: 38px; padding-inline: 9px; font-size: 12px; }
+/* 読み上げの速さは5段階あるので、常に見出しの下へ1行で並べる */
+.speech-rate-row { align-items: flex-start; flex-direction: column; padding-block: 12px; }
+.speech-rate-row .segmented-options { width: 100%; margin-top: 8px; }
+.speech-rate-row .segmented-options button { flex: 1 0 40px; padding-inline: 4px; }
 .danger-button { color: var(--red); border-color: #f2b8b5; }
 
 .onboarding-backdrop {
@@ -1280,10 +1283,8 @@ body.max-mode .combo-pill--pop .combo-pill-text::after { animation: combo-ghost-
 }
 
 @media (max-width: 520px) {
-  .sound-intensity-row,
-  .speech-rate-row { align-items: flex-start; flex-direction: column; padding-block: 12px; }
-  .sound-intensity-row .segmented-options,
-  .speech-rate-row .segmented-options { width: 100%; flex-basis: auto; }
+  .sound-intensity-row { align-items: flex-start; flex-direction: column; padding-block: 12px; }
+  .sound-intensity-row .segmented-options { width: 100%; flex-basis: auto; }
   .max-callout { padding-inline: max(14px, env(safe-area-inset-left)); font-size: clamp(34px, 12vw, 68px); }
   .max-callout--cue-weakness-destroyed { font-size: clamp(28px, 9.2vw, 54px); }
   .max-callout--cue-sss-master { font-size: clamp(36px, 11vw, 64px); }

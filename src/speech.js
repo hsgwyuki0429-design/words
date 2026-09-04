@@ -5,26 +5,25 @@
 
 export const ENGLISH_SPEECH_LANG = "en-US";
 
-// 読み上げの速さ。設定画面から選ぶ。値は SpeechSynthesisUtterance.rate に渡す
-// 倍率で、1 が各ブラウザの標準速度。
+// 読み上げの速さ。設定画面で 0.5〜1.5 の5段階から選ぶ。値は
+// SpeechSynthesisUtterance.rate に渡す倍率で、1 が各ブラウザの標準速度。
 export const SPEECH_RATE_OPTIONS = Object.freeze([
-  Object.freeze({ key: "slow", label: "ゆっくり", rate: 0.7 }),
-  Object.freeze({ key: "normal", label: "ふつう", rate: 1 }),
-  Object.freeze({ key: "fast", label: "はやい", rate: 1.3 }),
+  Object.freeze({ rate: 0.5, label: "×0.5", hint: "0.5倍速" }),
+  Object.freeze({ rate: 0.75, label: "×0.75", hint: "0.75倍速" }),
+  Object.freeze({ rate: 1, label: "×1.0", hint: "標準の速さ" }),
+  Object.freeze({ rate: 1.25, label: "×1.25", hint: "1.25倍速" }),
+  Object.freeze({ rate: 1.5, label: "×1.5", hint: "1.5倍速" }),
 ]);
 
-export const DEFAULT_SPEECH_RATE_KEY = "normal";
+export const DEFAULT_SPEECH_RATE = 1;
 
-// 保存済みの設定が古い・壊れていても、必ず用意した3段階のどれかに収める。
-export function normalizeSpeechRateKey(value) {
-  return SPEECH_RATE_OPTIONS.some((option) => option.key === value)
-    ? value
-    : DEFAULT_SPEECH_RATE_KEY;
-}
-
-export function speechRateFor(value) {
-  const key = normalizeSpeechRateKey(value);
-  return SPEECH_RATE_OPTIONS.find((option) => option.key === key).rate;
+// 保存済みの設定が古い・壊れていても、必ず用意した5段階のどれかに収める。
+// 文字列で保存されていても数値として扱う。
+export function normalizeSpeechRate(value) {
+  const rate = Number(value);
+  return SPEECH_RATE_OPTIONS.some((option) => option.rate === rate)
+    ? rate
+    : DEFAULT_SPEECH_RATE;
 }
 
 // 英語音声では読めない日本語の注記（`make A + 動詞原形` の「動詞原形」など）を落とす。

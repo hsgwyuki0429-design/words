@@ -52,6 +52,7 @@ import {
   studyConfigForTarget,
   studyModeForItem,
   inProgressStudyEntries,
+  studyEntriesByRecency,
   isStudyInProgress,
   studyContentsKey,
   studyProgressEntriesForMode,
@@ -63,7 +64,7 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.17a";
+} from "./logic.js?v=2026.9.18a";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -83,7 +84,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.9.17a";
+} from "./storage.js?v=2026.9.18a";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -91,7 +92,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.17a";
+} from "./quiz-gestures.js?v=2026.9.18a";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -538,7 +539,7 @@ function contentChoiceRow({
     progress ? "content-choice--gauge" : "",
     inProgress ? "is-in-progress" : "",
   ].filter(Boolean).join(" ");
-  const badge = inProgress ? IN_PROGRESS_BADGE : "";
+  const badge = inProgress ? studyBadgeMarkup() : "";
   if (!progress) {
     return `
     <button class="${classes}" type="button" ${attribute}>
@@ -635,7 +636,7 @@ function renderStudyRangeSelect() {
   const allResumable = allRangesInProgress();
   const allCard = `<button class="multi-select-card select-all-card${allSelected ? " selected" : ""}${allResumable ? " is-in-progress" : ""}" type="button" data-study-range-all aria-pressed="${allSelected}">
     <span class="multi-check" aria-hidden="true">${allSelected ? "✓" : ""}</span>
-    <span><strong>全選択</strong><small>すべての範囲（${state.items.length}${isRecallSubject() ? "問" : "語句"}）</small>${allResumable ? IN_PROGRESS_BADGE : ""}</span>
+    <span><strong>全選択</strong><small>すべての範囲（${state.items.length}${isRecallSubject() ? "問" : "語句"}）</small>${allResumable ? studyBadgeMarkup() : ""}</span>
   </button>`;
   const rangeCards = ranges.map((range) => {
     const selected = !allSelected && state.filters.ranges.includes(range);
@@ -760,7 +761,15 @@ function dashboardRanges() {
   return currentRangeOrder().filter((range) => state.items.some((item) => item.range === range));
 }
 
-// 学習途中の周回（いまの教科・いまの習得条件のもの）を最後に学習した順で返す。
+// いまの教科・いまの習得条件の周回を、最後に学習した順で返す。
+function recentStudyEntries() {
+  return studyEntriesByRecency(state.studyProgress, {
+    subject: state.subject ?? "english",
+    criterion: masteryCriterion(),
+  });
+}
+
+// 学習途中の周回だけを、最後に学習した順で返す。
 function inProgressEntries() {
   return inProgressStudyEntries(state.studyProgress, {
     subject: state.subject ?? "english",
@@ -768,15 +777,21 @@ function inProgressEntries() {
   });
 }
 
-// 範囲ボタンのハイライトは、いちばん最近まで学習していた周回ひとつだけを指す。
-// 途中の周回をいくつも抱えていても、続きの入口は迷わずひとつになる。
-function latestInProgressRanges() {
-  return inProgressEntries()[0]?.meta.ranges ?? [];
+// ハイライトの基準になるセット。周回の途中かどうかに関わらず、
+// いちばん最近学習した条件を採用する。
+function latestStudyEntry() {
+  return recentStudyEntries()[0] ?? null;
+}
+
+// 範囲ボタンのハイライトは、いちばん最近学習したセットひとつだけを指す。
+// 途中の周回をほかに抱えていても、入口は迷わずひとつになる。
+function latestStudyRanges() {
+  return latestStudyEntry()?.meta.ranges ?? [];
 }
 
 // その範囲だけを対象にした周回なら、その範囲ボタンから続きへ入れる。
 function rangesInProgress() {
-  const list = latestInProgressRanges();
+  const list = latestStudyRanges();
   return new Set(list.length === 1 ? list : []);
 }
 
@@ -784,7 +799,7 @@ function rangesInProgress() {
 function allRangesInProgress() {
   const total = dashboardRanges().length;
   if (!total) return false;
-  return latestInProgressRanges().length >= total;
+  return latestStudyRanges().length >= total;
 }
 
 // いま選んでいる範囲（形式まで決まっていればその形式）に一致する、
@@ -806,16 +821,19 @@ function cycleNumberForContents(contentsKey) {
 function contentsInProgress() {
   const wantedRanges = studyContentsKey(state.filters.ranges);
   const mode = exactStudyMode(state.studySelection);
-  const contents = new Set();
-  inProgressEntries().forEach(({ meta }) => {
-    if (studyContentsKey(meta.ranges ?? []) !== wantedRanges) return;
-    if (mode && meta.mode !== mode) return;
-    contents.add(meta.contents);
-  });
-  return contents;
+  const meta = latestStudyEntry()?.meta;
+  if (!meta) return new Set();
+  if (studyContentsKey(meta.ranges ?? []) !== wantedRanges) return new Set();
+  if (mode && meta.mode !== mode) return new Set();
+  return new Set([meta.contents]);
 }
 
-const IN_PROGRESS_BADGE = '<span class="in-progress-badge">学習途中</span>';
+// ハイライトのラベル。周回の途中なら残りがあることを、終えていれば
+// 次の周回へ進めることを示す。
+function studyBadgeMarkup() {
+  const label = isStudyInProgress(latestStudyEntry()?.progress) ? "学習途中" : "前回の続き";
+  return `<span class="in-progress-badge">${label}</span>`;
+}
 
 function rangeDetailLabel(ranges = state.filters.ranges) {
   if (!ranges.length) return "範囲";
@@ -849,14 +867,14 @@ function renderDashboard() {
   elements.dashboardRangeList.innerHTML = [
     `<button class="range-choice range-choice--all${allResumable ? " is-in-progress" : ""}" type="button" data-dashboard-all-ranges>
       <span class="range-choice-name">全範囲</span>
-      ${allResumable ? IN_PROGRESS_BADGE : ""}
+      ${allResumable ? studyBadgeMarkup() : ""}
       <span class="range-choice-detail">${ranges.length}範囲 ${state.items.length}${unit}</span>
       <span class="card-arrow" aria-hidden="true">›</span>
     </button>`,
     ...ranges.map((range) => `
     <button class="range-choice${resumableRanges.has(range) ? " is-in-progress" : ""}" type="button" data-dashboard-range="${escapeHtml(range)}">
       <span class="range-choice-name">${escapeHtml(range)}</span>
-      ${resumableRanges.has(range) ? IN_PROGRESS_BADGE : ""}
+      ${resumableRanges.has(range) ? studyBadgeMarkup() : ""}
       <span class="card-arrow" aria-hidden="true">›</span>
     </button>`),
   ].join("");
@@ -959,8 +977,9 @@ function modeProgressCard(card) {
     mode: card.mode,
     masteredIds: masteredIdsForMode(state.studyProgress, card.mode, { criterion: masteryCriterion() }),
   });
-  // 表示中の範囲・条件に一致する周回が途中のときだけ、この形式をハイライトする。
-  const resumable = isStudyInProgress(entry?.progress);
+  // 表示中の範囲・条件に一致する周回が、いちばん最近学習したセットのときだけ
+  // この形式をハイライトする。
+  const resumable = Boolean(entry) && entry.key === latestStudyEntry()?.key;
   const cycleLabel = entry ? contentLabelFromProgressKey(entry.meta) : "";
   const cycleCopy = cycle
     ? `${cycleLabel ? `${cycleLabel} ` : ""}${cycle.masteryRound > 1 ? `R${cycle.masteryRound}· ` : ""}${cycle.cycleNumber}周目 残り${cycle.remainingCount}`
@@ -4356,7 +4375,7 @@ async function boot() {
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.17a").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.18a").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

@@ -7,6 +7,7 @@ import {
   applyStudyAnswer,
   inProgressStudyEntries,
   isStudyInProgress,
+  studyEntriesByRecency,
   studyProgressKey,
 } from "../src/logic.js";
 
@@ -73,15 +74,19 @@ test("押した先で実際に続けられるボタンだけをハイライト�
   assert.match(appSource, /class="range-choice\$\{resumableRanges\.has\(range\) \? " is-in-progress" : ""\}/);
   assert.match(
     functionSource("rangesInProgress", "allRangesInProgress"),
-    /const list = latestInProgressRanges\(\);[\s\S]*?list\.length === 1 \? list : \[\]/,
+    /const list = latestStudyRanges\(\);[\s\S]*?list\.length === 1 \? list : \[\]/,
   );
-  // 途中の周回が複数あっても、範囲ボタンはいちばん新しいものだけを指す。
+  // 途中の周回がほかにあっても、基準はいちばん最近学習したセット。
   assert.match(
-    functionSource("latestInProgressRanges", "rangesInProgress"),
-    /inProgressEntries\(\)\[0\]\?\.meta\.ranges/,
+    functionSource("latestStudyRanges", "rangesInProgress"),
+    /latestStudyEntry\(\)\?\.meta\.ranges/,
+  );
+  assert.match(
+    functionSource("latestStudyEntry", "sessionResultSnapshot"),
+    /recentStudyEntries\(\)\[0\]/,
   );
   // 形式カードは、いま選んでいる範囲・条件に一致する周回のときだけ光る。
-  assert.match(appSource, /const resumable = isStudyInProgress\(entry\?\.progress\);/);
+  assert.match(appSource, /const resumable = Boolean\(entry\) && entry\.key === latestStudyEntry\(\)\?\.key;/);
   assert.match(appSource, /class="mode-progress-card\$\{resumable \? " is-in-progress" : ""\}/);
   assert.match(stylesSource, /\.mode-progress-card\.is-in-progress \{[\s\S]*?border-color: var\(--red\)/);
   // 複数範囲選択は選び終わるまで条件が決まらないので、個別の範囲カードは光らせない。
@@ -104,12 +109,36 @@ test("全範囲の周回は「全範囲」ボタンだけを光らせ、個別�
 
 test("続きのある学習内容（単語・熟語・構文・全選択）もハイライトする", () => {
   const source = functionSource("contentsInProgress", "rangeDetailLabel");
-  // 範囲が一致し、形式が決まっていれば形式も一致する周回だけを見る。
-  assert.match(source, /if \(studyContentsKey\(meta\.ranges \?\? \[\]\) !== wantedRanges\) return;/);
-  assert.match(source, /if \(mode && meta\.mode !== mode\) return;/);
-  assert.match(source, /contents\.add\(meta\.contents\);/);
+  // いちばん最近学習したセットが、範囲（と決まっていれば形式）に一致するときだけ光らせる。
+  assert.match(source, /const meta = latestStudyEntry\(\)\?\.meta;/);
+  assert.match(source, /if \(studyContentsKey\(meta\.ranges \?\? \[\]\) !== wantedRanges\) return new Set\(\);/);
+  assert.match(source, /if \(mode && meta\.mode !== mode\) return new Set\(\);/);
+  assert.match(source, /return new Set\(\[meta\.contents\]\);/);
   // 単体の内容も「全選択」も、進捗キーと同じ並びで突き合わせる。
   assert.match(appSource, /inProgress: resumableContents\.has\(studyContentsKey\(\[content\]\)\)/);
   assert.match(appSource, /inProgress: resumableContents\.has\(studyContentsKey\(\[\.\.\.ENGLISH_CONTENT_TYPES\]\)\)/);
   assert.match(stylesSource, /\.content-choice\.is-in-progress,/);
+});
+
+test("周回を終えたセットでも、最後にやったものならハイライトの基準になる", () => {
+  const finished = progressFor({ ranges: ["OriHime"], mode: "en_to_ja_flashcard" });
+  const halfway = progressFor({ ranges: ["Mars"], mode: "en_to_ja_choice" });
+  // Mars は途中のまま、そのあとに OriHime を1周やり切った。
+  const progressMap = {
+    [halfway.key]: applyStudyAnswer(halfway.progress, { itemId: "a", correct: false, now: 100 }),
+    [finished.key]: applyStudyAnswer(
+      applyStudyAnswer(finished.progress, { itemId: "a", correct: true, now: 200 }),
+      { itemId: "b", correct: true, now: 300 },
+    ),
+  };
+  assert.equal(isStudyInProgress(progressMap[finished.key]), false);
+
+  // 学習途中だけを見ると Mars しか出てこない。
+  const inProgress = inProgressStudyEntries(progressMap, { subject: "english" });
+  assert.deepEqual(inProgress.map(({ meta }) => meta.ranges), [["Mars"]]);
+
+  // 最後にやった順なら、やり切った OriHime が先頭に来る。
+  const recent = studyEntriesByRecency(progressMap, { subject: "english" });
+  assert.deepEqual(recent[0].meta.ranges, ["OriHime"]);
+  assert.equal(recent.length, 2);
 });

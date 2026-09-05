@@ -135,7 +135,11 @@ test("古文の「古文単語」から学習画面へ進む", () => {
   // 教科選択には古文だけを置き、古文単語はその中から開く。
   assert.doesNotMatch(indexSource, /data-subject="classic"/);
   assert.match(kobunSource, /new CustomEvent\("kobun-vocabulary"/);
-  assert.match(appSource, /"kobun-vocabulary", \(\) => selectSubject\("kobun-vocab"\)/);
+  // 古文のホームに作品が並んでいるので、選んだ作品をそのまま学習範囲にする。
+  assert.match(kobunSource, /detail: \{ range: target\.dataset\.kbRange \?\? null \}/);
+  assert.match(appSource, /"kobun-vocabulary", \(event\) => \{/);
+  assert.match(appSource, /selectSubject\("kobun-vocab"\);/);
+  assert.match(appSource, /state\.filters\.ranges = range \? \[range\] : dashboardRanges\(\);/);
   assert.match(appSource, /fetch\("\.\/data\/kobun-vocabulary\.json/);
   assert.match(appSource, /state\.kobunVocabItems = \(await vocabResponse\.json\(\)\)\.items;/);
 });

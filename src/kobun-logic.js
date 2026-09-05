@@ -155,5 +155,6 @@ export function restoreKobunSession(saved, questions) {
     queue, index, results: Array.isArray(saved.results) ? saved.results : [],
     draft: saved.draft ?? null, feedback: saved.feedback ?? null,
     startedAt: saved.startedAt ?? Date.now(),
+    updatedAt: saved.updatedAt ?? saved.startedAt ?? Date.now(),
   };
 }

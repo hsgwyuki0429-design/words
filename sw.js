@@ -1,4 +1,4 @@
-const APP_VERSION = "2026.9.26b";
+const APP_VERSION = "2026.9.27";
 const CACHE_NAME = `words-${APP_VERSION}`;
 const APP_SHELL = [
   "./",

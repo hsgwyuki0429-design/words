@@ -146,3 +146,34 @@ test("バーは回答回数ではなく問題数で進み、直近の誤答と�
   assert.equal(summarizeKobun(items, history, "kobun_meaning").answered, 1);
   assert.equal(summarizeKobun(items, history, "kobun_meaning").correctItems, 0);
 });
+
+const kobunSource = readFileSync(new URL("../src/kobun.js", import.meta.url), "utf8");
+const kobunStyles = readFileSync(new URL("../kobun.css", import.meta.url), "utf8");
+
+test("途中の再開時刻を持ち回り、「続きから」は最後に触った形式だけに出す", () => {
+  assert.match(kobunSource, /session\.updatedAt = Date\.now\(\);/);
+  assert.match(kobunSource, /function resumableMode\(\)/);
+  assert.match(kobunSource, /const inProgress = key === resumeKey;/);
+  const restored = restoreKobunSession({ queue: [items[0].id], index: 0, startedAt: 5 }, questionsForMode(items, "kobun_meaning"));
+  assert.equal(restored.updatedAt, 5);
+});
+
+test("古文のホームは矢印なしで、助動詞の形式と古文単語の作品を並べて出す", () => {
+  assert.match(kobunSource, /heading\("古文", "学習する内容を選ぶ", null\)/);
+  assert.match(kobunSource, /back \? button\(back, "←"/);
+  assert.ok(Object.keys(KOBUN_MODES).length === 5);
+  assert.match(kobunSource, /Object\.keys\(KOBUN_MODES\)\.map\(\(key\) => modeCard\(key, resumeKey\)\)/);
+  assert.match(kobunSource, /function vocabularyMarkup\(\)/);
+  assert.match(kobunSource, /data-kb-range="\$\{escape\(range\)\}"/);
+});
+
+test("タイプ式は「／」「○」の専用キーボードを持ち、押しても枠を描き直さない", () => {
+  assert.match(kobunSource, /\["insert-slash", "／"/);
+  assert.match(kobunSource, /\["insert-circle", NO_CONJUGATION/);
+  assert.match(kobunSource, /data-kb-keep-focus/);
+  assert.match(kobunSource, /if \(event\.target\.closest\("\[data-kb-keep-focus\]"\)\) event\.preventDefault\(\);/);
+  assert.match(kobunSource, /function syncTable\(\)/);
+  assert.match(kobunSource, /"insert-slash", "insert-circle", "backspace"\]\.includes\(action\)/);
+  // 行の高さをそろえて、文字が増えても枠がズレないようにしている。
+  assert.match(kobunStyles, /\.kb-table-grid \{[^}]*grid-auto-rows: 1fr;/);
+});

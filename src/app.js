@@ -1,4 +1,4 @@
-import { createKobunController } from "./kobun.js?v=2026.9.26b";
+import { createKobunController } from "./kobun.js?v=2026.9.27";
 import {
   ALL_MODES,
   ALPHABET_KEYBOARD_ROWS,
@@ -68,7 +68,7 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.26b";
+} from "./logic.js?v=2026.9.27";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -88,7 +88,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.9.26b";
+} from "./storage.js?v=2026.9.27";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -96,7 +96,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.26b";
+} from "./quiz-gestures.js?v=2026.9.27";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
@@ -105,7 +105,7 @@ import {
   normalizeSpeechRate,
   normalizeSpeechVoiceURI,
   voiceKey,
-} from "./speech.js?v=2026.9.26b";
+} from "./speech.js?v=2026.9.27";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -4288,7 +4288,16 @@ function distributeSlotText(startInput, text) {
 function bindEvents() {
   document.addEventListener("kobun-subject", () => setView("subject"));
   // 古文の「古文単語」からは、他教科と共通の学習画面へ切り替える。
-  document.addEventListener("kobun-vocabulary", () => selectSubject("kobun-vocab"));
+  // 作品を選んで来たときは、その作品を範囲に入れて形式選びへ直行する。
+  document.addEventListener("kobun-vocabulary", (event) => {
+    selectSubject("kobun-vocab");
+    const range = event.detail?.range;
+    if (range && !dashboardRanges().includes(range)) return;
+    state.filters.ranges = range ? [range] : dashboardRanges();
+    state.rangeSelectionMode = range ? "custom" : "all";
+    state.rangeFlow = "dashboard";
+    setView("range-detail");
+  });
   addEventListener("resize", markFxResize, { passive: true });
   addEventListener("orientationchange", markFxResize, { passive: true });
   quizGestureController = bindQuizGestures(elements.quizContent, {
@@ -4671,7 +4680,7 @@ async function boot() {
       fetch("./data/items.json?v=2026.08.31b"),
       fetch("./data/public-items.json?v=2026.09.01"),
       fetch("./data/health-items.json?v=2026.09.01"),
-      fetch("./data/kobun-vocabulary.json?v=2026.9.26b"),
+      fetch("./data/kobun-vocabulary.json?v=2026.9.27"),
       loadHistory(),
       getMeta("selectedMode"),
       getMetaObject("settings", DEFAULT_SETTINGS),
@@ -4719,7 +4728,7 @@ async function boot() {
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.26b").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.27").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

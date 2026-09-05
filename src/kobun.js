@@ -3,9 +3,9 @@ import {
   allConnectionOptions, allMeaningOptions, conjugationOptions, gradeQuestion,
   questionsForMode, restoreKobunSession, splitForms, summarizeKobun, toggleForm,
   validateAuxiliaries, validateVocabulary,
-} from "./kobun-logic.js?v=2026.9.26b";
-import { mergeAttempt, summarizeProgressGauge } from "./logic.js?v=2026.9.26b";
-import { getMetaObject, putHistory, setMeta, stashMeta } from "./storage.js?v=2026.9.26b";
+} from "./kobun-logic.js?v=2026.9.27";
+import { mergeAttempt, summarizeProgressGauge } from "./logic.js?v=2026.9.27";
+import { getMetaObject, putHistory, setMeta, stashMeta } from "./storage.js?v=2026.9.27";
 
 const META_KEY = "kobunStudy:v1";
 const escape = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
@@ -32,8 +32,8 @@ export function createKobunController({ root, getHistory, onQuizChange, onHeader
   async function load() {
     if (!loading) loading = (async () => {
       const [auxResponse, vocabResponse, progress] = await Promise.all([
-        fetch("./data/kobun-auxiliaries.json?v=2026.9.26b"),
-        fetch("./data/kobun-vocabulary.json?v=2026.9.26b"),
+        fetch("./data/kobun-auxiliaries.json?v=2026.9.27"),
+        fetch("./data/kobun-vocabulary.json?v=2026.9.27"),
         getMetaObject(META_KEY, {}),
       ]);
       if (!auxResponse.ok || !vocabResponse.ok) throw new Error("古文の教材を読み込めませんでした。通信を確認して再試行してください。");
@@ -54,8 +54,16 @@ export function createKobunController({ root, getHistory, onQuizChange, onHeader
 
   function saveDraft() {
     if (!session || !mode) return;
+    // 「続きから」は最後に触った形式だけに出すため、保存のたびに時刻を残す。
+    session.updatedAt = Date.now();
     saved[mode] = session;
     stashMeta(META_KEY, saved);
+  }
+
+  function resumableMode() {
+    return Object.keys(KOBUN_MODES)
+      .filter((key) => saved[key]?.queue?.length > saved[key]?.index)
+      .sort((a, b) => (saved[b].updatedAt ?? saved[b].startedAt ?? 0) - (saved[a].updatedAt ?? saved[a].startedAt ?? 0))[0] ?? null;
   }
 
   function newDraft(question) {
@@ -92,14 +100,15 @@ export function createKobunController({ root, getHistory, onQuizChange, onHeader
     prepareQuestion();
   }
 
+  // back に null を渡すと矢印を出さない。古文のホームは最初の画面なので戻り先がない。
   function heading(title, copy = "", back = "home") {
-    return `<div class="kb-heading"><div>${button(back, "←", `aria-label="${back === "subject" ? "教科選択へ" : "戻る"}"`, "kb-back")}<h1 tabindex="-1">${escape(title)}</h1></div>${copy ? `<p>${escape(copy)}</p>` : ""}</div>`;
+    return `<div class="kb-heading"><div>${back ? button(back, "←", `aria-label="${back === "subject" ? "教科選択へ" : "戻る"}"`, "kb-back") : ""}<h1 tabindex="-1">${escape(title)}</h1></div>${copy ? `<p>${escape(copy)}</p>` : ""}</div>`;
   }
 
-  function modeCard(key) {
+  function modeCard(key, resumeKey) {
     const summary = summarizeKobun(items, getHistory(), key);
-    const pending = saved[key];
-    const inProgress = pending?.queue?.length > pending?.index;
+    // 途中の形式が複数あっても、いちばん最近のものだけを「続きから」にする。
+    const inProgress = key === resumeKey;
     const gauge = summarizeProgressGauge({ totalItems: summary.total, answeredItems: summary.answered, masteredItems: summary.correctItems });
     // 長期履歴の直近の完全正解を表示する。周回の習得とは区別して名前を付ける。
     return button("start", `<span class="mode-progress-head"><strong>${KOBUN_MODES[key]}</strong>${inProgress ? '<span class="mode-progress-cycle">続きから</span>' : ""}<span class="card-arrow" aria-hidden="true">›</span></span>
@@ -107,18 +116,38 @@ export function createKobunController({ root, getHistory, onQuizChange, onHeader
       <span class="progress-legend" data-cycle="1"><span class="progress-figure is-answered">解答済み ${gauge.answeredPercent}%（${gauge.answeredItems}/${gauge.totalItems}）</span><span class="progress-figure is-mastered">正解済み ${gauge.masteredPercent}%（${gauge.masteredItems}/${gauge.totalItems}）</span></span>`, `data-kb-mode="${key}"`, `mode-progress-card${inProgress ? " is-in-progress" : ""}`);
   }
 
+  // 古文単語の作品一覧。ホームからそのまま作品を選べるように、
+  // 学習画面の範囲選択と同じ並びをここに出す。
+  function vocabularyRanges() {
+    return [...new Set(vocabulary.map((item) => item.range).filter(Boolean))];
+  }
+
+  function vocabularyMarkup() {
+    if (!vocabulary.length) return `<div class="kb-empty"><h2>古文単語は準備中です</h2><p>教材追加後は、本文中の用例を見て意味と覚えるポイントを確かめるフラッシュカードで学習できるようにします。</p></div>`;
+    const ranges = vocabularyRanges();
+    return `<div class="range-choice-list">${button("vocabulary",
+      `<span class="range-choice-name">全作品</span><span class="range-choice-detail">${ranges.length}作品 ${vocabulary.length}語句</span><span class="card-arrow" aria-hidden="true">›</span>`,
+      "", "range-choice range-choice--all")}${ranges.map((range) => button("vocabulary",
+      `<span class="range-choice-name">${escape(range)}</span><span class="card-arrow" aria-hidden="true">›</span>`,
+      `data-kb-range="${escape(range)}"`, "range-choice")).join("")}</div>`;
+  }
+
   function menuMarkup() {
-    if (screen === "home") return heading("古文", "覚える内容を選ぶ", "subject") + `<div class="kb-menu">${KOBUN_CATEGORIES.map((category) => button(category.id,
-      `<span><span class="range-choice-name">${category.label}</span><small class="kb-category-copy">${category.id === "auxiliary" ? `${items.length}種類 · 5つの学習形式` : vocabulary.length ? `${vocabulary.length}語句 · ${category.description}` : "教材準備中"}</small></span><span class="card-arrow" aria-hidden="true">›</span>`, "", "range-choice kb-category")).join("")}</div>`;
-    if (screen === "auxiliary" || screen === "conjugation") return heading("助動詞", "学習する形式を選ぶ") + `<div class="mode-card-list kb-mode-list">${Object.keys(KOBUN_MODES).map(modeCard).join("")}</div><p class="kb-note">正解済みは、その形式の直近の回答ですべて正解した問題数です。</p>${button("reference", "助動詞一覧を確認", "", "kb-text-button")}`;
-    // 教材があるときはこの画面を出さずに学習画面へ渡すため、ここは未提供時の案内だけ。
-    if (screen === "vocabulary") return heading("古文単語", "大切な意味をまとめて覚える")
-      + `<div class="kb-empty"><h2>古文単語は準備中です</h2><p>教材追加後は、本文中の用例を見て意味と覚えるポイントを確かめるフラッシュカードで学習できるようにします。</p><p>助動詞は今から学習できます。</p>${button("auxiliary", "助動詞を学習する", "", "kb-button kb-primary")}</div>`;
+    // ホームに助動詞の学習形式と古文単語の作品をそのまま並べ、一段の移動で学習を始められるようにする。
+    if (screen === "home" || screen === "auxiliary" || screen === "conjugation" || screen === "vocabulary") {
+      const resumeKey = resumableMode();
+      const [auxiliary, vocabularyCategory] = KOBUN_CATEGORIES;
+      return heading("古文", "学習する内容を選ぶ", null)
+        + `<section class="kb-section"><h2 class="kb-section-title">${auxiliary.label}</h2><p class="kb-section-copy">${items.length}種類 · ${auxiliary.description}</p>
+        <div class="mode-card-list kb-mode-list">${Object.keys(KOBUN_MODES).map((key) => modeCard(key, resumeKey)).join("")}</div>
+        <p class="kb-note">正解済みは、その形式の直近の回答ですべて正解した問題数です。</p>${button("reference", "助動詞一覧を確認", "", "kb-text-button")}</section>
+        <section class="kb-section"><h2 class="kb-section-title">${vocabularyCategory.label}</h2><p class="kb-section-copy">${vocabulary.length ? `${vocabulary.length}語句 · ${vocabularyCategory.description}` : "教材準備中"}</p>${vocabularyMarkup()}</section>`;
+    }
     if (screen === "records") return heading("古文の学習記録", "正答率は全項目を答えきった回答の割合です") + `<div class="kb-menu">${Object.entries(KOBUN_MODES).map(([key, label]) => {
       const summary = summarizeKobun(items, getHistory(), key);
       return `<div class="kb-record"><h2>${label}</h2><strong>${summary.accuracy === null ? "未学習" : `${summary.accuracy}%`}</strong><p>${summary.correct}正解 / ${summary.attempts}回答 · 解答済み ${summary.answered} / ${summary.total}問</p>${button("start", "学習する", `data-kb-mode="${key}"`)}</div>`;
     }).join("")}</div>`;
-    if (screen === "reference") return heading("助動詞一覧", "意味を確認し、開くと接続と活用表が見られます", "auxiliary") + items.map((item) => `<details class="kb-reference"><summary><span class="kb-reference-title">${escape(item.label)}<small>${escape(item.conjugationType)}</small></span><span class="kb-reference-meanings">${escape(item.meanings.join("・"))}</span></summary>
+    if (screen === "reference") return heading("助動詞一覧", "意味を確認し、開くと接続と活用表が見られます", "home") + items.map((item) => `<details class="kb-reference"><summary><span class="kb-reference-title">${escape(item.label)}<small>${escape(item.conjugationType)}</small></span><span class="kb-reference-meanings">${escape(item.meanings.join("・"))}</span></summary>
       <p><b>接続</b> ${escape(item.connections.join(" ／ "))}</p><p><b>意味</b> ${escape(item.meanings.join("・"))}</p>
       <table class="kb-reference-table"><caption>活用表</caption><thead><tr><th scope="col">活用形</th><th scope="col">形</th></tr></thead><tbody>${CONJUGATION_FORMS.map((form) => `<tr><th scope="row">${form}</th><td>${item.conjugation[form].length ? item.conjugation[form].map((value) => `<span>${escape(value)}</span>`).join('<span class="kb-form-separator">／</span>') : NO_CONJUGATION}</td></tr>`).join("")}</tbody></table>
       ${item.notes.map((note) => `<p class="kb-note">${escape(note)}</p>`).join("")}
@@ -152,9 +181,90 @@ export function createKobunController({ root, getHistory, onQuizChange, onHeader
     }).join("");
     const controls = feedback ? "" : `<div class="kb-input-tools"><p><b data-kb-active-label>${CONJUGATION_FORMS[activeCell]}</b>に入力</p>
       ${selecting ? `<div class="kb-candidates">${conjugationOptions(question.item).map((value, index) => button("candidate", escape(value), `data-kb-candidate="${index}" aria-pressed="${splitForms(session.draft[activeCell]).includes(value)}" ${busy ? "disabled" : ""}`, `kb-button ${splitForms(session.draft[activeCell]).includes(value) ? "selected" : ""}`)).join("")}</div>`
-        : button("circle", "○ 活用なし", `${busy ? "disabled" : ""}`, "kb-button kb-circle")}
+        : keypadMarkup()}
       ${button("clear-cell", "この欄を消す", `${busy ? "disabled" : ""}`, "kb-text-button")}</div>`;
     return `<div class="kb-table-grid">${cells}</div>${controls}`;
+  }
+
+  // タイプ式の専用キーボード。端末のキーボードでは打ちにくい「／」「○」を
+  // 一押しで入れられるようにし、押しても入力欄のフォーカスを外さない
+  // （data-kb-keep-focus。外すと端末のキーボードが閉じて枠が動いてしまう）。
+  function keypadMarkup() {
+    const keys = [
+      ["insert-slash", "／", "区切り", "／を入れる"],
+      ["insert-circle", NO_CONJUGATION, "活用なし", "○を入れる"],
+      ["backspace", "⌫", "1字消す", "1文字消す"],
+      ["prev-cell", "←", "前の欄", "前の欄へ移る"],
+      ["next-cell", "→", "次の欄", "次の欄へ移る"],
+    ];
+    return `<div class="kb-keypad" role="group" aria-label="古文入力キーボード" data-kb-keep-focus>${keys.map(([action, glyph, caption, label]) =>
+      button(action, `<span class="kb-key-glyph" aria-hidden="true">${escape(glyph)}</span><small>${escape(caption)}</small>`, `aria-label="${escape(label)}" ${busy ? "disabled" : ""}`, "kb-key")).join("")}</div>
+      <p class="kb-keypad-hint">複数の形は「／」で区切り、活用がない欄は「○」を入れます。</p>`;
+  }
+
+  function activeField() {
+    return root.querySelector(`[data-kb-input="${activeCell}"]`);
+  }
+
+  // 全体を描き直さずに活用表の表示だけを合わせる。入力中の欄や
+  // 端末のキーボードがそのまま残るので、押した拍子に枠がズレない。
+  function syncTable() {
+    const question = currentQuestion();
+    if (!question || session.feedback) return;
+    const selecting = question.mode === "kobun_table_select";
+    const options = selecting ? conjugationOptions(question.item) : [];
+    const selected = splitForms(session.draft[activeCell]);
+    root.querySelectorAll(".kb-cell").forEach((cell, index) => {
+      cell.classList.toggle("active", index === activeCell);
+      const value = Array.isArray(session.draft[index]) ? session.draft[index].join("／") : session.draft[index] ?? "";
+      const target = cell.querySelector("[data-kb-cell], [data-kb-input]");
+      if (!target) return;
+      if (selecting) {
+        target.textContent = value || "選択する";
+        target.setAttribute("aria-pressed", String(index === activeCell));
+      } else if (target.value !== value) {
+        target.value = value;
+      }
+    });
+    const label = root.querySelector("[data-kb-active-label]");
+    if (label) label.textContent = CONJUGATION_FORMS[activeCell];
+    root.querySelectorAll("[data-kb-candidate]").forEach((candidate, index) => {
+      const on = selected.includes(options[index]);
+      candidate.setAttribute("aria-pressed", String(on));
+      candidate.classList.toggle("selected", on);
+    });
+  }
+
+  // キーボードの文字は入力欄のカーソル位置に入れる。欄が使えないときは末尾に足す。
+  function insertIntoCell(text) {
+    const field = activeField();
+    if (!field || typeof field.setRangeText !== "function") {
+      session.draft[activeCell] = `${session.draft[activeCell] ?? ""}${text}`;
+      return;
+    }
+    const start = field.selectionStart ?? field.value.length;
+    const end = field.selectionEnd ?? field.value.length;
+    field.setRangeText(text, start, end, "end");
+    session.draft[activeCell] = field.value;
+  }
+
+  function backspaceCell() {
+    const field = activeField();
+    if (!field || typeof field.setRangeText !== "function") {
+      session.draft[activeCell] = String(session.draft[activeCell] ?? "").slice(0, -1);
+      return;
+    }
+    const end = field.selectionEnd ?? field.value.length;
+    const start = field.selectionStart ?? end;
+    if (start === end && !start) return;
+    field.setRangeText("", start === end ? start - 1 : start, end, "end");
+    session.draft[activeCell] = field.value;
+  }
+
+  function moveCell(step) {
+    activeCell = (activeCell + step + CONJUGATION_FORMS.length) % CONJUGATION_FORMS.length;
+    syncTable();
+    activeField()?.focus({ preventScroll: true });
   }
 
   function baseMarkup(question, feedback) {
@@ -195,8 +305,8 @@ export function createKobunController({ root, getHistory, onQuizChange, onHeader
     const results = session.results;
     const correct = results.filter((result) => result.complete).length;
     const duration = Math.round(results.reduce((sum, result) => sum + result.durationMs, 0) / 1000);
-    return heading("今回の結果", KOBUN_MODES[mode], "auxiliary") + `<div class="kb-result"><strong>${correct} / ${results.length}問 正解</strong><p>要確認 ${results.length - correct}問 · 学習時間 ${Math.floor(duration / 60)}分${duration % 60}秒</p>
-      ${results.some((result) => !result.complete) ? button("retry", "間違えた問題を復習", "", "kb-button kb-primary") : ""}${button("restart", "同じ形式でもう一度")}${button("auxiliary", "学習形式を選ぶ")}</div>`;
+    return heading("今回の結果", KOBUN_MODES[mode], "home") + `<div class="kb-result"><strong>${correct} / ${results.length}問 正解</strong><p>要確認 ${results.length - correct}問 · 学習時間 ${Math.floor(duration / 60)}分${duration % 60}秒</p>
+      ${results.some((result) => !result.complete) ? button("retry", "間違えた問題を復習", "", "kb-button kb-primary") : ""}${button("restart", "同じ形式でもう一度")}${button("home", "学習内容を選ぶ")}</div>`;
   }
 
   function render() {
@@ -247,7 +357,7 @@ export function createKobunController({ root, getHistory, onQuizChange, onHeader
     if (action === "subject") { root.dispatchEvent(new CustomEvent("kobun-subject", { bubbles: true })); return; }
     // 古文単語は英語・公共・保健と同じ学習画面（範囲 → 重要度 → 並び替え → カード）へ渡す。
     if (action === "vocabulary" && vocabulary.length) {
-      root.dispatchEvent(new CustomEvent("kobun-vocabulary", { bubbles: true }));
+      root.dispatchEvent(new CustomEvent("kobun-vocabulary", { bubbles: true, detail: { range: target.dataset.kbRange ?? null } }));
       return;
     }
     if (action === "reload") { await show(screen); return; }
@@ -263,7 +373,7 @@ export function createKobunController({ root, getHistory, onQuizChange, onHeader
       prepareQuestion();
       return;
     }
-    if (action === "pause") { saveDraft(); screen = "auxiliary"; render(); return; }
+    if (action === "pause") { saveDraft(); screen = "home"; render(); return; }
     if (screen === "quiz" && !session.feedback) {
       const question = currentQuestion();
       if (action === "option") {
@@ -271,26 +381,42 @@ export function createKobunController({ root, getHistory, onQuizChange, onHeader
         const option = options[Number(target.dataset.kbOption)];
         session.draft = session.draft.includes(option) ? session.draft.filter((value) => value !== option) : [...session.draft, option];
       }
-      if (action === "cell") activeCell = Number(target.dataset.kbCell);
-      if (action === "candidate") session.draft[activeCell] = toggleForm(splitForms(session.draft[activeCell]), conjugationOptions(question.item)[Number(target.dataset.kbCandidate)]);
-      if (action === "circle") session.draft[activeCell] = NO_CONJUGATION;
-      if (action === "clear-cell") session.draft[activeCell] = "";
+      // 活用表の操作は表の中だけを書き換える。全体を描き直すと入力欄の
+      // フォーカスと端末のキーボードが失われ、押すたびに枠がズレてしまう。
+      if (["cell", "candidate", "circle", "clear-cell", "insert-slash", "insert-circle", "backspace"].includes(action)) {
+        if (action === "cell") activeCell = Number(target.dataset.kbCell);
+        if (action === "candidate") session.draft[activeCell] = toggleForm(splitForms(session.draft[activeCell]), conjugationOptions(question.item)[Number(target.dataset.kbCandidate)]);
+        if (action === "circle") session.draft[activeCell] = NO_CONJUGATION;
+        if (action === "clear-cell") session.draft[activeCell] = "";
+        if (action === "insert-slash") insertIntoCell("／");
+        if (action === "insert-circle") insertIntoCell(NO_CONJUGATION);
+        if (action === "backspace") backspaceCell();
+        saveDraft();
+        syncTable();
+        if (action === "cell") root.querySelector(`[data-kb-cell="${activeCell}"]`)?.focus({ preventScroll: true });
+        if (action === "clear-cell") activeField()?.focus({ preventScroll: true });
+        return;
+      }
+      if (["prev-cell", "next-cell"].includes(action)) { moveCell(action === "next-cell" ? 1 : -1); return; }
       saveDraft();
       const scroll = window.scrollY;
       render();
       window.scrollTo({ top: scroll, behavior: "auto" });
       // 再描画でキーボード利用時のフォーカスを失わない。
-      const selector = action === "cell" ? `[data-kb-cell="${activeCell}"]` : `[data-kb-action="${action}"]${target.dataset.kbOption !== undefined ? `[data-kb-option="${target.dataset.kbOption}"]` : target.dataset.kbCandidate !== undefined ? `[data-kb-candidate="${target.dataset.kbCandidate}"]` : ""}`;
-      root.querySelector(selector)?.focus({ preventScroll: true });
+      root.querySelector(`[data-kb-action="${action}"][data-kb-option="${target.dataset.kbOption}"]`)?.focus({ preventScroll: true });
       return;
     }
-    if (["home", "auxiliary", "conjugation", "vocabulary", "reference", "records"].includes(action)) {
+    if (["home", "auxiliary", "conjugation", "reference", "records"].includes(action)) {
       screen = action;
       render();
       window.scrollTo({ top: 0, behavior: "auto" });
     }
   });
 
+  // 専用キーボードを押しても入力欄からフォーカスを移さない。
+  root.addEventListener("mousedown", (event) => {
+    if (event.target.closest("[data-kb-keep-focus]")) event.preventDefault();
+  });
   root.addEventListener("input", (event) => {
     const index = event.target.dataset.kbInput;
     if (index === undefined || busy || session?.feedback) return;

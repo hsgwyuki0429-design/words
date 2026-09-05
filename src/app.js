@@ -1,4 +1,4 @@
-import { createKobunController } from "./kobun.js?v=2026.9.27";
+import { createKobunController } from "./kobun.js?v=2026.9.28";
 import {
   ALL_MODES,
   ALPHABET_KEYBOARD_ROWS,
@@ -68,7 +68,7 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.27";
+} from "./logic.js?v=2026.9.28";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -88,7 +88,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.9.27";
+} from "./storage.js?v=2026.9.28";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -96,7 +96,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.27";
+} from "./quiz-gestures.js?v=2026.9.28";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
@@ -105,7 +105,7 @@ import {
   normalizeSpeechRate,
   normalizeSpeechVoiceURI,
   voiceKey,
-} from "./speech.js?v=2026.9.27";
+} from "./speech.js?v=2026.9.28";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -4680,7 +4680,7 @@ async function boot() {
       fetch("./data/items.json?v=2026.08.31b"),
       fetch("./data/public-items.json?v=2026.09.01"),
       fetch("./data/health-items.json?v=2026.09.01"),
-      fetch("./data/kobun-vocabulary.json?v=2026.9.27"),
+      fetch("./data/kobun-vocabulary.json?v=2026.9.28"),
       loadHistory(),
       getMeta("selectedMode"),
       getMetaObject("settings", DEFAULT_SETTINGS),
@@ -4728,7 +4728,7 @@ async function boot() {
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.27").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.28").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

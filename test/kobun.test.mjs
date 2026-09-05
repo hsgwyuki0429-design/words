@@ -158,10 +158,13 @@ test("途中の再開時刻を持ち回り、「続きから」は最後に触�
   assert.equal(restored.updatedAt, 5);
 });
 
-test("古文のホームは矢印なしで、助動詞の形式と古文単語の作品を並べて出す", () => {
+test("古文のホームは助動詞の入口と古文単語の作品だけを出し、助動詞の5形式は次の画面に出す", () => {
   assert.match(kobunSource, /heading\("古文", "学習する内容を選ぶ", null\)/);
   assert.match(kobunSource, /back \? button\(back, "←"/);
   assert.ok(Object.keys(KOBUN_MODES).length === 5);
+  assert.match(kobunSource, /if \(screen === "home"\)/);
+  assert.match(kobunSource, /button\("auxiliary"/);
+  assert.match(kobunSource, /heading\("助動詞", "学習する形式を選ぶ", "home"\)/);
   assert.match(kobunSource, /Object\.keys\(KOBUN_MODES\)\.map\(\(key\) => modeCard\(key, resumeKey\)\)/);
   assert.match(kobunSource, /function vocabularyMarkup\(\)/);
   assert.match(kobunSource, /data-kb-range="\$\{escape\(range\)\}"/);

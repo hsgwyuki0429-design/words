@@ -1,11 +1,11 @@
 import {
-  CONJUGATION_FORMS, KOBUN_CATEGORIES, KOBUN_MODES, NO_CONJUGATION,
+  CONJUGATION_FORMS, KOBUN_MODES, NO_CONJUGATION,
   allConnectionOptions, allMeaningOptions, conjugationOptions, gradeQuestion,
   questionsForMode, restoreKobunSession, splitForms, summarizeKobun, toggleForm,
   validateAuxiliaries, validateVocabulary,
-} from "./kobun-logic.js?v=2026.9.27";
-import { mergeAttempt, summarizeProgressGauge } from "./logic.js?v=2026.9.27";
-import { getMetaObject, putHistory, setMeta, stashMeta } from "./storage.js?v=2026.9.27";
+} from "./kobun-logic.js?v=2026.9.28";
+import { mergeAttempt, summarizeProgressGauge } from "./logic.js?v=2026.9.28";
+import { getMetaObject, putHistory, setMeta, stashMeta } from "./storage.js?v=2026.9.28";
 
 const META_KEY = "kobunStudy:v1";
 const escape = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
@@ -32,8 +32,8 @@ export function createKobunController({ root, getHistory, onQuizChange, onHeader
   async function load() {
     if (!loading) loading = (async () => {
       const [auxResponse, vocabResponse, progress] = await Promise.all([
-        fetch("./data/kobun-auxiliaries.json?v=2026.9.27"),
-        fetch("./data/kobun-vocabulary.json?v=2026.9.27"),
+        fetch("./data/kobun-auxiliaries.json?v=2026.9.28"),
+        fetch("./data/kobun-vocabulary.json?v=2026.9.28"),
         getMetaObject(META_KEY, {}),
       ]);
       if (!auxResponse.ok || !vocabResponse.ok) throw new Error("古文の教材を読み込めませんでした。通信を確認して再試行してください。");
@@ -133,15 +133,18 @@ export function createKobunController({ root, getHistory, onQuizChange, onHeader
   }
 
   function menuMarkup() {
-    // ホームに助動詞の学習形式と古文単語の作品をそのまま並べ、一段の移動で学習を始められるようにする。
-    if (screen === "home" || screen === "auxiliary" || screen === "conjugation" || screen === "vocabulary") {
-      const resumeKey = resumableMode();
-      const [auxiliary, vocabularyCategory] = KOBUN_CATEGORIES;
+    // ホームは入口だけに絞る。助動詞は次の画面で5形式を選び、
+    // 古文単語は作品を押すとその範囲の学習へ直接進む。
+    if (screen === "home") {
       return heading("古文", "学習する内容を選ぶ", null)
-        + `<section class="kb-section"><h2 class="kb-section-title">${auxiliary.label}</h2><p class="kb-section-copy">${items.length}種類 · ${auxiliary.description}</p>
-        <div class="mode-card-list kb-mode-list">${Object.keys(KOBUN_MODES).map((key) => modeCard(key, resumeKey)).join("")}</div>
-        <p class="kb-note">正解済みは、その形式の直近の回答ですべて正解した問題数です。</p>${button("reference", "助動詞一覧を確認", "", "kb-text-button")}</section>
-        <section class="kb-section"><h2 class="kb-section-title">${vocabularyCategory.label}</h2><p class="kb-section-copy">${vocabulary.length ? `${vocabulary.length}語句 · ${vocabularyCategory.description}` : "教材準備中"}</p>${vocabularyMarkup()}</section>`;
+        + `<div class="kb-home-menu">${button("auxiliary",
+          '<span><strong>助動詞</strong></span><span class="card-arrow" aria-hidden="true">›</span>',
+          "", "kb-menu-card kb-category")}${vocabularyMarkup()}</div>`;
+    }
+    if (screen === "auxiliary" || screen === "conjugation") {
+      const resumeKey = resumableMode();
+      return heading("助動詞", "学習する形式を選ぶ", "home")
+        + `<div class="mode-card-list kb-mode-list">${Object.keys(KOBUN_MODES).map((key) => modeCard(key, resumeKey)).join("")}</div>`;
     }
     if (screen === "records") return heading("古文の学習記録", "正答率は全項目を答えきった回答の割合です") + `<div class="kb-menu">${Object.entries(KOBUN_MODES).map(([key, label]) => {
       const summary = summarizeKobun(items, getHistory(), key);

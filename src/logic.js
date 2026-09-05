@@ -263,6 +263,20 @@ export function tokenizeAnswer(answer) {
   return parseInputAnswer(answer).slots.map((slot) => slot.answer);
 }
 
+// 4択の誤答づくりでは、候補すべての語数を1問ごとに数え直していた。教材の語句は
+// 決まった集合なので、文字列ごとに結果を覚えておき、出題のたびに解析し直さない。
+const tokenCountCache = new Map();
+
+function tokenCountFor(text) {
+  const key = String(text ?? "");
+  let count = tokenCountCache.get(key);
+  if (count === undefined) {
+    count = tokenizeAnswer(key).length;
+    tokenCountCache.set(key, count);
+  }
+  return count;
+}
+
 export function slotTokensForQuestion(item, mode) {
   return inputPlanForQuestion(item, mode).slots.map((slot) => slot.answer);
 }
@@ -273,7 +287,9 @@ export function characterHintForToken(token) {
     .join("");
 }
 
-export function distributeInputText(plan, text, startIndex = 0) {
+// currentValues を渡すと、置き換えなかった枠の内容をそのまま残す。答え全体と
+// 一致したとき（貼り付けなど）だけは、余った枠を空にして並べ直す。
+export function distributeInputText(plan, text, startIndex = 0, currentValues = null) {
   const parts = String(text ?? "").trim().split(/\s+/).filter(Boolean);
   const values = Array.from({ length: plan?.slots?.length ?? 0 }, () => "");
   const start = Math.max(0, Number(startIndex) || 0);
@@ -288,10 +304,13 @@ export function distributeInputText(plan, text, startIndex = 0) {
     });
     return values;
   }
+  const distributed = Array.isArray(currentValues)
+    ? values.map((_, index) => String(currentValues[index] ?? ""))
+    : values;
   parts.forEach((part, offset) => {
-    if (values[start + offset] !== undefined) values[start + offset] = part;
+    if (distributed[start + offset] !== undefined) distributed[start + offset] = part;
   });
-  return values;
+  return distributed;
 }
 
 /*
@@ -647,11 +666,32 @@ function choiceAnswer(candidate, mode) {
   return candidate.japanese;
 }
 
+// 日本語→英語では、訳が同じ語句を誤答から外すために候補すべての訳を正規化する。
+// これも候補ごとに走るので、文字列ごとに結果を覚えておく。
+const normalizedGlossCache = new Map();
+
+function normalizedGloss(text) {
+  const key = String(text ?? "");
+  let value = normalizedGlossCache.get(key);
+  if (value === undefined) {
+    value = normalizeAnswer(key);
+    normalizedGlossCache.set(key, value);
+  }
+  return value;
+}
+
+// A・B のプレースホルダの数え方も候補ごとに走るので、同じく覚えておく。
+const placeholderSignatureCache = new Map();
+
 function placeholderSignature(value) {
   const text = String(value ?? "");
+  const cached = placeholderSignatureCache.get(text);
+  if (cached !== undefined) return cached;
   const count = (placeholder) =>
     (text.match(new RegExp(`(?<![A-Za-z])${placeholder}(?![A-Za-z])`, "g")) ?? []).length;
-  return `${count("A")}:${count("B")}`;
+  const signature = `${count("A")}:${count("B")}`;
+  placeholderSignatureCache.set(text, signature);
+  return signature;
 }
 
 export function generateChoices(item, mode, pool, rng = Math.random, excludedItemIds = []) {
@@ -661,19 +701,18 @@ export function generateChoices(item, mode, pool, rng = Math.random, excludedIte
   const matchPlaceholderShape = item.type !== "word" && targetSignature !== "0:0";
   // 日本語→英語では訳がそのまま問題文になるので、同じ訳の語句は誤答にできない。
   // garbage と trash のように、どちらを選んでも正解になってしまう。
-  const promptGloss = mode === "ja_to_en_choice" ? normalizeAnswer(item.japanese) : "";
+  const promptGloss = mode === "ja_to_en_choice" ? normalizedGloss(item.japanese) : "";
   const eligible = (candidate) =>
     candidate.id !== item.id &&
-    (!promptGloss || normalizeAnswer(candidate.japanese) !== promptGloss) &&
+    (!promptGloss || normalizedGloss(candidate.japanese) !== promptGloss) &&
     (!matchPlaceholderShape || (
       candidate.type !== "word" && placeholderSignature(candidate.english) === targetSignature
     ));
 
+  const targetTokenCount = tokenCountFor(item.english);
   const rankCandidates = (source) =>
     shuffle(source, rng).map((candidate) => {
-      const wordDifference = Math.abs(
-        tokenizeAnswer(candidate.english).length - tokenizeAnswer(item.english).length,
-      );
+      const wordDifference = Math.abs(tokenCountFor(candidate.english) - targetTokenCount);
       const score =
         (candidate.type === item.type ? 8 : 0) +
         (candidate.range !== item.range ? 3 : 0) +

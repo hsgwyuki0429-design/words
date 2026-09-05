@@ -14,9 +14,11 @@
     <title>Words — 英語・古文・公共・保健対策</title>
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icons/app-icon.svg" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="./icons/app-icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=2026.9.26a" />
-    <link rel="stylesheet" href="./kobun.css?v=2026.9.26a" />
+    <link rel="icon" href="./icons/app-icon-192.png" sizes="192x192" type="image/png" />
+    <!-- iOS のホーム画面アイコンは PNG のみ。SVG だと画面の写しが使われてしまう。 -->
+    <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png" />
+    <link rel="stylesheet" href="./styles.css?v=2026.9.26b" />
+    <link rel="stylesheet" href="./kobun.css?v=2026.9.26b" />
   </head>
   <body>
     <div class="fx-backdrop" id="fx-backdrop" aria-hidden="true">
@@ -315,6 +317,6 @@
     </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-    <script type="module" src="./src/app.js?v=2026.9.26a"></script>
+    <script type="module" src="./src/app.js?v=2026.9.26b"></script>
   </body>
 </html>

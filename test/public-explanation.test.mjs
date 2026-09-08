@@ -31,18 +31,29 @@ test("一問一答の答え面に解説を出す", () => {
   assert.match(appSource, /class="public-recall-explanation"/);
 });
 
-test("解説はカードからはみ出さないよう高さを抑えて中でスクロールする", () => {
+test("解説を足してもカードの大きさは変えず、文字を縮めて収める", () => {
   const rule = stylesSource.slice(
-    stylesSource.indexOf(".public-recall-explanation {"),
-    stylesSource.indexOf(".public-recall-explanation.is-scrollable"),
+    stylesSource.indexOf(".public-recall-card:not(.vocab-recall-card) {"),
+    stylesSource.indexOf(".public-recall-card:not(.vocab-recall-card)[data-density"),
   );
-  assert.match(rule, /max-height:\s*min\(22dvh, 190px\);/);
-  assert.match(rule, /overflow-y:\s*auto;/);
+  // 高さは今までのカードと同じ。あふれる分は文字の大きさと行間で吸収する。
+  assert.match(rule, /height:\s*min\(64dvh, 620px\);/);
+  assert.match(rule, /overflow:\s*hidden;/);
+  assert.match(stylesSource, /\.public-recall-card:not\(\.vocab-recall-card\) h1 \{[^}]*var\(--recall-scale\)/);
+  assert.match(stylesSource, /\.public-recall-card:not\(\.vocab-recall-card\) \.public-recall-explanation p \{[^}]*var\(--recall-scale\)/);
+  // 解説の中だけをスクロールさせる作りは残さない（文の途中で切れて見えなくなるため）。
+  assert.doesNotMatch(stylesSource, /\.public-recall-explanation\.is-scrollable/);
+  assert.doesNotMatch(appSource, /markScrollableExplanation/);
 });
 
-test("スクロールできる解説の中ではスワイプ採点を働かせない", () => {
-  assert.match(appSource, /explanation\.setAttribute\("data-quiz-gesture-ignore", ""\)/);
-  assert.match(appSource, /markScrollableExplanation\(\);/);
+test("はみ出す分だけ縮め、収まっているカードは今までの大きさのまま出す", () => {
+  assert.match(appSource, /fitRecallCard\("\.public-recall-card", "--recall-scale"\)/);
+  assert.match(appSource, /fitRecallCard\("\.vocab-recall-card", "--vocab-scale"\)/);
+  // 文字の大きさは今までと同じ値から始める（入りきる問題は縮めない）。
+  assert.match(
+    stylesSource,
+    /\.public-recall-card:not\(\.vocab-recall-card\) h1 \{[^}]*clamp\(1\.55rem, 5vw, 2\.8rem\) \* var\(--recall-scale\)/,
+  );
 });
 
 test("公共の4択は教科書の選択肢をそのまま使う", () => {

@@ -5579,6 +5579,31 @@ body.kobun-quiz-active {
   font-size: 0.75rem;
   text-align: center;
 }
+.textbook-evidence {
+  margin-top: 0.65em;
+  padding-top: 0.65em;
+  border-top: 1px solid var(--line);
+}
+.textbook-evidence-label {
+  display: block;
+  margin-top: 0.45em;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+.textbook-evidence blockquote {
+  margin: 0.35em 0;
+  padding-left: 0.65em;
+  border-left: 2px solid var(--line);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.quiz-public-choice .textbook-evidence blockquote {
+  font-size: var(--choice-text);
+}
+.public-recall-card:not(.vocab-recall-card) .textbook-evidence blockquote {
+  font-size: var(--recall-text);
+}
 .quiz-public-choice.quiz-answered .choice-button {
   pointer-events: none;
 }

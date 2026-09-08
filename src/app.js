@@ -1,4 +1,4 @@
-import { createKobunController } from "./kobun.js?v=2026.9.29";
+import { createKobunController } from "./kobun.js?v=2026.9.30";
 import {
   ALL_MODES,
   ALPHABET_KEYBOARD_ROWS,
@@ -69,7 +69,7 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.29";
+} from "./logic.js?v=2026.9.30";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -89,7 +89,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.9.29";
+} from "./storage.js?v=2026.9.30";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -97,7 +97,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.29";
+} from "./quiz-gestures.js?v=2026.9.30";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
@@ -106,7 +106,7 @@ import {
   normalizeSpeechRate,
   normalizeSpeechVoiceURI,
   voiceKey,
-} from "./speech.js?v=2026.9.29";
+} from "./speech.js?v=2026.9.30";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -390,6 +390,20 @@ function recallAnswer(item) {
 function recallExplanation(item) {
   const text = item.explanation ?? item.editorial?.explanation ?? "";
   return typeof text === "string" ? text.trim() : "";
+}
+
+function renderTextbookEvidence(item) {
+  if (item.subject !== "public") return "";
+  const location = item.sourceDetail || item.source || "";
+  const quotes = (item.editorial?.evidenceQuotes ?? [])
+    .filter((quote) => typeof quote === "string" && quote.trim());
+  const note = item.editorial?.evidenceNote;
+  if (!location && !quotes.length) return "";
+  return `<div class="textbook-evidence">
+    ${location ? `<span class="textbook-evidence-label">教科書の該当箇所</span><p>${escapeHtml(location)}</p>` : ""}
+    ${quotes.length ? `<span class="textbook-evidence-label">教科書の抜粋</span>${quotes.map((quote) => `<blockquote>${escapeHtml(quote)}</blockquote>`).join("")}` : ""}
+    ${note ? `<p class="textbook-evidence-note">${escapeHtml(note)}</p>` : ""}
+  </div>`;
 }
 
 function currentRangeOrder() {
@@ -3012,7 +3026,7 @@ function renderFeedback(question, _answer, correct) {
     return `<section class="feedback-card ${correct ? "feedback-correct" : "feedback-wrong"}" aria-live="polite">
       <div class="feedback-result"><span aria-hidden="true">${correct ? "✓" : "×"}</span><strong>${correct ? "正解" : "不正解"}</strong></div>
       <p class="input-correct-answer"><span>模範回答</span><strong>${escapeHtml(correctAnswer)}</strong></p>
-      <div class="feedback-explanation"><span>解説</span><p>${escapeHtml(recallExplanation(question.item))}</p></div>
+      <div class="feedback-explanation"><span>解説</span><p>${escapeHtml(recallExplanation(question.item))}</p>${renderTextbookEvidence(question.item)}</div>
     </section>`;
   }
   if (isKeyboardInput) {
@@ -3466,9 +3480,9 @@ function recallCardBody(question, revealed) {
         <strong>${escapeHtml(question.answer)}</strong>
       </div>
       ${recallExplanation(question.item)
-        ? `<div class="public-recall-explanation"><span class="public-recall-explanation-label">解説</span><p>${escapeHtml(recallExplanation(question.item))}</p></div>`
+        ? `<div class="public-recall-explanation"><span class="public-recall-explanation-label">解説</span><p>${escapeHtml(recallExplanation(question.item))}</p>${renderTextbookEvidence(question.item)}</div>`
         : ""}
-      ${state.settings.showSources ? `<p class="public-recall-source">${escapeHtml(question.item.sourceDetail)}</p>` : ""}
+      ${state.settings.showSources && question.item.subject !== "public" ? `<p class="public-recall-source">${escapeHtml(question.item.sourceDetail)}</p>` : ""}
     ` : ""}`;
 }
 
@@ -4712,7 +4726,7 @@ async function boot() {
       fetch("./data/items.json?v=2026.08.31b"),
       fetch("./data/public-items.json?v=2026.09.01"),
       fetch("./data/health-items.json?v=2026.09.01"),
-      fetch("./data/kobun-vocabulary.json?v=2026.9.29"),
+      fetch("./data/kobun-vocabulary.json?v=2026.9.30"),
       loadHistory(),
       getMeta("selectedMode"),
       getMetaObject("settings", DEFAULT_SETTINGS),
@@ -4760,7 +4774,7 @@ async function boot() {
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.29").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.30").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

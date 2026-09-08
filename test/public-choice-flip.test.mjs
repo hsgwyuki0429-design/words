@@ -33,7 +33,7 @@ test("表裏を何度切り替えても回答・採点・進捗を変えない",
 
 test("公共の答え面は正誤・模範回答・解説を表示し、問題面は選択した回答を明示する", () => {
   const context = vm.createContext({ state: { session: { answered: true } }, answersForMode: () => ["模範の用語"], recallExplanation: () => "用語の解説", escapeHtml: (s) => s, normalizeAnswer: (s) => s, UNKNOWN_CHOICE: "わからない" });
-  vm.runInContext(functionSource("renderFeedback") + functionSource("renderChoiceArea"), context);
+  vm.runInContext(functionSource("renderTextbookEvidence") + functionSource("renderFeedback") + functionSource("renderChoiceArea"), context);
   for (const correct of [true, false]) {
     context.question = { mode: "public_choice", item: {}, choices: ["選択A", "選択B", "選択C", "選択D", "わからない"], correctChoice: "選択A" };
     context.answer = correct ? "選択A" : "選択B";

@@ -1,4 +1,4 @@
-import { createKobunController } from "./kobun.js?v=2026.9.28";
+import { createKobunController } from "./kobun.js?v=2026.9.29";
 import {
   ALL_MODES,
   ALPHABET_KEYBOARD_ROWS,
@@ -69,7 +69,7 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.28";
+} from "./logic.js?v=2026.9.29";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -89,7 +89,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.9.28";
+} from "./storage.js?v=2026.9.29";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -97,7 +97,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.28";
+} from "./quiz-gestures.js?v=2026.9.29";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
@@ -106,7 +106,7 @@ import {
   normalizeSpeechRate,
   normalizeSpeechVoiceURI,
   voiceKey,
-} from "./speech.js?v=2026.9.28";
+} from "./speech.js?v=2026.9.29";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -2715,6 +2715,7 @@ function prepareQuestion({ enterFrom = null } = {}) {
   resetInputKeyboardState();
   session.answered = false;
   session.revealed = false;
+  session.choiceQuestionVisible = false;
   session.cardEnterFrom = enterFrom;
   session.cardEnterPromise = null;
   session.lastReviewDelayMs = null;
@@ -2754,7 +2755,7 @@ function renderChoiceArea(question, answered, currentAnswer) {
           : "";
         const unknownClass = choice === UNKNOWN_CHOICE ? " choice-unknown" : "";
         return `<button class="choice-button${unknownClass}${resultClass}" type="button" data-choice="${escapeHtml(choice)}" ${answered ? "disabled" : ""}>
-          <span>${letters[index]}</span><strong>${escapeHtml(choice)}</strong>
+          <span>${letters[index]}</span><strong>${escapeHtml(choice)}${answered && selected && question.mode === "public_choice" ? '<small class="choice-selected-label">あなたの回答</small>' : ""}</strong>
         </button>`;
       })
       .join("")}
@@ -3007,6 +3008,13 @@ function renderFeedback(question, _answer, correct) {
   const isChoice = question.mode.endsWith("choice");
   const isKeyboardInput = question.mode === "ja_to_en_input";
   const correctAnswer = answersForMode(question.item, question.mode)[0];
+  if (question.mode === "public_choice") {
+    return `<section class="feedback-card ${correct ? "feedback-correct" : "feedback-wrong"}" aria-live="polite">
+      <div class="feedback-result"><span aria-hidden="true">${correct ? "✓" : "×"}</span><strong>${correct ? "正解" : "不正解"}</strong></div>
+      <p class="input-correct-answer"><span>模範回答</span><strong>${escapeHtml(correctAnswer)}</strong></p>
+      <div class="feedback-explanation"><span>解説</span><p>${escapeHtml(recallExplanation(question.item))}</p></div>
+    </section>`;
+  }
   if (isKeyboardInput) {
     return `
       <section class="feedback-card keyboard-feedback-card ${correct ? "feedback-correct" : "feedback-wrong"}" aria-live="polite" aria-label="${correct ? "正解" : "不正解"}">
@@ -3281,6 +3289,12 @@ function currentQuizGesturePolicy() {
 
 function toggleRecallFace() {
   const session = state.session;
+  if (session?.currentQuestion?.mode === "public_choice" && session.answered) {
+    if (!currentQuizGesturePolicy().tapEnabled) return;
+    session.choiceQuestionVisible = !session.choiceQuestionVisible;
+    renderQuiz();
+    return;
+  }
   if (!session || !isRecallMode(session.currentQuestion?.mode)) return;
   if (!currentQuizGesturePolicy().tapEnabled) return;
   session.revealed = !session.revealed;
@@ -3532,6 +3546,8 @@ function renderQuiz() {
   const questionTotal = sessionQuestionTotal(session);
   const progress = Math.round(((session.cursor + (answered ? 1 : 0)) / questionTotal) * 100);
   const isChoice = question.mode.endsWith("choice");
+  const isPublicChoice = question.mode === "public_choice";
+  const showChoiceAnswer = isPublicChoice && answered && !session.choiceQuestionVisible;
   const isKeyboardInput = question.mode === "ja_to_en_input";
   const isSwipeAdvance = isSwipeAdvanceMode(question.mode);
   const usesSlots = ["ja_to_en_input", "spelling_input"].includes(question.mode);
@@ -3550,7 +3566,7 @@ function renderQuiz() {
   const showAlphabetKeyboard = !answered && shouldUseAlphabetKeyboard(question.mode);
 
   elements.quizContent.innerHTML = `
-    <div class="quiz-shell${answered ? " quiz-answered" : ""}${isChoice ? " quiz-choice" : ""}${isKeyboardInput ? " quiz-keyboard-input" : ""}${showAlphabetKeyboard ? " has-alphabet-keyboard" : ""}">
+    <div class="quiz-shell${answered ? " quiz-answered" : ""}${isChoice ? " quiz-choice" : ""}${isPublicChoice ? " quiz-public-choice" : ""}${isKeyboardInput ? " quiz-keyboard-input" : ""}${showAlphabetKeyboard ? " has-alphabet-keyboard" : ""}">
       <header class="quiz-header${isKeyboardInput ? " quiz-header--input" : ""}">
         <div class="quiz-header-left">
           <button class="icon-button" type="button" data-quit-quiz aria-label="学習を終了">×</button>
@@ -3569,14 +3585,15 @@ function renderQuiz() {
           class="quiz-gesture-card quiz-question-stack"
           ${isSwipeAdvance ? "data-quiz-gesture-surface" : ""}
           data-gesture-state="${answered && isSwipeAdvance ? "choice-answer" : "choice-question"}"
-          ${answered && isSwipeAdvance ? 'tabindex="0" aria-label="回答済みカード。上下左右どの方向へ払っても次へ進みます"' : ""}
+          ${answered && isSwipeAdvance ? `tabindex="0" aria-label="${isPublicChoice ? (showChoiceAnswer ? "答え面。タップで問題と自分の回答を確認。" : "問題面。タップで答えと解説を確認。") : "回答済みカード。"}上下左右どの方向へ払っても次へ進みます"` : ""}
         >
           <article class="question-card${isChoice ? " swipe-choice-card" : isKeyboardInput ? " swipe-input-card" : ""}">
-            <p class="question-instruction">${escapeHtml(question.instruction)}</p>
+            ${showChoiceAnswer ? "" : `<p class="question-instruction">${escapeHtml(question.instruction)}</p>
             <h1>${escapeHtml(question.prompt)}</h1>
             ${translation}
-            <div class="answer-area">${answerArea}</div>
-            ${answered && isSwipeAdvance ? feedbackArea : ""}
+            <div class="answer-area">${answerArea}</div>`}
+            ${answered && isSwipeAdvance && (!isPublicChoice || showChoiceAnswer) ? feedbackArea : ""}
+            ${isPublicChoice && answered ? `<p class="choice-flip-hint">タップで${showChoiceAnswer ? "問題・自分の回答" : "答え・解説"}を確認</p>` : ""}
             ${answered && isSwipeAdvance ? renderChoiceSwipeHints() : ""}
           </article>
           ${answered && !isSwipeAdvance ? feedbackArea : ""}
@@ -4612,7 +4629,7 @@ function bindEvents() {
   elements.quizContent.addEventListener("keydown", (event) => {
     const mode = state.session?.currentQuestion?.mode;
     const gestureSurface = event.target.closest("[data-quiz-gesture-surface]");
-    if (isRecallMode(mode)) {
+    if (isRecallMode(mode) || (mode === "public_choice" && state.session?.answered)) {
       if (gestureSurface && ["Enter", " "].includes(event.key)) {
         event.preventDefault();
         toggleRecallFace();
@@ -4695,7 +4712,7 @@ async function boot() {
       fetch("./data/items.json?v=2026.08.31b"),
       fetch("./data/public-items.json?v=2026.09.01"),
       fetch("./data/health-items.json?v=2026.09.01"),
-      fetch("./data/kobun-vocabulary.json?v=2026.9.28"),
+      fetch("./data/kobun-vocabulary.json?v=2026.9.29"),
       loadHistory(),
       getMeta("selectedMode"),
       getMetaObject("settings", DEFAULT_SETTINGS),
@@ -4743,7 +4760,7 @@ async function boot() {
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.28").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.29").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

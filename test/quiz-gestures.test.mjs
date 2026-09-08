@@ -314,7 +314,7 @@ test("めくっているカードは飛んでいくカードより下に重な�
 });
 
 test("answered choice feedback and swipe guide stay inside one question card", () => {
-  assert.match(appSource, /<article class="question-card\$\{isChoice \? " swipe-choice-card" : isKeyboardInput \? " swipe-input-card" : ""\}">[\s\S]*?answered && isSwipeAdvance \? feedbackArea[\s\S]*?renderChoiceSwipeHints\(\)[\s\S]*?<\/article>/);
+  assert.match(appSource, /<article class="question-card\$\{isChoice \? " swipe-choice-card" : isKeyboardInput \? " swipe-input-card" : ""\}">[\s\S]*?answered && isSwipeAdvance && \(!isPublicChoice \|\| showChoiceAnswer\) \? feedbackArea[\s\S]*?renderChoiceSwipeHints\(\)[\s\S]*?<\/article>/);
   assert.match(appSource, /answered && !isSwipeAdvance \? feedbackArea/);
   assert.match(stylesSource, /\.swipe-choice-card\s*\{[\s\S]*?min-height:\s*var\(--choice-card-height\)/);
   assert.match(stylesSource, /\.swipe-choice-card > \.feedback-card\s*\{[\s\S]*?background:\s*transparent[\s\S]*?border-top:/);

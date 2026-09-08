@@ -2499,8 +2499,7 @@ body.quiz-active .main-content { padding-bottom: 0; }
   background: #f6f6f8;
   border-radius: 11px;
 }
-/* 4択の答え合わせに出す解説。こちらは画面ごとスクロールできるので、
-   途中で切らずに最後まで見せる。 */
+/* 4択の答え合わせに出す解説。 */
 .feedback-explanation {
   margin-top: 10px;
   padding: 10px 12px;
@@ -3855,34 +3854,37 @@ body.quiz-active .main-content { padding-bottom: 0; }
   line-height: 1.55;
   text-align: center;
 }
-/* 公共・保健の一問一答カード。問題文や解説が長くなってもカードの大きさは変えず、
-   文字の大きさと行間だけを詰めて収める（--recall-scale が中身全体の倍率）。
-   収まっているうちは今までどおりの文字の大きさで、入りきらない分だけ縮める。
+/* 公共・保健の一問一答カード。カードの大きさは今までと同じまま固定し、
+   問題文・答え・解説はどの問題でも同じ文字の大きさで並べる。
+   万一入りきらないときだけ --recall-scale で全体を縮めて収める。
    古文単語のカードは自前の倍率を持っているので、ここでは対象外にする。 */
 .public-recall-card:not(.vocab-recall-card) {
   --recall-scale: 1;
+  --recall-text: calc(clamp(0.75rem, min(3.9vw, 2.6dvh), 1.2rem) * var(--recall-scale));
   height: min(64dvh, 620px);
   overflow: hidden;
   padding: clamp(1.4rem, 4.5vw, 3rem) clamp(1.2rem, 5vw, 3.5rem);
 }
 .public-recall-card:not(.vocab-recall-card) .public-recall-meta {
+  flex: 0 0 auto;
   font-size: calc(0.78rem * max(var(--recall-scale), 0.82));
 }
+.public-recall-card:not(.vocab-recall-card) .importance-badge { flex: 0 0 auto; }
 .public-recall-card:not(.vocab-recall-card) .question-instruction {
-  margin: calc(clamp(0.8rem, 2.6vh, 1.8rem) * var(--recall-scale)) 0
-    calc(0.55rem * var(--recall-scale));
+  margin: calc(0.9rem * var(--recall-scale)) 0 calc(0.5rem * var(--recall-scale));
 }
 .public-recall-card:not(.vocab-recall-card) h1 {
-  margin: 0 auto calc(clamp(1.1rem, 3.2vh, 2rem) * var(--recall-scale));
-  font-size: calc(clamp(1.55rem, 5vw, 2.8rem) * var(--recall-scale));
-  line-height: 1.42;
+  margin: 0 auto calc(0.9rem * var(--recall-scale));
+  font-size: var(--recall-text);
+  font-weight: 800;
+  line-height: 1.65;
 }
 .public-recall-card:not(.vocab-recall-card) .public-recall-answer {
-  padding: calc(clamp(1rem, 3.6vw, 1.7rem) * var(--recall-scale));
+  padding: calc(0.9rem * var(--recall-scale));
 }
 .public-recall-card:not(.vocab-recall-card) .public-recall-answer strong {
-  font-size: calc(clamp(1.2rem, 4vw, 1.9rem) * var(--recall-scale));
-  line-height: 1.45;
+  font-size: var(--recall-text);
+  line-height: 1.65;
 }
 .public-recall-card:not(.vocab-recall-card) .public-recall-explanation {
   margin-top: calc(0.7rem * var(--recall-scale));
@@ -3893,8 +3895,8 @@ body.quiz-active .main-content { padding-bottom: 0; }
   font-size: calc(0.68rem * max(var(--recall-scale), 0.85));
 }
 .public-recall-card:not(.vocab-recall-card) .public-recall-explanation p {
-  font-size: calc(0.88rem * var(--recall-scale));
-  line-height: 1.6;
+  font-size: var(--recall-text);
+  line-height: 1.65;
 }
 .public-recall-card:not(.vocab-recall-card) .public-recall-source {
   margin-top: calc(0.6rem * var(--recall-scale));
@@ -5652,4 +5654,62 @@ body.kobun-quiz-active {
   .toast {
     transform: none !important;
   }
+}
+
+/* 4択も、問題文・選択肢・解説を同じ文字の大きさでそろえ、
+   答え合わせまで出しても1画面に収まるようにする。
+   入りきらない画面では --choice-scale で全体を縮めて収める。 */
+.quiz-choice {
+  --choice-scale: 1;
+  --choice-text: calc(clamp(0.75rem, min(3.9vw, 2.6dvh), 1.2rem) * var(--choice-scale));
+}
+.quiz-choice .swipe-choice-card {
+  min-height: calc(var(--choice-card-height) * var(--choice-scale));
+  padding: calc(clamp(16px, 3vw, 24px) * var(--choice-scale));
+}
+.quiz-choice .swipe-choice-card h1 {
+  margin-bottom: calc(0.9rem * var(--choice-scale));
+  font-size: var(--choice-text);
+  font-weight: 800;
+  line-height: 1.65;
+}
+.quiz-choice .swipe-choice-card .question-instruction {
+  margin-bottom: calc(0.6rem * var(--choice-scale));
+}
+.quiz-choice .swipe-choice-card .choice-list {
+  gap: calc(6px * var(--choice-scale));
+}
+.quiz-choice .swipe-choice-card .choice-button {
+  grid-template-columns: calc(28px * var(--choice-scale)) minmax(0, 1fr);
+  gap: calc(10px * var(--choice-scale));
+  min-height: calc(40px * var(--choice-scale));
+  padding: calc(6px * var(--choice-scale)) calc(12px * var(--choice-scale));
+}
+.quiz-choice .choice-button > span {
+  width: calc(26px * var(--choice-scale));
+  height: calc(26px * var(--choice-scale));
+  font-size: calc(11px * var(--choice-scale));
+}
+.quiz-choice .choice-button strong {
+  font-size: var(--choice-text);
+  line-height: 1.5;
+}
+.quiz-choice .feedback-explanation {
+  margin-top: calc(8px * var(--choice-scale));
+  padding: calc(8px * var(--choice-scale)) calc(11px * var(--choice-scale));
+}
+.quiz-choice .feedback-explanation p {
+  font-size: var(--choice-text);
+  line-height: 1.6;
+}
+.quiz-choice .feedback-result span {
+  width: calc(28px * var(--choice-scale));
+  height: calc(28px * var(--choice-scale));
+  font-size: calc(17px * var(--choice-scale));
+}
+.quiz-choice .review-scheduled-note {
+  margin: calc(6px * var(--choice-scale)) 0 0;
+}
+.quiz-choice .source-box {
+  padding: calc(9px * var(--choice-scale)) calc(12px * var(--choice-scale));
 }

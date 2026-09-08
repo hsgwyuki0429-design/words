@@ -116,22 +116,22 @@ assert.deepEqual([...ranges].sort(), [...RANGE_ORDER].sort(), "All eight ranges 
 
 console.log(`Data check passed: ${items.length} items across ${ranges.size} ranges.`);
 
-assert.equal(publicItems.length, 291, "Public data must contain 291 unique reviewed questions");
-assert.equal(new Set(publicItems.map((item) => item.id)).size, 291, "Public IDs must be unique");
+assert.equal(publicItems.length, 207, "Public data must contain 207 unique reviewed questions");
+assert.equal(new Set(publicItems.map((item) => item.id)).size, 207, "Public IDs must be unique");
 assert.deepEqual(
   Object.fromEntries(["public-term", "public-short"].map((type) => [
     type,
     publicItems.filter((item) => item.type === type).length,
   ])),
-  { "public-term": 291, "public-short": 0 },
+  { "public-term": 207, "public-short": 0 },
   "The one-word answer workbook must contain term questions only",
 );
 assert.deepEqual(
-  Object.fromEntries(["S", "A", "B", "C"].map((importance) => [
+  Object.fromEntries(["S", "A", "B", "C", "D"].map((importance) => [
     importance,
     publicItems.filter((item) => item.importance === importance).length,
   ])),
-  { S: 130, A: 131, B: 22, C: 8 },
+  { S: 48, A: 81, B: 55, C: 22, D: 1 },
   "Public importance counts must match the workbook audit sheet",
 );
 

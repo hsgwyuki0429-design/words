@@ -1285,28 +1285,28 @@ export function summarizeRangeModeProgress({
   };
 }
 
-// 進捗ゲージの基調色は周回で変える。1周目・2周目（赤）・3周目…と変わり、
-// 5周目まで一巡したら最初の色へ戻る。
+// 進捗ゲージの基調色はセット（習得ラウンド）で変える。1セット目・2セット目
+// （赤）・3セット目…と変わり、5セットで一巡したら最初の色へ戻る。
 export const GAUGE_COLOR_COUNT = 5;
 
-// 積み上げるバーの本数の上限（現在の周回を含む）。2周目以降は必ず
-// 「終えた周回1本＋現在の周回1本」になり、何周してもカードの高さは変わらない。
-// 選択画面は1画面に収める前提なので、伸び続けると項目が画面外へ出てしまう。
+// 積み上げるバーの本数の上限（現在のセットを含む）。2セット目以降は必ず
+// 「終えたセット1本＋現在のセット1本」になり、何セット重ねてもカードの高さは
+// 変わらない。選択画面は1画面に収める前提なので、伸び続けると項目が画面外へ出る。
 export const GAUGE_MAX_BARS = 2;
 
-// 周回番号の表示上の上限。保存データが壊れていても（欠損・文字列・NaN・
+// セット番号の表示上の上限。保存データが壊れていても（欠損・文字列・NaN・
 // 0以下・小数・Infinity）必ず1以上の整数にそろえ、桁が増えすぎて凡例が
 // 折り返さないようにする。
-export const GAUGE_MAX_CYCLE_NUMBER = 9999;
+export const GAUGE_MAX_ROUND_NUMBER = 9999;
 
-export function normalizeCycleNumber(value) {
+export function normalizeRoundNumber(value) {
   const number = Math.floor(Number(value));
   if (!Number.isFinite(number) || number < 1) return 1;
-  return Math.min(number, GAUGE_MAX_CYCLE_NUMBER);
+  return Math.min(number, GAUGE_MAX_ROUND_NUMBER);
 }
 
-export function gaugeColorIndex(cycleNumber) {
-  return ((normalizeCycleNumber(cycleNumber) - 1) % GAUGE_COLOR_COUNT) + 1;
+export function gaugeColorIndex(roundNumber) {
+  return ((normalizeRoundNumber(roundNumber) - 1) % GAUGE_COLOR_COUNT) + 1;
 }
 
 function safeCount(value) {
@@ -1323,30 +1323,35 @@ function percentOf(count, total) {
 // 進捗ゲージの描画に必要な値を、どんな保存データからでも安全に組み立てる。
 // 「解答済み」は長期履歴から、「習得」は現在の習得ラウンドからと出所が別なので、
 // 片方だけが欠けたり進んだりしていても破綻しないようにここでそろえる。
-export function summarizeProgressGauge(progress, cycleNumber = 1) {
-  const cycle = normalizeCycleNumber(cycleNumber);
+//
+// バーを積む単位は「周回」ではなく「セット（習得ラウンド）」。周回（1周目→2周目）
+// は同じセットの中で未習得を絞り込んでいく途中経過なので、バーは1本のまま伸びる。
+// 対象を全部習得しきって新しいラウンドが始まったときにだけ、満了したバーを残して
+// 次のバーを足す。
+export function summarizeProgressGauge(progress, roundNumber = 1) {
+  const round = normalizeRoundNumber(roundNumber);
   const totalItems = safeCount(progress?.totalItems);
   const answeredItems = Math.min(safeCount(progress?.answeredItems), totalItems);
   const masteredItems = Math.min(safeCount(progress?.masteredItems), totalItems);
   const answeredPercent = percentOf(answeredItems, totalItems);
   const masteredPercent = percentOf(masteredItems, totalItems);
-  // 古い周回のバーは上限を超えたぶんを畳み、いちばん古い1本にまとめて示す。
-  const finishedCycles = cycle - 1;
-  const visibleFinished = Math.min(finishedCycles, Math.max(0, GAUGE_MAX_BARS - 1));
-  const collapsedCycles = finishedCycles - visibleFinished;
+  // 古いセットのバーは上限を超えたぶんを畳み、いちばん古い1本にまとめて示す。
+  const finishedRounds = round - 1;
+  const visibleFinished = Math.min(finishedRounds, Math.max(0, GAUGE_MAX_BARS - 1));
+  const collapsedRounds = finishedRounds - visibleFinished;
   const finishedBars = Array.from({ length: visibleFinished }, (unused, index) => {
-    const barCycle = collapsedCycles + index + 1;
+    const barRound = collapsedRounds + index + 1;
     return {
-      cycleNumber: barCycle,
-      colorIndex: gaugeColorIndex(barCycle),
-      label: index === 0 && collapsedCycles > 0
-        ? `1〜${barCycle}周目は完了`
-        : `${barCycle}周目は完了`,
+      roundNumber: barRound,
+      colorIndex: gaugeColorIndex(barRound),
+      label: index === 0 && collapsedRounds > 0
+        ? `1〜${barRound}セット目は完了`
+        : `${barRound}セット目は完了`,
     };
   });
   return {
-    cycleNumber: cycle,
-    colorIndex: gaugeColorIndex(cycle),
+    roundNumber: round,
+    colorIndex: gaugeColorIndex(round),
     totalItems,
     answeredItems,
     masteredItems,
@@ -1357,7 +1362,7 @@ export function summarizeProgressGauge(progress, cycleNumber = 1) {
     answeredWidth: Math.max(answeredPercent, masteredPercent),
     masteredWidth: masteredPercent,
     finishedBars,
-    collapsedCycles,
+    collapsedRounds,
   };
 }
 

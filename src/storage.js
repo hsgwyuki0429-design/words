@@ -11,6 +11,11 @@ const PENDING_KEY = "eicomi-words:pending";
 
 let databasePromise;
 let useFallback = false;
+// 学習データを初期化したあとは、この端末への書き込みをすべて止める。
+// 初期化のあとは必ず画面を読み込み直すが、その直前に pagehide などの退避が
+// 走ると、消したはずの周回・進捗が控え（PENDING_KEY）へ書き戻されてしまい、
+// 読み込み直したときに復活する。
+let dataCleared = false;
 // 控えの書き戻しは起動ごとに1回だけ。進行中の書き戻しは Promise で共有する。
 let pendingRestore = null;
 
@@ -98,6 +103,7 @@ function writePending(data) {
 // 書き込みの前後で控えを足し引きする。localStorage は同期なので、
 // この間に画面を閉じられても控えは必ず残る。
 function addPending(kind, key, value) {
+  if (dataCleared) return;
   const data = pendingData();
   data[kind][key] = value;
   writePending(data);
@@ -222,6 +228,7 @@ function recordAttemptToFallback(itemId, mode, correct, durationMs) {
 }
 
 export async function recordAttempt(itemId, mode, correct, durationMs) {
+  if (dataCleared) return emptyHistory(itemId);
   const database = await openDatabase();
   if (useFallback || !database) return recordAttemptToFallback(itemId, mode, correct, durationMs);
 
@@ -247,6 +254,7 @@ export async function recordAttempt(itemId, mode, correct, durationMs) {
 
 // 直前の回答を取り消すため、回答前のレコードをそのまま書き戻す／削除する。
 export async function putHistory(record) {
+  if (dataCleared) return null;
   if (!record?.itemId) return null;
   await openDatabase();
   const writeToFallback = () => {
@@ -268,6 +276,7 @@ export async function putHistory(record) {
 }
 
 export async function removeHistory(itemId) {
+  if (dataCleared) return;
   await openDatabase();
   const removeFromFallback = () => {
     const data = fallbackData();
@@ -307,6 +316,7 @@ export async function getMetaObject(key, defaults = {}) {
 }
 
 export async function setMeta(key, value) {
+  if (dataCleared) return;
   await openDatabase();
   const writeToFallback = () => {
     const data = fallbackData();
@@ -330,6 +340,7 @@ export async function setMeta(key, value) {
 // 画面を閉じる直前など、非同期の保存が間に合わない場面で使う同期の退避。
 // 控えに置いておけば、次回の起動時に IndexedDB へ書き戻される。
 export function stashMeta(key, value) {
+  if (dataCleared) return;
   if (useFallback) {
     const data = fallbackData();
     data.meta = { ...(data.meta ?? {}), [key]: value };
@@ -341,6 +352,11 @@ export function stashMeta(key, value) {
 
 export async function clearAllData() {
   await openDatabase();
+  // 消し始めた時点で書き込みを止める。読み込み直すまでのあいだに退避や
+  // 保存が走ると、消したデータが控えから復活してしまう。
+  dataCleared = true;
+  // 控えの書き戻しも二度と走らせない。
+  pendingRestore = Promise.resolve();
   try {
     localStorage.removeItem(FALLBACK_KEY);
     localStorage.removeItem(PENDING_KEY);

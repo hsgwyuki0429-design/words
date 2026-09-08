@@ -315,8 +315,16 @@ test("重要度と並び替えは毎回選ぶ画面として通常フローに�
 test("一問一答の教科も同じダッシュボード構造を使う", () => {
   const publicGroups = studyTargetsForDashboard({ subject: "public", contents: ["term"] });
   assert.equal(publicGroups.length, 1);
-  assert.deepEqual(publicGroups[0].cards.map((card) => card.mode), ["public_recall"]);
-  assert.deepEqual(publicGroups[0].cards.map((card) => card.types), [["public-term"]]);
+  // 公共は一問一答と4択の2枚。進み具合も出題方法ごとに分けて数える。
+  assert.deepEqual(publicGroups[0].cards.map((card) => card.mode), ["public_recall", "public_choice"]);
+  assert.deepEqual(
+    publicGroups[0].cards.map((card) => card.key),
+    ["public:term:recall", "public:term:choice"],
+  );
+  assert.deepEqual(
+    publicGroups[0].cards.map((card) => card.types),
+    [["public-term"], ["public-term"]],
+  );
   const healthGroups = studyTargetsForDashboard({ subject: "health", contents: ["term", "short"] });
   assert.deepEqual(
     healthGroups[0].cards.map((card) => card.key),

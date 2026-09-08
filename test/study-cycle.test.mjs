@@ -503,8 +503,12 @@ test("重要度は全重要度を先頭にした1列リストで毎回選ぶ", (
 test("学習内容の次に重要度、その次に並び替えを通る", () => {
   // ダッシュボード導線：範囲 → 形式 → 学習内容 → 重要度 → 並び替え
   assert.match(appSource, /setView\(state\.studyFlowMode === "dashboard" \? "study-importance" : "study-method"\)/);
-  // 一問一答とステップ形式も問題形式のあとに重要度へ
-  assert.match(appSource, /method: "recall",[\s\S]*?setView\("study-importance"\)/);
+  // 一問一答は、4択も選べる教科なら出題方法を挟んでから重要度へ
+  assert.match(
+    appSource,
+    /method: supportsChoiceRecall\(\) \? null : "recall",[\s\S]*?setView\(supportsChoiceRecall\(\) \? "study-method" : "study-importance"\)/,
+  );
+  assert.match(appSource, /if \(target\.dataset\.recallMethod\) \{[\s\S]*?setView\("study-importance"\)/);
   assert.match(appSource, /state\.studySelection\.scope = "full";\s*\n\s*setView\("study-importance"\)/);
   // 並び替えからは重要度へ戻る
   assert.match(appSource, /data-back-before-sort"\)\) \{\s*\n\s*setView\("study-importance"\)/);

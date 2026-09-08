@@ -61,6 +61,7 @@ export const MODE_LABELS = {
   preposition_input: "前置詞穴埋め",
   phrase_blank_input: "熟語・語法穴埋め",
   public_recall: "公共 一問一答",
+  public_choice: "公共 4択",
   health_recall: "保健 一問一答",
   "kobun-vocab_recall": "古文単語 重要語句",
 };
@@ -114,7 +115,32 @@ export const STUDY_METHOD_LABELS = {
   ja_to_en_flashcard: "日本語 → 英語 フラッシュカード",
   en_to_ja_flashcard: "英語 → 日本語 フラッシュカード",
   recall: "タップで表裏・スワイプで自己採点",
+  choice: "4択問題",
 };
+
+// 一問一答の教科で4択も出せるのは、教材側に選択肢がそろっている公共だけ。
+export const CHOICE_RECALL_SUBJECTS = ["public"];
+
+export function recallChoicesFor(item) {
+  const choices = item?.editorial?.choices;
+  if (!choices) return [];
+  const values = Object.values(choices).map((value) => String(value ?? "").trim()).filter(Boolean);
+  if (values.length < 2 || new Set(values).size !== values.length) return [];
+  return recallCorrectChoiceFor(item) ? values : [];
+}
+
+// 答えは「間接民主制（代表制民主主義）」のように別名を併記することがあり、
+// 選択肢の表記とは一致しない。どれが正解かは記号（correctChoice）で決める。
+export function recallCorrectChoiceFor(item) {
+  const choices = item?.editorial?.choices;
+  const key = item?.editorial?.correctChoice;
+  const marked = key && choices ? String(choices[key] ?? "").trim() : "";
+  if (marked) return marked;
+  const answer = String(item?.publicAnswer ?? "").trim();
+  return choices && Object.values(choices).some((value) => String(value ?? "").trim() === answer)
+    ? answer
+    : "";
+}
 
 export const ENGLISH_CONTENT_TYPES = ["word", "phrase", "structure"];
 
@@ -768,6 +794,16 @@ export function buildQuestion(item, mode, pool, rng = Math.random, excludedChoic
         answer: item[`${item.subject}Answer`] ?? item.recallAnswer ?? item.publicAnswer ?? item.japanese,
         instruction: "tap",
       };
+    // 公共の4択は、教材が用意した選択肢をそのまま使う。
+    // 機械的に作った誤答より、まぎらわしさの狙いがはっきりしている。
+    case "public_choice":
+      return {
+        ...base,
+        prompt: item.publicQuestion,
+        instruction: "正しいものを選んでください",
+        choices: [...shuffle(recallChoicesFor(item), rng), UNKNOWN_CHOICE],
+        correctChoice: recallCorrectChoiceFor(item),
+      };
     case "en_to_ja_flashcard":
       return {
         ...base,
@@ -867,7 +903,7 @@ export function normalizeStudySelection(selection = {}) {
     ? "ja_to_en_input"
     : selection.method;
   const methodOptions = recallSubject
-    ? ["recall"]
+    ? CHOICE_RECALL_SUBJECTS.includes(subject) ? ["recall", "choice"] : ["recall"]
     : ["ja_to_en_choice", "ja_to_en_input", "en_to_ja_choice", "ja_to_en_flashcard", "en_to_ja_flashcard"];
   const selectedContents = recallSubject
     ? []
@@ -901,7 +937,7 @@ export function normalizeStudySelection(selection = {}) {
 export function exactStudyMode(selection = {}) {
   const normalized = normalizeStudySelection(selection);
   if (!normalized.method) return null;
-  if (normalized.subject !== "english") return `${normalized.subject}_recall`;
+  if (normalized.subject !== "english") return `${normalized.subject}_${normalized.method}`;
   return normalized.method;
 }
 
@@ -968,7 +1004,7 @@ export function studyModeForItem(item, selection) {
     if (item.subject !== normalized.subject) return null;
     const type = item.type === `${normalized.subject}-term` ? "term" : "short";
     if (normalized.content !== "all" && normalized.content !== type) return null;
-    const mode = `${normalized.subject}_recall`;
+    const mode = `${normalized.subject}_${normalized.method}`;
     return item.questionModes.includes(mode) ? mode : null;
   }
   if (item.subject && item.subject !== "english") return null;
@@ -1398,20 +1434,28 @@ export function studyTargetsForDashboard({ subject = "english", contents = [] } 
   if (isRecallSubjectId(subject)) {
     const available = ["term", "short"].filter((content) => contents.includes(content));
     const list = available.length > 1 ? [...available, "all"] : available;
+    // 4択も出せる教科では、出題方法ごとにカードを分ける。
+    // 一問一答と4択で周回・習得の進み具合が混ざらないようにするため。
+    const methods = CHOICE_RECALL_SUBJECTS.includes(subject) ? ["recall", "choice"] : ["recall"];
+    const card = (content, method) => ({
+      key: methods.length > 1 ? `${subject}:${content}:${method}` : `${subject}:${content}`,
+      mode: `${subject}_${method}`,
+      title: method === "choice"
+        ? `${recallContentMetaFor(subject, content).title}（4択）`
+        : recallContentMetaFor(subject, content).title,
+      detail: method === "choice"
+        ? "教科書の選択肢から正しい答えを選ぶ"
+        : recallContentMetaFor(subject, content).detail,
+      types: content === "all"
+        ? [`${subject}-term`, `${subject}-short`]
+        : [`${subject}-${content}`],
+      selection: normalizeStudySelection({ subject, content, method }),
+    });
     return [{
       key: subject,
       direction: null,
       label: subject === "kobun-vocab" ? "重要語句カード" : "一問一答",
-      cards: list.map((content) => ({
-        key: `${subject}:${content}`,
-        mode: `${subject}_recall`,
-        title: recallContentMetaFor(subject, content).title,
-        detail: recallContentMetaFor(subject, content).detail,
-        types: content === "all"
-          ? [`${subject}-term`, `${subject}-short`]
-          : [`${subject}-${content}`],
-        selection: normalizeStudySelection({ subject, content, method: "recall" }),
-      })),
+      cards: list.flatMap((content) => methods.map((method) => card(content, method))),
     }];
   }
   return ENGLISH_DASHBOARD_GROUPS.map(([direction, modes]) => ({

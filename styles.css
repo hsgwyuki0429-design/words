@@ -2499,6 +2499,31 @@ body.quiz-active .main-content { padding-bottom: 0; }
   background: #f6f6f8;
   border-radius: 11px;
 }
+/* 4択の答え合わせに出す解説。長くても回答欄を押し出さないよう高さを抑える。 */
+.feedback-explanation {
+  max-height: min(24dvh, 200px);
+  margin-top: 10px;
+  padding: 10px 12px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: #f6f6f8;
+  border-radius: 11px;
+}
+.feedback-explanation span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--secondary);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+.feedback-explanation p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
 .input-correct-answer span { display: block; color: var(--secondary); font-size: 10px; }
 .input-correct-answer strong { overflow-wrap: anywhere; }
 
@@ -3799,6 +3824,38 @@ body.quiz-active .main-content { padding-bottom: 0; }
 }
 .public-recall-answer strong { display: block; }
 .public-recall-answer strong { font-size: clamp(1.2rem, 4vw, 1.9rem); line-height: 1.65; }
+/* 解説はカードの大きさを崩さないよう、伸びる高さに上限を付けて中でスクロールさせる。 */
+.public-recall-explanation {
+  width: min(100%, 680px);
+  max-height: min(22dvh, 190px);
+  margin: 0.85rem auto 0;
+  padding: 0.9rem 1.1rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  border-radius: 18px;
+  background: rgba(248, 250, 252, 0.9);
+  color: var(--text-secondary);
+  text-align: left;
+}
+.public-recall-explanation.is-scrollable {
+  touch-action: pan-y;
+  box-shadow: inset 0 -12px 12px -12px rgba(15, 23, 42, 0.18);
+}
+.public-recall-explanation-label {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--secondary);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+.public-recall-explanation p {
+  margin: 0;
+  font-size: clamp(0.78rem, 2.6vw, 0.92rem);
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
 .public-recall-source {
   margin: 0.85rem auto 0;
   max-width: 680px;

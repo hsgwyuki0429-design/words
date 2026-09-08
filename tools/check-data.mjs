@@ -8,8 +8,12 @@ import {
   PUBLIC_RANGE_ORDER,
   RANGE_ORDER,
   acceptedInputAnswers,
+  recallChoicesFor,
+  recallCorrectChoiceFor,
   slotTokensForQuestion,
 } from "../src/logic.js";
+
+const recallExplanationOf = (item) => String(item.explanation ?? item.editorial?.explanation ?? "").trim();
 
 const items = JSON.parse(fs.readFileSync(new URL("../data/items.json", import.meta.url), "utf8"));
 const publicItems = JSON.parse(fs.readFileSync(new URL("../data/public-items.json", import.meta.url), "utf8"));
@@ -116,22 +120,22 @@ assert.deepEqual([...ranges].sort(), [...RANGE_ORDER].sort(), "All eight ranges 
 
 console.log(`Data check passed: ${items.length} items across ${ranges.size} ranges.`);
 
-assert.equal(publicItems.length, 291, "Public data must contain 291 unique reviewed questions");
-assert.equal(new Set(publicItems.map((item) => item.id)).size, 291, "Public IDs must be unique");
+assert.equal(publicItems.length, 207, "Public data must contain 207 unique reviewed questions");
+assert.equal(new Set(publicItems.map((item) => item.id)).size, 207, "Public IDs must be unique");
 assert.deepEqual(
   Object.fromEntries(["public-term", "public-short"].map((type) => [
     type,
     publicItems.filter((item) => item.type === type).length,
   ])),
-  { "public-term": 291, "public-short": 0 },
+  { "public-term": 207, "public-short": 0 },
   "The one-word answer workbook must contain term questions only",
 );
 assert.deepEqual(
-  Object.fromEntries(["S", "A", "B", "C"].map((importance) => [
+  Object.fromEntries(["S", "A", "B", "C", "D"].map((importance) => [
     importance,
     publicItems.filter((item) => item.importance === importance).length,
   ])),
-  { S: 130, A: 131, B: 22, C: 8 },
+  { S: 48, A: 81, B: 55, C: 22, D: 1 },
   "Public importance counts must match the workbook audit sheet",
 );
 
@@ -154,7 +158,19 @@ for (const item of publicItems) {
     assert.ok(item[field], `${item.id}: ${field} is required`);
   }
   assert.equal(item.subject, "public", `${item.id}: subject must be public`);
-  assert.deepEqual(item.questionModes, ["public_recall"], `${item.id}: public mode is required`);
+  assert.deepEqual(
+    item.questionModes,
+    ["public_recall", "public_choice"],
+    `${item.id}: public modes are required`,
+  );
+  // 4択は教材の選択肢をそのまま使う。答えの表記ゆれは記号（correctChoice）で吸収する。
+  const choices = recallChoicesFor(item);
+  assert.equal(choices.length, 4, `${item.id}: four choices are required`);
+  assert.ok(
+    choices.includes(recallCorrectChoiceFor(item)),
+    `${item.id}: the marked correct choice must be one of the choices`,
+  );
+  assert.ok(recallExplanationOf(item), `${item.id}: explanation is required`);
   assert.ok(PUBLIC_RANGE_ORDER.includes(item.range), `${item.id}: unknown public range ${item.range}`);
   assert.equal(item.acceptedAnswers[0], item.publicAnswer, `${item.id}: accepted answer must match`);
 }

@@ -2,6 +2,7 @@ import { createKobunController } from "./kobun.js?v=2026.9.28";
 import {
   ALL_MODES,
   ALPHABET_KEYBOARD_ROWS,
+  CHOICE_RECALL_SUBJECTS,
   DEFAULT_MASTERY_CRITERION,
   ENGLISH_CONTENT_TYPES,
   ENGLISH_STUDY_MODES,
@@ -189,6 +190,7 @@ const elements = Object.fromEntries(
     "study-content-back",
     "confirm-study-content",
     "study-content-action-copy",
+    "study-method-back",
     "study-method-heading",
     "study-method-copy",
     "study-method-options",
@@ -366,6 +368,11 @@ function isRecallSubject() {
   return isRecallSubjectId(state.subject);
 }
 
+// 一問一答の教科でも、教材に選択肢がそろっていれば4択も選べる。
+function supportsChoiceRecall() {
+  return isRecallSubject() && CHOICE_RECALL_SUBJECTS.includes(state.subject);
+}
+
 // 公共・保健は「問」、古典の重要語句と英語は「語句」で数える。
 function recallUnit() {
   return isRecallSubject() && !isKobunVocabSubject() ? "問" : "語句";
@@ -377,6 +384,12 @@ function recallQuestion(item) {
 
 function recallAnswer(item) {
   return item[`${item.subject}Answer`] ?? item.recallAnswer ?? item.publicAnswer ?? item.japanese;
+}
+
+// 解説は編集原稿（editorial）側に入っているものもあるので、どちらでも拾えるようにする。
+function recallExplanation(item) {
+  const text = item.explanation ?? item.editorial?.explanation ?? "";
+  return typeof text === "string" ? text.trim() : "";
 }
 
 function currentRangeOrder() {
@@ -659,8 +672,38 @@ function applyContentChoice(choice) {
   };
 }
 
+const RECALL_METHOD_META = {
+  recall: {
+    icon: "▣",
+    title: "一問一答",
+    detail: "タップで表裏、スワイプで自己採点",
+    tags: ["自己採点"],
+  },
+  choice: {
+    icon: "4",
+    title: "4択問題",
+    detail: "教科書の選択肢から正しい答えを選ぶ",
+    tags: ["選択式"],
+  },
+};
+
 function renderStudyMethod() {
   const contentLabel = studyContentLabel();
+  if (isRecallSubject()) {
+    elements.studyMethodBack.dataset.viewTarget = "study-content";
+    elements.studyMethodBack.textContent = "← 学習内容を選び直す";
+    elements.studyMethodHeading.textContent = `${contentLabel}の出題方法`;
+    elements.studyMethodCopy.textContent = "一回の学習では一つの方法に集中します。";
+    elements.studyMethodOptions.innerHTML = Object.entries(RECALL_METHOD_META)
+      .map(([method, meta]) => selectionCard({
+        ...meta,
+        dataAttribute: `data-recall-method="${method}"`,
+      }))
+      .join("");
+    return;
+  }
+  elements.studyMethodBack.dataset.viewTarget = "study-content";
+  elements.studyMethodBack.textContent = "← 学習内容を選び直す";
   elements.studyMethodHeading.textContent = `${contentLabel}の出題方向`;
   elements.studyMethodCopy.textContent = "問題と答えの向きを選んでください。";
   elements.studyMethodOptions.innerHTML = Object.entries(STUDY_DIRECTION_META)
@@ -801,6 +844,7 @@ function renderStudySortOther() {
 }
 
 function viewBeforeImportanceSelection() {
+  if (supportsChoiceRecall()) return "study-method";
   if (state.studyFlowMode === "dashboard") {
     return isRecallSubject() ? "range-detail" : "study-content";
   }
@@ -2985,6 +3029,9 @@ function renderFeedback(question, _answer, correct) {
       </div>
       ${state.session.lastReviewDelayMs === WRONG_REVIEW_DELAY_MS ? '<p class="review-scheduled-note">3分後にもう一度出題します</p>' : ""}
       ${!correct && !isChoice ? `<p class="input-correct-answer"><span>正解</span><strong>${escapeHtml(correctAnswer)}</strong></p>` : ""}
+      ${recallExplanation(question.item)
+        ? `<div class="feedback-explanation"><span>解説</span><p>${escapeHtml(recallExplanation(question.item))}</p></div>`
+        : ""}
       ${showSourceBox ? `<div class="source-box">
         <span class="importance-badge importance-${question.item.importance.toLowerCase()}">${question.item.importance}</span>
         <div>
@@ -3438,6 +3485,17 @@ function fitVocabCard() {
   }
 }
 
+// 解説がカードに収まりきらずスクロールできるときだけ、その中の指の動きを
+// スワイプ採点から外す。収まっているときは、ほかの場所と同じくタップで裏返せる。
+function markScrollableExplanation() {
+  const explanation = elements.quizContent.querySelector(".public-recall-explanation");
+  if (!explanation) return;
+  const scrollable = explanation.scrollHeight - explanation.clientHeight > 1;
+  explanation.classList.toggle("is-scrollable", scrollable);
+  if (scrollable) explanation.setAttribute("data-quiz-gesture-ignore", "");
+  else explanation.removeAttribute("data-quiz-gesture-ignore");
+}
+
 function recallCardBody(question, revealed) {
   if (isKobunVocabSubject()) return vocabCardBody(question.item, revealed);
   return `
@@ -3447,6 +3505,9 @@ function recallCardBody(question, revealed) {
       <div class="public-recall-answer" aria-live="polite">
         <strong>${escapeHtml(question.answer)}</strong>
       </div>
+      ${recallExplanation(question.item)
+        ? `<div class="public-recall-explanation"><span class="public-recall-explanation-label">解説</span><p>${escapeHtml(recallExplanation(question.item))}</p></div>`
+        : ""}
       ${state.settings.showSources ? `<p class="public-recall-source">${escapeHtml(question.item.sourceDetail)}</p>` : ""}
     ` : ""}`;
 }
@@ -3504,6 +3565,7 @@ function renderRecallQuiz() {
     </div>`;
   activateRenderedGestureCard();
   if (vocabCard) fitVocabCard();
+  markScrollableExplanation();
   requestAnimationFrame(() => window.scrollTo(0, 0));
 }
 
@@ -4409,10 +4471,10 @@ function bindEvents() {
           content: target.dataset.studyContent,
           contents: [],
           direction: null,
-          method: "recall",
+          method: supportsChoiceRecall() ? null : "recall",
           scope: "full",
         };
-        setView("study-importance");
+        setView(supportsChoiceRecall() ? "study-method" : "study-importance");
       } else {
         const content = target.dataset.studyContent;
         const current = state.contentSelectionMode === "all"
@@ -4439,6 +4501,10 @@ function bindEvents() {
     }
     if (target.id === "confirm-study-content" && state.studySelection.contents?.length) {
       setView(state.studyFlowMode === "dashboard" ? "study-importance" : "study-method");
+    }
+    if (target.dataset.recallMethod) {
+      state.studySelection = { ...state.studySelection, method: target.dataset.recallMethod };
+      setView("study-importance");
     }
     if (target.dataset.studyDirection) {
       state.studySelection.direction = target.dataset.studyDirection;

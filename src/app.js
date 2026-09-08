@@ -379,6 +379,12 @@ function recallAnswer(item) {
   return item[`${item.subject}Answer`] ?? item.recallAnswer ?? item.publicAnswer ?? item.japanese;
 }
 
+// 解説は編集原稿（editorial）側に入っているものもあるので、どちらでも拾えるようにする。
+function recallExplanation(item) {
+  const text = item.explanation ?? item.editorial?.explanation ?? "";
+  return typeof text === "string" ? text.trim() : "";
+}
+
 function currentRangeOrder() {
   return rangeOrderForSubject(state.subject);
 }
@@ -3438,6 +3444,17 @@ function fitVocabCard() {
   }
 }
 
+// 解説がカードに収まりきらずスクロールできるときだけ、その中の指の動きを
+// スワイプ採点から外す。収まっているときは、ほかの場所と同じくタップで裏返せる。
+function markScrollableExplanation() {
+  const explanation = elements.quizContent.querySelector(".public-recall-explanation");
+  if (!explanation) return;
+  const scrollable = explanation.scrollHeight - explanation.clientHeight > 1;
+  explanation.classList.toggle("is-scrollable", scrollable);
+  if (scrollable) explanation.setAttribute("data-quiz-gesture-ignore", "");
+  else explanation.removeAttribute("data-quiz-gesture-ignore");
+}
+
 function recallCardBody(question, revealed) {
   if (isKobunVocabSubject()) return vocabCardBody(question.item, revealed);
   return `
@@ -3447,6 +3464,9 @@ function recallCardBody(question, revealed) {
       <div class="public-recall-answer" aria-live="polite">
         <strong>${escapeHtml(question.answer)}</strong>
       </div>
+      ${recallExplanation(question.item)
+        ? `<div class="public-recall-explanation"><span class="public-recall-explanation-label">解説</span><p>${escapeHtml(recallExplanation(question.item))}</p></div>`
+        : ""}
       ${state.settings.showSources ? `<p class="public-recall-source">${escapeHtml(question.item.sourceDetail)}</p>` : ""}
     ` : ""}`;
 }
@@ -3504,6 +3524,7 @@ function renderRecallQuiz() {
     </div>`;
   activateRenderedGestureCard();
   if (vocabCard) fitVocabCard();
+  markScrollableExplanation();
   requestAnimationFrame(() => window.scrollTo(0, 0));
 }
 

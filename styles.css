@@ -2499,6 +2499,31 @@ body.quiz-active .main-content { padding-bottom: 0; }
   background: #f6f6f8;
   border-radius: 11px;
 }
+/* 4択の答え合わせに出す解説。長くても回答欄を押し出さないよう高さを抑える。 */
+.feedback-explanation {
+  max-height: min(24dvh, 200px);
+  margin-top: 10px;
+  padding: 10px 12px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: #f6f6f8;
+  border-radius: 11px;
+}
+.feedback-explanation span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--secondary);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+.feedback-explanation p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
 .input-correct-answer span { display: block; color: var(--secondary); font-size: 10px; }
 .input-correct-answer strong { overflow-wrap: anywhere; }
 

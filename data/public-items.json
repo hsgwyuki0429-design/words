@@ -31,7 +31,8 @@
       "社会的ジレンマ"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -83,7 +84,8 @@
       "インセンティブ"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -135,7 +137,8 @@
       "囚人のジレンマ"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -188,7 +191,8 @@
       "市場"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -240,7 +244,8 @@
       "効率性"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -292,7 +297,8 @@
       "公平性"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -344,7 +350,8 @@
       "トレードオフ"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -396,7 +403,8 @@
       "国家"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -448,7 +456,8 @@
       "社会契約説"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -500,7 +509,8 @@
       "所得の再分配"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -552,7 +562,8 @@
       "公共財"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -604,7 +615,8 @@
       "シルバーデモクラシー"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -656,7 +668,8 @@
       "自然状態"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -708,7 +721,8 @@
       "民主主義"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -760,7 +774,8 @@
       "君主政"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -813,7 +828,8 @@
       "国民主権"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -865,7 +881,8 @@
       "リンカン"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -917,7 +934,8 @@
       "多数決"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -969,7 +987,8 @@
       "多数者の専制"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -1021,7 +1040,8 @@
       "トックビル"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -1074,7 +1094,8 @@
       "熟議"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -1126,7 +1147,8 @@
       "正当化"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -1178,7 +1200,8 @@
       "反省性"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -1230,7 +1253,8 @@
       "討論型世論調査"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -1282,7 +1306,8 @@
       "市民会議"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -1334,7 +1359,8 @@
       "直接民主制"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -1387,7 +1413,8 @@
       "間接民主制"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -1439,7 +1466,8 @@
       "議会民主主義"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -1491,7 +1519,8 @@
       "ボルダ・ルール"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -1544,7 +1573,8 @@
       "くじ引き"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -1596,7 +1626,8 @@
       "法の支配"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -1648,7 +1679,8 @@
       "人の支配"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -1704,7 +1736,8 @@
       "マグナ・カルタ"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -1756,7 +1789,8 @@
       "名誉革命"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -1808,7 +1842,8 @@
       "権利章典"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -1860,7 +1895,8 @@
       "王位継承法"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -1912,7 +1948,8 @@
       "立憲主義"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -1964,7 +2001,8 @@
       "フランス革命"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -2016,7 +2054,8 @@
       "フランス人権宣言"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -2069,7 +2108,8 @@
       "権力分立"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -2121,7 +2161,8 @@
       "モンテスキュー"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -2173,7 +2214,8 @@
       "法の精神"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -2226,7 +2268,8 @@
       "違憲審査"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -2278,7 +2321,8 @@
       "憲法の最高法規性"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -2330,7 +2374,8 @@
       "憲法制定権力"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -2382,7 +2427,8 @@
       "憲法改正の限界"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -2434,7 +2480,8 @@
       "憲法"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -2486,7 +2533,8 @@
       "エドワード・コーク"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -2538,7 +2586,8 @@
       "統治二論"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -2591,7 +2640,8 @@
       "人権"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -2643,7 +2693,8 @@
       "人間の尊厳"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -2695,7 +2746,8 @@
       "世界人権宣言"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -2747,7 +2799,8 @@
       "自由権"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -2799,7 +2852,8 @@
       "社会権"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -2851,7 +2905,8 @@
       "ワイマール憲法"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -2903,7 +2958,8 @@
       "新しい人権"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -2955,7 +3011,8 @@
       "国際人権規約"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -3007,7 +3064,8 @@
       "人種差別撤廃条約"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -3060,7 +3118,8 @@
       "子ども"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -3112,7 +3171,8 @@
       "女子差別撤廃条約"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -3165,7 +3225,8 @@
       "アファーマティブ・アクション"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -3217,7 +3278,8 @@
       "アンコンシャス・バイアス"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -3269,7 +3331,8 @@
       "クオータ制"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -3321,7 +3384,8 @@
       "障害者権利条約"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -3373,7 +3437,8 @@
       "障害者差別解消法"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -3425,7 +3490,8 @@
       "ジェンダー"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -3478,7 +3544,8 @@
       "ヘイトスピーチ"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -3530,7 +3597,8 @@
       "形式的平等"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -3582,7 +3650,8 @@
       "実質的平等"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -3634,7 +3703,8 @@
       "固有性"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -3686,7 +3756,8 @@
       "不可侵性"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -3738,7 +3809,8 @@
       "普遍性"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -3790,7 +3862,8 @@
       "日本国憲法"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -3842,7 +3915,8 @@
       "象徴天皇制"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -3894,7 +3968,8 @@
       "国事行為"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -3946,7 +4021,8 @@
       "平和主義"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -3998,7 +4074,8 @@
       "幸福追求権"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -4050,7 +4127,8 @@
       "国会"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -4102,7 +4180,8 @@
       "硬性憲法"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -4154,7 +4233,8 @@
       "軟性憲法"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -4206,7 +4286,8 @@
       "国民投票"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -4258,7 +4339,8 @@
       "国民投票法"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -4310,7 +4392,8 @@
       "付随的違憲審査制"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -4362,7 +4445,8 @@
       "抽象的違憲審査制"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -4414,7 +4498,8 @@
       "ベアテ・シロタ・ゴードン"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -4467,7 +4552,8 @@
       "政治"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -4519,7 +4605,8 @@
       "政治権力"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -4572,7 +4659,8 @@
       "地方公共団体"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -4624,7 +4712,8 @@
       "大衆民主主義"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -4676,7 +4765,8 @@
       "名望家"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -4728,7 +4818,8 @@
       "ファシズム"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -4780,7 +4871,8 @@
       "無党派層"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -4832,7 +4924,8 @@
       "政治的無関心層"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -4885,7 +4978,8 @@
       "ポピュリズム"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -4937,7 +5031,8 @@
       "伝統的支配"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -4989,7 +5084,8 @@
       "カリスマ的支配"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -5041,7 +5137,8 @@
       "合法的支配"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -5093,7 +5190,8 @@
       "マックス・ウェーバー"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -5149,7 +5247,8 @@
       "グレタ・トゥーンベリ"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -5202,7 +5301,8 @@
       "Fridays For Future"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -5254,7 +5354,8 @@
       "伝統型無関心"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -5306,7 +5407,8 @@
       "現代型無関心"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -5358,7 +5460,8 @@
       "リースマン"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -5411,7 +5514,8 @@
       "三者協議会"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -5463,7 +5567,8 @@
       "地方自治"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -5515,7 +5620,8 @@
       "団体自治"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -5567,7 +5673,8 @@
       "住民自治"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -5619,7 +5726,8 @@
       "条例"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -5671,7 +5779,8 @@
       "首長"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -5723,7 +5832,8 @@
       "二元代表制"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -5775,7 +5885,8 @@
       "直接請求権"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -5828,7 +5939,8 @@
       "イニシアティブ"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -5880,7 +5992,8 @@
       "リコール"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -5933,7 +6046,8 @@
       "住民投票"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -5985,7 +6099,8 @@
       "シビル・ミニマム"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -6038,7 +6153,8 @@
       "地方交付税"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -6091,7 +6207,8 @@
       "国庫支出金"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -6143,7 +6260,8 @@
       "地方分権一括法"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -6195,7 +6313,8 @@
       "自治事務"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -6247,7 +6366,8 @@
       "法定受託事務"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -6299,7 +6419,8 @@
       "三位一体の改革"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -6351,7 +6472,8 @@
       "ふるさと納税"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -6404,7 +6526,8 @@
       "オンブズマン"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -6456,7 +6579,8 @@
       "ブライス"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -6509,7 +6633,8 @@
       "若者議会"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -6562,7 +6687,8 @@
       "拒否権"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -6614,7 +6740,8 @@
       "立法権"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -6667,7 +6794,8 @@
       "二院制"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -6719,7 +6847,8 @@
       "議院内閣制"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -6771,7 +6900,8 @@
       "内閣不信任決議"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -6823,7 +6953,8 @@
       "国政調査権"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -6875,7 +7006,8 @@
       "弾劾裁判所"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -6927,7 +7059,8 @@
       "不逮捕特権"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -6979,7 +7112,8 @@
       "免責特権"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -7031,7 +7165,8 @@
       "衆議院"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -7083,7 +7218,8 @@
       "参議院"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -7135,7 +7271,8 @@
       "衆議院の優越"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -7188,7 +7325,8 @@
       "両院協議会"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -7240,7 +7378,8 @@
       "ねじれ現象"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -7292,7 +7431,8 @@
       "常任委員会"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -7344,7 +7484,8 @@
       "本会議"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -7396,7 +7537,8 @@
       "党首討論"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -7449,7 +7591,8 @@
       "常会"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -7502,7 +7645,8 @@
       "臨時会"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -7555,7 +7699,8 @@
       "特別会"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -7607,7 +7752,8 @@
       "参議院の緊急集会"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -7659,7 +7805,8 @@
       "衆議院"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -7711,7 +7858,8 @@
       "国民審査"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -7763,7 +7911,8 @@
       "行政権"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -7815,7 +7964,8 @@
       "内閣"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -7868,7 +8018,8 @@
       "内閣総理大臣"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -7920,7 +8071,8 @@
       "国務大臣"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -7972,7 +8124,8 @@
       "閣議"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -8024,7 +8177,8 @@
       "政令"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -8076,7 +8230,8 @@
       "行政委員会"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -8128,7 +8283,8 @@
       "1府12省庁体制"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -8180,7 +8336,8 @@
       "首相補佐官"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -8232,7 +8389,8 @@
       "政務三役"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -8284,7 +8442,8 @@
       "行政国家"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -8337,7 +8496,8 @@
       "官僚"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -8389,7 +8549,8 @@
       "委任立法"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -8441,7 +8602,8 @@
       "天下り"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -8493,7 +8655,8 @@
       "規制緩和"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -8545,7 +8708,8 @@
       "行政指導"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -8597,7 +8761,8 @@
       "国家公務員倫理法"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -8649,7 +8814,8 @@
       "内閣人事局"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -8701,7 +8867,8 @@
       "内閣官房長官"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -8753,7 +8920,8 @@
       "官邸主導"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -8805,7 +8973,8 @@
       "裁判所"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -8857,7 +9026,8 @@
       "司法権"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -8909,7 +9079,8 @@
       "天皇"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -8961,7 +9132,8 @@
       "最高裁判所長官"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -9014,7 +9186,8 @@
       "普通選挙"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -9066,7 +9239,8 @@
       "平等選挙"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -9118,7 +9292,8 @@
       "秘密選挙"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -9170,7 +9345,8 @@
       "直接選挙"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -9222,7 +9398,8 @@
       "小選挙区制"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -9274,7 +9451,8 @@
       "大選挙区制"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -9326,7 +9504,8 @@
       "死票"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -9378,7 +9557,8 @@
       "比例代表制"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -9430,7 +9610,8 @@
       "小選挙区比例代表並立制"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -9482,7 +9663,8 @@
       "重複立候補制度"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -9534,7 +9716,8 @@
       "非拘束名簿式"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -9586,7 +9769,8 @@
       "特定枠"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -9638,7 +9822,8 @@
       "公職選挙法"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -9690,7 +9875,8 @@
       "選挙管理委員会"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -9742,7 +9928,8 @@
       "一票の格差"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -9794,7 +9981,8 @@
       "選挙小屋"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -9846,7 +10034,8 @@
       "三バン"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -9898,7 +10087,8 @@
       "戸別訪問"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -9950,7 +10140,8 @@
       "世論"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -10002,7 +10193,8 @@
       "マスメディア"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -10054,7 +10246,8 @@
       "ソーシャルメディア"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -10106,7 +10299,8 @@
       "議題設定機能"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -10158,7 +10352,8 @@
       "第四の権力"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -10210,7 +10405,8 @@
       "世論操作"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -10262,7 +10458,8 @@
       "アラブの春"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -10314,7 +10511,8 @@
       "MeToo運動"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -10367,7 +10565,8 @@
       "プロパガンダ"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -10420,7 +10619,8 @@
       "フェイクニュース"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -10472,7 +10672,8 @@
       "フィルターバブル"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -10524,7 +10725,8 @@
       "エコーチェンバー"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -10576,7 +10778,8 @@
       "世論の分断化"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -10629,7 +10832,8 @@
       "メディア・リテラシー"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -10681,7 +10885,8 @@
       "記者クラブ"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -10733,7 +10938,8 @@
       "ヨーゼフ・ゲッベルス"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",
@@ -10785,7 +10991,8 @@
       "世論調査"
     ],
     "questionModes": [
-      "public_recall"
+      "public_recall",
+      "public_choice"
     ],
     "editorial": {
       "note": "編集原稿を欠落なく保持するための補助データ。現行wordsの公共画面はこの項目を読み取らない。",

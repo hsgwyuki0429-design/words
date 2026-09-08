@@ -8,8 +8,12 @@ import {
   PUBLIC_RANGE_ORDER,
   RANGE_ORDER,
   acceptedInputAnswers,
+  recallChoicesFor,
+  recallCorrectChoiceFor,
   slotTokensForQuestion,
 } from "../src/logic.js";
+
+const recallExplanationOf = (item) => String(item.explanation ?? item.editorial?.explanation ?? "").trim();
 
 const items = JSON.parse(fs.readFileSync(new URL("../data/items.json", import.meta.url), "utf8"));
 const publicItems = JSON.parse(fs.readFileSync(new URL("../data/public-items.json", import.meta.url), "utf8"));
@@ -154,7 +158,19 @@ for (const item of publicItems) {
     assert.ok(item[field], `${item.id}: ${field} is required`);
   }
   assert.equal(item.subject, "public", `${item.id}: subject must be public`);
-  assert.deepEqual(item.questionModes, ["public_recall"], `${item.id}: public mode is required`);
+  assert.deepEqual(
+    item.questionModes,
+    ["public_recall", "public_choice"],
+    `${item.id}: public modes are required`,
+  );
+  // 4択は教材の選択肢をそのまま使う。答えの表記ゆれは記号（correctChoice）で吸収する。
+  const choices = recallChoicesFor(item);
+  assert.equal(choices.length, 4, `${item.id}: four choices are required`);
+  assert.ok(
+    choices.includes(recallCorrectChoiceFor(item)),
+    `${item.id}: the marked correct choice must be one of the choices`,
+  );
+  assert.ok(recallExplanationOf(item), `${item.id}: explanation is required`);
   assert.ok(PUBLIC_RANGE_ORDER.includes(item.range), `${item.id}: unknown public range ${item.range}`);
   assert.equal(item.acceptedAnswers[0], item.publicAnswer, `${item.id}: accepted answer must match`);
 }

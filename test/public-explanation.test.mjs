@@ -2,6 +2,14 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
+import {
+  UNKNOWN_CHOICE,
+  buildQuestion,
+  exactStudyMode,
+  normalizeStudySelection,
+  studyModeForItem,
+} from "../src/logic.js";
+
 const appSource = readFileSync(new URL("../src/app.js", import.meta.url), "utf8");
 const stylesSource = readFileSync(new URL("../styles.css", import.meta.url), "utf8");
 const publicItems = JSON.parse(
@@ -35,4 +43,43 @@ test("解説はカードからはみ出さないよう高さを抑えて中で�
 test("スクロールできる解説の中ではスワイプ採点を働かせない", () => {
   assert.match(appSource, /explanation\.setAttribute\("data-quiz-gesture-ignore", ""\)/);
   assert.match(appSource, /markScrollableExplanation\(\);/);
+});
+
+test("公共の4択は教科書の選択肢をそのまま使う", () => {
+  const item = publicItems[0];
+  const question = buildQuestion(item, "public_choice", publicItems, () => 0);
+  assert.equal(question.choices.length, 5, "4つの選択肢と「わからない」");
+  assert.equal(question.choices.at(-1), UNKNOWN_CHOICE);
+  assert.deepEqual(
+    [...question.choices].slice(0, 4).sort(),
+    Object.values(item.editorial.choices).sort(),
+  );
+  assert.ok(question.choices.includes(question.correctChoice));
+});
+
+test("答えに別名を併記した問題でも、正解の選択肢を取り違えない", () => {
+  // 「間接民主制（代表制民主主義）」のように、答えの表記と選択肢の表記が違う問題がある。
+  const aliased = publicItems.filter(
+    (item) => !Object.values(item.editorial.choices).includes(item.publicAnswer),
+  );
+  assert.ok(aliased.length > 0, "表記が違う問題が実データにある");
+  for (const item of aliased) {
+    const question = buildQuestion(item, "public_choice", publicItems, () => 0);
+    assert.equal(question.correctChoice, item.editorial.choices[item.editorial.correctChoice]);
+    assert.ok(question.choices.includes(question.correctChoice), `${item.id}: 正解が選択肢にない`);
+  }
+});
+
+test("公共では出題方法として4択も選べる", () => {
+  assert.deepEqual(
+    normalizeStudySelection({ subject: "public", content: "term", method: "choice" }).method,
+    "choice",
+  );
+  assert.equal(exactStudyMode({ subject: "public", content: "term", method: "choice" }), "public_choice");
+  assert.equal(
+    studyModeForItem(publicItems[0], { subject: "public", content: "term", method: "choice" }),
+    "public_choice",
+  );
+  // 選択肢を持たない保健は今までどおり一問一答だけ。
+  assert.equal(normalizeStudySelection({ subject: "health", content: "term", method: "choice" }).method, null);
 });

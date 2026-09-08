@@ -128,7 +128,7 @@ export function quizGesturePolicy({
   }
   if (isSwipeAdvanceMode(mode) && answered) {
     return {
-      tapEnabled: false,
+      tapEnabled: mode === "public_choice",
       dragEnabled: true,
       allowedDirections: SWIPE_DIRECTIONS,
     };

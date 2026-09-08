@@ -5556,6 +5556,32 @@ body.kobun-quiz-active {
 .quiz-choice .review-scheduled-note {
   margin: calc(6px * var(--choice-scale)) 0 0;
 }
+.quiz-public-choice {
+  --choice-card-height: clamp(360px, 54dvh, 480px);
+}
+.quiz-public-choice .swipe-choice-card > .feedback-card {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+.quiz-public-choice .input-correct-answer strong {
+  font-size: var(--choice-text);
+}
+.choice-selected-label {
+  display: block;
+  margin-top: 3px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+.choice-flip-hint {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-align: center;
+}
+.quiz-public-choice.quiz-answered .choice-button {
+  pointer-events: none;
+}
 .quiz-choice .source-box {
   padding: calc(9px * var(--choice-scale)) calc(12px * var(--choice-scale));
 }

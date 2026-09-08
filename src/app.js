@@ -3463,10 +3463,14 @@ function vocabCardBody(item, revealed) {
 }
 
 // カードの大きさは変えないので、はみ出しそうなときは文字だけを縮めて収める。
-// data-density で見当をつけたうえで、実際の描画がはみ出す分だけさらに小さくする。
-const VOCAB_MIN_SCALE = 0.55;
+// 収まっているうちは縮めないので、短い問題の見え方は今までと変わらない。
+const CARD_MIN_SCALE = 0.5;
+// 4択は読めなくなるほど縮めない。ここまで縮めても入らない小さな画面では、
+// 今までどおり画面を少しスクロールして読んでもらう。
+const CHOICE_MIN_SCALE = 0.65;
+const CARD_SCALE_STEP = 0.04;
 
-function vocabCardOverflow(card) {
+function recallCardOverflow(card) {
   const box = card.getBoundingClientRect();
   return [...card.children].reduce((over, child) => {
     const rect = child.getBoundingClientRect();
@@ -3475,25 +3479,27 @@ function vocabCardOverflow(card) {
   }, 0);
 }
 
-function fitVocabCard() {
-  const card = elements.quizContent.querySelector(".vocab-recall-card");
+function fitRecallCard(selector, scaleProperty) {
+  const card = elements.quizContent.querySelector(selector);
   if (!card) return;
-  let scale = Number.parseFloat(getComputedStyle(card).getPropertyValue("--vocab-scale")) || 1;
-  while (scale > VOCAB_MIN_SCALE && vocabCardOverflow(card) > 1) {
-    scale = Math.max(VOCAB_MIN_SCALE, scale - 0.05);
-    card.style.setProperty("--vocab-scale", scale.toFixed(2));
+  let scale = Number.parseFloat(getComputedStyle(card).getPropertyValue(scaleProperty)) || 1;
+  while (scale > CARD_MIN_SCALE && recallCardOverflow(card) > 0.5) {
+    scale = Math.max(CARD_MIN_SCALE, scale - CARD_SCALE_STEP);
+    card.style.setProperty(scaleProperty, scale.toFixed(2));
   }
 }
 
-// 解説がカードに収まりきらずスクロールできるときだけ、その中の指の動きを
-// スワイプ採点から外す。収まっているときは、ほかの場所と同じくタップで裏返せる。
-function markScrollableExplanation() {
-  const explanation = elements.quizContent.querySelector(".public-recall-explanation");
-  if (!explanation) return;
-  const scrollable = explanation.scrollHeight - explanation.clientHeight > 1;
-  explanation.classList.toggle("is-scrollable", scrollable);
-  if (scrollable) explanation.setAttribute("data-quiz-gesture-ignore", "");
-  else explanation.removeAttribute("data-quiz-gesture-ignore");
+// 4択は答え合わせまで出すと縦に長くなる。スクロールせずに読み終えられるよう、
+// 画面に収まるまで問題文・選択肢・解説をまとめて縮める。
+function fitChoiceScreen() {
+  const shell = elements.quizContent.querySelector(".quiz-choice");
+  if (!shell) return;
+  const overflow = () => document.documentElement.scrollHeight - window.innerHeight;
+  let scale = Number.parseFloat(getComputedStyle(shell).getPropertyValue("--choice-scale")) || 1;
+  while (scale > CHOICE_MIN_SCALE && overflow() > 1) {
+    scale = Math.max(CHOICE_MIN_SCALE, scale - CARD_SCALE_STEP);
+    shell.style.setProperty("--choice-scale", scale.toFixed(2));
+  }
 }
 
 function recallCardBody(question, revealed) {
@@ -3564,8 +3570,8 @@ function renderRecallQuiz() {
       ${revealed ? renderRecallGradeFallback() : ""}
     </div>`;
   activateRenderedGestureCard();
-  if (vocabCard) fitVocabCard();
-  markScrollableExplanation();
+  if (vocabCard) fitRecallCard(".vocab-recall-card", "--vocab-scale");
+  else fitRecallCard(".public-recall-card", "--recall-scale");
   requestAnimationFrame(() => window.scrollTo(0, 0));
 }
 
@@ -3643,6 +3649,7 @@ function renderQuiz() {
     ${answered ? renderNextButton(isSwipeAdvance) : ""}`;
 
   activateRenderedGestureCard();
+  if (isChoice) fitChoiceScreen();
 
   if (!answered) {
     requestAnimationFrame(() => {

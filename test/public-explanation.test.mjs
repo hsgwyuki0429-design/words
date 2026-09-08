@@ -31,18 +31,37 @@ test("一問一答の答え面に解説を出す", () => {
   assert.match(appSource, /class="public-recall-explanation"/);
 });
 
-test("解説はカードからはみ出さないよう高さを抑えて中でスクロールする", () => {
+test("解説を足してもカードの大きさは変えない", () => {
   const rule = stylesSource.slice(
-    stylesSource.indexOf(".public-recall-explanation {"),
-    stylesSource.indexOf(".public-recall-explanation.is-scrollable"),
+    stylesSource.indexOf(".public-recall-card:not(.vocab-recall-card) {"),
+    stylesSource.indexOf(".public-recall-card:not(.vocab-recall-card) .public-recall-meta"),
   );
-  assert.match(rule, /max-height:\s*min\(22dvh, 190px\);/);
-  assert.match(rule, /overflow-y:\s*auto;/);
+  // 高さは今までのカードと同じ。あふれる分は文字の大きさと行間で吸収する。
+  assert.match(rule, /height:\s*min\(64dvh, 620px\);/);
+  assert.match(rule, /overflow:\s*hidden;/);
+  // 解説の中だけをスクロールさせる作りは残さない（文の途中で切れて見えなくなるため）。
+  assert.doesNotMatch(stylesSource, /\.public-recall-explanation\.is-scrollable/);
+  assert.doesNotMatch(appSource, /markScrollableExplanation/);
 });
 
-test("スクロールできる解説の中ではスワイプ採点を働かせない", () => {
-  assert.match(appSource, /explanation\.setAttribute\("data-quiz-gesture-ignore", ""\)/);
-  assert.match(appSource, /markScrollableExplanation\(\);/);
+test("問題文・答え・解説はどれも同じ文字の大きさで並べる", () => {
+  for (const selector of [
+    "h1",
+    ".public-recall-answer strong",
+    ".public-recall-explanation p",
+  ]) {
+    const head = `.public-recall-card:not(.vocab-recall-card) ${selector} {`;
+    const rule = stylesSource.slice(
+      stylesSource.indexOf(head),
+      stylesSource.indexOf("}", stylesSource.indexOf(head)),
+    );
+    assert.match(rule, /font-size:\s*var\(--recall-text\);/, `${selector} も共通の大きさを使う`);
+  }
+});
+
+test("入りきらないカードだけ、はみ出す分を縮めて収める", () => {
+  assert.match(appSource, /fitRecallCard\("\.public-recall-card", "--recall-scale"\)/);
+  assert.match(appSource, /fitRecallCard\("\.vocab-recall-card", "--vocab-scale"\)/);
 });
 
 test("公共の4択は教科書の選択肢をそのまま使う", () => {
@@ -82,4 +101,28 @@ test("公共では出題方法として4択も選べる", () => {
   );
   // 選択肢を持たない保健は今までどおり一問一答だけ。
   assert.equal(normalizeStudySelection({ subject: "health", content: "term", method: "choice" }).method, null);
+});
+
+test("4択も同じ文字の大きさでそろえ、1画面に収める", () => {
+  // 問題文・選択肢・解説は共通の大きさ。
+  for (const selector of [
+    ".swipe-choice-card h1",
+    ".choice-button strong",
+    ".feedback-explanation p",
+  ]) {
+    const head = `.quiz-choice ${selector} {`;
+    const at = stylesSource.lastIndexOf(head);
+    const rule = stylesSource.slice(at, stylesSource.indexOf("}", at));
+    assert.match(rule, /font-size:\s*var\(--choice-text\);/, `${selector} も共通の大きさを使う`);
+  }
+  // 端末別の上書きより後ろに置き、確実に効かせる。
+  assert.ok(
+    stylesSource.lastIndexOf(".quiz-choice .swipe-choice-card h1 {")
+      > stylesSource.lastIndexOf(".quiz-answered .swipe-choice-card h1"),
+    "端末別の指定より後ろで定義する",
+  );
+  // 収まらない画面では、答え合わせまで含めて縮めて収める。
+  assert.match(appSource, /function fitChoiceScreen\(\)/);
+  assert.match(appSource, /if \(isChoice\) fitChoiceScreen\(\);/);
+  assert.match(appSource, /document\.documentElement\.scrollHeight - window\.innerHeight/);
 });

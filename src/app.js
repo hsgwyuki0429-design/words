@@ -3080,43 +3080,6 @@ function renderChoiceSwipeHints() {
     </div>`;
 }
 
-function previewPromptForEntry(entry) {
-  const item = entry?.item;
-  const mode = entry?.mode;
-  if (!item || !mode) return "";
-  if (mode.endsWith("_recall")) {
-    return item[`${item.subject}Question`] ?? item.recallQuestion ?? item.publicQuestion ?? item.english ?? "";
-  }
-  if (mode === "en_to_ja_flashcard" || mode === "en_to_ja_choice") return item.english ?? "";
-  if (["ja_to_en_flashcard", "ja_to_en_choice", "spelling_input", "ja_to_en_input"].includes(mode)) {
-    return item.japanese ?? "";
-  }
-  if (mode === "preposition_input") return item.blanks?.preposition?.prompt ?? "";
-  if (mode === "phrase_blank_input") return item.blanks?.phrase?.prompt ?? "";
-  return item.japanese ?? item.english ?? "";
-}
-
-function renderCardPreview(kind) {
-  const session = state.session;
-  const nextEntry = session?.queue?.[session.cursor + 1] ?? null;
-  const prompt = previewPromptForEntry(nextEntry);
-  const promptContent = prompt
-    ? escapeHtml(prompt)
-    : '<span class="quiz-card-preview-line"></span><span class="quiz-card-preview-line preview-line-short"></span>';
-  const lowerContent = kind === "choice"
-    ? `<div class="quiz-card-preview-options">
-        <span></span><span></span><span></span><span></span>
-      </div>`
-    : '<div class="quiz-card-preview-answer"><span></span></div>';
-  return `
-    <div class="quiz-card-preview quiz-card-preview--${kind}" aria-hidden="true" inert>
-      <div class="quiz-card-preview-meta"><span></span><i></i></div>
-      <div class="quiz-card-preview-kicker"></div>
-      <p class="quiz-card-preview-prompt${prompt ? "" : " is-placeholder"}">${promptContent}</p>
-      ${lowerContent}
-    </div>`;
-}
-
 function renderRecallGradeFallback() {
   return `
     <div class="recall-grade-fallback" aria-label="自己採点">
@@ -3151,27 +3114,6 @@ function clearGestureSurfaceStyles(surface) {
   surface.style.removeProperty("--quiz-drag-x");
   surface.style.removeProperty("--quiz-drag-y");
   surface.style.removeProperty("--quiz-drag-rotate");
-  clearCardPreviewStyles(surface);
-}
-
-function setCardPreviewProgress(surface, distance) {
-  const stage = surface?.closest(".quiz-card-stage");
-  const preview = stage?.querySelector(".quiz-card-preview");
-  if (!stage || !preview) return;
-  const progress = Math.min(1, Math.max(0, Number(distance) || 0) / 96);
-  stage.classList.toggle("is-preview-exposed", progress > 0.02);
-  preview.style.setProperty("--quiz-preview-opacity", String(0.74 + progress * 0.24));
-  preview.style.setProperty("--quiz-preview-scale", String(0.982 + progress * 0.018));
-  preview.style.setProperty("--quiz-preview-y", `${5 - progress * 5}px`);
-}
-
-function clearCardPreviewStyles(surface) {
-  const stage = surface?.closest(".quiz-card-stage");
-  const preview = stage?.querySelector(".quiz-card-preview");
-  stage?.classList.remove("is-preview-exposed");
-  preview?.style.removeProperty("--quiz-preview-opacity");
-  preview?.style.removeProperty("--quiz-preview-scale");
-  preview?.style.removeProperty("--quiz-preview-y");
 }
 
 function handleQuizDrag({ surface, dx, dy, direction }) {
@@ -3184,7 +3126,6 @@ function handleQuizDrag({ surface, dx, dy, direction }) {
   surface.style.setProperty("--quiz-drag-x", `${dx}px`);
   surface.style.setProperty("--quiz-drag-y", `${dy}px`);
   surface.style.setProperty("--quiz-drag-rotate", `${rotation}deg`);
-  setCardPreviewProgress(surface, Math.hypot(dx, dy));
 }
 
 function animateSwipeCancel({ surface }) {
@@ -3195,7 +3136,6 @@ function animateSwipeCancel({ surface }) {
   surface.style.setProperty("--quiz-drag-x", "0px");
   surface.style.setProperty("--quiz-drag-y", "0px");
   surface.style.setProperty("--quiz-drag-rotate", "0deg");
-  setCardPreviewProgress(surface, 0);
   if (reducedMotionRequested()) {
     clearGestureSurfaceStyles(surface);
     return Promise.resolve();
@@ -3544,7 +3484,6 @@ function renderRecallQuiz() {
       </header>
       <div class="quiz-progress"><span style="width:${progress}%"></span></div>
       <div class="quiz-card-stage recall-card-stage${revealed ? " is-swipe-ready" : ""}">
-        ${revealed ? renderCardPreview("recall") : ""}
         <article
           class="public-recall-card quiz-gesture-card${vocabCard ? " vocab-recall-card" : ""}"
           ${vocabCard ? `data-density="${vocabCardDensity(question.item, revealed)}"` : ""}
@@ -3626,7 +3565,6 @@ function renderQuiz() {
       ${isMaxMode() && state.combo ? renderComboPill(comboChanged) : ""}
       <div class="quiz-progress"><span style="width:${progress}%"></span></div>
       <div class="quiz-card-stage${answered && isSwipeAdvance ? " is-swipe-ready" : ""}">
-        ${answered && isSwipeAdvance ? renderCardPreview(isChoice ? "choice" : "input") : ""}
         <div
           class="quiz-gesture-card quiz-question-stack"
           ${isSwipeAdvance ? "data-quiz-gesture-surface" : ""}

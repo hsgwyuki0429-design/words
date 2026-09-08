@@ -1395,11 +1395,14 @@ body.max-mode .combo-pill--pop .combo-pill-text::after { animation: combo-ghost-
   accent-color: var(--accent);
 }
 
+/* 学習中はカードの後ろに何も敷かず、白一色にする。 */
 .quiz-view {
   min-height: 100vh;
   min-height: 100dvh;
   padding: 0;
+  background: #fff;
 }
+body.quiz-active { background: #fff; }
 
 body.quiz-active .main-content { padding-bottom: 0; }
 
@@ -1496,142 +1499,6 @@ body.quiz-active .main-content { padding-bottom: 0; }
   position: relative;
   isolation: isolate;
   perspective: 1200px;
-}
-
-.quiz-card-preview {
-  --quiz-preview-opacity: 0.74;
-  --quiz-preview-scale: 0.982;
-  --quiz-preview-y: 5px;
-  position: absolute;
-  z-index: 0;
-  inset: 10px 12px -8px;
-  display: flex;
-  overflow: hidden;
-  flex-direction: column;
-  padding: clamp(20px, 4vw, 34px);
-  opacity: var(--quiz-preview-opacity);
-  background:
-    radial-gradient(circle at 85% 8%, rgba(15, 118, 110, 0.055), transparent 24%),
-    linear-gradient(180deg, #fff 0%, #fafafb 100%);
-  border: 1px solid rgba(23, 23, 25, 0.08);
-  border-radius: clamp(20px, 4vw, 30px);
-  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.05);
-  transform: scale(var(--quiz-preview-scale)) translateY(var(--quiz-preview-y));
-  transform-origin: 50% 12%;
-  transition: opacity 160ms ease, transform 180ms ease;
-  pointer-events: none;
-  user-select: none;
-}
-
-.quiz-card-preview-meta {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.quiz-card-preview-meta span {
-  width: 30px;
-  height: 20px;
-  background: #ececf0;
-  border-radius: 999px;
-}
-
-.quiz-card-preview-meta i {
-  width: min(38%, 130px);
-  height: 7px;
-  background: #e6e6ea;
-  border-radius: 999px;
-}
-
-.quiz-card-preview-kicker {
-  position: relative;
-  z-index: 1;
-  width: 48px;
-  height: 6px;
-  margin: clamp(24px, 5vw, 42px) auto 14px;
-  background: #dddde2;
-  border-radius: 999px;
-}
-
-.quiz-card-preview-prompt {
-  position: relative;
-  z-index: 1;
-  display: -webkit-box;
-  width: min(86%, 580px);
-  margin: 0 auto clamp(24px, 5vw, 42px);
-  overflow: hidden;
-  color: #56565c;
-  font-size: clamp(18px, 4vw, 30px);
-  font-weight: 680;
-  line-height: 1.35;
-  text-align: center;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-}
-
-.quiz-card-preview--choice .quiz-card-preview-prompt {
-  font-size: var(--choice-heading-size);
-  line-height: 1.25;
-}
-
-.quiz-card-preview-prompt.is-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 9px;
-}
-
-.quiz-card-preview-line {
-  width: min(100%, 360px);
-  height: 12px;
-  background: #e4e4e8;
-  border-radius: 999px;
-}
-
-.quiz-card-preview-line.preview-line-short {
-  width: min(64%, 220px);
-}
-
-.quiz-card-preview-options {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  gap: 8px;
-  width: min(100%, 600px);
-  margin: auto auto 0;
-}
-
-.quiz-card-preview-options span {
-  min-height: 42px;
-  background: #f1f1f4;
-  border: 1px solid #e1e1e5;
-  border-radius: 13px;
-}
-
-.quiz-card-preview-answer {
-  position: relative;
-  z-index: 1;
-  width: min(88%, 560px);
-  margin: auto auto 0;
-  padding: 22px;
-  background: #f0f8f5;
-  border: 1px solid rgba(6, 95, 70, 0.07);
-  border-radius: 18px;
-}
-
-.quiz-card-preview-answer span {
-  display: block;
-  width: 56%;
-  height: 10px;
-  margin: 0 auto;
-  background: rgba(6, 95, 70, 0.12);
-  border-radius: 999px;
-}
-
-.quiz-card-preview--recall {
-  min-height: calc(100% - 2px);
 }
 
 .quiz-gesture-card {
@@ -3256,8 +3123,7 @@ body.quiz-active .main-content { padding-bottom: 0; }
   }
 
   .swipe-choice-card h1,
-  .quiz-answered .swipe-choice-card h1,
-  .quiz-card-preview--choice .quiz-card-preview-prompt {
+  .quiz-answered .swipe-choice-card h1 {
     font-size: var(--choice-heading-size);
   }
 
@@ -3379,11 +3245,6 @@ body.quiz-active .main-content { padding-bottom: 0; }
 }
 
 @media (max-width: 430px) {
-  .quiz-card-preview {
-    inset: 8px 8px -6px;
-    padding: 18px 16px;
-  }
-
   .recall-gesture-guide {
     gap: 4px;
   }
@@ -3602,10 +3463,6 @@ body.quiz-active .main-content { padding-bottom: 0; }
     animation-iteration-count: 1 !important;
   }
 
-  .quiz-card-preview {
-    opacity: 0.82 !important;
-    transform: scale(0.982) translateY(5px) !important;
-  }
 }
 
 @media (min-width: 900px) {
@@ -3766,9 +3623,6 @@ body.quiz-active .main-content { padding-bottom: 0; }
 .public-quiz {
   min-height: 100dvh;
   padding-bottom: calc(32px + env(safe-area-inset-bottom));
-}
-.public-quiz.answer-revealed {
-  background: radial-gradient(circle at 50% 60%, rgba(15, 118, 110, 0.035), transparent 48%);
 }
 .recall-card-stage {
   width: min(100%, 820px);
@@ -5304,11 +5158,10 @@ h2 {
 }
 
 /* Quiz and recall */
+/* 学習中はカードの後ろに何も敷かず、白一色にする（MAXの演出だけは別）。 */
 body.quiz-active:not(.max-mode),
 body.kobun-quiz-active {
-  background:
-    radial-gradient(circle at 15% -5%, rgba(84, 84, 212, 0.11), transparent 24rem),
-    var(--background);
+  background: #fff;
 }
 
 .quiz-shell {
@@ -5393,13 +5246,6 @@ body.kobun-quiz-active {
   background: #fff1f3;
   border-color: rgba(216, 58, 82, 0.34);
   box-shadow: 0 0 0 3px rgba(216, 58, 82, 0.075);
-}
-
-.quiz-card-preview {
-  background: #f3f3f5;
-  border-color: rgba(24, 24, 27, 0.065);
-  box-shadow: 0 10px 28px rgba(24, 24, 27, 0.035);
-  transition: opacity 160ms ease, transform 180ms var(--ease-out);
 }
 
 .gesture-guide-item,

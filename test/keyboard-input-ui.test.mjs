@@ -163,7 +163,6 @@ test("answered keyboard input keeps the typed boxes and shows only the correct a
 
 test("answered keyboard cards use the same four-direction swipe progression as choices", () => {
   const quiz = functionSource("renderQuiz", "currentTypedAnswer");
-  assert.match(quiz, /renderCardPreview\(isChoice \? "choice" : "input"\)/);
   assert.match(quiz, /isKeyboardInput \? " swipe-input-card"/);
   assert.match(quiz, /answered && isSwipeAdvance \? renderChoiceSwipeHints\(\)/);
   assert.match(stylesSource, /\.swipe-input-card\s*\{[\s\S]*?min-height:\s*var\(--input-card-height\)/);

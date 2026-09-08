@@ -546,7 +546,7 @@ function renderStudyContent() {
         attribute: `data-study-content="${content}"`,
         progress: selectionProgress({ types: recallTypesForContent(content) }),
         inProgress: resumableContents.has(content),
-        cycleNumber: cycleNumberForContents(content),
+        roundNumber: masteryRoundForContents(content),
       }))
       .join("");
     return;
@@ -563,7 +563,7 @@ function renderStudyContent() {
       attribute: `data-study-content-choice="${content}"${count(content) ? "" : ' disabled aria-disabled="true"'}`,
       progress: count(content) ? selectionProgress({ types: [content] }) : null,
       inProgress: resumableContents.has(studyContentsKey([content])),
-      cycleNumber: cycleNumberForContents(studyContentsKey([content])),
+      roundNumber: masteryRoundForContents(studyContentsKey([content])),
     })),
     contentChoiceRow({
       title: "全選択",
@@ -571,7 +571,7 @@ function renderStudyContent() {
       attribute: 'data-study-content-choice="all"',
       progress: selectionProgress({ types: [...ENGLISH_CONTENT_TYPES] }),
       inProgress: resumableContents.has(studyContentsKey([...ENGLISH_CONTENT_TYPES])),
-      cycleNumber: cycleNumberForContents(studyContentsKey([...ENGLISH_CONTENT_TYPES])),
+      roundNumber: masteryRoundForContents(studyContentsKey([...ENGLISH_CONTENT_TYPES])),
     }),
     contentChoiceRow({
       title: "その他",
@@ -589,7 +589,7 @@ function contentChoiceRow({
   variant = "primary",
   progress = null,
   inProgress = false,
-  cycleNumber = 1,
+  roundNumber = 1,
 }) {
   const classes = [
     "content-choice",
@@ -613,7 +613,7 @@ function contentChoiceRow({
         <small>${escapeHtml(detail)}</small>
         ${badge}
         <span class="card-arrow" aria-hidden="true">›</span>
-      </span>${progressGaugeMarkup(progress, cycleNumber)}
+      </span>${progressGaugeMarkup(progress, roundNumber)}
     </button>`;
 }
 
@@ -728,15 +728,15 @@ function renderStudyImportance() {
     minimumWrong: 0,
   }).length;
   const types = studyContentTypes();
-  // 直前の画面（学習内容）と同じ周回のバーを見せる。
-  const cycleNumber = selectedCycleNumber();
+  // 直前の画面（学習内容）と同じセットのバーを見せる。
+  const roundNumber = selectedMasteryRound();
   const rows = [
     contentChoiceRow({
       title: "全重要度",
       detail: `${countFor(null)}${unit}`,
       attribute: 'data-study-importance-choice="all"',
       progress: selectionProgress({ types }),
-      cycleNumber,
+      roundNumber,
     }),
     ...available.map((importance) => {
       const count = countFor(importance);
@@ -745,7 +745,7 @@ function renderStudyImportance() {
         detail: count ? `${count}${unit}` : "出題できません",
         attribute: `data-study-importance-choice="${importance}"${count ? "" : ' disabled aria-disabled="true"'}`,
         progress: count ? selectionProgress({ types, importance: [importance] }) : null,
-        cycleNumber,
+        roundNumber,
       });
     }),
     contentChoiceRow({
@@ -869,8 +869,10 @@ function allRangesInProgress() {
 // いま選んでいる範囲（形式まで決まっていればその形式）に一致する、
 // 学習途中の周回が対象にしている学習内容。単語・熟語・構文・全選択の
 // どれを選べば続きになるかを示すために使う。
-// いま選んでいる範囲・形式で、その学習内容が何周目かを返す（バーの本数と色に使う）。
-function cycleNumberForContents(contentsKey) {
+// いま選んでいる範囲・形式で、その学習内容が何セット目かを返す（バーの本数と色に使う）。
+// 周回（1周目→2周目）ではなく習得ラウンドを見る。全問題を習得しきって新しい
+// ラウンドが始まったときにだけ、次のバーを足したい。
+function masteryRoundForContents(contentsKey) {
   const mode = exactStudyMode(state.studySelection);
   if (!mode) return 1;
   const entry = studyProgressEntriesForMode(state.studyProgress, {
@@ -879,14 +881,14 @@ function cycleNumberForContents(contentsKey) {
     filters: state.filters,
     criterion: masteryCriterion(),
   }).find(({ meta }) => meta.contents === contentsKey);
-  return entry?.progress?.cycleNumber ?? 1;
+  return entry?.progress?.masteryRound ?? 1;
 }
 
-// 重要度画面のように、学習内容が決まったあとの画面で使う周回番号。
+// 重要度画面のように、学習内容が決まったあとの画面で使うセット番号。
 // 形式カード・学習内容と同じ本数・同じ色のバーになるようにそろえる。
-function selectedCycleNumber() {
+function selectedMasteryRound() {
   const selection = state.studySelection ?? {};
-  return cycleNumberForContents(isRecallSubject()
+  return masteryRoundForContents(isRecallSubject()
     ? selection.content ?? ""
     : studyContentsKey(selection.contents ?? []));
 }
@@ -981,12 +983,14 @@ function cardStudyProgress(card) {
 
 // 形式カード・学習内容・重要度で共通の進捗ゲージ。
 // 1本のトラックに「未回答（背景）」「解答済み（薄い塗り）」「習得（濃い塗り）」を重ね、
-// 周回が進むごとに新しいバーを下へ足していく（終えた周回のバーは満了のまま残す）。
-// バーの本数と幅は summarizeProgressGauge がそろえる。周回を重ねてもバーは
+// セット（習得ラウンド）が変わったときにだけ新しいバーを下へ足す（終えたセットの
+// バーは満了のまま残す）。周回が2周目・3周目と進むのは同じセットの中の絞り込みなので、
+// バーは増やさず1本のまま伸ばす。
+// バーの本数と幅は summarizeProgressGauge がそろえる。セットを重ねてもバーは
 // 上限までしか増えず、保存データが壊れていても幅が不正な値にならない。
-function progressGaugeMarkup(progress, cycleNumber = 1) {
-  const gauge = summarizeProgressGauge(progress, cycleNumber);
-  const label = `${gauge.cycleNumber}周目：解答済み ${gauge.answeredPercent}パーセント、習得 ${gauge.masteredPercent}パーセント`;
+function progressGaugeMarkup(progress, roundNumber = 1) {
+  const gauge = summarizeProgressGauge(progress, roundNumber);
+  const label = `${gauge.roundNumber}セット目：解答済み ${gauge.answeredPercent}パーセント、習得 ${gauge.masteredPercent}パーセント`;
   const finishedBars = gauge.finishedBars.map((bar) => `
         <span class="progress-gauge is-finished" data-cycle="${bar.colorIndex}" role="img" aria-label="${escapeHtml(bar.label)}">
           <span class="progress-gauge-answered" style="width:100%"></span>
@@ -1001,7 +1005,7 @@ function progressGaugeMarkup(progress, cycleNumber = 1) {
         </span>
       </span>
       <span class="progress-legend" data-cycle="${gauge.colorIndex}">
-        ${gauge.cycleNumber > 1 ? `<span class="progress-figure is-cycle">${gauge.cycleNumber}周目</span>` : ""}
+        ${gauge.roundNumber > 1 ? `<span class="progress-figure is-cycle">${gauge.roundNumber}セット目</span>` : ""}
         <span class="progress-figure is-answered">解答済み ${gauge.answeredPercent}%（${gauge.answeredItems}/${gauge.totalItems}）</span>
         <span class="progress-figure is-mastered">習得 ${gauge.masteredPercent}%（${gauge.masteredItems}/${gauge.totalItems}）</span>
       </span>`;
@@ -1052,7 +1056,7 @@ function modeProgressCard(card) {
   const resumable = Boolean(entry) && entry.key === latestStudyEntry()?.key;
   const cycleLabel = entry ? contentLabelFromProgressKey(entry.meta) : "";
   const cycleCopy = cycle
-    ? `${cycleLabel ? `${cycleLabel} ` : ""}${cycle.masteryRound > 1 ? `R${cycle.masteryRound}· ` : ""}${cycle.cycleNumber}周目 残り${cycle.remainingCount}`
+    ? `${cycleLabel ? `${cycleLabel} ` : ""}${cycle.masteryRound > 1 ? `${cycle.masteryRound}セット目 ` : ""}${cycle.cycleNumber}周目 残り${cycle.remainingCount}`
     : "";
   return `
     <button class="mode-progress-card${resumable ? " is-in-progress" : ""}" type="button" data-study-target="${escapeHtml(card.key)}"${progress.totalItems ? "" : ' disabled aria-disabled="true"'}>
@@ -1063,7 +1067,7 @@ function modeProgressCard(card) {
           : '<span class="mode-progress-cycle">出題できません</span>'}
         <span class="card-arrow" aria-hidden="true">›</span>
       </span>
-${progressGaugeMarkup(progress, cycle?.cycleNumber ?? 1)}
+${progressGaugeMarkup(progress, cycle?.masteryRound ?? 1)}
     </button>`;
 }
 
@@ -1215,7 +1219,7 @@ function renderSettings() {
             <span><strong>${escapeHtml(MASTERY_CRITERION_LABELS[criterion].title)}</strong><small>${escapeHtml(MASTERY_CRITERION_LABELS[criterion].detail)}</small></span>
           </button>`).join("")}
       </div>
-      <p class="settings-note">習得条件を変えると、周回と習得の判定だけを新しいラウンドとしてやり直します。回答数・正解数などの学習履歴は残ります。</p>
+      <p class="settings-note">習得条件を変えると、周回と習得の判定だけを新しいセットとしてやり直します。回答数・正解数などの学習履歴は残ります。</p>
     </section>
     <section class="settings-card">
       <h2>学習画面</h2>
@@ -4014,7 +4018,7 @@ function resumeStudyMarkup({ entry, config }) {
         </ul>
       </header>
       <section class="result-record" aria-labelledby="resume-record-title">
-        <h2 id="resume-record-title">${cycle.masteryRound > 1 ? `R${cycle.masteryRound}・` : ""}${cycle.cycleNumber}周目の途中</h2>
+        <h2 id="resume-record-title">${cycle.masteryRound > 1 ? `${cycle.masteryRound}セット目・` : ""}${cycle.cycleNumber}周目の途中</h2>
         <div class="result-record-grid">
           <div><span>今回の対象</span><strong>${cycle.targetCount}</strong></div>
           <div><span>正解済み</span><strong>${cycle.correctCount}</strong></div>
@@ -4099,9 +4103,9 @@ function sessionResultMarkup(session) {
         <ul class="result-cycle-list">
           <li><span>今回の対象</span><strong>${finished.targetCount}問</strong></li>
           <li><span>習得（${escapeHtml(MASTERY_CRITERION_LABELS[finished.criterion].title)}）</span><strong>${finished.masteredCount}問</strong></li>
-          <li><span>${newRound ? "次のラウンド" : `${nextCycle?.cycleNumber ?? finished.cycleNumber + 1}周目の対象`}</span><strong>${nextCycle?.targetCount ?? 0}問</strong></li>
+          <li><span>${newRound ? "次のセット" : `${nextCycle?.cycleNumber ?? finished.cycleNumber + 1}周目の対象`}</span><strong>${nextCycle?.targetCount ?? 0}問</strong></li>
         </ul>
-        ${newRound ? "<p class=\"result-cycle-note\">すべて習得しました。新しい習得ラウンドを全問題から始めます（回答履歴は残ります）。</p>" : ""}
+        ${newRound ? "<p class=\"result-cycle-note\">すべて習得しました。次のセットを全問題から始めます（回答履歴は残ります）。</p>" : ""}
       </section>` : "";
   const primaryAction = reviewItems.length
     ? {
@@ -4112,11 +4116,11 @@ function sessionResultMarkup(session) {
       }
     : nextCycle
       ? {
-          heading: newRound ? "新しい習得ラウンドへ" : `${nextCycle.cycleNumber}周目へ進もう`,
+          heading: newRound ? "次のセットへ" : `${nextCycle.cycleNumber}周目へ進もう`,
           detail: newRound
             ? `全問題を対象に、もう一度${nextCycle.targetCount}問から始めます`
             : `まだ習得していない${nextCycle.targetCount}問だけを続けて学習します`,
-          label: newRound ? "新しいラウンドを始める" : `${nextCycle.cycleNumber}周目を始める`,
+          label: newRound ? "次のセットを始める" : `${nextCycle.cycleNumber}周目を始める`,
           attribute: "data-continue-cycle",
         }
       : {
@@ -4158,7 +4162,7 @@ function sessionResultMarkup(session) {
         ${reviewItems.length > 5 && !session.showAllReviewItems ? '<button class="text-button result-show-all" type="button" data-show-all-review>すべて表示</button>' : ""}
       </section>` : ""}
       <div class="result-other-actions">
-        ${canStart && nextCycle && reviewItems.length ? `<button class="secondary-button" type="button" data-continue-cycle>${newRound ? "新しいラウンドを始める" : `${nextCycle.cycleNumber}周目を始める`}（${nextCycle.targetCount}問）</button>` : ""}
+        ${canStart && nextCycle && reviewItems.length ? `<button class="secondary-button" type="button" data-continue-cycle>${newRound ? "次のセットを始める" : `${nextCycle.cycleNumber}周目を始める`}（${nextCycle.targetCount}問）</button>` : ""}
         ${canUndoLastAnswer() ? '<button class="secondary-button result-undo-button" type="button" data-undo-answer>↶ 直前の回答を取り消す</button>' : ""}
         ${canStart ? '<button class="secondary-button" type="button" data-change-study>学習条件を変える</button>' : ""}
         <div class="result-text-actions">

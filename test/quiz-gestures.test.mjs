@@ -289,22 +289,10 @@ test("swipe-primary next fallback is hidden on touch devices and phone widths", 
   assert.match(appSource, /next-button\$\{swipePrimary \? " next-button--fallback" : ""\}/);
 });
 
-test("swipe-ready stages render a noninteractive card preview instead of a blank pseudo-card", () => {
-  assert.match(appSource, /class="quiz-card-preview quiz-card-preview--\$\{kind\}" aria-hidden="true" inert/);
-  assert.match(appSource, /renderCardPreview\("recall"\)/);
-  assert.match(appSource, /renderCardPreview\(isChoice \? "choice" : "input"\)/);
-  assert.match(stylesSource, /\.quiz-card-preview\s*\{[\s\S]*?pointer-events:\s*none/);
-  assert.match(stylesSource, /\.quiz-card-preview-options/);
-  assert.match(stylesSource, /\.quiz-card-preview-answer/);
+test("カードの後ろに次の問題の下敷きを置かない", () => {
+  assert.doesNotMatch(appSource, /quiz-card-preview|renderCardPreview|previewPromptForEntry/);
+  assert.doesNotMatch(stylesSource, /quiz-card-preview/);
   assert.doesNotMatch(stylesSource, /\.quiz-card-stage::before/);
-});
-
-test("preview uses the queued next prompt without mutating question state", () => {
-  const previewPrompt = appSource.match(/function previewPromptForEntry\(entry\)[\s\S]*?\n}/)?.[0] ?? "";
-  const previewCard = appSource.match(/function renderCardPreview\(kind\)[\s\S]*?\n}/)?.[0] ?? "";
-  assert.match(previewCard, /session\?\.queue\?\.\[session\.cursor \+ 1\]/);
-  assert.match(previewCard, /previewPromptForEntry\(nextEntry\)/);
-  assert.doesNotMatch(`${previewPrompt}\n${previewCard}`, /buildQuestion|nextQuestion|cursor\s*\+=|deferredReviews|recordAttempt/);
 });
 
 test("recall answer guide names all three unchanged grading directions", () => {
@@ -315,20 +303,14 @@ test("recall answer guide names all three unchanged grading directions", () => {
   assert.match(stylesSource, /\.gesture-guide-item\s*\{[\s\S]*?opacity:\s*0\.66/);
 });
 
-test("drag progress reveals the preview and cancel clears its inline state", () => {
-  assert.match(appSource, /function handleQuizDrag[\s\S]*?setCardPreviewProgress\(surface, Math\.hypot\(dx, dy\)\)/);
-  assert.match(appSource, /function animateSwipeCancel[\s\S]*?setCardPreviewProgress\(surface, 0\)/);
-  assert.match(appSource, /function clearGestureSurfaceStyles[\s\S]*?clearCardPreviewStyles\(surface\)/);
+test("ドラッグを取り消すと、カードに付けた位置の指定を消す", () => {
+  assert.match(appSource, /function animateSwipeCancel[\s\S]*?--quiz-drag-x", "0px"/);
+  assert.match(appSource, /function clearGestureSurfaceStyles[\s\S]*?removeProperty\("--quiz-drag-x"\)/);
 });
 
-test("preview layering stays below the active card and exit flight", () => {
-  assert.match(stylesSource, /\.quiz-card-preview\s*\{[\s\S]*?z-index:\s*0/);
+test("めくっているカードは飛んでいくカードより下に重なる", () => {
   assert.match(stylesSource, /\.quiz-gesture-card\s*\{[\s\S]*?z-index:\s*2/);
   assert.match(stylesSource, /\.quiz-card-flight\s*\{[\s\S]*?z-index:\s*55/);
-});
-
-test("reduced motion keeps the preview stable", () => {
-  assert.match(stylesSource, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.quiz-card-preview\s*\{[\s\S]*?transform:\s*scale\(0\.982\) translateY\(5px\)/);
 });
 
 test("answered choice feedback and swipe guide stay inside one question card", () => {
@@ -338,10 +320,9 @@ test("answered choice feedback and swipe guide stay inside one question card", (
   assert.match(stylesSource, /\.swipe-choice-card > \.feedback-card\s*\{[\s\S]*?background:\s*transparent[\s\S]*?border-top:/);
 });
 
-test("front and preview choice headings share the same responsive size", () => {
+test("4択の見出しの大きさは画面に合わせて決める", () => {
   assert.match(stylesSource, /--choice-heading-size:\s*clamp\(/);
   assert.match(stylesSource, /\.swipe-choice-card h1\s*\{[\s\S]*?font-size:\s*var\(--choice-heading-size\)/);
-  assert.match(stylesSource, /\.quiz-card-preview--choice \.quiz-card-preview-prompt\s*\{[\s\S]*?font-size:\s*var\(--choice-heading-size\)/);
 });
 
 test("choice prompt and options keep the answered layout before answering", () => {

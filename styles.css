@@ -5570,6 +5570,21 @@ body.kobun-quiz-active {
 .quiz-public-choice .swipe-choice-card > * {
   flex-shrink: 0;
 }
+.quiz-public-choice .public-choice-question {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex: 1 0 auto;
+  width: min(100%, 560px);
+  margin-inline: auto;
+}
+.quiz-public-choice .public-choice-question .question-instruction,
+.quiz-public-choice .public-choice-question h1 {
+  text-align: center;
+}
+.quiz-choice.quiz-public-choice .swipe-choice-card:has(.public-choice-question) > .choice-gesture-footer {
+  margin-top: calc(8px * var(--choice-scale));
+}
 .quiz-choice.quiz-public-choice .swipe-choice-card > .feedback-card {
   display: flex;
   flex-direction: column;
@@ -5632,6 +5647,22 @@ body.kobun-quiz-active {
   border-left: 2px solid var(--line);
   line-height: 1.5;
   overflow-wrap: anywhere;
+}
+.textbook-evidence mark {
+  color: inherit;
+  background: linear-gradient(transparent 48%, #fde68a 48%);
+  font-weight: 700;
+}
+.quiz-public-choice .textbook-evidence .textbook-evidence-source,
+.public-recall-card:not(.vocab-recall-card) .textbook-evidence .textbook-evidence-source {
+  margin: 0.65em 0 0;
+  font-family: "Yu Mincho", "Hiragino Mincho ProN", "Noto Serif JP", serif;
+  font-size: calc(10px * max(var(--choice-scale, var(--recall-scale, 1)), 0.85));
+  line-height: 1.5;
+  color: var(--secondary);
+}
+.textbook-evidence-source cite {
+  font-style: italic;
 }
 .quiz-public-choice .textbook-evidence blockquote {
   font-size: var(--choice-text);

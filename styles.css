@@ -5756,18 +5756,20 @@ body.kobun-quiz-active {
   color: var(--tertiary);
 }
 
-/* 明るい下地のボタンは、暗い背景との境目が見えるように縁をつける。 */
+/* ロゴの四角は、明るいときと同じ「濃い面に白抜き」のまま。
+   背景に沈まないぶんだけ明るくし、縁と光沢は控えめにする。 */
 :root[data-theme="dark"] .brand-mark,
 :root[data-theme="dark"] .onboarding-logo {
-  border: 1px solid var(--line-strong);
+  color: #fff;
+  background: linear-gradient(145deg, #2b2b34, #1b1b21);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: none;
 }
 
-/* 濃いグラデーションのボタン・ロゴは、暗い背景に沈むので明度を上げる。
+/* 濃いグラデーションのボタンは、暗い背景に沈むので明度を上げる。
    文字は白のままにして、押せることが分かるようにする。 */
 :root[data-theme="dark"] .primary-button,
-:root[data-theme="dark"] .alphabet-key--submit,
-:root[data-theme="dark"] .brand-mark,
-:root[data-theme="dark"] .onboarding-logo {
+:root[data-theme="dark"] .alphabet-key--submit {
   color: #fff;
   background: linear-gradient(180deg, #43434f, #2c2c35);
   border-color: rgba(255, 255, 255, 0.16);

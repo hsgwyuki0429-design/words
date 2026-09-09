@@ -14,6 +14,7 @@ import {
   vocabExampleSegments,
   isRecallSubjectId,
   rangeOrderForSubject,
+  itemMatchesRange,
   recallContentMetaFor,
   TYPE_LABELS,
   UNKNOWN_CHOICE,
@@ -789,7 +790,7 @@ function renderStudyRangeSelect() {
   </button>`;
   const rangeCards = ranges.map((range) => {
     const selected = !allSelected && state.filters.ranges.includes(range);
-    const count = state.items.filter((item) => item.range === range).length;
+    const count = state.items.filter((item) => itemMatchesRange(item, range)).length;
     return `<button class="multi-select-card${selected ? " selected" : ""}" type="button" data-study-range="${escapeHtml(range)}" aria-pressed="${selected}">
       <span class="multi-check" aria-hidden="true">${selected ? "✓" : ""}</span>
       <span><strong>${escapeHtml(range)}</strong><small>${count}${recallUnit()}</small></span>
@@ -912,6 +913,9 @@ function dashboardTargetByKey(key) {
 }
 
 function dashboardRanges() {
+  if (isPublicSubject()) {
+    return [...new Set(state.items.map((item) => item.title || item.range))];
+  }
   return currentRangeOrder().filter((range) => state.items.some((item) => item.range === range));
 }
 
@@ -1021,9 +1025,13 @@ function renderDashboard() {
         : isKobunVocabSubject()
           ? "KOBUN · 2026.2"
           : hour < 11 ? "Good morning." : hour < 18 ? "Good afternoon." : "Good evening.";
-  elements.dashboardTitle.textContent = completed ? "次の学習範囲" : "学習する範囲を選ぶ";
+  elements.dashboardTitle.textContent = isPublicSubject()
+    ? (completed ? "次の題名を選ぶ" : "学習する題名を選ぶ")
+    : completed ? "次の学習範囲" : "学習する範囲を選ぶ";
   elements.dashboardCopy.textContent = completed
     ? "結果を確認したら、そのまま次の範囲へ進めます。"
+    : isPublicSubject()
+      ? "教科書の題名から、学習したい内容を選んでください。"
     : isKobunVocabSubject()
       ? "作品を選ぶと、重要語句カードの現在地が見られます。"
       : isRecallSubject()

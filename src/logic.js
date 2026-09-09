@@ -550,6 +550,10 @@ function matchesPerformance(record, performance) {
   }
 }
 
+export function itemMatchesRange(item, range) {
+  return item.range === range || (item.subject === "public" && item.title === range);
+}
+
 export function applyFilters(items, history, filters = {}) {
   const ranges = new Set(filters.ranges ?? []);
   const importance = new Set(filters.importance ?? []);
@@ -561,7 +565,7 @@ export function applyFilters(items, history, filters = {}) {
 
   return items.filter((item) => {
     const record = historyForModes(getHistory(history, item.id), performanceModes);
-    if (ranges.size && !ranges.has(item.range)) return false;
+    if (ranges.size && ![...ranges].some((range) => itemMatchesRange(item, range))) return false;
     if (importance.size && !importance.has(item.importance)) return false;
     if (types.size && !types.has(item.type)) return false;
     if (modes.size && ![...modes].some((mode) => itemSupportsMode(item, mode))) {
@@ -1276,7 +1280,7 @@ export function itemsForModeProgress(items = [], {
   const typeSet = new Set((types ?? []).filter(Boolean));
   const importanceSet = new Set((importance ?? []).filter(Boolean));
   return items.filter((item) =>
-    (!rangeSet.size || rangeSet.has(item.range)) &&
+    (!rangeSet.size || [...rangeSet].some((range) => itemMatchesRange(item, range))) &&
     (!typeSet.size || typeSet.has(item.type)) &&
     (!importanceSet.size || importanceSet.has(item.importance)) &&
     itemSupportsMode(item, mode));

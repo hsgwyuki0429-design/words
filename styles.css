@@ -5569,6 +5569,7 @@ body.kobun-quiz-active {
   height: var(--choice-card-height);
   min-height: var(--choice-card-height);
   overflow: hidden;
+  background: var(--surface-solid);
 }
 .quiz-public-choice .swipe-choice-card > * {
   flex-shrink: 0;
@@ -5596,6 +5597,18 @@ body.kobun-quiz-active {
   margin-top: 0;
   padding: 0;
   border-top: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+/* 内側の面は同じ不透明色に揃え、重なりによる色の段差を作らない。 */
+.quiz-choice.quiz-public-choice .swipe-choice-card .input-correct-answer,
+.quiz-choice.quiz-public-choice .swipe-choice-card .feedback-explanation,
+.quiz-choice.quiz-public-choice .swipe-choice-card .choice-gesture-footer {
+  background: var(--surface-muted, #f6f6f8);
+  border: 1px solid var(--line);
+  box-shadow: none;
 }
 .quiz-public-choice .input-correct-answer {
   margin: 0;

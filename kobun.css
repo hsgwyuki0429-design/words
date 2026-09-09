@@ -19,7 +19,7 @@
 .kb-mode-list { display: grid; gap: 8px; }
 .kb-reference-meanings { display: block; margin-top: 6px; font-size: 14px; font-weight: 400; color: var(--secondary); line-height: 1.6; }
 .kb-reference-title { font-size: 16px; }
-.kb-menu-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 100px !important; padding: 22px; border: 1px solid var(--line-strong); border-radius: 22px; background: var(--surface-solid); text-align: left; color: var(--ink-purple, #292331); }
+.kb-menu-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 100px !important; padding: 22px; border: 1px solid var(--line-strong); border-radius: 22px; background: var(--surface-solid); text-align: left; color: var(--ink, #292331); }
 .kb-menu-card strong { display: block; font-size: 20px; }
 .kb-menu-card small { display: block; margin-top: 7px; color: var(--secondary); font-size: 13px; line-height: 1.6; }
 .kb-menu-card > span:last-child { color: var(--kb-accent); font-size: 27px; }
@@ -37,7 +37,7 @@
 .kb-question h2 { font-size: 17px; font-weight: 650; margin: 12px 0; line-height: 1.6; }
 .kb-note, .kb-notes { color: var(--secondary); font-size: 13px; line-height: 1.6; }
 .kb-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.kb-option { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; min-height: 70px !important; padding: 12px 14px; border: 2px solid #e3dce9; border-radius: 16px; background: var(--surface-solid); color: var(--ink-purple, #342a3f); text-align: left; overflow-wrap: anywhere; }
+.kb-option { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; min-height: 70px !important; padding: 12px 14px; border: 2px solid #e3dce9; border-radius: 16px; background: var(--surface-solid); color: var(--ink, #342a3f); text-align: left; overflow-wrap: anywhere; }
 .kb-option span { font-weight: 650; font-size: 16px; line-height: 1.4; }
 .kb-option small { min-height: 16px; margin-top: 4px; font-size: 11px; font-weight: 700; }
 .kb-option.selected, .kb-candidates .selected { background: var(--tint-blue, #eaf3ff); border-color: var(--blue); color: var(--blue); }
@@ -55,7 +55,7 @@
 .kb-cell textarea::placeholder { color: var(--ink-muted, #978b9f); font-size: 14px; }
 .kb-cell small { display: block; margin-top: 6px; font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
 .kb-cell.correct textarea:disabled, .kb-cell.incorrect textarea:disabled { -webkit-text-fill-color: currentColor; opacity: 1; }
-.kb-input-tools { margin-top: 18px; padding: 16px; background: var(--tint-blue, #f0f4f9); border-radius: 18px; }
+.kb-input-tools { margin-top: 18px; padding: 16px; background: var(--surface-muted, #f0f4f9); border-radius: 18px; }
 .kb-input-tools p { margin: 0 0 12px; font-size: 14px; }
 .kb-candidates { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .kb-candidates button { padding: 10px 4px; overflow-wrap: anywhere; font-size: 15px; }
@@ -77,7 +77,7 @@
 .kb-answer-count { text-align: center; font-weight: 700; color: var(--blue); }
 .kb-base-inputs { display: grid; gap: 16px; }
 .kb-base-inputs label { display: grid; gap: 8px; color: var(--secondary); font-size: 14px; }
-.kb-base-inputs input { width: 100%; border: 2px solid #ded3e8; border-radius: 16px; padding: 14px 16px; font-size: 20px; color: var(--ink-purple, #2e2139); background: var(--surface-solid); }
+.kb-base-inputs input { width: 100%; border: 2px solid #ded3e8; border-radius: 16px; padding: 14px 16px; font-size: 20px; color: var(--ink, #2e2139); background: var(--surface-solid); }
 .kb-base-feedback { margin: 18px 0; }
 .kb-feedback-line { border: 1px solid; border-radius: 12px; padding: 12px; }
 .kb-feedback-line.duplicates { color: var(--ink-red, #a0302b); }
@@ -90,7 +90,7 @@
 .kb-reference-table th, .kb-reference-table td { border: 1px solid var(--line-strong); padding: 12px; text-align: left; vertical-align: middle; line-height: 1.6; }
 .kb-reference-table thead th { background: var(--tint-blue, #eaf3ff); color: var(--text); font-size: 13px; }
 .kb-reference-table th:first-child { width: 34%; }
-.kb-reference-table tbody th { background: var(--tint-blue, #f7f8fa); font-size: 14px; font-weight: 600; }
+.kb-reference-table tbody th { background: var(--surface-muted, #f7f8fa); font-size: 14px; font-weight: 600; }
 .kb-reference-table td { font-weight: 650; }
 .kb-reference-table td span { display: inline-block; }
 .kb-reference-table .kb-form-separator { margin: 0 4px; color: var(--ink-muted, #82738e); font-weight: 400; }
@@ -208,7 +208,7 @@ body.kobun-quiz-active .kobun-view { padding-top: max(8px, env(safe-area-inset-t
   color: #fff;
   background: linear-gradient(180deg, #27272a, #151517);
   border-color: rgba(0, 0, 0, 0.72);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 8px 18px rgba(24, 24, 27, 0.13);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, var(--gloss-alpha, 0.15)), 0 8px 18px rgba(24, 24, 27, 0.13);
 }
 
 .kb-primary:disabled {
@@ -250,7 +250,7 @@ body.kobun-quiz-active .kobun-view { padding-top: max(8px, env(safe-area-inset-t
 .kb-option.selected,
 .kb-candidates .selected {
   color: var(--ink-blue, #4848b6);
-  background: var(--tint-blue, #f1f1ff);
+  background: var(--tint-purple, #f1f1ff);
   border-color: rgba(84, 84, 212, 0.58);
   box-shadow: 0 0 0 3px rgba(84, 84, 212, 0.1);
 }
@@ -281,7 +281,7 @@ body.kobun-quiz-active .kobun-view { padding-top: max(8px, env(safe-area-inset-t
 }
 
 .kb-key:active {
-  background: var(--tint-blue, #efefff);
+  background: var(--tint-purple, #efefff);
   border-color: rgba(84, 84, 212, 0.38);
   transform: translateY(1px) scale(0.97);
 }
@@ -316,7 +316,7 @@ body.kobun-quiz-active .kobun-view { padding-top: max(8px, env(safe-area-inset-t
 }
 
 .kb-reference-table thead th {
-  background: var(--tint-blue, #f1f1ff);
+  background: var(--tint-purple, #f1f1ff);
 }
 
 .kb-reference-table tbody th {
@@ -382,7 +382,7 @@ body.kobun-quiz-active .kobun-view { padding-top: max(8px, env(safe-area-inset-t
 :root[data-theme="dark"] .kb-primary {
   background: linear-gradient(180deg, #43434f, #2c2c35);
   border-color: rgba(255, 255, 255, 0.16);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 8px 18px rgba(0, 0, 0, 0.35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, var(--gloss-alpha, 0.1)), 0 8px 18px rgba(0, 0, 0, 0.35);
 }
 
 :root[data-theme="dark"] .kb-option,

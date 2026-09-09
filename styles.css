@@ -167,7 +167,7 @@ body.public-notes-active .main-content {
   width: 100%;
   height: 100%;
   border: 0;
-  background: var(--tint-blue, #f6f8fb);
+  background: var(--surface-muted, #f6f8fb);
 }
 
 .eyebrow {
@@ -645,7 +645,7 @@ h2 {
   min-height: 24px;
   padding: 0 8px;
   color: var(--ink-muted, #475467);
-  background: var(--tint-blue, #eef0f3);
+  background: var(--surface-muted, #eef0f3);
   border-radius: 999px;
   font-size: 10px;
   font-weight: 680;
@@ -1768,7 +1768,7 @@ body.quiz-active .main-content { padding-bottom: 0; }
   margin: clamp(-42px, -5vw, -24px) auto clamp(28px, 5vw, 44px);
   padding: 14px 16px;
   color: var(--text);
-  background: var(--tint-blue, #f0f4f8);
+  background: var(--surface-muted, #f0f4f8);
   border-radius: 13px;
   font-size: 15px;
   font-weight: 680;
@@ -4686,7 +4686,7 @@ summary:focus-visible {
   padding-bottom: 11px;
   background: rgba(var(--surface-rgb), 0.78);
   border-bottom-color: rgba(24, 24, 27, 0.07);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, var(--gloss-alpha, 0.7));
   backdrop-filter: saturate(145%) blur(18px);
   -webkit-backdrop-filter: saturate(145%) blur(18px);
 }
@@ -4702,7 +4702,7 @@ summary:focus-visible {
   background: linear-gradient(145deg, #27272a, #0f0f11);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 11px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 5px 14px rgba(24, 24, 27, 0.16);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, var(--gloss-alpha, 0.16)), 0 5px 14px rgba(24, 24, 27, 0.16);
 }
 
 .header-status {
@@ -4780,7 +4780,7 @@ h2 {
   background: linear-gradient(180deg, #27272a, #151517);
   border-color: rgba(0, 0, 0, 0.72);
   border-radius: 14px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 8px 18px rgba(24, 24, 27, 0.13);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, var(--gloss-alpha, 0.15)), 0 8px 18px rgba(24, 24, 27, 0.13);
 }
 
 .secondary-button {
@@ -4885,7 +4885,7 @@ h2 {
 
 .primary-button.ready-to-continue {
   animation: none;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 10px 26px rgba(24, 24, 27, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, var(--gloss-alpha, 0.15)), 0 10px 26px rgba(24, 24, 27, 0.18);
 }
 
 /* Entry */
@@ -4936,7 +4936,7 @@ h2 {
   background: linear-gradient(145deg, #28282c, #121214);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 17px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 10px 24px rgba(24, 24, 27, 0.16);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, var(--gloss-alpha, 0.16)), 0 10px 24px rgba(24, 24, 27, 0.16);
 }
 
 .period-button {
@@ -4947,7 +4947,7 @@ h2 {
     linear-gradient(145deg, #25252a, #111113);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 20px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.13), 0 16px 34px rgba(24, 24, 27, 0.2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, var(--gloss-alpha, 0.13)), 0 16px 34px rgba(24, 24, 27, 0.2);
 }
 
 .subject-grid {
@@ -5080,7 +5080,7 @@ h2 {
 
 .multi-select-card.selected,
 .criterion-option.selected {
-  background: var(--tint-blue, #f3f3ff);
+  background: var(--tint-purple, #f3f3ff);
   border-color: rgba(84, 84, 212, 0.58);
   box-shadow: 0 0 0 3px rgba(84, 84, 212, 0.1);
 }
@@ -5101,7 +5101,7 @@ h2 {
 .mode-card-icon {
   background: linear-gradient(145deg, #29292d, #151517);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.13);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, var(--gloss-alpha, 0.13));
 }
 
 .card-arrow {
@@ -5143,7 +5143,7 @@ h2 {
 
 .word-form-kind {
   color: var(--ink-blue, #4848b6);
-  background: var(--tint-blue, #efefff);
+  background: var(--tint-purple, #efefff);
   border: 1px solid rgba(84, 84, 212, 0.09);
 }
 
@@ -5213,10 +5213,10 @@ body.kobun-quiz-active {
 }
 
 .choice-button {
-  background: var(--tint-blue, #f8f8fa);
+  background: var(--surface-muted, #f8f8fa);
   border-color: rgba(24, 24, 27, 0.1);
   border-radius: 13px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, var(--gloss-alpha, 0.82));
   transition:
     transform 130ms var(--ease-out),
     color 130ms ease,
@@ -5310,7 +5310,7 @@ body.kobun-quiz-active {
 .result-complete-mark,
 .review-wait-icon {
   color: var(--ink-blue, #4b4bc0);
-  background: var(--tint-blue, #f0f0ff);
+  background: var(--tint-purple, #f0f0ff);
   border-color: rgba(84, 84, 212, 0.16);
 }
 
@@ -5347,11 +5347,11 @@ body.kobun-quiz-active {
   background: linear-gradient(145deg, #28282c, #111113);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 17px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 10px 24px rgba(24, 24, 27, 0.16);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, var(--gloss-alpha, 0.16)), 0 10px 24px rgba(24, 24, 27, 0.16);
 }
 
 .onboarding-options button {
-  background: var(--tint-blue, #f8f8fa);
+  background: var(--surface-muted, #f8f8fa);
   border-color: var(--line);
   border-radius: 18px;
   transition: transform 150ms var(--ease-out), border-color 150ms ease, box-shadow 150ms ease;
@@ -5362,7 +5362,7 @@ body.kobun-quiz-active {
     radial-gradient(circle at 82% 8%, rgba(121, 116, 255, 0.7), transparent 34%),
     linear-gradient(145deg, #262632, #111116);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 14px 32px rgba(24, 24, 27, 0.16);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, var(--gloss-alpha, 0.12)), 0 14px 32px rgba(24, 24, 27, 0.16);
 }
 
 .toast {
@@ -5414,7 +5414,7 @@ body.kobun-quiz-active {
 @media (hover: hover) and (pointer: fine) {
   .primary-button:hover,
   .period-button:hover {
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 12px 28px rgba(24, 24, 27, 0.19);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, var(--gloss-alpha, 0.18)), 0 12px 28px rgba(24, 24, 27, 0.19);
     transform: translateY(-1px);
   }
 
@@ -5694,6 +5694,8 @@ body.kobun-quiz-active {
   --surface-solid: #1a1a20;
   --surface-rgb: 30, 30, 36;
   --background-rgb: 16, 16, 20;
+  /* 白い光沢の線は、暗い背景ではぎらついて見えるので消す。 */
+  --gloss-alpha: 0;
   --surface-muted: #1f1f26;
   --surface-muted-strong: #26262f;
   --track: #3a3a45;
@@ -5769,7 +5771,7 @@ body.kobun-quiz-active {
   color: #fff;
   background: linear-gradient(180deg, #43434f, #2c2c35);
   border-color: rgba(255, 255, 255, 0.16);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 8px 18px rgba(0, 0, 0, 0.35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, var(--gloss-alpha, 0.1)), 0 8px 18px rgba(0, 0, 0, 0.35);
 }
 
 /* 黒を薄く重ねていた面は、暗い背景では白を薄く重ねる。 */
@@ -5778,6 +5780,19 @@ body.kobun-quiz-active {
 :root[data-theme="dark"] .input-correct-answer,
 :root[data-theme="dark"] .question-translation {
   background: rgba(255, 255, 255, 0.07);
+}
+
+/* 4択の選択肢は、ホームの範囲ボタンと同じ落ち着いた面にそろえる。
+   白い光沢や色の付いた下地は使わない。 */
+:root[data-theme="dark"] .choice-button {
+  background: rgba(var(--surface-rgb), 0.88);
+  border-color: var(--line);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 8px 22px rgba(0, 0, 0, 0.22);
+}
+
+:root[data-theme="dark"] .choice-button > span {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.06);
 }
 
 /* 教科ボタンの淡い色面は、暗い背景では沈んだ色合いに置き換える。 */

@@ -1,7 +1,7 @@
 /* 古文の専用画面。既存教科のレイアウトには適用しない。 */
 .subject-button.kobun { background: linear-gradient(135deg, var(--blue), #a282c7); }
 .subject-button.health { grid-column: auto; }
-.kobun-view { --kb-accent: var(--blue); width: min(100%, 720px); margin: 0 auto; padding-bottom: 24px; color: #242129; }
+.kobun-view { --kb-accent: var(--blue); width: min(100%, 720px); margin: 0 auto; padding-bottom: 24px; color: var(--ink, #242129); }
 .kobun-view *, .kobun-view *::before, .kobun-view *::after { box-sizing: border-box; }
 .kobun-view button, .kobun-view input, .kobun-view textarea, .kobun-view summary { min-height: 48px; font: inherit; }
 .kobun-view button { cursor: pointer; touch-action: manipulation; }
@@ -11,7 +11,7 @@
 .kb-heading > div { display: flex; align-items: center; gap: 12px; }
 .kb-heading h1 { margin: 0; font-size: 26px; letter-spacing: -.03em; }
 .kb-heading > p { margin: 12px 0 0; color: var(--secondary); line-height: 1.6; }
-.kb-back { flex: 0 0 48px; width: 48px; border: 1px solid #ddd7e5; border-radius: 16px; background: white; font-size: 22px !important; }
+.kb-back { flex: 0 0 48px; width: 48px; border: 1px solid #ddd7e5; border-radius: 16px; background: var(--surface-solid); font-size: 22px !important; }
 .kb-menu { display: grid; gap: 14px; }
 .kb-home-menu { display: grid; gap: 14px; }
 .kb-category { width: 100%; min-height: 76px !important; }
@@ -19,16 +19,16 @@
 .kb-mode-list { display: grid; gap: 8px; }
 .kb-reference-meanings { display: block; margin-top: 6px; font-size: 14px; font-weight: 400; color: var(--secondary); line-height: 1.6; }
 .kb-reference-title { font-size: 16px; }
-.kb-menu-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 100px !important; padding: 22px; border: 1px solid var(--line-strong); border-radius: 22px; background: white; text-align: left; color: #292331; }
+.kb-menu-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 100px !important; padding: 22px; border: 1px solid var(--line-strong); border-radius: 22px; background: var(--surface-solid); text-align: left; color: var(--ink, #292331); }
 .kb-menu-card strong { display: block; font-size: 20px; }
 .kb-menu-card small { display: block; margin-top: 7px; color: var(--secondary); font-size: 13px; line-height: 1.6; }
 .kb-menu-card > span:last-child { color: var(--kb-accent); font-size: 27px; }
-.kb-button { padding: 12px 18px; color: var(--text); background: white; border: 1px solid var(--line-strong); border-radius: 14px; font-weight: 650 !important; }
+.kb-button { padding: 12px 18px; color: var(--text); background: var(--surface-solid); border: 1px solid var(--line-strong); border-radius: 14px; font-weight: 650 !important; }
 .kb-button:hover, .kb-menu-card:hover { border-color: #9372b4; }
 .kb-primary { width: 100%; background: var(--kb-accent); color: white; border-color: var(--kb-accent); font-size: 17px !important; min-height: 54px !important; }
 .kb-primary:disabled { background: #8e7ba1; }
 .kb-text-button { border: 0; background: transparent; color: var(--kb-accent); padding: 12px 6px; font-weight: 650 !important; }
-.kb-empty, .kb-result { border: 1px solid var(--line-strong); border-radius: 22px; padding: 24px; background: white; }
+.kb-empty, .kb-result { border: 1px solid var(--line-strong); border-radius: 22px; padding: 24px; background: var(--surface-solid); }
 .kb-empty h2 { font-size: 20px; margin-top: 0; }
 .kb-empty p { color: var(--secondary); line-height: 1.7; }
 .kb-quiz-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px; color: var(--secondary); font-size: 12px; }
@@ -37,74 +37,74 @@
 .kb-question h2 { font-size: 17px; font-weight: 650; margin: 12px 0; line-height: 1.6; }
 .kb-note, .kb-notes { color: var(--secondary); font-size: 13px; line-height: 1.6; }
 .kb-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.kb-option { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; min-height: 70px !important; padding: 12px 14px; border: 2px solid #e3dce9; border-radius: 16px; background: white; color: #342a3f; text-align: left; overflow-wrap: anywhere; }
+.kb-option { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; min-height: 70px !important; padding: 12px 14px; border: 2px solid #e3dce9; border-radius: 16px; background: var(--surface-solid); color: var(--ink, #342a3f); text-align: left; overflow-wrap: anywhere; }
 .kb-option span { font-weight: 650; font-size: 16px; line-height: 1.4; }
 .kb-option small { min-height: 16px; margin-top: 4px; font-size: 11px; font-weight: 700; }
-.kb-option.selected, .kb-candidates .selected { background: #eaf3ff; border-color: var(--blue); color: var(--blue); }
-.kobun-view .correct { background: #e7f5ed; border-color: #438664; color: #1e6542; }
-.kobun-view .missing { background: #fff5da; border-color: #be902c; color: #775408; }
-.kobun-view .incorrect { background: #fff0ef; border-color: #c87f7a; color: #a0302b; }
+.kb-option.selected, .kb-candidates .selected { background: var(--tint-blue, #eaf3ff); border-color: var(--blue); color: var(--blue); }
+.kobun-view .correct { background: var(--tint-green, #e7f5ed); border-color: #438664; color: var(--ink-green, #1e6542); }
+.kobun-view .missing { background: var(--tint-amber, #fff5da); border-color: #be902c; color: var(--ink-amber, #775408); }
+.kobun-view .incorrect { background: var(--tint-red, #fff0ef); border-color: #c87f7a; color: var(--ink-red, #a0302b); }
 /* 行の高さをそろえ、入力や選択で文字が増えても枠がズレないようにする。 */
 .kb-table-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: 1fr; gap: 9px; align-items: stretch; }
-.kb-cell { display: flex; flex-direction: column; min-width: 0; padding: 10px 6px; border: 2px solid var(--line-strong); border-radius: 16px; background: white; text-align: center; }
+.kb-cell { display: flex; flex-direction: column; min-width: 0; padding: 10px 6px; border: 2px solid var(--line-strong); border-radius: 16px; background: var(--surface-solid); text-align: center; }
 .kb-cell.active { border-color: var(--blue); box-shadow: 0 0 0 2px #ede2f5; }
 .kb-cell label { display: block; margin-bottom: 6px; font-size: 12px; color: var(--secondary); white-space: nowrap; }
 .kb-cell textarea, .kb-cell-value { flex: 1 1 auto; width: 100%; min-width: 0; padding: 8px 2px; border: 0; background: transparent; text-align: center; color: inherit; font-size: 17px !important; border-radius: 7px; }
 .kb-cell textarea { display: block; resize: none; line-height: 1.5; overflow-wrap: anywhere; }
 .kb-cell-value { overflow-wrap: anywhere; }
-.kb-cell textarea::placeholder { color: #978b9f; font-size: 14px; }
+.kb-cell textarea::placeholder { color: var(--ink-muted, #978b9f); font-size: 14px; }
 .kb-cell small { display: block; margin-top: 6px; font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
 .kb-cell.correct textarea:disabled, .kb-cell.incorrect textarea:disabled { -webkit-text-fill-color: currentColor; opacity: 1; }
-.kb-input-tools { margin-top: 18px; padding: 16px; background: #f0f4f9; border-radius: 18px; }
+.kb-input-tools { margin-top: 18px; padding: 16px; background: var(--surface-muted, #f0f4f9); border-radius: 18px; }
 .kb-input-tools p { margin: 0 0 12px; font-size: 14px; }
 .kb-candidates { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .kb-candidates button { padding: 10px 4px; overflow-wrap: anywhere; font-size: 15px; }
 .kb-circle { min-width: 130px; }
 /* タイプ式の専用キーボード。「／」「○」を大きく並べ、片手でも押しやすくする。 */
 .kb-keypad { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
-.kb-key { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 56px !important; padding: 6px 2px; border: 1px solid var(--line-strong); border-radius: 14px; background: white; color: var(--text); }
+.kb-key { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 56px !important; padding: 6px 2px; border: 1px solid var(--line-strong); border-radius: 14px; background: var(--surface-solid); color: var(--text); }
 .kb-key .kb-key-glyph { font-size: 22px; font-weight: 700; line-height: 1; }
 .kb-key small { font-size: 10px; color: var(--secondary); white-space: nowrap; }
-.kb-key:active { background: #eaf3ff; border-color: var(--blue); }
+.kb-key:active { background: var(--tint-blue, #eaf3ff); border-color: var(--blue); }
 .kb-keypad-hint { margin: 10px 0 0 !important; color: var(--secondary); font-size: 12px !important; line-height: 1.6; }
 .kb-input-tools > .kb-text-button { margin: 8px 0 0 10px; }
 .kb-section { margin-bottom: 28px; }
 .kb-section:last-child { margin-bottom: 0; }
 .kb-section-title { margin: 0 0 4px; font-size: 19px; letter-spacing: -.02em; }
 .kb-section-copy { margin: 0 0 12px; color: var(--secondary); font-size: 13px; line-height: 1.6; }
-.kb-actions { position: sticky; bottom: 0; padding: 14px 0 max(12px, env(safe-area-inset-bottom)); margin-top: 16px; background: #f5f5f7; z-index: 5; }
+.kb-actions { position: sticky; bottom: 0; padding: 14px 0 max(12px, env(safe-area-inset-bottom)); margin-top: 16px; background: var(--surface-muted, #f5f5f7); z-index: 5; }
 .kb-verdict { border: 1px solid; border-radius: 14px; padding: 14px; margin-bottom: 16px; font-weight: 700; scroll-margin-top: 16px; }
 .kb-answer-count { text-align: center; font-weight: 700; color: var(--blue); }
 .kb-base-inputs { display: grid; gap: 16px; }
 .kb-base-inputs label { display: grid; gap: 8px; color: var(--secondary); font-size: 14px; }
-.kb-base-inputs input { width: 100%; border: 2px solid #ded3e8; border-radius: 16px; padding: 14px 16px; font-size: 20px; color: #2e2139; background: white; }
+.kb-base-inputs input { width: 100%; border: 2px solid #ded3e8; border-radius: 16px; padding: 14px 16px; font-size: 20px; color: var(--ink, #2e2139); background: var(--surface-solid); }
 .kb-base-feedback { margin: 18px 0; }
 .kb-feedback-line { border: 1px solid; border-radius: 12px; padding: 12px; }
-.kb-feedback-line.duplicates { color: #a0302b; }
-.kb-reference { background: white; border: 1px solid #e0d8e8; border-radius: 18px; padding: 10px 16px; margin-bottom: 12px; overflow-wrap: anywhere; }
+.kb-feedback-line.duplicates { color: var(--ink-red, #a0302b); }
+.kb-reference { background: var(--surface-solid); border: 1px solid #e0d8e8; border-radius: 18px; padding: 10px 16px; margin-bottom: 12px; overflow-wrap: anywhere; }
 .kb-reference summary { padding: 12px 0; font-weight: 700; cursor: pointer; }
 .kb-reference summary small { font-weight: 400; margin-left: 12px; color: var(--secondary); }
 .kb-reference > p { line-height: 1.7; }
 .kb-reference-table { width: 100%; table-layout: fixed; border-collapse: collapse; margin: 16px 0; font-size: 16px; }
 .kb-reference-table caption { text-align: left; font-weight: 700; margin-bottom: 10px; }
 .kb-reference-table th, .kb-reference-table td { border: 1px solid var(--line-strong); padding: 12px; text-align: left; vertical-align: middle; line-height: 1.6; }
-.kb-reference-table thead th { background: #eaf3ff; color: var(--text); font-size: 13px; }
+.kb-reference-table thead th { background: var(--tint-blue, #eaf3ff); color: var(--text); font-size: 13px; }
 .kb-reference-table th:first-child { width: 34%; }
-.kb-reference-table tbody th { background: #f7f8fa; font-size: 14px; font-weight: 600; }
+.kb-reference-table tbody th { background: var(--surface-muted, #f7f8fa); font-size: 14px; font-weight: 600; }
 .kb-reference-table td { font-weight: 650; }
 .kb-reference-table td span { display: inline-block; }
-.kb-reference-table .kb-form-separator { margin: 0 4px; color: #82738e; font-weight: 400; }
+.kb-reference-table .kb-form-separator { margin: 0 4px; color: var(--ink-muted, #82738e); font-weight: 400; }
 .kb-reference > small { display: block; color: var(--secondary); font-size: 11px; margin: 16px 0 8px; line-height: 1.6; }
 .kb-audit { font-size: 13px; line-height: 1.7; }
 .kb-audit a { color: var(--blue); }
-.kb-record { background: white; padding: 22px; border: 1px solid var(--line-strong); border-radius: 20px; }
+.kb-record { background: var(--surface-solid); padding: 22px; border: 1px solid var(--line-strong); border-radius: 20px; }
 .kb-record h2 { margin: 0 0 12px; font-size: 17px; }
 .kb-record > strong { color: var(--blue); font-size: 26px; }
 .kb-record p { font-size: 13px; color: var(--secondary); }
 .kb-result > strong { font-size: 26px; }
 .kb-result .kb-button { display: block; width: 100%; margin-top: 14px; }
 .kb-result p { color: var(--secondary); line-height: 1.7; }
-.kb-error { color: #a0302b; padding: 12px; background: #fff0ef; border-radius: 12px; }
+.kb-error { color: var(--ink-red, #a0302b); padding: 12px; background: var(--tint-red, #fff0ef); border-radius: 12px; }
 body.kobun-quiz-active .main-content { padding-bottom: 0; }
 body.kobun-quiz-active .kobun-view { padding-top: max(8px, env(safe-area-inset-top)); padding-bottom: 0; }
 @media (max-width: 400px) {
@@ -136,7 +136,7 @@ body.kobun-quiz-active .kobun-view { padding-top: max(8px, env(safe-area-inset-t
 }
 
 .subject-button.kobun .subject-icon {
-  color: #7950a3;
+  color: var(--ink-purple, #7950a3);
   background: rgba(126, 82, 166, 0.1);
   border-color: rgba(126, 82, 166, 0.08);
 }
@@ -172,7 +172,7 @@ body.kobun-quiz-active .kobun-view { padding-top: max(8px, env(safe-area-inset-t
 }
 
 .kb-heading h1 {
-  color: #18181b;
+  color: var(--ink, #18181b);
   font-weight: 760;
   letter-spacing: -0.045em;
 }
@@ -208,11 +208,11 @@ body.kobun-quiz-active .kobun-view { padding-top: max(8px, env(safe-area-inset-t
   color: #fff;
   background: linear-gradient(180deg, #27272a, #151517);
   border-color: rgba(0, 0, 0, 0.72);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 8px 18px rgba(24, 24, 27, 0.13);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, var(--gloss-alpha, 0.15)), 0 8px 18px rgba(24, 24, 27, 0.13);
 }
 
 .kb-primary:disabled {
-  background: #a1a1a8;
+  background: var(--track, #a1a1a8);
 }
 
 .kb-text-button {
@@ -249,8 +249,8 @@ body.kobun-quiz-active .kobun-view { padding-top: max(8px, env(safe-area-inset-t
 
 .kb-option.selected,
 .kb-candidates .selected {
-  color: #4848b6;
-  background: #f1f1ff;
+  color: var(--ink-blue, #4848b6);
+  background: var(--tint-purple, #f1f1ff);
   border-color: rgba(84, 84, 212, 0.58);
   box-shadow: 0 0 0 3px rgba(84, 84, 212, 0.1);
 }
@@ -281,14 +281,14 @@ body.kobun-quiz-active .kobun-view { padding-top: max(8px, env(safe-area-inset-t
 }
 
 .kb-key:active {
-  background: #efefff;
+  background: var(--tint-purple, #efefff);
   border-color: rgba(84, 84, 212, 0.38);
   transform: translateY(1px) scale(0.97);
 }
 
 .kb-base-inputs input {
   color: var(--text);
-  background: #fff;
+  background: var(--surface-muted, #fff);
   border: 1px solid var(--line-strong);
   border-radius: 14px;
 }
@@ -316,7 +316,7 @@ body.kobun-quiz-active .kobun-view { padding-top: max(8px, env(safe-area-inset-t
 }
 
 .kb-reference-table thead th {
-  background: #f1f1ff;
+  background: var(--tint-purple, #f1f1ff);
 }
 
 .kb-reference-table tbody th {
@@ -334,13 +334,13 @@ body.kobun-quiz-active .kobun-view { padding-top: max(8px, env(safe-area-inset-t
 }
 
 .kb-error {
-  color: #ae273f;
-  background: #fff1f3;
+  color: var(--ink-red, #ae273f);
+  background: var(--tint-red, #fff1f3);
 }
 
 .kobun-view .missing {
-  color: #80580a;
-  background: #fff8df;
+  color: var(--ink-amber, #80580a);
+  background: var(--tint-amber, #fff8df);
   border-color: rgba(180, 126, 17, 0.32);
 }
 
@@ -367,4 +367,26 @@ body.kobun-quiz-active .kobun-view { padding-top: max(8px, env(safe-area-inset-t
   .kb-result {
     border-radius: 18px;
   }
+}
+
+/* 古文の画面もダークモードに合わせる。色は共通の変数を使い、
+   濃いグラデーションのボタンだけ明度を上げて暗い背景から浮かせる。 */
+:root[data-theme="dark"] .kobun-view {
+  color: var(--text);
+}
+
+:root[data-theme="dark"] .subject-button.kobun {
+  background: linear-gradient(135deg, #23232d 42%, #2f2536);
+}
+
+:root[data-theme="dark"] .kb-primary {
+  background: linear-gradient(180deg, #43434f, #2c2c35);
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, var(--gloss-alpha, 0.1)), 0 8px 18px rgba(0, 0, 0, 0.35);
+}
+
+:root[data-theme="dark"] .kb-option,
+:root[data-theme="dark"] .kb-base-inputs input,
+:root[data-theme="dark"] .kb-cell textarea {
+  border-color: var(--line-strong);
 }

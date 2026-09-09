@@ -1,4 +1,4 @@
-import { createKobunController } from "./kobun.js?v=2026.9.31";
+import { createKobunController } from "./kobun.js?v=2026.9.32";
 import {
   ALL_MODES,
   ALPHABET_KEYBOARD_ROWS,
@@ -58,6 +58,7 @@ import {
   inProgressStudyEntries,
   studyEntriesByRecency,
   isStudyInProgress,
+  hasStudyContinuation,
   studyContentsKey,
   studyProgressEntriesForMode,
   studyProgressKey,
@@ -69,7 +70,7 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.31";
+} from "./logic.js?v=2026.9.32";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -89,7 +90,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.9.31";
+} from "./storage.js?v=2026.9.32";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -97,7 +98,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.31";
+} from "./quiz-gestures.js?v=2026.9.32";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
@@ -106,10 +107,19 @@ import {
   normalizeSpeechRate,
   normalizeSpeechVoiceURI,
   voiceKey,
-} from "./speech.js?v=2026.9.31";
+} from "./speech.js?v=2026.9.32";
+import {
+  applyThemePreference,
+  normalizeThemePreference,
+  readStoredThemePreference,
+  watchSystemTheme,
+} from "./theme.js?v=2026.9.32";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
+  // 画面の明るさ。"system"（端末に合わせる）・"light"・"dark"。
+  // null は未設定。起動前に控えた値（localStorage）を引き継ぐ。
+  theme: null,
   sound: false,
   soundIntensity: "gentle",
   vibration: true,
@@ -921,10 +931,11 @@ function inProgressEntries() {
   });
 }
 
-// ハイライトの基準になるセット。周回の途中かどうかに関わらず、
-// いちばん最近学習した条件を採用する。
+// ハイライトの基準になるセット。いちばん最近学習した条件を採用するが、
+// そのセットを丸ごと習得しきっている場合は続きがないのでハイライトしない。
 function latestStudyEntry() {
-  return recentStudyEntries()[0] ?? null;
+  const entry = recentStudyEntries()[0] ?? null;
+  return entry && hasStudyContinuation(entry.progress) ? entry : null;
 }
 
 // 範囲ボタンのハイライトは、いちばん最近学習したセットひとつだけを指す。
@@ -1255,6 +1266,27 @@ function speechVoiceRow() {
     </div>`;
 }
 
+const THEME_OPTIONS = [
+  { value: "system", label: "端末に合わせる" },
+  { value: "light", label: "ライト" },
+  { value: "dark", label: "ダーク" },
+];
+
+const THEME_NOTES = {
+  system: "端末が夜間モードになると自動でダークモードになります。",
+  light: "いつでも明るい配色で表示します。",
+  dark: "いつでも暗い配色で表示します。明るさを抑えているので、暗い部屋でも見やすくなります。",
+};
+
+function themePreference() {
+  return normalizeThemePreference(state.settings.theme);
+}
+
+// 設定を保存し、その場で画面に反映する。
+function applyTheme() {
+  applyThemePreference(themePreference());
+}
+
 function renderSettings() {
   const toggle = (key, title, detail) => `
     <label class="settings-row">
@@ -1282,6 +1314,21 @@ function renderSettings() {
         </div>
       </div>
       ${toggle("vibration", "振動", "対応端末のみ短く振動")}
+    </section>
+    <section class="settings-card">
+      <h2>画面の明るさ</h2>
+      <p>夜は目にやさしいダークモードに切り替えられます。「端末に合わせる」を選ぶと、スマホやパソコンの設定にそのまま従います。</p>
+      <div class="segmented-options" role="radiogroup" aria-label="画面の明るさ">
+        ${THEME_OPTIONS.map(({ value, label }) => `
+          <button
+            type="button"
+            role="radio"
+            aria-checked="${themePreference() === value}"
+            data-theme-preference="${value}"
+            class="${themePreference() === value ? "selected" : ""}"
+          >${label}</button>`).join("")}
+      </div>
+      <p class="settings-note">${THEME_NOTES[themePreference()]}</p>
     </section>
     <section class="settings-card">
       <h2>学習状況・周回</h2>
@@ -4429,6 +4476,12 @@ function bindEvents() {
         triggerMaxEntrance("ON");
       }
     }
+    if (target.dataset.themePreference) {
+      state.settings.theme = normalizeThemePreference(target.dataset.themePreference);
+      applyTheme();
+      saveSettings();
+      renderSettings();
+    }
     if (target.dataset.speechRate) {
       state.settings.speechRate = normalizeSpeechRate(target.dataset.speechRate);
       saveSettings();
@@ -4758,12 +4811,19 @@ function bindEvents() {
 
 async function boot() {
   bindEvents();
+  // 保存済みの設定が届く前でも、控えてある明るさで表示しておく。
+  state.settings.theme = readStoredThemePreference();
+  applyTheme();
+  // 「端末に合わせる」のあいだは、端末の夜間モードの切り替えにその場で追従する。
+  watchSystemTheme(() => {
+    if (themePreference() === "system") applyTheme();
+  });
   try {
     const [response, publicResponse, healthResponse, vocabResponse, history, selectedMode, settings, bestCombo, selectedPeriod, studyConfigs, legacyRecentStudies, studyProgress, lastSessionResult] = await Promise.all([
       fetch("./data/items.json?v=2026.08.31b"),
       fetch("./data/public-items.json?v=2026.09.01"),
       fetch("./data/health-items.json?v=2026.09.01"),
-      fetch("./data/kobun-vocabulary.json?v=2026.9.31"),
+      fetch("./data/kobun-vocabulary.json?v=2026.9.32"),
       loadHistory(),
       getMeta("selectedMode"),
       getMetaObject("settings", DEFAULT_SETTINGS),
@@ -4787,6 +4847,11 @@ async function boot() {
     state.selectedMode = ALL_MODES.includes(selectedMode) ? selectedMode : null;
     state.settings = settings;
     state.settings.soundIntensity = state.settings.soundIntensity === "full" ? "full" : "gentle";
+    // 明るさは、保存済みの設定が無ければ起動前に控えていた値を引き継ぐ。
+    state.settings.theme = normalizeThemePreference(
+      settings.theme ?? readStoredThemePreference(),
+    );
+    applyTheme();
     installMaxEffectsLab();
     // 声一覧は取得までに時間がかかるブラウザがあるので、起動時に頼んでおく。
     // 届くのを待たないため、出題やスワイプが遅くなることはない。
@@ -4811,7 +4876,7 @@ async function boot() {
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.31").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.32").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

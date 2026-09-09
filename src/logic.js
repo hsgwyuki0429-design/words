@@ -1783,6 +1783,20 @@ export function isStudyInProgress(progress) {
   return !isCycleComplete(progress);
 }
 
+// 続きが残っているセットかどうか。周回の途中はもちろん、周回を終えても
+// まだ習得しきっていない語句が残っていれば「続きあり」。逆に、セットを
+// 丸ごと習得しきって新しいセットが用意されただけの状態は「続きなし」。
+export function hasStudyContinuation(progress) {
+  if (!progress) return false;
+  const started = (progress.cycleSeenIds ?? []).length > 0
+    || (progress.pendingReviews ?? []).length > 0;
+  // まだ1問も解いていない周回は、2周目以降（前の周回の続き）のときだけ続き扱い。
+  if (!started) return (progress.cycleNumber ?? 1) > 1;
+  if (!isCycleComplete(progress)) return true;
+  const mastered = new Set(progress.masteredIds ?? []);
+  return (progress.cycleTargetIds ?? []).some((itemId) => !mastered.has(itemId));
+}
+
 // この教科・この習得条件の周回を、最後に学習した順で返す。周回の途中かどうかは
 // 問わない。キーは解析済みの meta として添える。
 export function studyEntriesByRecency(progressMap = {}, {

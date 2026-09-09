@@ -1,4 +1,4 @@
-const APP_VERSION = "2026.9.31";
+const APP_VERSION = "2026.9.32";
 const CACHE_NAME = `words-${APP_VERSION}`;
 const APP_SHELL = [
   "./",
@@ -17,6 +17,7 @@ const APP_SHELL = [
   `./src/quiz-gestures.js?v=${APP_VERSION}`,
   `./src/speech.js?v=${APP_VERSION}`,
   `./src/storage.js?v=${APP_VERSION}`,
+  `./src/theme.js?v=${APP_VERSION}`,
   "./health-notes.html?v=2026.2.8",
   "./public-notes.html?v=2026.9.9",
   "./data/items.json?v=2026.08.31b",

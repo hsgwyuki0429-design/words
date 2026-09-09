@@ -17,8 +17,26 @@
     <link rel="icon" href="./icons/app-icon-192.png" sizes="192x192" type="image/png" />
     <!-- iOS のホーム画面アイコンは PNG のみ。SVG だと画面の写しが使われてしまう。 -->
     <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png" />
-    <link rel="stylesheet" href="./styles.css?v=2026.9.31" />
-    <link rel="stylesheet" href="./kobun.css?v=2026.9.31" />
+    <script>
+      // 画面が描かれる前に明るさを決めて、起動直後の白いちらつきを防ぐ。
+      // 保存済みの設定はIndexedDBにもあるが、ここでは同期的に読めるlocalStorageを使う。
+      (function () {
+        try {
+          var saved = localStorage.getItem("words:theme-preference");
+          var preference = ["system", "light", "dark"].indexOf(saved) >= 0 ? saved : "system";
+          var dark = preference === "dark"
+            || (preference === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
+          document.documentElement.dataset.theme = dark ? "dark" : "light";
+          document.documentElement.dataset.themePreference = preference;
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) meta.setAttribute("content", dark ? "#101014" : "#f6f6f7");
+        } catch (error) {
+          document.documentElement.dataset.theme = "light";
+        }
+      })();
+    </script>
+    <link rel="stylesheet" href="./styles.css?v=2026.9.32" />
+    <link rel="stylesheet" href="./kobun.css?v=2026.9.32" />
   </head>
   <body>
     <div class="fx-backdrop" id="fx-backdrop" aria-hidden="true">
@@ -317,6 +335,6 @@
     </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-    <script type="module" src="./src/app.js?v=2026.9.31"></script>
+    <script type="module" src="./src/app.js?v=2026.9.32"></script>
   </body>
 </html>

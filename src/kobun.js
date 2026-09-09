@@ -3,16 +3,16 @@ import {
   allConnectionOptions, allMeaningOptions, conjugationOptions, gradeQuestion,
   questionsForMode, restoreKobunSession, splitForms, summarizeKobun, toggleForm,
   validateAuxiliaries, validateVocabulary,
-} from "./kobun-logic.js?v=2026.9.34";
-import { mergeAttempt, summarizeProgressGauge } from "./logic.js?v=2026.9.34";
-import { getMetaObject, putHistory, setMeta, stashMeta } from "./storage.js?v=2026.9.34";
+} from "./kobun-logic.js?v=2026.9.35";
+import { mergeAttempt, summarizeProgressGauge } from "./logic.js?v=2026.9.35";
+import { getMetaObject, putHistory, setMeta, stashMeta } from "./storage.js?v=2026.9.35";
 
 const META_KEY = "kobunStudy:v1";
 const escape = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
 const statusLabel = { correct: "✓ 正解", partial: "一部正解", incorrect: "× 不正解", unanswered: "未回答" };
 const button = (action, label, extra = "", className = "kb-button") => `<button type="button" class="${className}" data-kb-action="${action}" ${extra}>${label}</button>`;
 
-export function createKobunController({ root, getHistory, onQuizChange, onHeaderChange }) {
+export function createKobunController({ root, getHistory, onQuizChange, onHeaderChange, onAnswer = () => {} }) {
   let items = [];
   let vocabulary = [];
   let revision;
@@ -32,8 +32,8 @@ export function createKobunController({ root, getHistory, onQuizChange, onHeader
   async function load() {
     if (!loading) loading = (async () => {
       const [auxResponse, vocabResponse, progress] = await Promise.all([
-        fetch("./data/kobun-auxiliaries.json?v=2026.9.34"),
-        fetch("./data/kobun-vocabulary.json?v=2026.9.34"),
+        fetch("./data/kobun-auxiliaries.json?v=2026.9.35"),
+        fetch("./data/kobun-vocabulary.json?v=2026.9.35"),
         getMetaObject(META_KEY, {}),
       ]);
       if (!auxResponse.ok || !vocabResponse.ok) throw new Error("古文の教材を読み込めませんでした。通信を確認して再試行してください。");
@@ -338,6 +338,7 @@ export function createKobunController({ root, getHistory, onQuizChange, onHeader
       await putHistory(record);
       history.set(question.id, record);
       session.feedback = feedback;
+      onAnswer(feedback.complete);
       session.results.push({ questionId: question.id, complete: feedback.complete, status: feedback.status, durationMs });
       saveDraft();
       // 同期の控えを先に残すため、メタ情報の書き込みが遅れても二重採点しない。

@@ -1,4 +1,5 @@
-import { createKobunController } from "./kobun.js?v=2026.9.34";
+import { createHaptics } from "./haptics.js?v=2026.9.35";
+import { createKobunController } from "./kobun.js?v=2026.9.35";
 import {
   ALL_MODES,
   ALPHABET_KEYBOARD_ROWS,
@@ -71,7 +72,7 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.34";
+} from "./logic.js?v=2026.9.35";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -91,7 +92,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.9.34";
+} from "./storage.js?v=2026.9.35";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -99,7 +100,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.34";
+} from "./quiz-gestures.js?v=2026.9.35";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
@@ -108,13 +109,13 @@ import {
   normalizeSpeechRate,
   normalizeSpeechVoiceURI,
   voiceKey,
-} from "./speech.js?v=2026.9.34";
+} from "./speech.js?v=2026.9.35";
 import {
   applyThemePreference,
   normalizeThemePreference,
   readStoredThemePreference,
   watchSystemTheme,
-} from "./theme.js?v=2026.9.34";
+} from "./theme.js?v=2026.9.35";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -246,7 +247,10 @@ const elements = Object.fromEntries(
   ]),
 );
 
+const haptics = createHaptics({ isEnabled: () => state.settings.vibration });
+
 const kobun = createKobunController({
+  onAnswer: (correct) => haptics.trigger(correct ? "correct" : "wrong"),
   root: document.getElementById("view-kobun"),
   getHistory: () => state.history,
   onQuizChange: (active) => {
@@ -1321,7 +1325,7 @@ function renderSettings() {
           <button type="button" data-sound-intensity="full" class="${state.settings.soundIntensity === "full" ? "selected" : ""}">フル</button>
         </div>
       </div>
-      ${toggle("vibration", "振動", "対応端末のみ短く振動")}
+      ${toggle("vibration", "振動", haptics.supported ? "カード・正誤・起動後の最初の操作で振動" : "このブラウザは振動に非対応です（iPhoneなど）")}
     </section>
     <section class="settings-card">
       <h2>画面の明るさ</h2>
@@ -1946,14 +1950,6 @@ function triggerRgbSplit(duration = 160) {
   fxTimeout(() => document.body.classList.remove("fx-rgb"), duration);
 }
 
-function pulseVibration(power = 1, event = "correct") {
-  if (!state.settings.vibration || !navigator.vibrate) return;
-  if (event === "wrong") navigator.vibrate(8);
-  else if (["perfect", "sss-master", "combo-30"].includes(event)) navigator.vibrate([32, 24, 48, 28, 62]);
-  else if (power >= 4) navigator.vibrate([30, 24, 52]);
-  else navigator.vibrate(power >= 2 ? 30 : 13);
-}
-
 function maxSoundEnabled() {
   return shouldPlayMaxSound(state.settings, {
     hidden: document.hidden,
@@ -2078,7 +2074,6 @@ function applyCueImpact(plan, visual) {
   triggerWorldImpact({ zoom: visual.zoom, shake: visual.shake, duration: 280 + plan.power * 42 });
   triggerScreenPulse(Math.min(0.62, 0.16 + visual.aura * 0.08), Math.min(760, plan.duration));
   if (plan.power >= 3) triggerRgbSplit(Math.min(170, 90 + plan.power * 18));
-  pulseVibration(plan.power, plan.event);
   for (let index = 0; index < visual.rings; index += 1) {
     triggerShockwave({
       origin,
@@ -3383,12 +3378,14 @@ function toggleRecallFace() {
   if (session?.currentQuestion?.mode === "public_choice" && session.answered) {
     if (!currentQuizGesturePolicy().tapEnabled) return;
     session.choiceQuestionVisible = !session.choiceQuestionVisible;
+    haptics.trigger("flip");
     renderQuiz();
     return;
   }
   if (!session || !isRecallMode(session.currentQuestion?.mode)) return;
   if (!currentQuizGesturePolicy().tapEnabled) return;
   session.revealed = !session.revealed;
+  haptics.trigger("flip");
   renderQuiz();
   // 答え面を開いたときに、その答えの英語を読み上げる（日本語→英語のカード）。
   if (session.revealed) speakQuestionEnglish(session.currentQuestion, "answer");
@@ -3787,6 +3784,7 @@ async function submitAnswer(
   session.currentAnswer = answer;
   session.currentCorrect = correct;
   session.answered = true;
+  haptics.trigger(correct ? "correct" : "wrong");
   // 英語が答えになる形式は、解答して答えが出たここで読み上げる。履歴の保存を
   // 待たずに呼ぶので、タップ・キー操作から途切れずにつながる。
   // フラッシュカード・一問一答は答え面を開いた時点で読むため、ここでは読まない。
@@ -4735,6 +4733,10 @@ function bindEvents() {
     state.settings[setting] = event.target.checked;
     if (setting === "sound" && state.settings.sound && isMaxMode()) unlockMaxAudio();
     if (setting === "sound" && !state.settings.sound) maxAudio.stopAll();
+    if (setting === "vibration") {
+      if (state.settings.vibration) haptics.trigger("open");
+      else haptics.stop();
+    }
     saveSettings();
   });
 
@@ -4831,7 +4833,7 @@ async function boot() {
       fetch("./data/items.json?v=2026.08.31b"),
       fetch("./data/public-items.json?v=2026.09.01"),
       fetch("./data/health-items.json?v=2026.09.01"),
-      fetch("./data/kobun-vocabulary.json?v=2026.9.34"),
+      fetch("./data/kobun-vocabulary.json?v=2026.9.35"),
       loadHistory(),
       getMeta("selectedMode"),
       getMetaObject("settings", DEFAULT_SETTINGS),
@@ -4883,8 +4885,9 @@ async function boot() {
     state.selectedPeriod = selectedPeriod === "2026.2" ? selectedPeriod : null;
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");
+    haptics.start();
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.34").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.35").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

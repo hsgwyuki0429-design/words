@@ -5557,12 +5557,47 @@ body.kobun-quiz-active {
   margin: calc(6px * var(--choice-scale)) 0 0;
 }
 .quiz-public-choice {
-  --choice-card-height: clamp(360px, 54dvh, 480px);
+  --choice-text: calc(clamp(0.75rem, 3.5vw, 1rem) * var(--choice-scale));
 }
-.quiz-public-choice .swipe-choice-card > .feedback-card {
+.quiz-public-choice .quiz-card-stage {
+  --choice-card-height: min(64dvh, 620px);
+}
+.quiz-choice.quiz-public-choice .swipe-choice-card {
+  height: var(--choice-card-height);
+  min-height: var(--choice-card-height);
+  overflow: hidden;
+}
+.quiz-public-choice .swipe-choice-card > * {
+  flex-shrink: 0;
+}
+.quiz-choice.quiz-public-choice .swipe-choice-card > .feedback-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: calc(6px * var(--choice-scale));
   margin-top: 0;
-  padding-top: 0;
+  padding: 0;
   border-top: 0;
+}
+.quiz-public-choice .input-correct-answer {
+  margin: 0;
+  padding: calc(8px * var(--choice-scale));
+}
+.quiz-public-choice .feedback-explanation {
+  margin-top: 0;
+}
+.quiz-public-choice .textbook-evidence {
+  font-size: var(--choice-text);
+}
+.quiz-public-choice .choice-flip-hint {
+  margin-top: calc(8px * var(--choice-scale));
+  font-size: calc(12px * var(--choice-scale));
+}
+.quiz-choice.quiz-public-choice .swipe-choice-card > .choice-gesture-footer {
+  margin-top: auto;
+  min-height: 0;
+  padding: calc(8px * var(--choice-scale));
+  font-size: calc(12px * var(--choice-scale));
 }
 .quiz-public-choice .input-correct-answer strong {
   font-size: var(--choice-text);
@@ -5578,6 +5613,31 @@ body.kobun-quiz-active {
   color: var(--muted);
   font-size: 0.75rem;
   text-align: center;
+}
+.textbook-evidence {
+  margin-top: 0.65em;
+  padding-top: 0.65em;
+  border-top: 1px solid var(--line);
+}
+.textbook-evidence-label {
+  display: block;
+  margin-top: 0.45em;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+.textbook-evidence blockquote {
+  margin: 0.35em 0;
+  padding-left: 0.65em;
+  border-left: 2px solid var(--line);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.quiz-public-choice .textbook-evidence blockquote {
+  font-size: var(--choice-text);
+}
+.public-recall-card:not(.vocab-recall-card) .textbook-evidence blockquote {
+  font-size: var(--recall-text);
 }
 .quiz-public-choice.quiz-answered .choice-button {
   pointer-events: none;

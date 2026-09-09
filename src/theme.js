@@ -8,7 +8,7 @@ export const DEFAULT_THEME_PREFERENCE = "system";
 export const THEME_STORAGE_KEY = "words:theme-preference";
 
 // 画面上部（iOSのステータスバーなど）の色。背景色とそろえる。
-const THEME_COLORS = { light: "#f6f6f7", dark: "#101014" };
+const THEME_COLORS = { light: "#f6f6f7", dark: "#000000" };
 
 export function normalizeThemePreference(value) {
   return THEME_PREFERENCES.includes(value) ? value : DEFAULT_THEME_PREFERENCE;

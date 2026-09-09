@@ -505,7 +505,7 @@ function selectSubject(subject) {
   elements.navListLabel.textContent = isHealthSubject()
     ? "まとめノート"
     : isPublicSubject()
-      ? "重要語句"
+      ? "まとめノート"
       : isKobunVocabSubject()
         ? "語句一覧"
         : "単語帳";

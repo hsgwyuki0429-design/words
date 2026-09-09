@@ -63,7 +63,7 @@ test("適用すると data-theme と theme-color が切り替わり、設定が�
   assert.equal(applyThemePreference("system", { view }), "dark");
   assert.equal(view.document.documentElement.dataset.theme, "dark");
   assert.equal(view.document.documentElement.dataset.themePreference, "system");
-  assert.equal(view.metas['meta[name="theme-color"]'].content, "#101014");
+  assert.equal(view.metas['meta[name="theme-color"]'].content, "#000000");
   assert.equal(storage.get(THEME_STORAGE_KEY), "system");
 
   assert.equal(applyThemePreference("light", { view }), "light");
@@ -101,7 +101,7 @@ test("設定画面に明るさの選択肢があり、保存と反映がつな�
 
 test("ダークモードの配色が用意され、最初の描画前に適用される", () => {
   assert.match(stylesSource, /:root\[data-theme="dark"\]\s*\{[^}]*color-scheme: dark;/);
-  assert.match(stylesSource, /:root\[data-theme="dark"\]\s*\{[^}]*--background: #101014;/);
+  assert.match(stylesSource, /:root\[data-theme="dark"\]\s*\{[^}]*--background: #000000;/);
   // 起動直後のちらつきを防ぐため、CSSより前に明るさを決めている。
   const script = indexSource.indexOf("words:theme-preference");
   const stylesheet = indexSource.indexOf("styles.css");

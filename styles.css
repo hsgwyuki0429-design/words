@@ -5682,72 +5682,115 @@ body.kobun-quiz-active {
 
 /* --------------------------------------------------------------------------
    ダークモード
-   夜でも目が疲れないよう、真っ黒ではなく少し青みのある濃いグレーを土台にし、
-   文字は純白を避けて明度をひとつ落としている。色は :root の変数だけを
-   置き換え、レイアウトや構造には手を入れない。
+   いちばん暗い色は完全な黒（#000）。面の違いは色の濃淡ではなく白い線で示し、
+   強調したい部分だけはっきりした色（ビビッドカラー）を使う。
+   色は :root の変数だけを置き換え、レイアウトや構造には手を入れない。
    -------------------------------------------------------------------------- */
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --background: #101014;
-  --surface: rgba(30, 30, 36, 0.92);
-  --surface-solid: #1a1a20;
-  --surface-rgb: 30, 30, 36;
-  --background-rgb: 16, 16, 20;
-  /* 白い光沢の線は、暗い背景ではぎらついて見えるので消す。 */
+  --background: #000000;
+  --background-rgb: 0, 0, 0;
+  --surface: rgba(0, 0, 0, 0.92);
+  --surface-solid: #000000;
+  --surface-rgb: 0, 0, 0;
+  --surface-muted: #000000;
+  --surface-muted-strong: #0d0d0f;
+  --track: #33333a;
+  --text: #ffffff;
+  --text-secondary: #b8b8c0;
+  --secondary: #b8b8c0;
+  --tertiary: #85858f;
+  /* 面の境目は白い線で示す。 */
+  --line: rgba(255, 255, 255, 0.22);
+  --line-strong: rgba(255, 255, 255, 0.42);
+  /* 押せるものは白く塗り、文字は黒にする。 */
+  --accent: #ffffff;
+  --on-accent: #000000;
+  /* 強調用のビビッドカラー。 */
+  --blue: #3d8bff;
+  --green: #00e08a;
+  --red: #ff3b5c;
+  /* 色の面は黒に近づけ、線と文字で色を出す。 */
+  --tint-blue: #001126;
+  --tint-green: #00160f;
+  --tint-red: #1a0308;
+  --tint-amber: #1a1200;
+  --tint-purple: #0d0022;
+  --ink: #ffffff;
+  --ink-muted: #b8b8c0;
+  --ink-blue: #4da3ff;
+  --ink-green: #00f0a0;
+  --ink-red: #ff5c7a;
+  --ink-amber: #ffc233;
+  --ink-purple: #b47bff;
+  /* 黒の上では影は見えないので、線で立体感を出す。 */
+  --shadow-card: none;
+  --shadow-raised: none;
+  --focus-ring: 0 0 0 4px rgba(61, 139, 255, 0.45);
+  /* 白い光沢の線は使わない。 */
   --gloss-alpha: 0;
-  --surface-muted: #1f1f26;
-  --surface-muted-strong: #26262f;
-  --track: #3a3a45;
-  --text: #e6e6ea;
-  --text-secondary: #a6a6b0;
-  --secondary: #a6a6b0;
-  --tertiary: #7c7c88;
-  --line: rgba(255, 255, 255, 0.09);
-  --line-strong: rgba(255, 255, 255, 0.16);
-  /* 明るい面（ボタンの下地）と、その上に乗る文字色。 */
-  --accent: #e6e6ea;
-  --on-accent: #16161b;
-  --blue: #8f8fe8;
-  --green: #4ec99b;
-  --red: #ff8a9b;
-  /* 淡い色面は、彩度を保ったまま暗く沈める。 */
-  --tint-blue: #172234;
-  --tint-green: #14291f;
-  --tint-red: #2f1a1e;
-  --tint-amber: #2e2416;
-  --tint-purple: #1f1f33;
-  /* 色つきの面に乗る文字。暗い面でも読めるよう明るくする。 */
-  --ink: #e6e6ea;
-  --ink-muted: #a6a6b0;
-  --ink-blue: #9dc2ff;
-  --ink-green: #6fdcaa;
-  --ink-red: #ff9aa8;
-  --ink-amber: #f0c66a;
-  --ink-purple: #b9b6ff;
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 14px 36px rgba(0, 0, 0, 0.45);
-  --shadow-raised: 0 2px 4px rgba(0, 0, 0, 0.45), 0 22px 64px rgba(0, 0, 0, 0.55);
-  --focus-ring: 0 0 0 4px rgba(143, 143, 232, 0.28);
-  --toast-surface: rgba(232, 232, 238, 0.95);
 }
 
-/* 背景のふんわりした光は、夜はごく弱く。 */
+/* 背景は黒一色。ふんわりした光は置かない。 */
 :root[data-theme="dark"] body {
-  background:
-    radial-gradient(circle at 8% 0%, rgba(101, 163, 255, 0.06), transparent 28rem),
-    radial-gradient(circle at 94% 12%, rgba(173, 123, 255, 0.05), transparent 26rem),
-    var(--background);
+  background: #000000;
 }
 
-:root[data-theme="dark"] .primary-button {
-  border-color: var(--accent);
+/* カード・パネルの類は、黒のまま白い線で形を示す。 */
+:root[data-theme="dark"] .app-shell .view section,
+:root[data-theme="dark"] .range-choice,
+:root[data-theme="dark"] .content-choice,
+:root[data-theme="dark"] .selection-card,
+:root[data-theme="dark"] .multi-select-card,
+:root[data-theme="dark"] .criterion-option,
+:root[data-theme="dark"] .mode-progress-card,
+:root[data-theme="dark"] .settings-card,
+:root[data-theme="dark"] .settings-row,
+:root[data-theme="dark"] .question-card,
+:root[data-theme="dark"] .public-recall-card,
+:root[data-theme="dark"] .onboarding-card,
+:root[data-theme="dark"] .entry-card,
+:root[data-theme="dark"] .word-card,
+:root[data-theme="dark"] .result-panel,
+:root[data-theme="dark"] .period-button,
+:root[data-theme="dark"] .choice-button {
+  background: #000000;
+  border-color: var(--line);
+  box-shadow: none;
+}
+
+/* 押せるものは白。黒背景でいちばん目立つ。 */
+:root[data-theme="dark"] .primary-button,
+:root[data-theme="dark"] .alphabet-key--submit {
+  color: #000000;
+  background: #ffffff;
+  border-color: #ffffff;
+  box-shadow: none;
+}
+
+:root[data-theme="dark"] .secondary-button,
+:root[data-theme="dark"] .icon-button,
+:root[data-theme="dark"] .segmented-options button,
+:root[data-theme="dark"] .kb-button {
+  color: var(--text);
+  background: #000000;
+  border-color: var(--line-strong);
+}
+
+/* 選ばれているものは白く塗りつぶして、はっきり区別する。 */
+:root[data-theme="dark"] .segmented-options button.selected,
+:root[data-theme="dark"] .cycle-performance-actions .selected {
+  color: #000000;
+  background: #ffffff;
+  border-color: #ffffff;
 }
 
 :root[data-theme="dark"] input,
 :root[data-theme="dark"] select,
 :root[data-theme="dark"] textarea {
   color: var(--text);
-  background: var(--surface-muted);
+  background: #000000;
   border-color: var(--line-strong);
 }
 
@@ -5756,60 +5799,102 @@ body.kobun-quiz-active {
   color: var(--tertiary);
 }
 
-/* ロゴの四角は、明るいときと同じ「濃い面に白抜き」のまま。
-   背景に沈まないぶんだけ明るくし、縁と光沢は控えめにする。 */
+/* ロゴの四角は黒地に白抜き。白い線で輪郭を出す。 */
 :root[data-theme="dark"] .brand-mark,
+:root[data-theme="dark"] .entry-mark,
 :root[data-theme="dark"] .onboarding-logo {
-  color: #fff;
-  background: linear-gradient(145deg, #2b2b34, #1b1b21);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  background: #000000;
+  border: 1px solid var(--line-strong);
   box-shadow: none;
 }
 
-/* 濃いグラデーションのボタンは、暗い背景に沈むので明度を上げる。
-   文字は白のままにして、押せることが分かるようにする。 */
-:root[data-theme="dark"] .primary-button,
-:root[data-theme="dark"] .alphabet-key--submit {
-  color: #fff;
-  background: linear-gradient(180deg, #43434f, #2c2c35);
-  border-color: rgba(255, 255, 255, 0.16);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, var(--gloss-alpha, 0.1)), 0 8px 18px rgba(0, 0, 0, 0.35);
-}
-
-/* 黒を薄く重ねていた面は、暗い背景では白を薄く重ねる。 */
+/* 黒を薄く重ねていた面は、白を薄く重ねる。 */
 :root[data-theme="dark"] .bottom-nav button.active,
 :root[data-theme="dark"] .source-box,
 :root[data-theme="dark"] .input-correct-answer,
 :root[data-theme="dark"] .question-translation {
-  background: rgba(255, 255, 255, 0.07);
-}
-
-/* 4択の選択肢は、ホームの範囲ボタンと同じ落ち着いた面にそろえる。
-   白い光沢や色の付いた下地は使わない。 */
-:root[data-theme="dark"] .choice-button {
-  background: rgba(var(--surface-rgb), 0.88);
-  border-color: var(--line);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 8px 22px rgba(0, 0, 0, 0.22);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 :root[data-theme="dark"] .choice-button > span {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  background: #000000;
+  border: 1px solid var(--line);
 }
 
-/* 教科ボタンの淡い色面は、暗い背景では沈んだ色合いに置き換える。 */
+/* 正解・不正解は、黒地にビビッドな線と文字で示す。 */
+:root[data-theme="dark"] .choice-button.correct,
+:root[data-theme="dark"] .kobun-view .correct {
+  color: var(--ink-green);
+  background: #000000;
+  border-color: var(--green);
+  box-shadow: inset 0 0 0 1px var(--green);
+}
+
+:root[data-theme="dark"] .choice-button.wrong,
+:root[data-theme="dark"] .kobun-view .incorrect {
+  color: var(--ink-red);
+  background: #000000;
+  border-color: var(--red);
+  box-shadow: inset 0 0 0 1px var(--red);
+}
+
+/* 教科ボタンは黒地。教科ごとの色は線と見出しで出す。 */
+:root[data-theme="dark"] .subject-button {
+  color: var(--text);
+  background: #000000;
+}
+
 :root[data-theme="dark"] .subject-button.english {
-  background: linear-gradient(135deg, #23232d 42%, #262a45);
+  border-color: var(--blue);
 }
 
 :root[data-theme="dark"] .subject-button.public {
-  background: linear-gradient(135deg, #23232d 42%, #1c3129);
+  border-color: var(--green);
 }
 
 :root[data-theme="dark"] .subject-button.health {
-  background: linear-gradient(135deg, #23232d 42%, #33241c);
+  border-color: #ff8a1f;
 }
 
 :root[data-theme="dark"] .subject-button.kobun {
-  background: linear-gradient(135deg, #23232d 42%, #2f2536);
+  border-color: var(--ink-purple);
+}
+
+:root[data-theme="dark"] .subject-button .subject-icon {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* 危ない操作のボタンは、黒地でも赤とわかる色にする。 */
+:root[data-theme="dark"] .danger-button {
+  color: var(--red);
+  border-color: var(--red);
+}
+
+/* 重要度のバッジは、黒地でもはっきり見えるビビッドな色にする。 */
+:root[data-theme="dark"] .importance-sss { color: #000; background: #ff2d55; }
+:root[data-theme="dark"] .importance-ss { color: #000; background: #ff8a1f; }
+:root[data-theme="dark"] .importance-s { color: #000; background: #ffd60a; }
+:root[data-theme="dark"] .importance-a { color: #000; background: #3d8bff; }
+:root[data-theme="dark"] .importance-b { color: #000; background: #b8b8c0; }
+:root[data-theme="dark"] .importance-c { color: #fff; background: #000; border: 1px solid var(--line-strong); }
+:root[data-theme="dark"] .importance-d { color: var(--secondary); background: #000; border: 1px solid var(--line); }
+
+/* 進捗バーやゲージも、黒地に映えるビビッドな色で。 */
+:root[data-theme="dark"] .quiz-progress span {
+  background: linear-gradient(90deg, #3d8bff, #b47bff);
+}
+
+:root[data-theme="dark"] .quiz-progress,
+:root[data-theme="dark"] .progress-track,
+:root[data-theme="dark"] .gauge-track {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+/* 黒を薄く重ねただけの面は、黒地では見えないので白側に置き換える。 */
+:root[data-theme="dark"] .range-multi-icon,
+:root[data-theme="dark"] .progress-gauge,
+:root[data-theme="dark"] .choice-gesture-directions i {
+  background: rgba(255, 255, 255, 0.12);
 }

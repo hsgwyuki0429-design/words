@@ -1,4 +1,4 @@
-import { createKobunController } from "./kobun.js?v=2026.9.32";
+import { createKobunController } from "./kobun.js?v=2026.9.33";
 import {
   ALL_MODES,
   ALPHABET_KEYBOARD_ROWS,
@@ -70,7 +70,7 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.32";
+} from "./logic.js?v=2026.9.33";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -90,7 +90,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.9.32";
+} from "./storage.js?v=2026.9.33";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -98,7 +98,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.32";
+} from "./quiz-gestures.js?v=2026.9.33";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
@@ -107,13 +107,13 @@ import {
   normalizeSpeechRate,
   normalizeSpeechVoiceURI,
   voiceKey,
-} from "./speech.js?v=2026.9.32";
+} from "./speech.js?v=2026.9.33";
 import {
   applyThemePreference,
   normalizeThemePreference,
   readStoredThemePreference,
   watchSystemTheme,
-} from "./theme.js?v=2026.9.32";
+} from "./theme.js?v=2026.9.33";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -1275,7 +1275,7 @@ const THEME_OPTIONS = [
 const THEME_NOTES = {
   system: "端末が夜間モードになると自動でダークモードになります。",
   light: "いつでも明るい配色で表示します。",
-  dark: "いつでも暗い配色で表示します。明るさを抑えているので、暗い部屋でも見やすくなります。",
+  dark: "いつでも黒を基調にした配色で表示します。文字と線をはっきりさせているので、暗い部屋でも読みやすくなります。",
 };
 
 function themePreference() {
@@ -4823,7 +4823,7 @@ async function boot() {
       fetch("./data/items.json?v=2026.08.31b"),
       fetch("./data/public-items.json?v=2026.09.01"),
       fetch("./data/health-items.json?v=2026.09.01"),
-      fetch("./data/kobun-vocabulary.json?v=2026.9.32"),
+      fetch("./data/kobun-vocabulary.json?v=2026.9.33"),
       loadHistory(),
       getMeta("selectedMode"),
       getMetaObject("settings", DEFAULT_SETTINGS),
@@ -4876,7 +4876,7 @@ async function boot() {
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.32").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.33").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

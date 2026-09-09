@@ -191,7 +191,7 @@ body.kobun-quiz-active .kobun-view { padding-top: max(8px, env(safe-area-inset-t
 .kb-button,
 .kb-key {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.88);
+  background: rgba(var(--surface-rgb), 0.88);
   border-color: var(--line);
   box-shadow: 0 1px 2px rgba(24, 24, 27, 0.04);
 }
@@ -226,7 +226,7 @@ body.kobun-quiz-active .kobun-view { padding-top: max(8px, env(safe-area-inset-t
 .kb-reference,
 .kb-cell,
 .kb-option {
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(var(--surface-rgb), 0.9);
   border-color: var(--line);
   box-shadow: 0 1px 2px rgba(24, 24, 27, 0.035), 0 10px 26px rgba(24, 24, 27, 0.045);
 }
@@ -369,24 +369,30 @@ body.kobun-quiz-active .kobun-view { padding-top: max(8px, env(safe-area-inset-t
   }
 }
 
-/* 古文の画面もダークモードに合わせる。色は共通の変数を使い、
-   濃いグラデーションのボタンだけ明度を上げて暗い背景から浮かせる。 */
+/* 古文の画面もダークモードに合わせる。面は黒のままにして、
+   形は白い線で示し、押せるものは白く塗る。 */
 :root[data-theme="dark"] .kobun-view {
   color: var(--text);
 }
 
 :root[data-theme="dark"] .subject-button.kobun {
-  background: linear-gradient(135deg, #23232d 42%, #2f2536);
+  background: #000000;
 }
 
 :root[data-theme="dark"] .kb-primary {
-  background: linear-gradient(180deg, #43434f, #2c2c35);
-  border-color: rgba(255, 255, 255, 0.16);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, var(--gloss-alpha, 0.1)), 0 8px 18px rgba(0, 0, 0, 0.35);
+  color: #000000;
+  background: #ffffff;
+  border-color: #ffffff;
+  box-shadow: none;
 }
 
+:root[data-theme="dark"] .kb-menu-card,
 :root[data-theme="dark"] .kb-option,
+:root[data-theme="dark"] .kb-input-tools,
+:root[data-theme="dark"] .kb-actions,
+:root[data-theme="dark"] .kb-key,
 :root[data-theme="dark"] .kb-base-inputs input,
 :root[data-theme="dark"] .kb-cell textarea {
+  background: #000000;
   border-color: var(--line-strong);
 }

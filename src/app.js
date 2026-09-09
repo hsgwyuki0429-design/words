@@ -58,6 +58,7 @@ import {
   inProgressStudyEntries,
   studyEntriesByRecency,
   isStudyInProgress,
+  hasStudyContinuation,
   studyContentsKey,
   studyProgressEntriesForMode,
   studyProgressKey,
@@ -921,10 +922,11 @@ function inProgressEntries() {
   });
 }
 
-// ハイライトの基準になるセット。周回の途中かどうかに関わらず、
-// いちばん最近学習した条件を採用する。
+// ハイライトの基準になるセット。いちばん最近学習した条件を採用するが、
+// そのセットを丸ごと習得しきっている場合は続きがないのでハイライトしない。
 function latestStudyEntry() {
-  return recentStudyEntries()[0] ?? null;
+  const entry = recentStudyEntries()[0] ?? null;
+  return entry && hasStudyContinuation(entry.progress) ? entry : null;
 }
 
 // 範囲ボタンのハイライトは、いちばん最近学習したセットひとつだけを指す。

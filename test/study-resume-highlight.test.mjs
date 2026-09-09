@@ -142,3 +142,32 @@ test("周回を終えたセットでも、最後にやったものならハイ�
   assert.deepEqual(recent[0].meta.ranges, ["OriHime"]);
   assert.equal(recent.length, 2);
 });
+
+test("セットを丸ごと習得しきったら続きなし、周回が残っていれば続きあり", async () => {
+  const { hasStudyContinuation, advanceStudyProgress } = await import("../src/logic.js");
+  const { progress } = progressFor({ ranges: ["OriHime"] });
+  // 始めたばかりのセットは続きなし。
+  assert.equal(hasStudyContinuation(progress), false);
+
+  // 1問だけ解いた途中の状態は続きあり。
+  const started = applyStudyAnswer(progress, { itemId: "a", correct: true });
+  assert.equal(hasStudyContinuation(started), true);
+
+  // 間違えてから正解した語句は習得にならないので、次の周回が残って続きあり。
+  const missed = ["a", "b"].reduce(
+    (acc, itemId) => applyStudyAnswer(
+      applyStudyAnswer(acc, { itemId, correct: false }),
+      { itemId, correct: true },
+    ),
+    progress,
+  );
+  const nextCycle = advanceStudyProgress(missed);
+  assert.equal(nextCycle.cycleNumber, 2);
+  assert.equal(hasStudyContinuation(nextCycle), true);
+
+  // 全問習得して新しいセットに進んだら続きなし。
+  const cleared = applyStudyAnswer(started, { itemId: "b", correct: true });
+  const nextRound = advanceStudyProgress(cleared);
+  assert.equal(nextRound.masteryRound, 2);
+  assert.equal(hasStudyContinuation(nextRound), false);
+});

@@ -1,4 +1,4 @@
-import { createKobunController } from "./kobun.js?v=2026.9.30";
+import { createKobunController } from "./kobun.js?v=2026.9.31";
 import {
   ALL_MODES,
   ALPHABET_KEYBOARD_ROWS,
@@ -69,7 +69,7 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.30";
+} from "./logic.js?v=2026.9.31";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -89,7 +89,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.9.30";
+} from "./storage.js?v=2026.9.31";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -97,7 +97,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.30";
+} from "./quiz-gestures.js?v=2026.9.31";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
@@ -106,7 +106,7 @@ import {
   normalizeSpeechRate,
   normalizeSpeechVoiceURI,
   voiceKey,
-} from "./speech.js?v=2026.9.30";
+} from "./speech.js?v=2026.9.31";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -392,6 +392,28 @@ function recallExplanation(item) {
   return typeof text === "string" ? text.trim() : "";
 }
 
+function markTextbookQuote(quote, item) {
+  const terms = [...new Set([
+    item.publicAnswer, item.japanese, ...(item.acceptedAnswers ?? []),
+    item.editorial?.choices?.[item.editorial?.correctChoice],
+  ].filter((term) => typeof term === "string")
+    .flatMap((term) => [term, ...term.split(/[（）、()・／/]/)])
+    .map((term) => term.trim()).filter((term) => term.length >= 2))]
+    .sort((a, b) => b.length - a.length);
+  let html = "";
+  for (let index = 0; index < quote.length;) {
+    const term = terms.find((candidate) => quote.startsWith(candidate, index));
+    if (term) {
+      html += `<mark>${escapeHtml(term)}</mark>`;
+      index += term.length;
+    } else {
+      html += escapeHtml(quote[index]);
+      index += 1;
+    }
+  }
+  return html;
+}
+
 function renderTextbookEvidence(item) {
   if (item.subject !== "public") return "";
   const location = item.sourceDetail || item.source || "";
@@ -400,9 +422,9 @@ function renderTextbookEvidence(item) {
   const note = item.editorial?.evidenceNote;
   if (!location && !quotes.length) return "";
   return `<div class="textbook-evidence">
-    ${location ? `<span class="textbook-evidence-label">教科書の該当箇所</span><p>${escapeHtml(location)}</p>` : ""}
-    ${quotes.length ? `<span class="textbook-evidence-label">教科書の抜粋</span>${quotes.map((quote) => `<blockquote>${escapeHtml(quote)}</blockquote>`).join("")}` : ""}
+    ${quotes.length ? `<span class="textbook-evidence-label">教科書の抜粋</span>${quotes.map((quote) => `<blockquote>${markTextbookQuote(quote, item)}</blockquote>`).join("")}` : ""}
     ${note ? `<p class="textbook-evidence-note">${escapeHtml(note)}</p>` : ""}
+    ${location ? `<p class="textbook-evidence-source"><cite>${escapeHtml(location)}</cite></p>` : ""}
   </div>`;
 }
 
@@ -483,7 +505,7 @@ function selectSubject(subject) {
   elements.navListLabel.textContent = isHealthSubject()
     ? "まとめノート"
     : isPublicSubject()
-      ? "重要語句"
+      ? "まとめノート"
       : isKobunVocabSubject()
         ? "語句一覧"
         : "単語帳";
@@ -3613,10 +3635,10 @@ function renderQuiz() {
           ${answered && isSwipeAdvance ? `tabindex="0" aria-label="${isPublicChoice ? (showChoiceAnswer ? "答え面。タップで問題と自分の回答を確認。" : "問題面。タップで答えと解説を確認。") : "回答済みカード。"}上下左右どの方向へ払っても次へ進みます"` : ""}
         >
           <article class="question-card${isChoice ? " swipe-choice-card" : isKeyboardInput ? " swipe-input-card" : ""}">
-            ${showChoiceAnswer ? "" : `<p class="question-instruction">${escapeHtml(question.instruction)}</p>
+            ${showChoiceAnswer ? "" : `${isPublicChoice ? '<div class="public-choice-question">' : ""}<p class="question-instruction">${escapeHtml(question.instruction)}</p>
             <h1>${escapeHtml(question.prompt)}</h1>
             ${translation}
-            <div class="answer-area">${answerArea}</div>`}
+            <div class="answer-area">${answerArea}</div>${isPublicChoice ? "</div>" : ""}`}
             ${answered && isSwipeAdvance && (!isPublicChoice || showChoiceAnswer) ? feedbackArea : ""}
             ${isPublicChoice && answered ? `<p class="choice-flip-hint">タップで${showChoiceAnswer ? "問題・自分の回答" : "答え・解説"}を確認</p>` : ""}
             ${answered && isSwipeAdvance ? renderChoiceSwipeHints() : ""}
@@ -4741,7 +4763,7 @@ async function boot() {
       fetch("./data/items.json?v=2026.08.31b"),
       fetch("./data/public-items.json?v=2026.09.01"),
       fetch("./data/health-items.json?v=2026.09.01"),
-      fetch("./data/kobun-vocabulary.json?v=2026.9.30"),
+      fetch("./data/kobun-vocabulary.json?v=2026.9.31"),
       loadHistory(),
       getMeta("selectedMode"),
       getMetaObject("settings", DEFAULT_SETTINGS),
@@ -4789,7 +4811,7 @@ async function boot() {
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.30").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.31").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

@@ -3462,6 +3462,17 @@ function fitRecallCard(selector, scaleProperty) {
 function fitChoiceScreen() {
   const shell = elements.quizContent.querySelector(".quiz-choice");
   if (!shell) return;
+  if (shell.classList.contains("quiz-public-choice")) {
+    const card = shell.querySelector(".swipe-choice-card");
+    if (!card) return;
+    let scale = 1;
+    shell.style.setProperty("--choice-scale", scale);
+    while (scale > CARD_MIN_SCALE && card.scrollHeight > card.clientHeight + 1) {
+      scale = Math.max(CARD_MIN_SCALE, scale - CARD_SCALE_STEP);
+      shell.style.setProperty("--choice-scale", scale.toFixed(2));
+    }
+    return;
+  }
   const overflow = () => document.documentElement.scrollHeight - window.innerHeight;
   let scale = Number.parseFloat(getComputedStyle(shell).getPropertyValue("--choice-scale")) || 1;
   while (scale > CHOICE_MIN_SCALE && overflow() > 1) {
@@ -4341,6 +4352,10 @@ function bindEvents() {
     setView("range-detail");
   });
   addEventListener("resize", markFxResize, { passive: true });
+  addEventListener("resize", () => {
+    if (state.view === "quiz" && state.session?.currentQuestion?.mode === "public_choice"
+      && !state.session.isTransitioning) fitChoiceScreen();
+  }, { passive: true });
   addEventListener("orientationchange", markFxResize, { passive: true });
   quizGestureController = bindQuizGestures(elements.quizContent, {
     getPolicy: currentQuizGesturePolicy,

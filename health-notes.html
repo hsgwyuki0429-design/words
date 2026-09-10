@@ -28,7 +28,8 @@
   --shadow-raised:0 2px 4px rgba(27,27,31,.045),0 24px 70px rgba(27,27,31,.085);
 }
 *{box-sizing:border-box}
-html{scroll-behavior:smooth;background:var(--bg)}
+/* 端まで読んだあとに指で引っ張っても、画面が跳ねないようにする。 */
+html{scroll-behavior:smooth;background:var(--bg);overscroll-behavior:none}
 body{
   margin:0;
   background:

@@ -32,6 +32,9 @@
 html {
   background: var(--background);
   scroll-behavior: smooth;
+  /* 画面に収まっているときは指で引っ張っても動かないようにする。
+     はみ出している画面だけが今まで通りスクロールできる。 */
+  overscroll-behavior: none;
 }
 
 body {
@@ -39,6 +42,9 @@ body {
   min-width: 320px;
   min-height: 100vh;
   min-height: 100dvh;
+  /* 横方向は使わないので、横に払っても画面がずれないようにする。 */
+  overflow-x: hidden;
+  overscroll-behavior: none;
   background:
     radial-gradient(circle at 90% -10%, rgba(129, 177, 255, 0.13), transparent 30rem),
     var(--background);
@@ -1207,6 +1213,37 @@ body.fx-max-entrance .fx-invert { mix-blend-mode: difference; }
 
 /* MAX中の画面そのものの状態 */
 body.max-mode.quiz-active { background: radial-gradient(circle at 50% 15%, #182243, #090a12 58%); }
+/* 学習画面は白い面を敷いているが、MAXのときだけは敷かずに背景の演出を見せる。
+   ここを敷いたままだと、暗い背景に合わせた白い文字が白い面に乗って読めなくなる。 */
+body.max-mode .quiz-view { background: transparent; }
+/* 背景に直に乗る部分だけ、暗い舞台でも読める色にそろえる。 */
+body.max-mode.quiz-active .quiz-progress {
+  background: rgba(255, 255, 255, 0.16);
+}
+body.max-mode.quiz-active .quiz-progress span {
+  background: linear-gradient(90deg, #72ddff, #ffd45f);
+}
+body.max-mode.quiz-active .mode-pill {
+  color: #eaf6ff;
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.26);
+  box-shadow: none;
+}
+body.max-mode.quiz-active .quiz-header .icon-button {
+  color: #eaf6ff;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.26);
+}
+body.max-mode.quiz-active .character-count-toggle {
+  color: #eaf6ff;
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.26);
+}
+body.max-mode.quiz-active .character-count-toggle[aria-pressed="true"] {
+  color: #08131f;
+  background: #9fe8ff;
+  border-color: #9fe8ff;
+}
 body.max-mode.quiz-active .question-card {
   box-shadow: 0 0 0 1px rgba(112, 215, 255, .35), 0 20px 70px rgba(75, 55, 210, .23);
   transition: box-shadow 260ms ease;

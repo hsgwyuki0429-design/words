@@ -1,0 +1,22 @@
+# Cloudflare Workers へ words MCP Server を置くための設定。
+#
+#   1. npx wrangler kv namespace create WORDS_KV
+#      表示された id を下の kv_namespaces に貼る
+#   2. npx wrangler secret put WORDS_OWNER_KEY
+#      （管理キー。ここで入力した値はリポジトリには残らない）
+#   3. npx wrangler deploy
+#
+# 秘密（WORDS_OWNER_KEY）は必ず secret として入れること。
+# このファイルへ直接書くとGitHubへ公開されてしまう。
+
+name = "words-mcp"
+main = "server/adapters/cloudflare.js"
+compatibility_date = "2026-07-01"
+
+[vars]
+# 公開可能な設定だけをここに書く。
+WORDS_SITE_ORIGIN = "https://hsgwyuki0429-design.github.io/words"
+
+[[kv_namespaces]]
+binding = "WORDS_KV"
+id = "ここに wrangler kv namespace create WORDS_KV の id を貼る"

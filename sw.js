@@ -1,4 +1,4 @@
-const APP_VERSION = "2026.9.37";
+const APP_VERSION = "2026.9.38";
 const CACHE_NAME = `words-${APP_VERSION}`;
 const APP_SHELL = [
   "./",
@@ -11,6 +11,7 @@ const APP_SHELL = [
   `./data/kobun-vocabulary.json?v=${APP_VERSION}`,
   `./src/app.js?v=${APP_VERSION}`,
   `./src/ai-link.js?v=${APP_VERSION}`,
+  `./src/sync.js?v=${APP_VERSION}`,
   `./src/haptics.js?v=${APP_VERSION}`,
   "./src/audio.js?v=2026.2.18",
   "./src/max-cues.js?v=2026.2.18",

@@ -6081,3 +6081,14 @@ body.kobun-quiz-active {
 @media (max-width: 420px) {
   .ai-link-log li { flex-direction: column; gap: 2px; }
 }
+
+/* 学習者の一覧。名前の右に操作を並べ、狭い画面では下へ回す。 */
+.learner-list li { align-items: center; justify-content: space-between; }
+.learner-list .ai-link-log-body small { display: block; margin-top: 2px; color: var(--secondary); }
+.learner-actions { display: flex; gap: 10px; flex: 0 0 auto; white-space: nowrap; }
+.danger-text { color: var(--red); }
+
+@media (max-width: 420px) {
+  .learner-list li { flex-direction: column; align-items: flex-start; gap: 4px; }
+  .learner-actions { margin-left: -4px; }
+}

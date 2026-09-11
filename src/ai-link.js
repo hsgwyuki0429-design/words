@@ -118,6 +118,14 @@ export function createAiLinkClient({ fetchImpl = fetch } = {}) {
     overlay: (config, signal) => request(config, "/api/sync/overlay", { fetchImpl, signal }),
     restore: (config, id) =>
       request(config, "/api/admin/restore", { method: "POST", body: { id }, fetchImpl }),
+    // 学習者（生徒・自分）の管理。管理キーを持っている人だけが使える。
+    listLearners: (config) => request(config, "/api/admin/learners", { fetchImpl }),
+    createLearner: (config, name) =>
+      request(config, "/api/admin/learners", { method: "POST", body: { name }, fetchImpl }),
+    deleteLearner: (config, id) =>
+      request(config, "/api/admin/learners", { method: "DELETE", body: { id, confirm: true }, fetchImpl }),
+    reissueLearnerCode: (config, id) =>
+      request(config, "/api/admin/learners/code", { method: "POST", body: { id }, fetchImpl }),
   };
 }
 
@@ -125,11 +133,18 @@ export function createAiLinkClient({ fetchImpl = fetch } = {}) {
 // データの組み立て（画面にもネットワークにも依存しない部分）
 // ---------------------------------------------------------------------------
 
-/** 1問ごとの学習記録を1件足す。新しい順に並べ、上限を超えた分は捨てる。 */
+/**
+ * 1問ごとの学習記録を1件足す。新しい順に並べ、上限を超えた分は捨てる。
+ *
+ * eventId と seq は端末間の同期に要る。eventId は同じ記録を二度数えないための
+ * 目印で、seq は「どこまで送ったか」を表す番号。どちらも落とさずに残す。
+ */
 export function appendJournalEntry(journal, entry, limit = JOURNAL_LIMIT) {
   const list = Array.isArray(journal) ? journal : [];
   const next = [
     {
+      ...(entry.eventId ? { eventId: entry.eventId } : {}),
+      ...(Number.isFinite(entry.seq) ? { seq: entry.seq } : {}),
       itemId: entry.itemId,
       at: entry.at ?? Date.now(),
       correct: Boolean(entry.correct),

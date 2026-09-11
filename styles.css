@@ -5948,3 +5948,136 @@ body.kobun-quiz-active {
 :root[data-theme="dark"] .choice-gesture-directions i {
   background: rgba(255, 255, 255, 0.12);
 }
+
+/* --------------------------------------------------------------------------
+   AI連携（MCP）
+   設定画面の中の1枚のカード。色・角丸・余白はすべて既存の設定カードに合わせ、
+   明るいときも暗いときも同じ変数だけを使う。
+   -------------------------------------------------------------------------- */
+
+.ai-link-card > p { margin-bottom: 14px; }
+/* 接続の入力欄のあとに続く行も、ほかの設定と同じように区切り線で分ける。 */
+.ai-link-card .settings-row:first-of-type { border-top: 1px solid var(--line); }
+
+.ai-link-field {
+  padding-block: 12px;
+  border-top: 1px solid var(--line);
+}
+.ai-link-field:first-of-type { border-top: 0; }
+.ai-link-field label { display: block; }
+.ai-link-field strong { display: block; font-size: 15px; }
+.ai-link-field small { display: block; margin-top: 3px; color: var(--secondary); }
+
+.settings-input {
+  width: 100%;
+  margin-top: 8px;
+  min-height: 44px;
+  padding: 0 12px;
+  color: inherit;
+  background: var(--surface-muted, #f7f7f9);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font-size: 16px; /* iOSで入力時に画面が拡大しないよう16px以上にする */
+  font-family: inherit;
+  box-sizing: border-box;
+}
+.settings-input:focus-visible { outline: 0; box-shadow: var(--focus-ring, 0 0 0 3px rgba(10, 102, 216, 0.2)); }
+
+.ai-link-connect { width: 100%; margin-top: 4px; margin-bottom: 6px; }
+
+.ai-link-state {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  flex: 0 0 auto;
+  font-size: 14px;
+  font-weight: 650;
+}
+.ai-link-state span { font-size: 11px; }
+.ai-link-state-ok { color: var(--green); }
+.ai-link-state-idle { color: var(--tertiary); }
+.ai-link-state-error { color: var(--red); }
+
+.ai-link-url-row { align-items: flex-start; flex-direction: column; padding-block: 12px; gap: 8px; }
+.ai-link-url-value {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+.ai-link-url-value code {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 9px 11px;
+  overflow-x: auto;
+  background: var(--surface-muted, #f7f7f9);
+  border-radius: 10px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.ai-link-url-value .text-button { flex: 0 0 auto; }
+
+.ai-link-subheading {
+  margin: 20px 0 4px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.ai-link-token {
+  padding: 14px;
+  margin-block: 8px;
+  background: var(--surface-muted, #f7f7f9);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+}
+.ai-link-token p { margin: 0 0 8px; font-size: 13px; color: var(--secondary); }
+.ai-link-token code {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.ai-link-token .text-button { margin-top: 4px; }
+
+.ai-link-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 10px;
+}
+.ai-link-actions .secondary-button { flex: 1 1 auto; }
+
+.ai-link-guide { margin-top: 12px; }
+.ai-link-guide h4 { margin: 14px 0 6px; font-size: 14px; }
+.ai-link-guide pre {
+  margin: 0;
+  padding: 12px;
+  overflow-x: auto;
+  background: var(--surface-muted, #f7f7f9);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.ai-link-log {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ai-link-log li {
+  display: flex;
+  gap: 12px;
+  padding-block: 9px;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+}
+.ai-link-log li:first-child { border-top: 0; }
+.ai-link-log-time { flex: 0 0 auto; color: var(--tertiary); font-variant-numeric: tabular-nums; }
+.ai-link-log-body { min-width: 0; overflow-wrap: anywhere; }
+
+@media (max-width: 420px) {
+  .ai-link-log li { flex-direction: column; gap: 2px; }
+}

@@ -1,5 +1,5 @@
-import { createHaptics } from "./haptics.js?v=2026.9.36";
-import { createKobunController } from "./kobun.js?v=2026.9.36";
+import { createHaptics } from "./haptics.js?v=2026.9.37";
+import { createKobunController } from "./kobun.js?v=2026.9.37";
 import {
   ALL_MODES,
   ALPHABET_KEYBOARD_ROWS,
@@ -72,7 +72,7 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.36";
+} from "./logic.js?v=2026.9.37";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -92,7 +92,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.9.36";
+} from "./storage.js?v=2026.9.37";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -100,7 +100,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.36";
+} from "./quiz-gestures.js?v=2026.9.37";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
@@ -109,13 +109,29 @@ import {
   normalizeSpeechRate,
   normalizeSpeechVoiceURI,
   voiceKey,
-} from "./speech.js?v=2026.9.36";
+} from "./speech.js?v=2026.9.37";
+import {
+  AI_LINK_JOURNAL_KEY,
+  AI_LINK_META_KEY,
+  DEFAULT_AI_LINK,
+  appendJournalEntry,
+  applyOverlayBySubject,
+  buildHistoryPayload,
+  connectionInstructions,
+  connectionStateLabel,
+  createAiLinkClient,
+  createDeviceId,
+  isAiLinkActive,
+  isAiLinkConfigured,
+  mcpUrlFor,
+  normalizeAiLinkConfig,
+} from "./ai-link.js?v=2026.9.37";
 import {
   applyThemePreference,
   normalizeThemePreference,
   readStoredThemePreference,
   watchSystemTheme,
-} from "./theme.js?v=2026.9.36";
+} from "./theme.js?v=2026.9.37";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -180,6 +196,15 @@ const state = {
   rangeFlow: "dashboard",
   studyFlowMode: "dashboard",
   studyProgress: {},
+  // AI連携（MCP）。既定は無効で、有効にするまでネットワークへは出ない。
+  aiLink: { ...DEFAULT_AI_LINK },
+  aiLinkJournal: [],
+  aiLinkStatus: null,
+  aiLinkError: null,
+  aiLinkBusy: false,
+  // 発行した直後の接続トークン。画面を離れると消える（保存はしない）。
+  aiLinkIssuedToken: null,
+  aiLinkShowGuide: false,
 };
 
 const elements = Object.fromEntries(
@@ -494,13 +519,7 @@ function selectSubject(subject) {
     return;
   }
   state.subject = isRecallSubjectId(subject) ? subject : "english";
-  state.items = isPublicSubject()
-    ? state.publicItems
-    : isHealthSubject()
-      ? state.healthItems
-      : isKobunVocabSubject()
-        ? state.kobunVocabItems
-        : state.englishItems;
+  selectSubjectItems();
   resetStudyFlow();
   elements.listSearch.value = "";
   elements.listSearch.placeholder = isKobunVocabSubject()
@@ -1299,6 +1318,329 @@ function applyTheme() {
   applyThemePreference(themePreference());
 }
 
+// ---------------------------------------------------------------------------
+// AI連携（MCP）
+//
+// 有効にしたときだけ、別に立てた words MCP Server とやりとりする。
+// 無効のあいだは何も送らず、今までと同じ動きのまま。
+// 通信に失敗しても学習は止めない（黙って記録だけ残す）。
+// ---------------------------------------------------------------------------
+
+const aiLinkClient = createAiLinkClient();
+
+const AI_LINK_PERMISSION_ROWS = [
+  {
+    scope: "read",
+    title: "問題・学習履歴を見る",
+    detail: "問題の検索、成績、間違えた問題の確認。連携にはこれが必ず必要です",
+    locked: true,
+  },
+  {
+    scope: "write",
+    title: "問題を追加・編集する",
+    detail: "AIがwordsへ問題を足したり、解説や答えを書き換えたりできます",
+  },
+  {
+    scope: "delete",
+    title: "問題を削除する",
+    detail: "消した問題はゴミ箱に入り、ここから元に戻せます",
+  },
+];
+
+// 保存が重ならないよう、最後の回答から少し置いてからまとめて送る。
+let aiLinkSyncTimer = 0;
+let aiLinkSyncing = false;
+
+function saveAiLink() {
+  return setMeta(AI_LINK_META_KEY, state.aiLink).catch(console.warn);
+}
+
+function aiLinkServerEnabled() {
+  return state.aiLinkStatus?.enabled === true;
+}
+
+/** サーバーの現在の状態（有効か・権限・トークン・操作ログ）を読み直す。 */
+async function refreshAiLinkStatus({ render = true } = {}) {
+  if (!isAiLinkConfigured(state.aiLink)) {
+    state.aiLinkStatus = null;
+    state.aiLinkError = null;
+    return null;
+  }
+  state.aiLinkBusy = true;
+  if (render && state.view === "settings") renderSettings();
+  try {
+    state.aiLinkStatus = await aiLinkClient.status(state.aiLink);
+    state.aiLinkError = null;
+  } catch (error) {
+    state.aiLinkStatus = null;
+    state.aiLinkError = error.message;
+  } finally {
+    state.aiLinkBusy = false;
+    if (render && state.view === "settings") renderSettings();
+  }
+  return state.aiLinkStatus;
+}
+
+/** AIが追加・変更・削除した問題を、画面の問題一覧へ取り込む。 */
+async function applyAiLinkOverlay() {
+  if (!isAiLinkActive(state.aiLink)) return;
+  let overlay;
+  try {
+    overlay = await aiLinkClient.overlay(state.aiLink);
+  } catch (error) {
+    // 取り込めなくても、元の教材データだけで今までどおり学習できる。
+    console.warn("AIの変更を取り込めませんでした", error);
+    return;
+  }
+  const merged = applyOverlayBySubject({
+    english: state.englishItems,
+    public: state.publicItems,
+    health: state.healthItems,
+    "kobun-vocab": state.kobunVocabItems,
+  }, overlay);
+  state.englishItems = merged.english;
+  state.publicItems = merged.public;
+  state.healthItems = merged.health;
+  state.kobunVocabItems = merged["kobun-vocab"];
+  // いま開いている教科の配列も、同じ内容へ差し替える。
+  if (state.subject) selectSubjectItems();
+}
+
+function selectSubjectItems() {
+  if (state.subject === "kobun") return;
+  state.items = isPublicSubject()
+    ? state.publicItems
+    : isHealthSubject()
+      ? state.healthItems
+      : isKobunVocabSubject()
+        ? state.kobunVocabItems
+        : state.englishItems;
+}
+
+/** 1問ごとの学習記録を残す。AI連携が無効のときは何もしない。 */
+function recordAiLinkAttempt({ itemId, mode, correct, durationMs }) {
+  if (!isAiLinkActive(state.aiLink)) return;
+  state.aiLinkJournal = appendJournalEntry(state.aiLinkJournal, {
+    itemId,
+    mode,
+    correct,
+    durationMs,
+    at: Date.now(),
+  });
+  setMeta(AI_LINK_JOURNAL_KEY, state.aiLinkJournal).catch(console.warn);
+  scheduleAiLinkSync();
+}
+
+function scheduleAiLinkSync({ delayMs = 20000 } = {}) {
+  if (!isAiLinkActive(state.aiLink)) return;
+  clearTimeout(aiLinkSyncTimer);
+  aiLinkSyncTimer = setTimeout(() => { syncAiLinkHistory().catch(console.warn); }, delayMs);
+}
+
+/** 学習履歴をサーバーへ預ける。失敗しても学習の邪魔はしない。 */
+async function syncAiLinkHistory({ force = false } = {}) {
+  if (!isAiLinkActive(state.aiLink) || aiLinkSyncing) return null;
+  if (!force && !aiLinkServerEnabled() && state.aiLinkStatus) return null;
+  aiLinkSyncing = true;
+  try {
+    const result = await aiLinkClient.syncHistory(state.aiLink, buildHistoryPayload({
+      history: state.history,
+      journal: state.aiLinkJournal,
+      deviceId: state.aiLink.deviceId,
+      sessions: state.lastSessionResult ? [state.lastSessionResult] : [],
+    }));
+    state.aiLink.lastSyncedAt = result.savedAt;
+    state.aiLinkError = null;
+    await saveAiLink();
+    return result;
+  } catch (error) {
+    state.aiLinkError = error.message;
+    return null;
+  } finally {
+    aiLinkSyncing = false;
+  }
+}
+
+/** 設定画面から「保存して接続を確認」を押したときの処理。 */
+async function connectAiLink(serverUrl, ownerKey) {
+  state.aiLink = normalizeAiLinkConfig({
+    ...state.aiLink,
+    serverUrl,
+    ownerKey,
+    deviceId: state.aiLink.deviceId ?? createDeviceId(),
+  });
+  await saveAiLink();
+  const status = await refreshAiLinkStatus();
+  if (status) showToast("MCP Serverにつながりました");
+  else showToast(state.aiLinkError ?? "つながりませんでした");
+  renderSettings();
+}
+
+async function setAiLinkEnabled(enabled) {
+  state.aiLinkBusy = true;
+  renderSettings();
+  try {
+    // サーバー側と端末側の両方を切り替える。片方だけ有効でも動かない。
+    await aiLinkClient.updateSettings(state.aiLink, { enabled });
+    state.aiLink.enabled = enabled;
+    await saveAiLink();
+    await refreshAiLinkStatus({ render: false });
+    if (enabled) {
+      await applyAiLinkOverlay();
+      await syncAiLinkHistory({ force: true });
+    }
+    showToast(enabled ? "AI連携を有効にしました" : "AI連携を無効にしました");
+  } catch (error) {
+    state.aiLinkError = error.message;
+    showToast(error.message);
+  } finally {
+    state.aiLinkBusy = false;
+    renderSettings();
+  }
+}
+
+async function setAiLinkPermission(scope, allowed) {
+  state.aiLinkBusy = true;
+  renderSettings();
+  try {
+    const result = await aiLinkClient.updateSettings(state.aiLink, { permissions: { [scope]: allowed } });
+    state.aiLinkStatus = { ...(state.aiLinkStatus ?? {}), permissions: result.permissions, enabled: result.enabled };
+    state.aiLinkError = null;
+  } catch (error) {
+    state.aiLinkError = error.message;
+    showToast(error.message);
+  } finally {
+    state.aiLinkBusy = false;
+    renderSettings();
+  }
+}
+
+async function issueAiLinkToken() {
+  state.aiLinkBusy = true;
+  renderSettings();
+  try {
+    // 発行しなおすと、前のトークンは使えなくなる。
+    const result = await aiLinkClient.issueToken(state.aiLink, ["read", "write", "delete"]);
+    state.aiLinkIssuedToken = result.token;
+    await refreshAiLinkStatus({ render: false });
+    showToast("接続トークンを発行しました");
+  } catch (error) {
+    state.aiLinkError = error.message;
+    showToast(error.message);
+  } finally {
+    state.aiLinkBusy = false;
+    renderSettings();
+  }
+}
+
+async function copyToClipboard(text, message) {
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast(message);
+  } catch {
+    showToast("コピーできませんでした。長押しで選んでください");
+  }
+}
+
+function aiLinkPermissionRow({ scope, title, detail, locked }) {
+  const permissions = state.aiLinkStatus?.permissions ?? {};
+  const checked = permissions[scope] === true;
+  const disabled = locked || state.aiLinkBusy || !state.aiLinkStatus;
+  return `
+    <label class="settings-row">
+      <span><strong>${escapeHtml(title)}</strong><small>${escapeHtml(detail)}</small></span>
+      <span class="switch"><input type="checkbox" data-ai-permission="${scope}" ${checked ? "checked" : ""} ${disabled ? "disabled" : ""}><span aria-hidden="true"></span></span>
+    </label>`;
+}
+
+function aiLinkCard() {
+  const configured = isAiLinkConfigured(state.aiLink);
+  const connection = connectionStateLabel({
+    configured,
+    enabled: state.aiLink.enabled,
+    serverEnabled: aiLinkServerEnabled(),
+    error: state.aiLinkError,
+  });
+  const mcpUrl = state.aiLinkStatus?.mcpUrl ?? mcpUrlFor(state.aiLink);
+  const token = state.aiLinkStatus?.token ?? null;
+  const log = state.aiLinkStatus?.log ?? [];
+
+  const setupRows = `
+    <div class="ai-link-field">
+      <label for="ai-link-url"><strong>MCP Server URL</strong><small>自分で用意したサーバーの場所。末尾の /mcp は付けても付けなくても構いません</small></label>
+      <input id="ai-link-url" class="settings-input" type="url" inputmode="url" autocomplete="off"
+        placeholder="https://words-mcp.example.workers.dev" value="${escapeHtml(state.aiLink.serverUrl)}">
+    </div>
+    <div class="ai-link-field">
+      <label for="ai-link-key"><strong>管理キー</strong><small>サーバーに設定した WORDS_OWNER_KEY。この端末の中だけに保存され、AIへは渡りません</small></label>
+      <input id="ai-link-key" class="settings-input" type="password" autocomplete="off"
+        placeholder="${configured ? "保存済み（変更するときだけ入力）" : "32文字以上のランダムな文字列"}">
+    </div>
+    <button class="secondary-button ai-link-connect" type="button" data-ai-connect ${state.aiLinkBusy ? "disabled" : ""}>
+      ${state.aiLinkBusy ? "確認中…" : configured ? "接続を確認しなおす" : "保存して接続を確認"}
+    </button>`;
+
+  const connectedRows = !configured ? "" : `
+    <label class="settings-row">
+      <span><strong>MCP Connector</strong><small>AIからwordsのデータを使えるようにします</small></span>
+      <span class="switch"><input type="checkbox" data-ai-enabled ${state.aiLink.enabled && aiLinkServerEnabled() ? "checked" : ""} ${state.aiLinkBusy || !state.aiLinkStatus ? "disabled" : ""}><span aria-hidden="true"></span></span>
+    </label>
+    <div class="settings-row">
+      <span><strong>接続状態</strong>${state.aiLinkError ? `<small>${escapeHtml(state.aiLinkError)}</small>` : ""}</span>
+      <span class="ai-link-state ai-link-state-${connection.tone}"><span aria-hidden="true">●</span>${escapeHtml(connection.text)}</span>
+    </div>
+    ${mcpUrl ? `
+    <div class="settings-row ai-link-url-row">
+      <span><strong>接続先のURL</strong><small>AIにはこのURLを登録します</small></span>
+      <span class="ai-link-url-value">
+        <code>${escapeHtml(mcpUrl)}</code>
+        <button class="text-button" type="button" data-ai-copy-url>コピー</button>
+      </span>
+    </div>` : ""}
+    <h3 class="ai-link-subheading">アクセス権限</h3>
+    <p class="settings-note">AIに渡す権限は、ここで入れたものだけです。追加・編集・削除は既定でオフになっています。</p>
+    ${AI_LINK_PERMISSION_ROWS.map(aiLinkPermissionRow).join("")}
+    <h3 class="ai-link-subheading">接続用トークン</h3>
+    ${state.aiLinkIssuedToken ? `
+      <div class="ai-link-token">
+        <p>この値をAIへ登録してください。<strong>この画面を離れると二度と表示されません。</strong></p>
+        <code>${escapeHtml(state.aiLinkIssuedToken)}</code>
+        <button class="text-button" type="button" data-ai-copy-token>コピー</button>
+      </div>` : `
+      <p class="settings-note">${token
+        ? `発行済み（${escapeHtml(token.preview)} / ${escapeHtml(token.createdAt?.slice(0, 10) ?? "")}${token.lastUsedAt ? ` · 最終利用 ${escapeHtml(token.lastUsedAt.slice(0, 10))}` : " · 未使用"}）`
+        : "まだ発行されていません。"}</p>`}
+    <div class="ai-link-actions">
+      <button class="secondary-button" type="button" data-ai-issue-token ${state.aiLinkBusy || !state.aiLinkStatus ? "disabled" : ""}>${token ? "再発行" : "接続トークンを発行"}</button>
+      <button class="text-button" type="button" data-ai-toggle-guide>${state.aiLinkShowGuide ? "接続方法を閉じる" : "接続方法を見る"}</button>
+    </div>
+    ${state.aiLinkShowGuide ? `
+      <div class="ai-link-guide">
+        ${connectionInstructions(mcpUrl).map((step) => `
+          <section>
+            <h4>${escapeHtml(step.title)}</h4>
+            <pre>${escapeHtml(step.body)}</pre>
+          </section>`).join("")}
+      </div>` : ""}
+    ${log.length ? `
+      <h3 class="ai-link-subheading">最近のAI操作</h3>
+      <ul class="ai-link-log">
+        ${log.slice(0, 8).map((entry) => `
+          <li>
+            <span class="ai-link-log-time">${escapeHtml(entry.at?.replace("T", " ").slice(0, 16) ?? "")}</span>
+            <span class="ai-link-log-body"><strong>${escapeHtml(entry.client ?? "AI")}</strong> ${escapeHtml(entry.tool)} — ${escapeHtml(entry.summary)}</span>
+          </li>`).join("")}
+      </ul>` : ""}`;
+
+  return `
+    <section class="settings-card ai-link-card">
+      <h2>AI連携（MCP）</h2>
+      <p>ClaudeなどのMCP対応AIから、wordsの問題と学習履歴を使えるようにします。使うには、自分でMCP Serverを用意する必要があります（README の「AI / MCP連携」を参照）。</p>
+      ${setupRows}
+      ${connectedRows}
+    </section>`;
+}
+
 function renderSettings() {
   const toggle = (key, title, detail) => `
     <label class="settings-row">
@@ -1380,6 +1722,7 @@ function renderSettings() {
       ${toggle("showSources", "出典を表示", "回答後に教材と範囲を表示")}
       ${toggle("useSystemKeyboard", "端末のキーボードを使う", "オフにすると、キーボード入力でアプリ内の小文字英字キーボードを表示します")}
     </section>
+    ${aiLinkCard()}
     <section class="settings-card">
       <h2>学習データ</h2><p>正誤履歴、最近の学習条件、設定をこの端末から削除します。</p>
       <button class="secondary-button danger-button" type="button" data-reset-data>学習データを初期化</button>
@@ -2398,7 +2741,12 @@ function setView(view) {
   if (view === "study-sort-other") renderStudySortOther();
   if (view === "list") renderList(true);
   if (view === "analysis") renderAnalysis();
+  // 設定画面を離れたら、表示していた接続トークンは残さない。
+  if (view !== "settings") state.aiLinkIssuedToken = null;
   if (view === "settings") renderSettings();
+  if (view === "settings" && isAiLinkConfigured(state.aiLink) && !state.aiLinkStatus && !state.aiLinkBusy) {
+    refreshAiLinkStatus().catch(console.warn);
+  }
   if (view === "kobun") kobun.show(kobunScreen ?? "home");
   applySettings();
 }
@@ -3821,6 +4169,13 @@ async function submitAnswer(
       durationMs,
     );
     state.history.set(question.item.id, savedHistory);
+    // AI連携が有効なときだけ、1問ごとの記録も残す（無効なら何もしない）。
+    recordAiLinkAttempt({
+      itemId: question.item.id,
+      mode: question.mode,
+      correct,
+      durationMs,
+    });
   } catch (error) {
     console.error(error);
     showToast("履歴の保存に失敗しました");
@@ -4445,6 +4800,8 @@ function bindEvents() {
       resetMaxEffects({ keepAmbience: true });
       maxAudio.stopAll({ suspend: true });
       stashStudyProgress();
+      // 送れなかったぶんは端末に残り、次の起動時にまとめて送られる。
+      if (isAiLinkActive(state.aiLink)) syncAiLinkHistory().catch(() => {});
     }
   });
   // タブを閉じる・別ページへ移る直前にも、学習の進み具合を控えへ逃がす。
@@ -4481,6 +4838,23 @@ function bindEvents() {
         unlockMaxAudio();
         triggerMaxEntrance("ON");
       }
+    }
+    if (target.dataset.aiConnect !== undefined) {
+      const url = document.getElementById("ai-link-url")?.value ?? "";
+      const key = document.getElementById("ai-link-key")?.value ?? "";
+      // 管理キーは、入力されたときだけ差し替える（毎回入れ直さずに済むように）。
+      connectAiLink(url, key.trim() || state.aiLink.ownerKey).catch(console.warn);
+    }
+    if (target.dataset.aiCopyUrl !== undefined) {
+      copyToClipboard(state.aiLinkStatus?.mcpUrl ?? mcpUrlFor(state.aiLink), "URLをコピーしました");
+    }
+    if (target.dataset.aiCopyToken !== undefined && state.aiLinkIssuedToken) {
+      copyToClipboard(state.aiLinkIssuedToken, "接続トークンをコピーしました");
+    }
+    if (target.dataset.aiIssueToken !== undefined) issueAiLinkToken().catch(console.warn);
+    if (target.dataset.aiToggleGuide !== undefined) {
+      state.aiLinkShowGuide = !state.aiLinkShowGuide;
+      renderSettings();
     }
     if (target.dataset.themePreference) {
       state.settings.theme = normalizeThemePreference(target.dataset.themePreference);
@@ -4728,6 +5102,15 @@ function bindEvents() {
       englishSpeech.speak(SPEECH_RATE_SAMPLE, speechOptions((questionSpeechToken += 1)));
       return;
     }
+    if (event.target.dataset?.aiEnabled !== undefined) {
+      setAiLinkEnabled(event.target.checked).catch(console.warn);
+      return;
+    }
+    const permissionScope = event.target.dataset?.aiPermission;
+    if (permissionScope) {
+      setAiLinkPermission(permissionScope, event.target.checked).catch(console.warn);
+      return;
+    }
     const setting = event.target.dataset?.setting;
     if (!setting || !(setting in state.settings)) return;
     state.settings[setting] = event.target.checked;
@@ -4829,11 +5212,11 @@ async function boot() {
     if (themePreference() === "system") applyTheme();
   });
   try {
-    const [response, publicResponse, healthResponse, vocabResponse, history, selectedMode, settings, bestCombo, selectedPeriod, studyConfigs, legacyRecentStudies, studyProgress, lastSessionResult] = await Promise.all([
+    const [response, publicResponse, healthResponse, vocabResponse, history, selectedMode, settings, bestCombo, selectedPeriod, studyConfigs, legacyRecentStudies, studyProgress, lastSessionResult, aiLink, aiLinkJournal] = await Promise.all([
       fetch("./data/items.json?v=2026.08.31b"),
       fetch("./data/public-items.json?v=2026.09.01"),
       fetch("./data/health-items.json?v=2026.09.01"),
-      fetch("./data/kobun-vocabulary.json?v=2026.9.36"),
+      fetch("./data/kobun-vocabulary.json?v=2026.9.37"),
       loadHistory(),
       getMeta("selectedMode"),
       getMetaObject("settings", DEFAULT_SETTINGS),
@@ -4843,6 +5226,8 @@ async function boot() {
       getMeta("recentStudies", []),
       getMetaObject("studyProgress", {}),
       getMeta("lastSessionResult", null),
+      getMetaObject(AI_LINK_META_KEY, DEFAULT_AI_LINK),
+      getMeta(AI_LINK_JOURNAL_KEY, []),
     ]);
     if (!response.ok) throw new Error(`教材データを読み込めませんでした (${response.status})`);
     if (!publicResponse.ok) throw new Error(`公共データを読み込めませんでした (${publicResponse.status})`);
@@ -4883,11 +5268,20 @@ async function boot() {
     adoptLegacyStudyConfigs(legacyRecentStudies);
     state.lastSessionResult = normalizeSessionResultSnapshot(lastSessionResult);
     state.selectedPeriod = selectedPeriod === "2026.2" ? selectedPeriod : null;
+    state.aiLink = normalizeAiLinkConfig(aiLink);
+    state.aiLinkJournal = Array.isArray(aiLinkJournal) ? aiLinkJournal : [];
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");
     haptics.start();
+    // AI連携が有効なときだけ、AIの変更を取り込んで履歴を預ける。
+    // 画面の表示は待たせない。失敗しても今までどおり学習できる。
+    if (isAiLinkActive(state.aiLink)) {
+      applyAiLinkOverlay()
+        .then(() => syncAiLinkHistory())
+        .catch((error) => console.warn("AI連携の同期に失敗しました", error));
+    }
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.36").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.37").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

@@ -15,8 +15,8 @@ compatibility_date = "2026-07-01"
 compatibility_flags = ["nodejs_compat"]
 
 [vars]
-# 公開可能な設定だけをここに書く。
 WORDS_SITE_ORIGIN = "https://hsgwyuki0429-design.github.io/words"
+WORDS_ALLOWED_ORIGINS = "https://hsgwyuki0429-design.github.io"
 
 [[kv_namespaces]]
 binding = "WORDS_KV"

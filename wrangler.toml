@@ -19,4 +19,4 @@ WORDS_SITE_ORIGIN = "https://hsgwyuki0429-design.github.io/words"
 
 [[kv_namespaces]]
 binding = "WORDS_KV"
-id = "ここに wrangler kv namespace create WORDS_KV の id を貼る"
+id = "ee882be240e24dafa3729e2cecbd68c4"

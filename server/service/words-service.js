@@ -17,6 +17,7 @@ import { getHistory, historyForModes } from "../../src/logic.js";
 import { ValidationError, fail, readEnum, readId, readInteger, readString, readStringArray } from "../core/validate.js";
 import { pushCapped, updateDocument } from "../storage/driver.js";
 import { buildQuestion, patchQuestion } from "./question-input.js";
+import { mergeRecordMaps } from "./history-merge.js";
 import { SUBJECTS, SUBJECT_IDS, answerText, explanationText, questionText, subjectOf } from "./subjects.js";
 
 export const DATA_SCHEMA_VERSION = 1;
@@ -110,6 +111,8 @@ export function detailQuestion(item, record = null) {
 export function createWordsService({
   catalog,
   storage,
+  // 学習者と端末をまとめる層。学習履歴はすべてここ越しに読む。
+  sync,
   now = () => Date.now(),
   idSuffix = () => Math.random().toString(36).slice(2, 8),
 }) {
@@ -122,8 +125,13 @@ export function createWordsService({
     return readDocument(STORAGE_KEYS.overlay, DEFAULT_OVERLAY);
   }
 
-  async function readHistory() {
-    return readDocument(STORAGE_KEYS.history, DEFAULT_HISTORY);
+  /**
+   * 学習履歴を読む。learner を渡すとその人ぶん、省略すると全員ぶんを合わせて返す。
+   * 端末をまたいだ合算は同期層が受け持つので、ここでは結果を受け取るだけでよい。
+   */
+  async function readHistory(learner = null) {
+    if (!sync) return readDocument(STORAGE_KEYS.history, DEFAULT_HISTORY);
+    return sync.historyFor(learner);
   }
 
   /** 教材データに重ね合わせを適用して、いまの問題一覧を作る。 */
@@ -228,8 +236,8 @@ export function createWordsService({
   };
 
   /** 検索と一覧の共通処理。件数は必ず上限で区切り、続きは offset で取る。 */
-  async function queryQuestions(filters = {}, { limit, offset = 0, sort = "id", includeDeleted = false } = {}) {
-    const [{ items }, history] = await Promise.all([resolveItems({ includeDeleted }), readHistory()]);
+  async function queryQuestions(filters = {}, { limit, offset = 0, sort = "id", includeDeleted = false, learner = null } = {}) {
+    const [{ items }, history] = await Promise.all([resolveItems({ includeDeleted }), readHistory(learner)]);
     const records = history.records ?? {};
     const rows = items
       .map((item) => ({ item, record: getHistory(records, item.id) }))
@@ -283,6 +291,8 @@ export function createWordsService({
           questionsWithHistory: Object.keys(history.records ?? {}).length,
           journalEntries: (history.journal ?? []).length,
         },
+        // 問題は全員で共有し、学習履歴だけが学習者ごとに分かれる。
+        learners: (history.learners ?? []).map((learner) => learner.name),
         permissions: settings.permissions ?? null,
         limits: SERVICE_LIMITS,
       };
@@ -298,8 +308,9 @@ export function createWordsService({
         {
           limit: readInteger(params.limit, "limit", { min: 1, max: SERVICE_LIMITS.searchLimitMax }),
           offset: readInteger(params.offset, "offset", { min: 0, fallback: 0 }),
-          sort: readEnum(params.sort, "sort", Object.keys(SORTERS), { fallback: keywords.length ? "id" : "id" }),
+          sort: readEnum(params.sort, "sort", Object.keys(SORTERS), { fallback: "id" }),
           includeDeleted: params.includeDeleted === true,
+          learner: readString(params.learner, "learner", { max: 60 }),
         },
       );
     },
@@ -310,12 +321,14 @@ export function createWordsService({
         offset: readInteger(params.offset, "offset", { min: 0, fallback: 0 }),
         sort: readEnum(params.sort, "sort", Object.keys(SORTERS), { fallback: "id" }),
         includeDeleted: params.includeDeleted === true,
+        learner: readString(params.learner, "learner", { max: 60 }),
       });
     },
 
     async getQuestion(params = {}) {
       const id = readId(params.id, "id");
-      const [{ item, overlay }, history] = await Promise.all([findItem(id), readHistory()]);
+      const learner = readString(params.learner, "learner", { max: 60 });
+      const [{ item, overlay }, history] = await Promise.all([findItem(id), readHistory(learner)]);
       if (!item) fail(`問題 ${id} は見つかりませんでした。`, "id");
       const detail = detailQuestion(item, getHistory(history.records ?? {}, id));
       detail.edited = Boolean(overlay.patched[id]);
@@ -459,7 +472,8 @@ export function createWordsService({
     // ------------------------------------------------------------------
 
     async getStudyStats(params = {}) {
-      const [{ items }, history] = await Promise.all([resolveItems(), readHistory()]);
+      const learner = readString(params.learner, "learner", { max: 60 });
+      const [{ items }, history] = await Promise.all([resolveItems(), readHistory(learner)]);
       const records = history.records ?? {};
       const modes = readStringArray(params.modes, "modes", { max: 12 }) ?? [];
       const subjects = readStringArray(params.subjects, "subjects", { max: 4, allowed: SUBJECT_IDS }) ?? SUBJECT_IDS;
@@ -513,8 +527,24 @@ export function createWordsService({
         dailyMap.set(key, day);
       });
 
+      // 学習者が複数いて、誰とも指定が無いときは、人ごとの成績も添える。
+      const perLearner = !learner && (history.learners ?? []).length > 1 && sync
+        ? await Promise.all((await sync.historyByLearner()).map(async (entry) => {
+          const learnerRows = scoped.map((item) => ({
+            item,
+            record: modes.length
+              ? historyForModes(getHistory(entry.records, item.id), modes)
+              : getHistory(entry.records, item.id),
+          }));
+          return { learner: entry.name, learnerId: entry.id, ...tally(learnerRows) };
+        }))
+        : null;
+
       return {
         syncedAt: history.updatedAt,
+        learner: learner ?? null,
+        learners: history.learners ?? [],
+        byLearner: perLearner,
         modes: modes.length ? modes : null,
         overall: tally(rows),
         bySubject: groupBy((item) => subjectOf(item)).map((group) => ({
@@ -545,7 +575,8 @@ export function createWordsService({
         ? readInteger(params.since, "since", { min: 0 })
         : startOfDay(now(), offsetMinutes) - (days - 1) * 86400000;
 
-      const [{ items }, history] = await Promise.all([resolveItems(), readHistory()]);
+      const learner = readString(params.learner, "learner", { max: 60 });
+      const [{ items }, history] = await Promise.all([resolveItems(), readHistory(learner)]);
       const records = history.records ?? {};
       const subjects = readStringArray(params.subjects, "subjects", { max: 4, allowed: SUBJECT_IDS });
       const byId = new Map(items.map((item) => [item.id, item]));
@@ -557,11 +588,13 @@ export function createWordsService({
         const item = byId.get(entry.itemId);
         if (!item) return;
         if (subjects?.length && !subjects.includes(subjectOf(item))) return;
-        const current = fromJournal.get(entry.itemId) ?? { item, times: 0, lastAt: 0, modes: new Set() };
+        const key = entry.learner ? `${entry.learner}|${entry.itemId}` : entry.itemId;
+        const current = fromJournal.get(key)
+          ?? { item, times: 0, lastAt: 0, modes: new Set(), learner: entry.learner ?? null };
         current.times += 1;
         current.lastAt = Math.max(current.lastAt, entry.at);
         if (entry.mode) current.modes.add(entry.mode);
-        fromJournal.set(entry.itemId, current);
+        fromJournal.set(key, current);
       });
 
       let rows;
@@ -575,6 +608,7 @@ export function createWordsService({
             missedTimes: entry.times,
             missedAt: new Date(entry.lastAt).toISOString(),
             modes: [...entry.modes],
+            ...(entry.learner ? { learner: entry.learner } : {}),
           }));
       } else {
         source = "history";
@@ -594,6 +628,8 @@ export function createWordsService({
         since: new Date(since).toISOString(),
         days,
         source,
+        learner: learner ?? null,
+        learners: history.learners ?? [],
         syncedAt: history.updatedAt,
         total: rows.length,
         returned: Math.min(rows.length, limit),
@@ -608,7 +644,8 @@ export function createWordsService({
       const days = readInteger(params.days, "days", { min: 1, max: 365, fallback: 7 });
       const limit = readInteger(params.limit, "limit", { min: 1, max: 200, fallback: 50 });
       const since = startOfDay(now(), offsetMinutes) - (days - 1) * 86400000;
-      const [{ items }, history] = await Promise.all([resolveItems({ includeDeleted: true }), readHistory()]);
+      const learner = readString(params.learner, "learner", { max: 60 });
+      const [{ items }, history] = await Promise.all([resolveItems({ includeDeleted: true }), readHistory(learner)]);
       const byId = new Map(items.map((item) => [item.id, item]));
       const onlyWrong = params.onlyWrong === true;
 
@@ -628,12 +665,15 @@ export function createWordsService({
             correct: Boolean(entry.correct),
             mode: entry.mode ?? null,
             durationMs: entry.durationMs ?? null,
+            ...(entry.learner ? { learner: entry.learner } : {}),
           };
         });
 
       return {
         since: new Date(since).toISOString(),
         days,
+        learner: learner ?? null,
+        learners: history.learners ?? [],
         syncedAt: history.updatedAt,
         available: (history.journal ?? []).length > 0,
         note: (history.journal ?? []).length
@@ -671,19 +711,27 @@ export function createWordsService({
             durationMs: Number.isFinite(entry.durationMs) ? entry.durationMs : null,
           }))
         : [];
-      const document = {
-        updatedAt: new Date(now()).toISOString(),
-        deviceId: readString(payload.deviceId, "deviceId", { max: 80 }),
+      const savedAt = new Date(now()).toISOString();
+      const sessions = Array.isArray(payload.sessions) ? payload.sessions.slice(0, 20) : [];
+      if (!sync) {
+        await storage.put(STORAGE_KEYS.history, {
+          updatedAt: savedAt,
+          deviceId: readString(payload.deviceId, "deviceId", { max: 80 }),
+          records: Object.fromEntries(entries),
+          journal,
+          sessions,
+        });
+        return { savedAt, records: entries.length, journal: journal.length };
+      }
+      // 学習者を分ける前からある入口。学習者を作っていなければ「本人」を用意し、
+      // この端末ぶんとして預かる。ほかの端末の記録とは正しく合算される。
+      const result = await sync.saveOwnerSnapshot({
         records: Object.fromEntries(entries),
         journal,
-        sessions: Array.isArray(payload.sessions) ? payload.sessions.slice(0, 20) : [],
-      };
-      await storage.put(STORAGE_KEYS.history, { ...document, revision: (await readHistory()).revision ?? 0 });
-      return {
-        savedAt: document.updatedAt,
-        records: entries.length,
-        journal: journal.length,
-      };
+        sessions,
+        deviceId: readString(payload.deviceId, "deviceId", { max: 80 }),
+      });
+      return { savedAt, records: entries.length, journal: journal.length, learner: result.learnerName };
     },
 
     /** wordsの画面が、AIによる追加・変更・削除を取り込むための差分。 */

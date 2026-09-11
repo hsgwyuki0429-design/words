@@ -20,6 +20,7 @@ import {
 import { SERVER_INSTRUCTIONS, createTools } from "./tools.js";
 import { createQuestionCatalog, createFetchDataSource } from "./service/data-source.js";
 import { createWordsService } from "./service/words-service.js";
+import { createSyncService } from "./service/sync-service.js";
 
 export const SERVER_INFO = Object.freeze({
   name: "words",
@@ -84,7 +85,8 @@ export function createWordsMcpApp({ storage, env = {}, catalog = null, now = () 
   const config = readConfig(env);
   const questionCatalog = catalog
     ?? createQuestionCatalog(createFetchDataSource(config.dataBaseUrl));
-  const service = createWordsService({ catalog: questionCatalog, storage, now });
+  const sync = createSyncService({ storage, now });
+  const service = createWordsService({ catalog: questionCatalog, storage, sync, now });
   const auth = createAuth({ storage, ownerKey: config.ownerKey, now });
   const oauth = createOAuth({ storage, now });
   const mcp = createMcpServer({
@@ -180,6 +182,7 @@ export function createWordsMcpApp({ storage, env = {}, catalog = null, now = () 
     const body = await request.text();
     const { status, body: response } = await mcp.handle(body, request.headers, {
       service,
+      sync,
       actor: authenticated.actor,
     });
     if (response === null) return new Response(null, { status });
@@ -243,6 +246,32 @@ export function createWordsMcpApp({ storage, env = {}, catalog = null, now = () 
       return json(await auth.revokeTokens());
     }
 
+    if (path === "/api/admin/learners" && request.method === "GET") {
+      return json(await sync.listLearners());
+    }
+
+    if (path === "/api/admin/learners" && request.method === "POST") {
+      const body = await readJsonBody(request);
+      // 同期コードを返すのはここだけ。保存してあるのはハッシュだけなので、
+      // 見失ったら作り直す（再発行）ことになる。
+      return json(await sync.createLearner({ name: body.name }));
+    }
+
+    if (path === "/api/admin/learners" && request.method === "DELETE") {
+      const body = await readJsonBody(request);
+      return json(await sync.deleteLearner({ id: body.id, confirm: body.confirm }));
+    }
+
+    if (path === "/api/admin/learners/code" && request.method === "POST") {
+      const body = await readJsonBody(request);
+      return json(await sync.reissueSyncCode({ id: body.id }));
+    }
+
+    if (path === "/api/admin/learners/name" && request.method === "POST") {
+      const body = await readJsonBody(request);
+      return json(await sync.renameLearner({ id: body.id, name: body.name }));
+    }
+
     if (path === "/api/admin/log" && request.method === "GET") {
       const limit = Number(new URL(request.url).searchParams.get("limit") ?? 20);
       return json(await service.getOperationLog({ limit }));
@@ -261,7 +290,56 @@ export function createWordsMcpApp({ storage, env = {}, catalog = null, now = () 
     return json({ error: "not_found" }, { status: 404 });
   }
 
+  /**
+   * 端末の同期。ここだけは管理キーではなく、端末ごとの鍵で守る。
+   * 生徒には管理キーを渡さず、同期コードだけを渡せばよくなる。
+   */
+  async function handleDeviceSync(request, path) {
+    // 登録は同期コードで行う。ここを通ったときだけ端末キーを配る。
+    if (path === "/api/sync/join" && request.method === "POST") {
+      const body = await readJsonBody(request);
+      const joined = await sync.joinDevice({ code: body.code, deviceName: body.deviceName });
+      return json({ ...joined, overlay: await service.getOverlay() });
+    }
+
+    const deviceKey = bearerOf(request);
+    const device = deviceKey ? await sync.resolveDeviceKey(deviceKey) : null;
+    if (!device) {
+      return json({
+        error: "unauthorized",
+        message: "この端末の同期は解除されています。設定画面から接続しなおしてください。",
+      }, { status: 401 });
+    }
+
+    if (path === "/api/sync/push" && request.method === "POST") {
+      const body = await readJsonBody(request);
+      const saved = await sync.push(device.learnerId, device.deviceId, body);
+      // 送ったあとの合算結果をそのまま返す。往復を1回で済ませるため。
+      return json({ ...saved, snapshot: await sync.pull(device.learnerId), learner: device.learnerName });
+    }
+
+    if (path === "/api/sync/pull" && request.method === "GET") {
+      return json({
+        ...(await sync.pull(device.learnerId)),
+        learner: device.learnerName,
+        deviceName: device.deviceName,
+        overlay: await service.getOverlay(),
+      });
+    }
+
+    if (path === "/api/sync/leave" && request.method === "POST") {
+      return json(await sync.leaveDevice(device.learnerId, device.deviceId));
+    }
+
+    return json({ error: "not_found" }, { status: 404 });
+  }
+
   async function handleSync(request, path) {
+    // 端末ごとの鍵で使う入口は、管理キーを求めない。
+    if (["/api/sync/join", "/api/sync/push", "/api/sync/pull", "/api/sync/leave"].includes(path)) {
+      return handleDeviceSync(request, path);
+    }
+
     const denied = ownerGuard(request);
     if (denied) return denied;
 
@@ -443,6 +521,7 @@ code{background:#f0f0f3;padding:2px 6px;border-radius:6px}:root{color-scheme:lig
   return {
     config,
     service,
+    sync,
     auth,
     oauth,
     mcp,

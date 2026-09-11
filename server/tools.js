@@ -16,6 +16,13 @@ const RANGE_HINT = SUBJECT_IDS
   .map((subject) => `${SUBJECTS[subject].label}(${subject}): ${SUBJECTS[subject].ranges.join(" / ")}`)
   .join("\n");
 
+/** 誰の学習データかを指す。名前でもIDでも受け取れる。 */
+const LEARNER_PROPERTY = {
+  type: "string",
+  maxLength: 60,
+  description: "どの学習者のデータかを名前またはIDで指定する。省略すると全員ぶんをまとめて返す（学習者が1人ならその人のデータ）。名前が分からないときは listLearners を呼ぶ。",
+};
+
 /** 一覧・検索で共通して使える絞り込み条件。 */
 const FILTER_PROPERTIES = {
   subjects: {
@@ -43,6 +50,7 @@ const FILTER_PROPERTIES = {
   },
   minimumWrong: { type: "integer", minimum: 0, description: "この回数以上間違えた問題だけに絞る。" },
   aiAddedOnly: { type: "boolean", description: "AI経由で追加された問題だけに絞る。" },
+  learner: LEARNER_PROPERTY,
   limit: {
     type: "integer",
     minimum: 1,
@@ -173,7 +181,13 @@ export function createTools() {
       description: "問題IDを指定して1問の詳細（問題文・答え・解説・選択肢・タグ・出典・その問題の学習成績）を取得する。",
       scope: "read",
       annotations: { readOnlyHint: true, openWorldHint: false },
-      inputSchema: { properties: { id: { type: "string", description: "問題ID。" } }, required: ["id"] },
+      inputSchema: {
+        properties: {
+          id: { type: "string", description: "問題ID。" },
+          learner: LEARNER_PROPERTY,
+        },
+        required: ["id"],
+      },
       run: (args, { service }) => service.getQuestion(args),
     }),
 
@@ -264,6 +278,25 @@ export function createTools() {
     }),
 
     defineTool({
+      name: "listLearners",
+      title: "学習者の一覧",
+      description: "wordsを使っている学習者（生徒や自分自身）の一覧を返す。それぞれが何台の端末で使っているか、最後に同期したのがいつかも分かる。誰かの成績を見るときは、まずここで名前を確かめる。学習者が1人しかいない場合、ほかのツールでは learner を省略できる。",
+      scope: "read",
+      annotations: { readOnlyHint: true, openWorldHint: false },
+      inputSchema: { properties: {} },
+      run: async (_args, { sync }) => {
+        if (!sync) return { learners: [], total: 0, note: "このサーバーは学習者の管理に対応していません。" };
+        const result = await sync.listLearners();
+        return {
+          ...result,
+          note: result.total === 0
+            ? "まだ学習者が登録されていません。wordsの設定画面 → AI連携 から追加できます。"
+            : null,
+        };
+      },
+    }),
+
+    defineTool({
       name: "getStudyStats",
       title: "学習統計",
       description: "回答数・正解数・正答率を、全体／教科別／範囲別／重要度別に返す。直近の学習状況（日ごとの回答数と正解数）も含む。学習履歴はwordsの設定画面でAI連携を有効にしたときだけ同期される。",
@@ -274,6 +307,7 @@ export function createTools() {
           subjects: { type: "array", items: { type: "string", enum: [...SUBJECT_IDS] }, description: "教科で絞る。" },
           modes: { type: "array", items: { type: "string" }, description: "出題形式で絞る（例: ja_to_en_input）。" },
           recentDays: { type: "integer", minimum: 1, maximum: 90, description: "直近何日ぶんの学習状況を返すか。既定は7。" },
+          learner: LEARNER_PROPERTY,
           timezoneOffsetMinutes: TIMEZONE_PROPERTY,
         },
       },
@@ -291,6 +325,7 @@ export function createTools() {
           days: { type: "integer", minimum: 1, maximum: 365, description: "今日から何日ぶんさかのぼるか。既定は1（今日）。" },
           limit: { type: "integer", minimum: 1, maximum: SERVICE_LIMITS.searchLimitMax, description: "返す件数。既定は20。" },
           subjects: { type: "array", items: { type: "string", enum: [...SUBJECT_IDS] }, description: "教科で絞る。" },
+          learner: LEARNER_PROPERTY,
           timezoneOffsetMinutes: TIMEZONE_PROPERTY,
         },
       },
@@ -308,6 +343,7 @@ export function createTools() {
           days: { type: "integer", minimum: 1, maximum: 365, description: "今日から何日ぶんさかのぼるか。既定は7。" },
           limit: { type: "integer", minimum: 1, maximum: 200, description: "返す件数。既定は50。" },
           onlyWrong: { type: "boolean", description: "間違えた記録だけに絞る。" },
+          learner: LEARNER_PROPERTY,
           timezoneOffsetMinutes: TIMEZONE_PROPERTY,
         },
       },
@@ -326,6 +362,9 @@ export const SERVER_INSTRUCTIONS = `words は、英語・古文単語・公共�
 - 問題を探すときは searchQuestions、条件だけで絞るときは listQuestions を使います。
   返る件数には上限があるので、続きは nextOffset を offset に渡してください。
 - 「今日間違えた問題」は getRecentMistakes（days=1）、「最近の成績」は getStudyStats です。
+- 学習者（生徒）が複数いる場合は、listLearners で名前を確かめてから
+  learner に名前を渡してください。渡さないと全員ぶんをまとめた結果になります。
+  問題はみんなで共有していて、分かれているのは学習履歴と成績だけです。
 - 問題の追加・編集・削除は、利用者が words の設定画面で許可したときだけ行えます。
   権限が無い場合はその旨が返るので、利用者に設定を促してください。
 - 削除は必ず1問ずつ、利用者に確認してから confirm: true で実行してください。

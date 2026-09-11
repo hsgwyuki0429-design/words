@@ -124,15 +124,15 @@ test("接続トークンでは管理APIを操作できない（権限の格上�
   assert.equal(response.status, 401);
 });
 
-test("Tools一覧を取得でき、必要な11個がそろっている", async () => {
+test("Tools一覧を取得でき、必要な12個がそろっている", async () => {
   const harness = newApp();
   const token = await connect(harness);
   const body = await (await mcpCall(harness, token, "tools/list")).json();
   const names = body.result.tools.map((entry) => entry.name);
   assert.deepEqual(names.sort(), [
     "addQuestions", "deleteQuestion", "getAppInfo", "getQuestion", "getRecentMistakes",
-    "getStudyHistory", "getStudyStats", "listQuestions", "restoreQuestion", "searchQuestions",
-    "updateQuestion",
+    "getStudyHistory", "getStudyStats", "listLearners", "listQuestions", "restoreQuestion",
+    "searchQuestions", "updateQuestion",
   ]);
   body.result.tools.forEach((entry) => {
     assert.equal(entry.inputSchema.type, "object", `${entry.name} の入力形式が要る`);

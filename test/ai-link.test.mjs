@@ -72,6 +72,29 @@ test("追加された問題は、その教科の一覧にだけ入る", () => {
   assert.deepEqual(merged.public.map((item) => item.id), ["p1", "new-public"]);
 });
 
+test("1問ごとの記録は、同期に要る目印（eventId・seq）を落とさない", () => {
+  // ここを落とすと「どこまで送ったか」が分からなくなり、
+  // 送ったはずの記録が届かないまま端末の履歴が消えてしまう。
+  const journal = appendJournalEntry([], {
+    eventId: "device-1-7",
+    seq: 7,
+    itemId: "health-0001",
+    at: 1000,
+    correct: false,
+    mode: "health_recall",
+    durationMs: 2500,
+  });
+  assert.equal(journal[0].eventId, "device-1-7");
+  assert.equal(journal[0].seq, 7);
+  assert.equal(journal[0].itemId, "health-0001");
+  assert.equal(journal[0].durationMs, 2500);
+
+  // 目印が無い記録も、そのまま受け取れる。
+  const plain = appendJournalEntry([], { itemId: "x", correct: true, at: 1 });
+  assert.equal("eventId" in plain[0], false);
+  assert.equal("seq" in plain[0], false);
+});
+
 test("1問ごとの学習記録は新しい順に積まれ、上限を超えない", () => {
   let journal = [];
   for (let index = 0; index < JOURNAL_LIMIT + 10; index += 1) {
@@ -172,21 +195,26 @@ test("権限は read / write / delete に分かれ、初期状態では読み取
   assert.ok(appSource.includes("既定でオフ"), "既定でオフである旨を画面に書いている");
 });
 
-test("AI連携が無効なあいだは、学習の記録も同期も行わない", () => {
+test("AI連携も同期も使っていないあいだは、学習の記録も通信も行わない", () => {
   assert.match(
     appSource,
-    /function recordAiLinkAttempt\(\{[\s\S]*?if \(!isAiLinkActive\(state\.aiLink\)\) return;/,
-    "無効なら1問ごとの記録を残さない",
+    /function recordAiLinkAttempt\(\{[\s\S]*?if \(!isAiLinkActive\(state\.aiLink\) && !isSyncConnected\(state\.deviceSync\)\) return;/,
+    "どちらも使っていなければ1問ごとの記録を残さない",
   );
   assert.match(
     appSource,
-    /async function syncAiLinkHistory\([\s\S]*?if \(!isAiLinkActive\(state\.aiLink\) \|\| aiLinkSyncing\) return null;/,
-    "無効なら履歴を送らない",
+    /function scheduleAiLinkSync\([\s\S]*?if \(!isSyncConnected\(state\.deviceSync\) && !isAiLinkActive\(state\.aiLink\)\) return;/,
+    "どちらも使っていなければ送信の予約もしない",
   );
   assert.match(
     appSource,
-    /if \(isAiLinkActive\(state\.aiLink\)\) \{\s*\n\s*applyAiLinkOverlay\(\)/,
-    "起動時の取り込みも有効なときだけ",
+    /async function syncDeviceNow\([\s\S]*?if \(!isSyncConnected\(state\.deviceSync\) \|\| aiLinkSyncing\) return null;/,
+    "接続していなければ同期しない",
+  );
+  assert.match(
+    appSource,
+    /if \(isSyncConnected\(state\.deviceSync\)\) \{[\s\S]*?\} else if \(isAiLinkActive\(state\.aiLink\)\) \{/,
+    "起動時の通信も、接続しているときだけ",
   );
 });
 

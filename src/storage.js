@@ -275,6 +275,37 @@ export async function putHistory(record) {
   }
 }
 
+/**
+ * 端末をまたいで合わせたあとの学習履歴を、まとめて置き換える。
+ * 1件ずつ書くと途中で止まったときに食い違うので、まとめて入れ替える。
+ */
+export async function replaceHistory(records = {}) {
+  if (dataCleared) return;
+  const list = Object.values(records).filter((record) => record?.itemId);
+  await openDatabase();
+  const writeToFallback = () => {
+    const data = fallbackData();
+    data.history = Object.fromEntries(list.map((record) => [record.itemId, record]));
+    if (!writeFallback(data)) throw new Error("学習履歴を保存できませんでした");
+  };
+  if (useFallback) {
+    writeToFallback();
+    return;
+  }
+  try {
+    await transaction(HISTORY_STORE, "readwrite", (store) => store.clear());
+    // 1つの取引でまとめて入れ、全部そろってから確定させる。
+    const database = await openDatabase();
+    await runTransaction(database, HISTORY_STORE, "readwrite", (store) => {
+      list.forEach((record) => store.put(record));
+      return { value: list.length };
+    });
+  } catch (error) {
+    switchToFallback(error);
+    writeToFallback();
+  }
+}
+
 export async function removeHistory(itemId) {
   if (dataCleared) return;
   await openDatabase();

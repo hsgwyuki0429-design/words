@@ -1,5 +1,5 @@
-import { createHaptics } from "./haptics.js?v=2026.9.37";
-import { createKobunController } from "./kobun.js?v=2026.9.37";
+import { createHaptics } from "./haptics.js?v=2026.9.38";
+import { createKobunController } from "./kobun.js?v=2026.9.38";
 import {
   ALL_MODES,
   ALPHABET_KEYBOARD_ROWS,
@@ -72,7 +72,7 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.37";
+} from "./logic.js?v=2026.9.38";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -89,10 +89,11 @@ import {
   loadHistory,
   putHistory,
   recordAttempt,
+  replaceHistory,
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.9.37";
+} from "./storage.js?v=2026.9.38";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -100,7 +101,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.37";
+} from "./quiz-gestures.js?v=2026.9.38";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
@@ -109,7 +110,7 @@ import {
   normalizeSpeechRate,
   normalizeSpeechVoiceURI,
   voiceKey,
-} from "./speech.js?v=2026.9.37";
+} from "./speech.js?v=2026.9.38";
 import {
   AI_LINK_JOURNAL_KEY,
   AI_LINK_META_KEY,
@@ -125,13 +126,30 @@ import {
   isAiLinkConfigured,
   mcpUrlFor,
   normalizeAiLinkConfig,
-} from "./ai-link.js?v=2026.9.37";
+} from "./ai-link.js?v=2026.9.38";
+import {
+  DEFAULT_DEVICE_SYNC,
+  DEVICE_SYNC_META_KEY,
+  buildTransferFile,
+  createJournalEntry,
+  createSyncClient,
+  guessDeviceName,
+  highestSeq,
+  isSyncConnected,
+  mergeStudyProgress,
+  normalizeDeviceSync,
+  readTransferFile,
+  relativeTimeLabel,
+  syncStateLabel,
+  transferFileName,
+  unsentEntries,
+} from "./sync.js?v=2026.9.38";
 import {
   applyThemePreference,
   normalizeThemePreference,
   readStoredThemePreference,
   watchSystemTheme,
-} from "./theme.js?v=2026.9.37";
+} from "./theme.js?v=2026.9.38";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -205,6 +223,15 @@ const state = {
   // 発行した直後の接続トークン。画面を離れると消える（保存はしない）。
   aiLinkIssuedToken: null,
   aiLinkShowGuide: false,
+  // 端末間の同期。接続していなければ何もしない。
+  deviceSync: { ...DEFAULT_DEVICE_SYNC },
+  syncing: false,
+  syncError: null,
+  // 先生が生徒を管理するための一覧（管理キーがあるときだけ読む）。
+  learners: null,
+  // 作ったばかりの同期コード。画面を離れると消える（保存はしない）。
+  issuedSyncCode: null,
+  transferNotice: null,
 };
 
 const elements = Object.fromEntries(
@@ -1384,14 +1411,17 @@ async function refreshAiLinkStatus({ render = true } = {}) {
 /** AIが追加・変更・削除した問題を、画面の問題一覧へ取り込む。 */
 async function applyAiLinkOverlay() {
   if (!isAiLinkActive(state.aiLink)) return;
-  let overlay;
   try {
-    overlay = await aiLinkClient.overlay(state.aiLink);
+    await adoptOverlay(await aiLinkClient.overlay(state.aiLink));
   } catch (error) {
     // 取り込めなくても、元の教材データだけで今までどおり学習できる。
     console.warn("AIの変更を取り込めませんでした", error);
-    return;
   }
+}
+
+/** 受け取った差分を、画面が持っている問題一覧へ重ねる。 */
+async function adoptOverlay(overlay) {
+  if (!overlay) return;
   const merged = applyOverlayBySubject({
     english: state.englishItems,
     public: state.publicItems,
@@ -1417,29 +1447,42 @@ function selectSubjectItems() {
         : state.englishItems;
 }
 
-/** 1問ごとの学習記録を残す。AI連携が無効のときは何もしない。 */
+/**
+ * 1問ごとの学習記録を残す。
+ * AI連携も端末同期も使っていないときは、今までどおり何も残さない。
+ */
 function recordAiLinkAttempt({ itemId, mode, correct, durationMs }) {
-  if (!isAiLinkActive(state.aiLink)) return;
-  state.aiLinkJournal = appendJournalEntry(state.aiLinkJournal, {
-    itemId,
-    mode,
-    correct,
-    durationMs,
-    at: Date.now(),
-  });
+  if (!isAiLinkActive(state.aiLink) && !isSyncConnected(state.deviceSync)) return;
+  const { entry, seq } = createJournalEntry(
+    { itemId, mode, correct, durationMs, at: Date.now() },
+    { deviceId: state.deviceSync.deviceId, seq: state.deviceSync.seq },
+  );
+  state.deviceSync.seq = seq;
+  state.aiLinkJournal = appendJournalEntry(state.aiLinkJournal, entry);
   setMeta(AI_LINK_JOURNAL_KEY, state.aiLinkJournal).catch(console.warn);
+  saveDeviceSync();
   scheduleAiLinkSync();
 }
 
 function scheduleAiLinkSync({ delayMs = 20000 } = {}) {
-  if (!isAiLinkActive(state.aiLink)) return;
+  if (!isSyncConnected(state.deviceSync) && !isAiLinkActive(state.aiLink)) return;
   clearTimeout(aiLinkSyncTimer);
   aiLinkSyncTimer = setTimeout(() => { syncAiLinkHistory().catch(console.warn); }, delayMs);
 }
 
-/** 学習履歴をサーバーへ預ける。失敗しても学習の邪魔はしない。 */
+function saveDeviceSync() {
+  return setMeta(DEVICE_SYNC_META_KEY, state.deviceSync).catch(console.warn);
+}
+
+/**
+ * 学習データをサーバーと合わせる。
+ * 端末に接続してあればそちらを使い、まだなら（持ち主の端末だけの場合）
+ * 今までどおり管理キーでまとめて預ける。失敗しても学習の邪魔はしない。
+ */
 async function syncAiLinkHistory({ force = false } = {}) {
-  if (!isAiLinkActive(state.aiLink) || aiLinkSyncing) return null;
+  if (aiLinkSyncing) return null;
+  if (isSyncConnected(state.deviceSync)) return syncDeviceNow();
+  if (!isAiLinkActive(state.aiLink)) return null;
   if (!force && !aiLinkServerEnabled() && state.aiLinkStatus) return null;
   aiLinkSyncing = true;
   try {
@@ -1459,6 +1502,168 @@ async function syncAiLinkHistory({ force = false } = {}) {
   } finally {
     aiLinkSyncing = false;
   }
+}
+
+// ---------------------------------------------------------------------------
+// 端末間の同期
+//
+// この端末でやったことだけを送り、サーバーで合わせた結果を受け取って
+// そのまま画面に反映する。送るのは「1問ごとの出来事」なので、
+// 同じものが二度届いても回答数が増えない。
+// ---------------------------------------------------------------------------
+
+const syncClient = createSyncClient();
+
+/** のべ回答数。合わせた結果がこの端末の分を含んでいるかを見るのに使う。 */
+function totalAttemptsOf(records) {
+  return Object.values(records ?? {}).reduce((sum, record) => sum + (record?.totalAttempts ?? 0), 0);
+}
+
+/**
+ * サーバーから受け取った、合わせたあとの学習データを画面と端末へ入れ直す。
+ *
+ * 受け取った内容がこの端末の分より少ないときは、置き換えない。
+ * 何かの手違いでこちらの分が届いていない状態なので、そのまま入れ替えると
+ * 学習の記録が消えてしまう。消さずに預け直すほうを選ぶ。
+ */
+async function adoptSyncSnapshot(snapshot, { localAttempts = 0 } = {}) {
+  if (!snapshot) return { adopted: false };
+  if (snapshot.records && typeof snapshot.records === "object") {
+    if (totalAttemptsOf(snapshot.records) < localAttempts) {
+      return { adopted: false, needsBaseline: true };
+    }
+    state.history = new Map(Object.entries(snapshot.records));
+    await replaceHistory(snapshot.records);
+  }
+  if (Array.isArray(snapshot.journal)) {
+    state.aiLinkJournal = snapshot.journal;
+    await setMeta(AI_LINK_JOURNAL_KEY, state.aiLinkJournal);
+  }
+  if (snapshot.progress && typeof snapshot.progress === "object") {
+    const remote = Object.fromEntries(
+      Object.entries(snapshot.progress)
+        .map(([key, value]) => [key, normalizeStudyProgress(value)])
+        .filter(([, value]) => value),
+    );
+    state.studyProgress = mergeStudyProgress(state.studyProgress, remote);
+    await setMeta("studyProgress", state.studyProgress);
+  }
+  if (snapshot.configs && typeof snapshot.configs === "object") {
+    const remote = Object.fromEntries(
+      Object.entries(snapshot.configs)
+        .map(([key, value]) => [key, normalizeRecentStudyConfig(value)])
+        .filter(([, value]) => value),
+    );
+    state.studyConfigs = { ...remote, ...state.studyConfigs };
+    await setMeta("studyConfigs", state.studyConfigs);
+  }
+  return { adopted: true };
+}
+
+/** いま送っていない記録を預け、合わせた結果を受け取る。 */
+async function syncDeviceNow({ silent = true } = {}) {
+  if (!isSyncConnected(state.deviceSync) || aiLinkSyncing) return null;
+  aiLinkSyncing = true;
+  state.syncing = true;
+  if (!silent && state.view === "settings") renderSettings();
+  try {
+    const pending = unsentEntries(state.aiLinkJournal, state.deviceSync.sentSeq);
+    const payload = {
+      journal: pending,
+      progress: state.studyProgress,
+      configs: state.studyConfigs,
+      sessions: state.lastSessionResult ? [state.lastSessionResult] : [],
+    };
+    // 同期を始める前から端末にあった分は、最初の1回だけ預ける。
+    if (!state.deviceSync.baselineSent) payload.baseline = Object.fromEntries(state.history);
+
+    const localAttempts = totalAttemptsOf(Object.fromEntries(state.history));
+    let result = await syncClient.push(state.deviceSync, payload);
+    state.deviceSync.baselineSent = true;
+    state.deviceSync.sentSeq = Math.max(state.deviceSync.sentSeq, highestSeq(pending));
+
+    let adopted = await adoptSyncSnapshot(result.snapshot, { localAttempts });
+    if (!adopted.adopted && adopted.needsBaseline) {
+      // この端末の分が届いていないので、いまの学習データをまとめて預け直す。
+      state.deviceSync.baselineSent = false;
+      result = await syncClient.push(state.deviceSync, {
+        ...payload,
+        baseline: Object.fromEntries(state.history),
+      });
+      state.deviceSync.baselineSent = true;
+      adopted = await adoptSyncSnapshot(result.snapshot, { localAttempts });
+    }
+    state.deviceSync.lastSyncedAt = result.savedAt;
+    state.deviceSync.learnerName = result.learner ?? state.deviceSync.learnerName;
+    state.syncError = adopted.adopted ? null : "この端末の学習データを預け直しています。";
+    await saveDeviceSync();
+    return result;
+  } catch (error) {
+    state.syncError = error.message;
+    // 端末の登録が解かれていたら、つながらないまま試し続けない。
+    if (error.status === 401) {
+      state.deviceSync = { ...DEFAULT_DEVICE_SYNC, serverUrl: state.deviceSync.serverUrl };
+      await saveDeviceSync();
+    }
+    return null;
+  } finally {
+    aiLinkSyncing = false;
+    state.syncing = false;
+    if (!silent && state.view === "settings") renderSettings();
+  }
+}
+
+/** 同期コードを入れて、この端末を登録する。 */
+async function connectDeviceSync(serverUrl, code) {
+  const base = String(serverUrl ?? "").trim().replace(/\/+$/, "").replace(/\/mcp$/, "");
+  if (!base) {
+    showToast("同期サーバーのURLを入力してください");
+    return;
+  }
+  state.syncing = true;
+  renderSettings();
+  try {
+    const joined = await syncClient.join(base, { code, deviceName: guessDeviceName(navigator.userAgent) });
+    state.deviceSync = normalizeDeviceSync({
+      serverUrl: base,
+      deviceKey: joined.deviceKey,
+      deviceId: joined.deviceId,
+      deviceName: guessDeviceName(navigator.userAgent),
+      learnerId: joined.learnerId,
+      learnerName: joined.learnerName,
+      // すでに端末にある分は、このあと基準値としてまとめて預ける。
+      baselineSent: false,
+      // 接続より前の記録は基準値に含まれるので、出来事としては送らない。
+      sentSeq: highestSeq(state.aiLinkJournal),
+      seq: highestSeq(state.aiLinkJournal),
+    });
+    await saveDeviceSync();
+    state.syncError = null;
+    await syncDeviceNow();
+    if (joined.overlay) await adoptOverlay(joined.overlay);
+    showToast(`${joined.learnerName}として同期を始めました`);
+  } catch (error) {
+    state.syncError = error.message;
+    showToast(error.message);
+  } finally {
+    state.syncing = false;
+    renderSettings();
+  }
+}
+
+/** この端末の同期をやめる。端末の学習データはそのまま残る。 */
+async function disconnectDeviceSync() {
+  try {
+    await syncClient.leave(state.deviceSync);
+  } catch (error) {
+    // すでに解除されている場合もあるので、失敗しても端末側は必ず切る。
+    console.warn("同期の解除をサーバーへ伝えられませんでした", error);
+  }
+  state.deviceSync = { ...DEFAULT_DEVICE_SYNC, serverUrl: state.deviceSync.serverUrl };
+  state.syncError = null;
+  await saveDeviceSync();
+  showToast("この端末の同期を解除しました");
+  renderSettings();
 }
 
 /** 設定画面から「保存して接続を確認」を押したときの処理。 */
@@ -1533,6 +1738,181 @@ async function issueAiLinkToken() {
   }
 }
 
+
+// ---------------------------------------------------------------------------
+// 学習データの引き継ぎ（サーバーを使わない機種変更などのため）
+// ---------------------------------------------------------------------------
+
+/** いまの端末の学習データを1つのファイルにして渡す。 */
+function exportStudyData() {
+  const file = buildTransferFile({
+    history: state.history,
+    journal: state.aiLinkJournal,
+    studyProgress: state.studyProgress,
+    studyConfigs: state.studyConfigs,
+    settings: state.settings,
+    bestCombo: state.bestCombo,
+    selectedPeriod: state.selectedPeriod,
+  });
+  const text = JSON.stringify(file, null, 2);
+  try {
+    const blob = new Blob([text], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = transferFileName();
+    document.body.append(link);
+    link.click();
+    link.remove();
+    // すぐに消すと保存が間に合わない端末があるため、少し置いてから片づける。
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    state.transferNotice = `書き出しました（${file.counts.questions}問・のべ${file.counts.attempts}回）。`;
+  } catch (error) {
+    console.warn("ファイルを書き出せませんでした", error);
+    // 保存ができない端末では、貼り付けて渡せるようにしておく。
+    copyToClipboard(text, "学習データをコピーしました。メモなどに貼り付けて保存してください");
+    state.transferNotice = "ファイルを保存できなかったため、内容をコピーしました。";
+  }
+  renderSettings();
+}
+
+/** 別の端末で書き出したファイルを読み込み、この端末の学習データを入れ替える。 */
+async function importStudyData(file) {
+  const parsed = readTransferFile(await file.text());
+  if (!parsed.ok) {
+    state.transferNotice = null;
+    showToast(parsed.message);
+    return;
+  }
+  const counts = parsed.counts ?? { questions: Object.keys(parsed.data.history).length };
+  const exported = parsed.exportedAt ? new Date(parsed.exportedAt).toLocaleString("ja-JP") : "日時不明";
+  // 取り違えると学習の記録が消えるので、中身を見せてから確かめる。
+  if (!confirm(
+    `この端末の学習データを、読み込んだファイルの内容で置き換えます。\n\n`
+    + `書き出した日時: ${exported}\n`
+    + `問題数: ${counts.questions ?? "?"}問\n\n`
+    + `いまこの端末にある学習の記録は消えます。よろしいですか？`,
+  )) return;
+
+  const { history, journal, studyProgress, studyConfigs, settings, bestCombo, selectedPeriod } = parsed.data;
+  await replaceHistory(history);
+  state.history = new Map(Object.entries(history));
+  state.aiLinkJournal = journal;
+  state.studyProgress = Object.fromEntries(
+    Object.entries(studyProgress).map(([key, value]) => [key, normalizeStudyProgress(value)]).filter(([, value]) => value),
+  );
+  state.studyConfigs = Object.fromEntries(
+    Object.entries(studyConfigs).map(([key, value]) => [key, normalizeRecentStudyConfig(value)]).filter(([, value]) => value),
+  );
+  state.settings = { ...DEFAULT_SETTINGS, ...state.settings, ...settings };
+  state.bestCombo = Number(bestCombo) || state.bestCombo;
+  if (selectedPeriod) state.selectedPeriod = selectedPeriod;
+  await Promise.all([
+    setMeta(AI_LINK_JOURNAL_KEY, state.aiLinkJournal),
+    setMeta("studyProgress", state.studyProgress),
+    setMeta("studyConfigs", state.studyConfigs),
+    setMeta("settings", state.settings),
+    setMeta("bestCombo", state.bestCombo),
+    setMeta("selectedPeriod", state.selectedPeriod),
+  ]);
+  // 読み込んだ記録は、この端末のものとして預け直す必要がある。
+  if (isSyncConnected(state.deviceSync)) {
+    state.deviceSync.baselineSent = false;
+    state.deviceSync.sentSeq = highestSeq(state.aiLinkJournal);
+    state.deviceSync.seq = Math.max(state.deviceSync.seq, highestSeq(state.aiLinkJournal));
+    await saveDeviceSync();
+  }
+  showToast("学習データを読み込みました");
+  // 画面全体を作り直して、読み込んだ内容をそのまま反映する。
+  location.reload();
+}
+
+// ---------------------------------------------------------------------------
+// 学習者（生徒）の管理。管理キーを持っている人だけが使う。
+// ---------------------------------------------------------------------------
+
+async function refreshLearners() {
+  if (!isAiLinkConfigured(state.aiLink)) return;
+  try {
+    state.learners = (await aiLinkClient.listLearners(state.aiLink)).learners;
+  } catch (error) {
+    console.warn("学習者の一覧を読めませんでした", error);
+    state.learners = null;
+  }
+}
+
+async function addLearner() {
+  const name = prompt("学習者の名前を入れてください（例: 田中、自分）");
+  if (!name?.trim()) return;
+  state.aiLinkBusy = true;
+  renderSettings();
+  try {
+    const created = await aiLinkClient.createLearner(state.aiLink, name.trim());
+    // 同期コードを見せるのはこの一度だけ。控えてもらう必要がある。
+    state.issuedSyncCode = { name: created.name, code: created.syncCode };
+    await refreshLearners();
+    showToast(`${created.name}を追加しました`);
+  } catch (error) {
+    showToast(error.message);
+  } finally {
+    state.aiLinkBusy = false;
+    renderSettings();
+  }
+}
+
+async function reissueLearnerCode(id, name) {
+  if (!confirm(`${name}の同期コードを作り直します。\n古いコードでは新しい端末を接続できなくなります（接続済みの端末はそのまま使えます）。`)) return;
+  state.aiLinkBusy = true;
+  renderSettings();
+  try {
+    const result = await aiLinkClient.reissueLearnerCode(state.aiLink, id);
+    state.issuedSyncCode = { name, code: result.syncCode };
+    await refreshLearners();
+  } catch (error) {
+    showToast(error.message);
+  } finally {
+    state.aiLinkBusy = false;
+    renderSettings();
+  }
+}
+
+async function removeLearner(id, name) {
+  if (!confirm(`${name}を消します。\nこの人の学習履歴もすべて消え、元に戻せません。よろしいですか？`)) return;
+  state.aiLinkBusy = true;
+  renderSettings();
+  try {
+    await aiLinkClient.deleteLearner(state.aiLink, id);
+    await refreshLearners();
+    showToast(`${name}を削除しました`);
+  } catch (error) {
+    showToast(error.message);
+  } finally {
+    state.aiLinkBusy = false;
+    renderSettings();
+  }
+}
+
+/** 持ち主が、この端末を「本人」としてひと押しで同期できるようにする。 */
+async function connectOwnerDevice() {
+  state.aiLinkBusy = true;
+  renderSettings();
+  try {
+    await refreshLearners();
+    const existing = (state.learners ?? [])[0];
+    const learner = existing ?? await aiLinkClient.createLearner(state.aiLink, "本人");
+    const code = existing
+      ? (await aiLinkClient.reissueLearnerCode(state.aiLink, existing.id)).syncCode
+      : learner.syncCode;
+    await connectDeviceSync(state.aiLink.serverUrl, code);
+    await refreshLearners();
+  } catch (error) {
+    showToast(error.message);
+  } finally {
+    state.aiLinkBusy = false;
+    renderSettings();
+  }
+}
+
 async function copyToClipboard(text, message) {
   try {
     await navigator.clipboard.writeText(text);
@@ -1551,6 +1931,110 @@ function aiLinkPermissionRow({ scope, title, detail, locked }) {
       <span><strong>${escapeHtml(title)}</strong><small>${escapeHtml(detail)}</small></span>
       <span class="switch"><input type="checkbox" data-ai-permission="${scope}" ${checked ? "checked" : ""} ${disabled ? "disabled" : ""}><span aria-hidden="true"></span></span>
     </label>`;
+}
+
+
+/** 学習データの引き継ぎ。サーバーが無くても使える。 */
+function transferCard() {
+  const attempts = [...state.history.values()].reduce((sum, record) => sum + (record.totalAttempts ?? 0), 0);
+  return `
+    <section class="settings-card">
+      <h2>学習データの引き継ぎ</h2>
+      <p>この端末の学習データをファイルに書き出して、別の端末で読み込めます。機種変更のときなどに使います。ネットにつながっていなくても使えます。</p>
+      <div class="settings-row">
+        <span><strong>この端末の学習データ</strong><small>${state.history.size}問・のべ${attempts}回の記録</small></span>
+      </div>
+      <div class="ai-link-actions">
+        <button class="secondary-button" type="button" data-export-data>ファイルに書き出す</button>
+        <button class="secondary-button" type="button" data-import-data>ファイルから読み込む</button>
+      </div>
+      <input type="file" id="import-data-input" accept="application/json,.json" hidden>
+      ${state.transferNotice ? `<p class="settings-note">${escapeHtml(state.transferNotice)}</p>` : ""}
+      <p class="settings-note">読み込むと、この端末にあるいまの学習の記録は置き換わります。2台を同時に使い続けたい場合は、下の「端末間の同期」を使ってください。</p>
+    </section>`;
+}
+
+/** 端末間の同期。同じ人がスマホとタブレットで同じデータを使うためのもの。 */
+function deviceSyncCard() {
+  const connected = isSyncConnected(state.deviceSync);
+  const label = syncStateLabel({ connected, error: state.syncError, syncing: state.syncing });
+  const unsent = unsentEntries(state.aiLinkJournal, state.deviceSync.sentSeq).length;
+
+  const setup = connected ? "" : `
+    <div class="ai-link-field">
+      <label for="sync-url"><strong>同期サーバーのURL</strong><small>先生や自分が用意した words MCP Server の場所</small></label>
+      <input id="sync-url" class="settings-input" type="url" inputmode="url" autocomplete="off"
+        placeholder="https://words-mcp.example.workers.dev"
+        value="${escapeHtml(state.deviceSync.serverUrl || state.aiLink.serverUrl)}">
+    </div>
+    <div class="ai-link-field">
+      <label for="sync-code"><strong>同期コード</strong><small>WORDS-XXXX-XXXX の形。設定画面で発行するか、先生から受け取ります</small></label>
+      <input id="sync-code" class="settings-input" type="text" autocomplete="off"
+        autocapitalize="characters" spellcheck="false" placeholder="WORDS-XXXX-XXXX">
+    </div>
+    <button class="secondary-button ai-link-connect" type="button" data-sync-connect ${state.syncing ? "disabled" : ""}>
+      ${state.syncing ? "接続中…" : "この端末を同期する"}
+    </button>`;
+
+  const status = !connected ? "" : `
+    <div class="settings-row">
+      <span><strong>同期の状態</strong>${state.syncError ? `<small>${escapeHtml(state.syncError)}</small>` : ""}</span>
+      <span class="ai-link-state ai-link-state-${label.tone}"><span aria-hidden="true">●</span>${escapeHtml(label.text)}</span>
+    </div>
+    <div class="settings-row">
+      <span><strong>学習者</strong><small>この端末の学習データは、この人のものとして合わせられます</small></span>
+      <span class="ai-link-state">${escapeHtml(state.deviceSync.learnerName || "—")}</span>
+    </div>
+    <div class="settings-row">
+      <span><strong>この端末</strong><small>最終同期 ${escapeHtml(relativeTimeLabel(state.deviceSync.lastSyncedAt))}${unsent ? ` ・ 未送信${unsent}件` : ""}</small></span>
+      <span class="ai-link-state">${escapeHtml(state.deviceSync.deviceName || "端末")}</span>
+    </div>
+    <div class="ai-link-actions">
+      <button class="secondary-button" type="button" data-sync-now ${state.syncing ? "disabled" : ""}>今すぐ同期</button>
+      <button class="text-button" type="button" data-sync-disconnect>接続を解除</button>
+    </div>
+    <p class="settings-note">同じ同期コードをもう1台の端末でも入れると、どちらで解いても同じ学習データになります。解いた記録は足し合わされ、同じ回答が二重に数えられることはありません。</p>`;
+
+  return `
+    <section class="settings-card">
+      <h2>端末間の同期</h2>
+      <p>スマホとタブレットのように複数の端末を使うとき、どちらで解いても同じ学習データになるようにします。</p>
+      ${setup}
+      ${status}
+    </section>`;
+}
+
+/** 学習者（生徒）の管理。管理キーを持っている人にだけ出す。 */
+function learnerSection() {
+  if (!state.aiLinkStatus) return "";
+  const learners = state.learners ?? [];
+  return `
+    <h3 class="ai-link-subheading">学習者</h3>
+    <p class="settings-note">生徒を1人ずつ登録すると、学習履歴と成績が人ごとに分かれます。問題はみんなで共有されるので、追加した問題は全員に届きます。</p>
+    ${state.issuedSyncCode ? `
+      <div class="ai-link-token">
+        <p><strong>${escapeHtml(state.issuedSyncCode.name)}</strong>の同期コードです。本人に伝えてください。<strong>この画面を離れると二度と表示されません。</strong></p>
+        <code>${escapeHtml(state.issuedSyncCode.code)}</code>
+        <button class="text-button" type="button" data-copy-sync-code>コピー</button>
+      </div>` : ""}
+    ${learners.length ? `
+      <ul class="ai-link-log learner-list">
+        ${learners.map((learner) => `
+          <li>
+            <span class="ai-link-log-body">
+              <strong>${escapeHtml(learner.name)}</strong>
+              <small>${learner.devices.length}台の端末 ・ 最終同期 ${escapeHtml(relativeTimeLabel(learner.lastSyncedAt))}</small>
+            </span>
+            <span class="learner-actions">
+              <button class="text-button" type="button" data-learner-code="${escapeHtml(learner.id)}" data-learner-name="${escapeHtml(learner.name)}">コード再発行</button>
+              <button class="text-button danger-text" type="button" data-learner-remove="${escapeHtml(learner.id)}" data-learner-name="${escapeHtml(learner.name)}">削除</button>
+            </span>
+          </li>`).join("")}
+      </ul>` : `<p class="settings-note">まだ誰も登録されていません。</p>`}
+    <div class="ai-link-actions">
+      <button class="secondary-button" type="button" data-add-learner ${state.aiLinkBusy ? "disabled" : ""}>学習者を追加</button>
+      ${isSyncConnected(state.deviceSync) ? "" : `<button class="text-button" type="button" data-connect-owner-device>この端末を同期する</button>`}
+    </div>`;
 }
 
 function aiLinkCard() {
@@ -1622,6 +2106,7 @@ function aiLinkCard() {
             <pre>${escapeHtml(step.body)}</pre>
           </section>`).join("")}
       </div>` : ""}
+    ${learnerSection()}
     ${log.length ? `
       <h3 class="ai-link-subheading">最近のAI操作</h3>
       <ul class="ai-link-log">
@@ -1632,12 +2117,17 @@ function aiLinkCard() {
           </li>`).join("")}
       </ul>` : ""}`;
 
+  const historyHint = configured && aiLinkServerEnabled() && !isSyncConnected(state.deviceSync)
+    ? `<p class="settings-note">学習履歴をAIから見られるようにするには、「学習者」から<strong>この端末を同期する</strong>を押してください。</p>`
+    : "";
+
   return `
     <section class="settings-card ai-link-card">
       <h2>AI連携（MCP）</h2>
       <p>ClaudeなどのMCP対応AIから、wordsの問題と学習履歴を使えるようにします。使うには、自分でMCP Serverを用意する必要があります（README の「AI / MCP連携」を参照）。</p>
       ${setupRows}
       ${connectedRows}
+      ${historyHint}
     </section>`;
 }
 
@@ -1722,6 +2212,8 @@ function renderSettings() {
       ${toggle("showSources", "出典を表示", "回答後に教材と範囲を表示")}
       ${toggle("useSystemKeyboard", "端末のキーボードを使う", "オフにすると、キーボード入力でアプリ内の小文字英字キーボードを表示します")}
     </section>
+    ${transferCard()}
+    ${deviceSyncCard()}
     ${aiLinkCard()}
     <section class="settings-card">
       <h2>学習データ</h2><p>正誤履歴、最近の学習条件、設定をこの端末から削除します。</p>
@@ -2744,8 +3236,15 @@ function setView(view) {
   // 設定画面を離れたら、表示していた接続トークンは残さない。
   if (view !== "settings") state.aiLinkIssuedToken = null;
   if (view === "settings") renderSettings();
+  if (view !== "settings") {
+    state.issuedSyncCode = null;
+    state.transferNotice = null;
+  }
   if (view === "settings" && isAiLinkConfigured(state.aiLink) && !state.aiLinkStatus && !state.aiLinkBusy) {
-    refreshAiLinkStatus().catch(console.warn);
+    refreshAiLinkStatus()
+      .then(() => refreshLearners())
+      .then(() => renderSettings())
+      .catch(console.warn);
   }
   if (view === "kobun") kobun.show(kobunScreen ?? "home");
   applySettings();
@@ -4801,7 +5300,9 @@ function bindEvents() {
       maxAudio.stopAll({ suspend: true });
       stashStudyProgress();
       // 送れなかったぶんは端末に残り、次の起動時にまとめて送られる。
-      if (isAiLinkActive(state.aiLink)) syncAiLinkHistory().catch(() => {});
+      if (isAiLinkActive(state.aiLink) || isSyncConnected(state.deviceSync)) {
+        syncAiLinkHistory().catch(() => {});
+      }
     }
   });
   // タブを閉じる・別ページへ移る直前にも、学習の進み具合を控えへ逃がす。
@@ -4838,6 +5339,35 @@ function bindEvents() {
         unlockMaxAudio();
         triggerMaxEntrance("ON");
       }
+    }
+    if (target.dataset.exportData !== undefined) exportStudyData();
+    if (target.dataset.importData !== undefined) document.getElementById("import-data-input")?.click();
+    if (target.dataset.syncConnect !== undefined) {
+      connectDeviceSync(
+        document.getElementById("sync-url")?.value ?? "",
+        document.getElementById("sync-code")?.value ?? "",
+      ).catch(console.warn);
+    }
+    if (target.dataset.syncNow !== undefined) {
+      syncDeviceNow({ silent: false })
+        .then((result) => showToast(result ? "同期しました" : state.syncError ?? "同期できませんでした"))
+        .catch(console.warn);
+    }
+    if (target.dataset.syncDisconnect !== undefined) {
+      if (confirm("この端末の同期を解除します。\nこの端末の学習データは残りますが、ほかの端末とは合わせられなくなります。")) {
+        disconnectDeviceSync().catch(console.warn);
+      }
+    }
+    if (target.dataset.addLearner !== undefined) addLearner().catch(console.warn);
+    if (target.dataset.connectOwnerDevice !== undefined) connectOwnerDevice().catch(console.warn);
+    if (target.dataset.copySyncCode !== undefined && state.issuedSyncCode) {
+      copyToClipboard(state.issuedSyncCode.code, "同期コードをコピーしました");
+    }
+    if (target.dataset.learnerCode) {
+      reissueLearnerCode(target.dataset.learnerCode, target.dataset.learnerName).catch(console.warn);
+    }
+    if (target.dataset.learnerRemove) {
+      removeLearner(target.dataset.learnerRemove, target.dataset.learnerName).catch(console.warn);
     }
     if (target.dataset.aiConnect !== undefined) {
       const url = document.getElementById("ai-link-url")?.value ?? "";
@@ -5102,6 +5632,13 @@ function bindEvents() {
       englishSpeech.speak(SPEECH_RATE_SAMPLE, speechOptions((questionSpeechToken += 1)));
       return;
     }
+    if (event.target.id === "import-data-input") {
+      const file = event.target.files?.[0];
+      // 同じファイルを選び直せるよう、読み込んだら選択を空に戻す。
+      event.target.value = "";
+      if (file) importStudyData(file).catch((error) => showToast(error.message));
+      return;
+    }
     if (event.target.dataset?.aiEnabled !== undefined) {
       setAiLinkEnabled(event.target.checked).catch(console.warn);
       return;
@@ -5212,11 +5749,11 @@ async function boot() {
     if (themePreference() === "system") applyTheme();
   });
   try {
-    const [response, publicResponse, healthResponse, vocabResponse, history, selectedMode, settings, bestCombo, selectedPeriod, studyConfigs, legacyRecentStudies, studyProgress, lastSessionResult, aiLink, aiLinkJournal] = await Promise.all([
+    const [response, publicResponse, healthResponse, vocabResponse, history, selectedMode, settings, bestCombo, selectedPeriod, studyConfigs, legacyRecentStudies, studyProgress, lastSessionResult, aiLink, aiLinkJournal, deviceSync] = await Promise.all([
       fetch("./data/items.json?v=2026.08.31b"),
       fetch("./data/public-items.json?v=2026.09.01"),
       fetch("./data/health-items.json?v=2026.09.01"),
-      fetch("./data/kobun-vocabulary.json?v=2026.9.37"),
+      fetch("./data/kobun-vocabulary.json?v=2026.9.38"),
       loadHistory(),
       getMeta("selectedMode"),
       getMetaObject("settings", DEFAULT_SETTINGS),
@@ -5228,6 +5765,7 @@ async function boot() {
       getMeta("lastSessionResult", null),
       getMetaObject(AI_LINK_META_KEY, DEFAULT_AI_LINK),
       getMeta(AI_LINK_JOURNAL_KEY, []),
+      getMetaObject(DEVICE_SYNC_META_KEY, DEFAULT_DEVICE_SYNC),
     ]);
     if (!response.ok) throw new Error(`教材データを読み込めませんでした (${response.status})`);
     if (!publicResponse.ok) throw new Error(`公共データを読み込めませんでした (${publicResponse.status})`);
@@ -5270,18 +5808,24 @@ async function boot() {
     state.selectedPeriod = selectedPeriod === "2026.2" ? selectedPeriod : null;
     state.aiLink = normalizeAiLinkConfig(aiLink);
     state.aiLinkJournal = Array.isArray(aiLinkJournal) ? aiLinkJournal : [];
+    state.deviceSync = normalizeDeviceSync(deviceSync);
     elements.appShell.setAttribute("aria-busy", "false");
     setView(state.selectedPeriod ? "subject" : "period");
     haptics.start();
     // AI連携が有効なときだけ、AIの変更を取り込んで履歴を預ける。
     // 画面の表示は待たせない。失敗しても今までどおり学習できる。
-    if (isAiLinkActive(state.aiLink)) {
+    if (isSyncConnected(state.deviceSync)) {
+      // 端末をまたいで使っている場合は、起動のたびに合わせてから続きを始める。
+      syncDeviceNow()
+        .then((result) => adoptOverlay(result?.snapshot?.overlay))
+        .catch((error) => console.warn("同期に失敗しました", error));
+    } else if (isAiLinkActive(state.aiLink)) {
       applyAiLinkOverlay()
         .then(() => syncAiLinkHistory())
         .catch((error) => console.warn("AI連携の同期に失敗しました", error));
     }
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.37").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.38").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

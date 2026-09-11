@@ -12,6 +12,7 @@
 name = "words-mcp"
 main = "server/adapters/cloudflare.js"
 compatibility_date = "2026-07-01"
+compatibility_flags = ["nodejs_compat"]
 
 [vars]
 # 公開可能な設定だけをここに書く。

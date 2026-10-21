@@ -299,7 +299,7 @@ body.kobun-quiz-active .kobun-view { padding-top: max(8px, env(safe-area-inset-t
 }
 
 .kb-actions {
-  background: linear-gradient(transparent, rgba(246, 246, 247, 0.94) 34%, var(--background) 70%);
+  background: linear-gradient(transparent, rgba(var(--background-rgb), 0.94) 34%, var(--background) 70%);
 }
 
 .kb-verdict {

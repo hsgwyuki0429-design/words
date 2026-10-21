@@ -158,12 +158,13 @@ body.health-notes-active .main-content,
 body.public-notes-active .main-content {
   width: 100%;
   max-width: none;
-  padding: 0 0 calc(70px + var(--safe-bottom));
+  padding: 0 0 var(--safe-bottom);
 }
 
+/* ヘッダーの下を、ノートが画面の下端まで使う。 */
 .health-notes-view,
 .public-notes-view {
-  height: calc(100dvh - 64px - 70px - var(--safe-bottom));
+  height: calc(100dvh - max(68px, env(safe-area-inset-top, 0px) + 55px) - var(--safe-bottom));
   padding: 0;
 }
 
@@ -173,7 +174,7 @@ body.public-notes-active .main-content {
   width: 100%;
   height: 100%;
   border: 0;
-  background: var(--surface-muted, #f6f8fb);
+  background: var(--background);
 }
 
 .eyebrow {
@@ -677,23 +678,6 @@ h2 {
   display: flex;
   width: min(100%, 360px);
   margin: 18px auto 0;
-}
-
-.bottom-nav {
-  position: fixed;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 30;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  min-height: calc(70px + var(--safe-bottom));
-  padding: 5px max(12px, env(safe-area-inset-right)) var(--safe-bottom)
-    max(12px, env(safe-area-inset-left));
-  background: rgba(var(--surface-rgb), 0.9);
-  border-top: 1px solid rgba(210, 210, 215, 0.78);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
 .settings-grid {
@@ -1374,29 +1358,6 @@ body.max-mode .combo-pill--pop .combo-pill-text::after { animation: combo-ghost-
   font: inherit;
 }
 .max-effects-lab button:active { background: rgba(106,220,255,.3); }
-
-.bottom-nav button {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  min-height: 58px;
-  color: var(--secondary);
-  background: transparent;
-  border: 0;
-  font-size: 10px;
-  font-weight: 650;
-}
-
-.bottom-nav button > span:first-child {
-  font-size: 22px;
-  line-height: 1;
-}
-
-.bottom-nav button.active {
-  color: var(--text);
-}
 
 .icon-button {
   display: grid;
@@ -3428,9 +3389,6 @@ body.quiz-active .main-content { padding-bottom: 0; }
     grid-template-columns: 82px minmax(0, 1fr);
   }
 
-  .bottom-nav { padding-right: max(4px, env(safe-area-inset-right)); padding-left: max(4px, env(safe-area-inset-left)); }
-  .bottom-nav button { font-size: 9px; }
-  .bottom-nav button > span:first-child { font-size: 19px; }
   .onboarding-options { grid-template-columns: 1fr; }
   .onboarding-options button { min-height: 112px; }
   .settings-card { padding: 18px; }
@@ -3502,22 +3460,8 @@ body.quiz-active .main-content { padding-bottom: 0; }
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
   }
-
 }
 
-@media (min-width: 900px) {
-  .bottom-nav {
-    right: auto;
-    left: 50%;
-    width: min(720px, calc(100% - 40px));
-    min-height: 64px;
-    padding-bottom: max(5px, var(--safe-bottom));
-    border: 1px solid rgba(210, 210, 215, 0.8);
-    border-bottom: 0;
-    border-radius: 22px 22px 0 0;
-    transform: translateX(-50%);
-  }
-}
 /* 2026.2 period and subject entry */
 .entry-view {
   min-height: calc(100dvh - 2rem);
@@ -4802,8 +4746,7 @@ h2 {
 .multi-select-card,
 .criterion-option,
 .subject-button,
-.period-button,
-.bottom-nav button {
+.period-button {
   transition:
     transform 150ms var(--ease-out),
     color 150ms ease,
@@ -4852,8 +4795,7 @@ h2 {
 .multi-select-card:active,
 .criterion-option:active,
 .subject-button:active,
-.period-button:active,
-.bottom-nav button:active {
+.period-button:active {
   transform: scale(0.975);
 }
 
@@ -5418,36 +5360,6 @@ body.kobun-quiz-active {
   }
 }
 
-.bottom-nav {
-  right: auto;
-  bottom: calc(8px + var(--safe-bottom));
-  left: 50%;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  width: min(560px, calc(100% - 24px));
-  min-height: 66px;
-  padding: 5px;
-  background: rgba(var(--surface-rgb), 0.86);
-  border: 1px solid rgba(24, 24, 27, 0.1);
-  border-radius: 20px;
-  box-shadow: 0 2px 4px rgba(24, 24, 27, 0.05), 0 18px 45px rgba(24, 24, 27, 0.13);
-  transform: translateX(-50%);
-  backdrop-filter: saturate(150%) blur(20px);
-  -webkit-backdrop-filter: saturate(150%) blur(20px);
-}
-
-.bottom-nav button {
-  min-height: 54px;
-  margin: 0;
-  border-radius: 15px;
-  font-weight: 670;
-}
-
-.bottom-nav button.active {
-  color: var(--text);
-  background: rgba(24, 24, 27, 0.065);
-  box-shadow: inset 0 0 0 1px rgba(24, 24, 27, 0.035);
-}
-
 @media (hover: hover) and (pointer: fine) {
   .primary-button:hover,
   .period-button:hover {
@@ -5473,11 +5385,6 @@ body.kobun-quiz-active {
   .choice-button:hover:not(:disabled) {
     background: var(--surface-muted, #f2f2f5);
     border-color: rgba(24, 24, 27, 0.16);
-  }
-
-  .bottom-nav button:hover {
-    color: var(--text);
-    background: rgba(24, 24, 27, 0.045);
   }
 
   .onboarding-options button:hover {
@@ -5513,25 +5420,12 @@ body.kobun-quiz-active {
   .question-card {
     border-radius: 24px;
   }
-
-  .bottom-nav {
-    width: calc(100% - 20px);
-  }
 }
 
 @media (max-width: 430px) {
   .header-status {
     background: transparent;
     border-color: transparent;
-  }
-
-  .bottom-nav button {
-    min-width: 0;
-    font-size: 9px;
-  }
-
-  .bottom-nav button > span:first-child {
-    font-size: 18px;
   }
 }
 
@@ -5860,7 +5754,6 @@ body.kobun-quiz-active {
 }
 
 /* 黒を薄く重ねていた面は、白を薄く重ねる。 */
-:root[data-theme="dark"] .bottom-nav button.active,
 :root[data-theme="dark"] .source-box,
 :root[data-theme="dark"] .input-correct-answer,
 :root[data-theme="dark"] .question-translation {
@@ -6091,4 +5984,180 @@ body.kobun-quiz-active {
 @media (max-width: 420px) {
   .learner-list li { flex-direction: column; align-items: flex-start; gap: 4px; }
   .learner-actions { margin-left: -4px; }
+}
+
+/* --------------------------------------------------------------------------
+   右上の丸ボタン（単語帳・設定）
+   下のナビゲーションは置かず、ヘッダーの右上から開く。開いている画面のボタンは
+   ×に変わり、もう一度押すとホームへ戻る。
+   -------------------------------------------------------------------------- */
+
+.app-header .brand {
+  flex: 0 0 auto;
+}
+
+.header-actions {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.header-actions .header-status {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header-round-button {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  color: var(--text);
+  background: var(--surface-solid);
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  transition:
+    transform 150ms var(--ease-out),
+    color 150ms ease,
+    background-color 150ms ease,
+    border-color 150ms ease;
+}
+
+.header-round-button svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.header-round-button .header-icon-close,
+.header-round-button.active .header-icon-open {
+  display: none;
+}
+
+.header-round-button.active .header-icon-close {
+  display: block;
+}
+
+.header-round-button.active {
+  color: var(--on-accent);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.header-round-button:active {
+  transform: scale(0.94);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .header-round-button:not(.active):hover {
+    border-color: var(--text);
+  }
+}
+
+/* 下のナビゲーションの分だけ空けていた余白は要らない。 */
+.main-content {
+  padding-bottom: calc(40px + var(--safe-bottom));
+}
+
+body.quiz-active .main-content {
+  padding-bottom: 0;
+}
+
+/* --------------------------------------------------------------------------
+   白基調（ライト）
+   背景も面も完全な白にし、色のにじみやグラデーションは置かない。
+   面の区切りは薄い線で示す。レイアウトには手を入れない。
+   ダークモードには当てない。
+   -------------------------------------------------------------------------- */
+
+:root:not([data-theme="dark"]) {
+  --background: #ffffff;
+  --background-rgb: 255, 255, 255;
+  --surface: #ffffff;
+  --surface-solid: #ffffff;
+  --surface-rgb: 255, 255, 255;
+  --shadow-card: none;
+  --shadow-raised: none;
+}
+
+:root:not([data-theme="dark"]),
+:root:not([data-theme="dark"]) body {
+  background: #ffffff;
+}
+
+:root:not([data-theme="dark"]) .app-header {
+  background: rgba(255, 255, 255, 0.94);
+  border-bottom-color: var(--line);
+  box-shadow: none;
+}
+
+:root:not([data-theme="dark"]) .header-status {
+  background: #ffffff;
+}
+
+:root:not([data-theme="dark"]) .entry-card {
+  background: #ffffff;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+:root:not([data-theme="dark"]) .entry-card::before {
+  display: none;
+}
+
+:root:not([data-theme="dark"]) .period-button {
+  color: var(--text);
+  background: #ffffff;
+  border: 1px solid var(--line-strong);
+  box-shadow: none;
+}
+
+:root:not([data-theme="dark"]) .subject-button,
+:root:not([data-theme="dark"]) .subject-button.english,
+:root:not([data-theme="dark"]) .subject-button.public,
+:root:not([data-theme="dark"]) .subject-button.health,
+:root:not([data-theme="dark"]) .subject-button.kobun {
+  background: #ffffff;
+  border-color: var(--line-strong);
+  box-shadow: none;
+}
+
+/* 教科の色はアイコンの文字にだけ残す。 */
+:root:not([data-theme="dark"]) .subject-button .subject-icon {
+  background: #ffffff;
+  border-color: var(--line-strong);
+}
+
+:root:not([data-theme="dark"]) .range-choice,
+:root:not([data-theme="dark"]) .range-multi-entry,
+:root:not([data-theme="dark"]) .mode-progress-card,
+:root:not([data-theme="dark"]) .content-choice,
+:root:not([data-theme="dark"]) .selection-card,
+:root:not([data-theme="dark"]) .multi-select-card,
+:root:not([data-theme="dark"]) .criterion-option,
+:root:not([data-theme="dark"]) .settings-card,
+:root:not([data-theme="dark"]) .word-card,
+:root:not([data-theme="dark"]) .question-card,
+:root:not([data-theme="dark"]) .result-panel,
+:root:not([data-theme="dark"]) .onboarding-card {
+  background: #ffffff;
+  border-color: var(--line-strong);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  :root:not([data-theme="dark"]) .period-button:hover {
+    border-color: var(--text);
+    box-shadow: none;
+  }
 }

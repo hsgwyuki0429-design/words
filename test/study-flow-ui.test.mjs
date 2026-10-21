@@ -204,9 +204,24 @@ test("単語帳の絞り込みと並び替えは廃止され、検索だけが�
 test("「条件を細かく選んで学習する」の入口は廃止される", () => {
   assert.doesNotMatch(indexSource, /data-start-study|条件学習|条件を細かく選んで学習する/);
   assert.doesNotMatch(appSource, /data-start-study|STUDY_FLOW_VIEWS|data-nav-active/);
-  // ボトムナビは4つになる。
-  assert.match(stylesSource, /\.bottom-nav \{[\s\S]*?grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
+  // 下のナビゲーションは無く、右上の丸ボタン（単語帳・設定）から開く。
+  assert.doesNotMatch(indexSource, /bottom-nav/);
+  assert.doesNotMatch(stylesSource, /\.bottom-nav/);
+  assert.match(indexSource, /id="nav-list-button"[^>]*data-view-target="list"[^>]*data-header-toggle/);
+  assert.match(indexSource, /data-view-target="settings" data-header-toggle/);
+  assert.match(stylesSource, /\.header-round-button \{[\s\S]*?border-radius: 50%/);
+  // 開いている画面の丸ボタンをもう一度押すと、ホームへ戻る。
+  assert.match(appSource, /hasAttribute\("data-header-toggle"\) && target\.classList\.contains\("active"\)[\s\S]*?setView\(closing \? "dashboard"/);
   // 範囲をまとめて選ぶ導線と、結果からの「学習条件を変える」は残る。
   assert.match(indexSource, /data-dashboard-multi-range/);
   assert.match(appSource, /data-change-study[\s\S]*?setView\("study-range-select"\)/);
+});
+
+test("学習する回は3定だけを選べ、2定は隠れている", () => {
+  assert.match(indexSource, /<button class="period-button" type="button" data-period="2026\.3">/);
+  assert.match(indexSource, /<button class="period-button" type="button" data-period="2026\.2" hidden>/);
+  assert.match(appSource, /const AVAILABLE_PERIODS = \["2026\.3"\];/);
+  // 2定を選んでいた端末は、回を選ぶ画面からやり直す。
+  assert.match(appSource, /state\.selectedPeriod = normalizeSelectedPeriod\(selectedPeriod\);/);
+  assert.doesNotMatch(appSource, /· 2026\.2"/);
 });

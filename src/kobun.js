@@ -12,7 +12,7 @@ const escape = (value) => String(value ?? "").replace(/[&<>"']/g, (character) =>
 const statusLabel = { correct: "✓ 正解", partial: "一部正解", incorrect: "× 不正解", unanswered: "未回答" };
 const button = (action, label, extra = "", className = "kb-button") => `<button type="button" class="${className}" data-kb-action="${action}" ${extra}>${label}</button>`;
 
-export function createKobunController({ root, getHistory, onQuizChange, onHeaderChange, onAnswer = () => {} }) {
+export function createKobunController({ root, getHistory, onQuizChange, onHeaderChange, onScreenChange = () => {}, onAnswer = () => {} }) {
   let items = [];
   let vocabulary = [];
   let revision;
@@ -139,7 +139,9 @@ export function createKobunController({ root, getHistory, onQuizChange, onHeader
       return heading("古文", "学習する内容を選ぶ", null)
         + `<div class="kb-home-menu">${button("auxiliary",
           '<span><strong>助動詞</strong></span><span class="card-arrow" aria-hidden="true">›</span>',
-          "", "kb-menu-card kb-category")}${vocabularyMarkup()}</div>`;
+          "", "kb-menu-card kb-category")}${vocabularyMarkup()}</div>`
+        // 下のナビゲーションを無くしたので、学習記録へはここから入る。
+        + `<div class="dashboard-links">${button("records", "学習の記録を見る", "", "text-button")}</div>`;
     }
     if (screen === "auxiliary" || screen === "conjugation") {
       const resumeKey = resumableMode();
@@ -316,6 +318,7 @@ export function createKobunController({ root, getHistory, onQuizChange, onHeader
     if (!visible) return;
     onQuizChange(screen === "quiz");
     onHeaderChange("古文 · 助動詞 " + items.length + "種類");
+    onScreenChange(screen);
     root.innerHTML = screen === "quiz" ? quizMarkup() : screen === "result" ? resultMarkup() : menuMarkup();
   }
 

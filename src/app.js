@@ -1,5 +1,5 @@
-import { createHaptics } from "./haptics.js?v=2026.9.40";
-import { createKobunController } from "./kobun.js?v=2026.9.40";
+import { createHaptics } from "./haptics.js?v=2026.9.41";
+import { createKobunController } from "./kobun.js?v=2026.9.41";
 import {
   ALL_MODES,
   ALPHABET_KEYBOARD_ROWS,
@@ -72,7 +72,7 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.40";
+} from "./logic.js?v=2026.9.41";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -93,7 +93,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.9.40";
+} from "./storage.js?v=2026.9.41";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -101,7 +101,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.40";
+} from "./quiz-gestures.js?v=2026.9.41";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
@@ -110,7 +110,7 @@ import {
   normalizeSpeechRate,
   normalizeSpeechVoiceURI,
   voiceKey,
-} from "./speech.js?v=2026.9.40";
+} from "./speech.js?v=2026.9.41";
 import {
   AI_LINK_JOURNAL_KEY,
   AI_LINK_META_KEY,
@@ -126,7 +126,7 @@ import {
   isAiLinkConfigured,
   mcpUrlFor,
   normalizeAiLinkConfig,
-} from "./ai-link.js?v=2026.9.40";
+} from "./ai-link.js?v=2026.9.41";
 import {
   DEFAULT_DEVICE_SYNC,
   DEVICE_SYNC_META_KEY,
@@ -143,13 +143,13 @@ import {
   syncStateLabel,
   transferFileName,
   unsentEntries,
-} from "./sync.js?v=2026.9.40";
+} from "./sync.js?v=2026.9.41";
 import {
   applyThemePreference,
   normalizeThemePreference,
   readStoredThemePreference,
   watchSystemTheme,
-} from "./theme.js?v=2026.9.40";
+} from "./theme.js?v=2026.9.41";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -243,6 +243,7 @@ const elements = Object.fromEntries(
     "dashboard-title",
     "dashboard-copy",
     "dashboard-range-list",
+    "dashboard-multi-range",
     "range-detail-title",
     "range-detail-copy",
     "range-detail-groups",
@@ -312,6 +313,23 @@ const kobun = createKobunController({
   onScreenChange: (screen) => { if (state.view === "kobun") updateNavActive("kobun", screen); },
   onHeaderChange: (label) => { if (state.subject === "kobun") elements.headerStatus.textContent = label; },
 });
+
+// 学習範囲のデータがまだ入っていない回。ここにある回では、範囲の代わりに
+// 「データはまだありません」を出す。データを入れたら外す。
+const PERIODS_WITHOUT_DATA = ["2026.3"];
+
+function periodHasData() {
+  return !PERIODS_WITHOUT_DATA.includes(state.selectedPeriod);
+}
+
+function emptyPeriodMarkup() {
+  return `
+    <div class="period-empty" role="status">
+      <span class="period-empty-mark" aria-hidden="true">${escapeHtml(state.selectedPeriod)}</span>
+      <h2>学習範囲のデータはまだありません</h2>
+      <p>3定の範囲が決まったら、ここに表示されます。</p>
+    </div>`;
+}
 
 // いま選べる定期テストの回。2定（2026.2）は終えたので外し、3定だけにしている。
 const AVAILABLE_PERIODS = ["2026.3"];
@@ -1092,6 +1110,14 @@ function renderDashboard() {
       : isRecallSubject()
         ? "範囲を選ぶと、一問一答の現在地が見られます。"
         : "範囲を選ぶと、5つの学習形式それぞれの現在地が見られます。";
+  elements.dashboardMultiRange.hidden = !periodHasData();
+  if (!periodHasData()) {
+    elements.dashboardTitle.textContent = isPublicSubject() ? "学習する題名を選ぶ" : "学習する範囲を選ぶ";
+    elements.dashboardCopy.textContent = "";
+    elements.dashboardRangeList.innerHTML = emptyPeriodMarkup();
+    renderHeader();
+    return;
+  }
   const ranges = dashboardRanges();
   const unit = recallUnit();
   // 学習途中の範囲は赤枠で示し、続きから進められることを伝える。
@@ -3193,6 +3219,8 @@ function setView(view) {
   }
   if (view !== "kobun") kobun.hide();
   if (view === "home") view = "dashboard";
+  // 学習の記録は、いったん画面から外している。
+  if (view === "analysis") view = "dashboard";
   if (view === "range-detail" && !state.filters.ranges.length) view = "dashboard";
   if (view === "list" && isHealthSubject()) view = "health-notes";
   if (view === "list" && isPublicSubject()) view = "public-notes";
@@ -3264,6 +3292,10 @@ function renderHeader() {
     elements.headerStatus.textContent = "古文";
     return;
   }
+  if (!periodHasData()) {
+    elements.headerStatus.textContent = "";
+    return;
+  }
   const summary = summarizeHistory(state.items, state.history);
   elements.headerStatus.textContent = summary.attempts
     ? `累計 ${summary.correct.toLocaleString()}正解 / ${summary.attempts.toLocaleString()}回答`
@@ -3290,6 +3322,15 @@ const LIST_SORT_KEY = "importance-desc";
 
 function renderList(resetLimit = false) {
   if (resetLimit) state.listLimit = 60;
+  // データの無い回では、検索欄も出さない。
+  document.querySelector(".list-toolbar")?.toggleAttribute("hidden", !periodHasData());
+  if (!periodHasData()) {
+    elements.listCount.textContent = "";
+    elements.loadMore.hidden = true;
+    elements.wordList.innerHTML = emptyPeriodMarkup();
+    renderHeader();
+    return;
+  }
   const search = elements.listSearch.value.trim();
   const items = sortItems(
     filteredItems({ ...emptyFilters(), search }),
@@ -5764,7 +5805,7 @@ async function boot() {
       fetch("./data/items.json?v=2026.08.31b"),
       fetch("./data/public-items.json?v=2026.09.01"),
       fetch("./data/health-items.json?v=2026.09.01"),
-      fetch("./data/kobun-vocabulary.json?v=2026.9.40"),
+      fetch("./data/kobun-vocabulary.json?v=2026.9.41"),
       loadHistory(),
       getMeta("selectedMode"),
       getMetaObject("settings", DEFAULT_SETTINGS),
@@ -5837,7 +5878,7 @@ async function boot() {
         .catch((error) => console.warn("AI連携の同期に失敗しました", error));
     }
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.40").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.41").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

@@ -6622,3 +6622,72 @@ body.quiz-active .main-content {
     display: none;
   }
 }
+
+
+/* --------------------------------------------------------------------------
+   差し色（ライト）
+   白・グレー・黒に、青を一色だけ差す。使うのは「いまどこにいるか・どこまで進んだか」
+   を示すところだけ（ロゴ、見出しの小さなラベル、進み具合、開いているボタン、スイッチ）。
+   -------------------------------------------------------------------------- */
+
+:root:not([data-theme="dark"]) {
+  --pop: #2b50ff;
+}
+
+:root:not([data-theme="dark"]) .brand-mark,
+:root:not([data-theme="dark"]) .entry-mark,
+:root:not([data-theme="dark"]) .onboarding-logo {
+  background: var(--pop);
+}
+
+:root:not([data-theme="dark"]) .eyebrow {
+  color: var(--pop);
+}
+
+:root:not([data-theme="dark"]) .quiz-progress span,
+:root:not([data-theme="dark"]) .switch input:checked + span,
+:root:not([data-theme="dark"]) .header-round-button.active {
+  background: var(--pop);
+  border-color: var(--pop);
+}
+
+:root:not([data-theme="dark"]) .progress-gauge,
+:root:not([data-theme="dark"]) .progress-legend {
+  --gauge-strong: var(--pop);
+  --gauge-soft: rgba(43, 80, 255, 0.24);
+}
+
+/* 学習範囲のデータがまだない回の表示。 */
+.period-empty {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+  padding: 36px 28px;
+  background: var(--tile);
+  border-radius: 24px;
+}
+
+.period-empty-mark {
+  margin-bottom: 10px;
+  color: var(--pop, var(--blue));
+  font-size: clamp(2.4rem, 12vw, 3.6rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.period-empty h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.period-empty p {
+  margin: 0;
+  color: var(--secondary);
+  font-size: 14px;
+}
+
+.range-choice-list > .period-empty,
+.word-list > .period-empty {
+  grid-column: 1 / -1;
+}

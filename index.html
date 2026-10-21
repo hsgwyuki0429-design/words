@@ -35,8 +35,8 @@
         }
       })();
     </script>
-    <link rel="stylesheet" href="./styles.css?v=2026.9.40" />
-    <link rel="stylesheet" href="./kobun.css?v=2026.9.40" />
+    <link rel="stylesheet" href="./styles.css?v=2026.9.41" />
+    <link rel="stylesheet" href="./kobun.css?v=2026.9.41" />
   </head>
   <body>
     <div class="fx-backdrop" id="fx-backdrop" aria-hidden="true">
@@ -98,7 +98,7 @@
               </button>
               <button class="subject-button public" type="button" data-subject="public">
                 <span class="subject-icon" aria-hidden="true">公</span>
-                <span><strong>公共</strong><small>一問一答 207問</small></span>
+                <span><strong>公共</strong><small>一問一答</small></span>
                 <span aria-hidden="true">›</span>
               </button>
               <!-- 3定では英語と公共だけを学習する。保健・古文は隠しておき、使うときに hidden を外す。 -->
@@ -125,14 +125,11 @@
             <p id="dashboard-copy">範囲を選ぶと、形式ごとの現在地が見られます。</p>
           </div>
           <div class="range-choice-list" id="dashboard-range-list"></div>
-          <button class="range-multi-entry" type="button" data-dashboard-multi-range>
+          <button class="range-multi-entry" id="dashboard-multi-range" type="button" data-dashboard-multi-range>
             <span class="range-multi-icon" aria-hidden="true">＋</span>
             <span><strong>複数の範囲を選ぶ</strong><small>いくつかの範囲をまとめて学習する</small></span>
             <span class="card-arrow" aria-hidden="true">›</span>
           </button>
-          <div class="dashboard-links">
-            <button class="text-button" type="button" data-view-target="analysis">学習の記録を見る</button>
-          </div>
         </section>
 
         <section class="view range-detail-view compact-step-view" id="view-range-detail" data-view="range-detail" hidden>
@@ -337,6 +334,6 @@
     </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-    <script type="module" src="./src/app.js?v=2026.9.40"></script>
+    <script type="module" src="./src/app.js?v=2026.9.41"></script>
   </body>
 </html>

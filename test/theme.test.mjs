@@ -68,7 +68,7 @@ test("適用すると data-theme と theme-color が切り替わり、設定が�
 
   assert.equal(applyThemePreference("light", { view }), "light");
   assert.equal(view.document.documentElement.dataset.theme, "light");
-  assert.equal(view.metas['meta[name="theme-color"]'].content, "#f6f6f7");
+  assert.equal(view.metas['meta[name="theme-color"]'].content, "#ffffff");
   assert.equal(readStoredThemePreference({ view }), "light");
 });
 

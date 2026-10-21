@@ -1,5 +1,5 @@
-import { createHaptics } from "./haptics.js?v=2026.9.38";
-import { createKobunController } from "./kobun.js?v=2026.9.38";
+import { createHaptics } from "./haptics.js?v=2026.9.39";
+import { createKobunController } from "./kobun.js?v=2026.9.39";
 import {
   ALL_MODES,
   ALPHABET_KEYBOARD_ROWS,
@@ -72,7 +72,7 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.38";
+} from "./logic.js?v=2026.9.39";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -93,7 +93,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.9.38";
+} from "./storage.js?v=2026.9.39";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -101,7 +101,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.38";
+} from "./quiz-gestures.js?v=2026.9.39";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
@@ -110,7 +110,7 @@ import {
   normalizeSpeechRate,
   normalizeSpeechVoiceURI,
   voiceKey,
-} from "./speech.js?v=2026.9.38";
+} from "./speech.js?v=2026.9.39";
 import {
   AI_LINK_JOURNAL_KEY,
   AI_LINK_META_KEY,
@@ -126,7 +126,7 @@ import {
   isAiLinkConfigured,
   mcpUrlFor,
   normalizeAiLinkConfig,
-} from "./ai-link.js?v=2026.9.38";
+} from "./ai-link.js?v=2026.9.39";
 import {
   DEFAULT_DEVICE_SYNC,
   DEVICE_SYNC_META_KEY,
@@ -143,13 +143,13 @@ import {
   syncStateLabel,
   transferFileName,
   unsentEntries,
-} from "./sync.js?v=2026.9.38";
+} from "./sync.js?v=2026.9.39";
 import {
   applyThemePreference,
   normalizeThemePreference,
   readStoredThemePreference,
   watchSystemTheme,
-} from "./theme.js?v=2026.9.38";
+} from "./theme.js?v=2026.9.39";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -279,7 +279,6 @@ const elements = Object.fromEntries(
     "quiz-content",
     "analysis-result",
     "settings-content",
-    "bottom-nav",
     "effects-canvas",
     "fx-backdrop",
     "fx-vignette",
@@ -307,13 +306,19 @@ const kobun = createKobunController({
   getHistory: () => state.history,
   onQuizChange: (active) => {
     document.body.classList.toggle("kobun-quiz-active", active);
-    if (state.view === "kobun") {
-      elements.bottomNav.hidden = active;
-      elements.appHeader.hidden = active;
-    }
+    if (state.view === "kobun") elements.appHeader.hidden = active;
   },
+  // 古文の中で画面を移ったときも、右上の丸ボタンの状態を合わせる。
+  onScreenChange: (screen) => { if (state.view === "kobun") updateNavActive("kobun", screen); },
   onHeaderChange: (label) => { if (state.subject === "kobun") elements.headerStatus.textContent = label; },
 });
+
+// いま選べる定期テストの回。2定（2026.2）は終えたので外し、3定だけにしている。
+const AVAILABLE_PERIODS = ["2026.3"];
+
+function normalizeSelectedPeriod(period) {
+  return AVAILABLE_PERIODS.includes(period) ? period : null;
+}
 
 const OTHER_SORT_OPTIONS = [
   ["random", "ランダム"],
@@ -1069,11 +1074,11 @@ function renderDashboard() {
   elements.dashboardEyebrow.textContent = completed
     ? "NEXT STUDY"
     : isPublicSubject()
-      ? "PUBLIC · 2026.2"
+      ? `PUBLIC · ${state.selectedPeriod}`
       : isHealthSubject()
-        ? "HEALTH · 2026.2"
+        ? `HEALTH · ${state.selectedPeriod}`
         : isKobunVocabSubject()
-          ? "KOBUN · 2026.2"
+          ? `KOBUN · ${state.selectedPeriod}`
           : hour < 11 ? "Good morning." : hour < 18 ? "Good afternoon." : "Good evening.";
   elements.dashboardTitle.textContent = isPublicSubject()
     ? (completed ? "次の題名を選ぶ" : "学習する題名を選ぶ")
@@ -1293,7 +1298,9 @@ function applySettings() {
   document.body.classList.toggle("max-mode", isMaxMode());
   document.querySelector('meta[name="theme-color"]')?.setAttribute(
     "content",
-    isMaxMode() && state.view === "quiz" ? "#090a12" : "#f5f5f7",
+    isMaxMode() && state.view === "quiz"
+      ? "#090a12"
+      : document.documentElement.dataset.theme === "dark" ? "#000000" : "#ffffff",
   );
   if (!isMaxMode() || !state.settings.sound) maxAudio.stopAll();
   else maxAudio.setIntensity(state.settings.soundIntensity);
@@ -1806,7 +1813,7 @@ async function importStudyData(file) {
   );
   state.settings = { ...DEFAULT_SETTINGS, ...state.settings, ...settings };
   state.bestCombo = Number(bestCombo) || state.bestCombo;
-  if (selectedPeriod) state.selectedPeriod = selectedPeriod;
+  if (normalizeSelectedPeriod(selectedPeriod)) state.selectedPeriod = selectedPeriod;
   await Promise.all([
     setMeta(AI_LINK_JOURNAL_KEY, state.aiLinkJournal),
     setMeta("studyProgress", state.studyProgress),
@@ -2700,7 +2707,7 @@ function spawnLightColumns({ count = 2, origin = null, palette = PARTICLE_COLORS
 
 /**
  * transformを載せてよい要素だけを返す。
- * position:fixed の子（.next-button / .bottom-nav）を
+ * position:fixed の子（.next-button）を
  * 内包する要素は含めない（含めると固定配置の基準がずれて回答UIが飛ぶ）。
  */
 function worldStageElements() {
@@ -2713,7 +2720,6 @@ function worldStageElements() {
   const view = document.querySelector(`.view[data-view="${state.view}"]`);
   if (view && !view.hidden) nodes.push(view);
   if (elements.appHeader && !elements.appHeader.hidden) nodes.push(elements.appHeader);
-  if (elements.bottomNav && !elements.bottomNav.hidden) nodes.push(elements.bottomNav);
   return nodes;
 }
 
@@ -3205,15 +3211,7 @@ function setView(view) {
   document.querySelectorAll("[data-view]").forEach((section) => {
     section.hidden = section.dataset.view !== view;
   });
-  document.querySelectorAll("[data-view-target]").forEach((button) => {
-    button.classList.toggle(
-      "active",
-      button.dataset.viewTarget === view ||
-        (view === "kobun" && button.dataset.viewTarget === (kobunScreen === "reference" ? "list" : kobunScreen === "records" ? "analysis" : "dashboard")) ||
-        (button.dataset.viewTarget === "dashboard" && view === "range-detail"),
-    );
-  });
-  elements.bottomNav.hidden = ["quiz", "period", "subject"].includes(view);
+  updateNavActive(view, kobunScreen);
   elements.appHeader.hidden = ["quiz", "period", "subject"].includes(view);
   document.body.classList.toggle("quiz-active", view === "quiz");
   document.body.classList.toggle("health-notes-active", view === "health-notes");
@@ -3248,6 +3246,17 @@ function setView(view) {
   }
   if (view === "kobun") kobun.show(kobunScreen ?? "home");
   applySettings();
+}
+
+function updateNavActive(view, kobunScreen) {
+  document.querySelectorAll("[data-view-target]").forEach((button) => {
+    button.classList.toggle(
+      "active",
+      button.dataset.viewTarget === view ||
+        (view === "kobun" && button.dataset.viewTarget === (kobunScreen === "reference" ? "list" : kobunScreen === "records" ? "analysis" : "dashboard")) ||
+        (button.dataset.viewTarget === "dashboard" && view === "range-detail"),
+    );
+  });
 }
 
 function renderHeader() {
@@ -5314,7 +5323,9 @@ function bindEvents() {
     if (target.dataset.viewTarget) {
       // 学習中に左上のマークなどで画面を移るときも、学習の終了処理を通す。
       if (state.view === "quiz" && !leaveQuiz()) return;
-      setView(target.dataset.viewTarget);
+      // 右上の丸ボタンは、開いている画面でもう一度押すとホームへ戻る。
+      const closing = target.hasAttribute("data-header-toggle") && target.classList.contains("active");
+      setView(closing ? "dashboard" : target.dataset.viewTarget);
     }
     if (target.dataset.period) {
       state.selectedPeriod = target.dataset.period;
@@ -5753,7 +5764,7 @@ async function boot() {
       fetch("./data/items.json?v=2026.08.31b"),
       fetch("./data/public-items.json?v=2026.09.01"),
       fetch("./data/health-items.json?v=2026.09.01"),
-      fetch("./data/kobun-vocabulary.json?v=2026.9.38"),
+      fetch("./data/kobun-vocabulary.json?v=2026.9.39"),
       loadHistory(),
       getMeta("selectedMode"),
       getMetaObject("settings", DEFAULT_SETTINGS),
@@ -5805,7 +5816,8 @@ async function boot() {
     );
     adoptLegacyStudyConfigs(legacyRecentStudies);
     state.lastSessionResult = normalizeSessionResultSnapshot(lastSessionResult);
-    state.selectedPeriod = selectedPeriod === "2026.2" ? selectedPeriod : null;
+    // 2定を選んでいた端末は、もう一度回を選ぶ画面から始める。
+    state.selectedPeriod = normalizeSelectedPeriod(selectedPeriod);
     state.aiLink = normalizeAiLinkConfig(aiLink);
     state.aiLinkJournal = Array.isArray(aiLinkJournal) ? aiLinkJournal : [];
     state.deviceSync = normalizeDeviceSync(deviceSync);
@@ -5825,7 +5837,7 @@ async function boot() {
         .catch((error) => console.warn("AI連携の同期に失敗しました", error));
     }
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.38").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.39").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

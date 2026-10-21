@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#f5f5f7" />
+    <meta name="theme-color" content="#ffffff" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Words" />
@@ -29,14 +29,14 @@
           document.documentElement.dataset.theme = dark ? "dark" : "light";
           document.documentElement.dataset.themePreference = preference;
           var meta = document.querySelector('meta[name="theme-color"]');
-          if (meta) meta.setAttribute("content", dark ? "#000000" : "#f6f6f7");
+          if (meta) meta.setAttribute("content", dark ? "#000000" : "#ffffff");
         } catch (error) {
           document.documentElement.dataset.theme = "light";
         }
       })();
     </script>
-    <link rel="stylesheet" href="./styles.css?v=2026.9.38" />
-    <link rel="stylesheet" href="./kobun.css?v=2026.9.38" />
+    <link rel="stylesheet" href="./styles.css?v=2026.9.39" />
+    <link rel="stylesheet" href="./kobun.css?v=2026.9.39" />
   </head>
   <body>
     <div class="fx-backdrop" id="fx-backdrop" aria-hidden="true">
@@ -51,7 +51,20 @@
           <span class="brand-mark" aria-hidden="true">W</span>
           <span>Words</span>
         </button>
-        <div class="header-status" id="header-status">読み込み中</div>
+        <div class="header-actions">
+          <div class="header-status" id="header-status">読み込み中</div>
+          <!-- 開いている画面のボタンをもう一度押すと、ホームへ戻る。 -->
+          <button class="header-round-button" id="nav-list-button" type="button" data-view-target="list" data-header-toggle>
+            <svg class="header-icon-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.5C10.4 5.3 8.2 4.8 3.5 5v13c4.7-.2 6.9.3 8.5 1.5 1.6-1.2 3.8-1.7 8.5-1.5V5c-4.7-.2-6.9.3-8.5 1.5z" /><path d="M12 6.5v13" /></svg>
+            <svg class="header-icon-close" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" /></svg>
+            <span class="sr-only" id="nav-list-label">単語帳</span>
+          </button>
+          <button class="header-round-button" type="button" data-view-target="settings" data-header-toggle>
+            <svg class="header-icon-open" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
+            <svg class="header-icon-close" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" /></svg>
+            <span class="sr-only">設定</span>
+          </button>
+        </div>
       </header>
 
       <main class="main-content">
@@ -61,7 +74,12 @@
             <p class="eyebrow">定期テスト対策</p>
             <h1>学習する回を選ぶ</h1>
             <p>最初に一度だけ選択します。次回からは自動で進みます。</p>
-            <button class="period-button" type="button" data-period="2026.2">
+            <button class="period-button" type="button" data-period="2026.3">
+              <span>2026.3</span><small>3定</small><strong aria-hidden="true">→</strong>
+            </button>
+            <!-- 2定は学習を終えたので選べないように隠す。戻すときは hidden を外し、
+                 app.js の AVAILABLE_PERIODS に "2026.2" を足す。 -->
+            <button class="period-button" type="button" data-period="2026.2" hidden>
               <span>2026.2</span><small>2学期</small><strong aria-hidden="true">→</strong>
             </button>
           </div>
@@ -69,7 +87,7 @@
 
         <section class="view entry-view" id="view-subject" data-view="subject" hidden>
           <div class="entry-card subject-card">
-            <p class="eyebrow">2026.2</p>
+            <p class="eyebrow">2026.3</p>
             <h1>教科を選ぶ</h1>
             <p>学習する教科を選んでください。</p>
             <div class="subject-grid">
@@ -251,7 +269,7 @@
           <iframe
             class="health-notes-frame"
             id="health-notes-frame"
-            src="./health-notes.html?v=2026.2.9"
+            src="./health-notes.html?v=2026.9.39"
             title="保健 要点まとめ・知識つながりノート"
           ></iframe>
         </section>
@@ -260,12 +278,13 @@
           <iframe
             class="public-notes-frame"
             id="public-notes-frame"
-            src="./public-notes.html?v=2026.9.10"
+            src="./public-notes.html?v=2026.9.39"
             title="公共 まとめノート"
           ></iframe>
         </section>
 
         <section class="view" id="view-analysis" data-view="analysis" hidden>
+          <button class="text-button back-link" type="button" data-view-target="dashboard">← ホームへ戻る</button>
           <div class="dashboard-result" id="analysis-result" hidden></div>
         </section>
 
@@ -283,24 +302,6 @@
         </section>
       </main>
 
-      <nav class="bottom-nav" id="bottom-nav" aria-label="メインナビゲーション">
-        <button type="button" data-view-target="dashboard" class="active">
-          <span aria-hidden="true">⌂</span>
-          <span>ホーム</span>
-        </button>
-        <button id="nav-list-button" type="button" data-view-target="list">
-          <span aria-hidden="true">▤</span>
-          <span id="nav-list-label">単語帳</span>
-        </button>
-        <button type="button" data-view-target="analysis">
-          <span aria-hidden="true">⌁</span>
-          <span>分析</span>
-        </button>
-        <button type="button" data-view-target="settings">
-          <span aria-hidden="true">⚙</span>
-          <span>設定</span>
-        </button>
-      </nav>
     </div>
 
     <div class="fx-vignette" id="fx-vignette" aria-hidden="true"></div>
@@ -335,6 +336,6 @@
     </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-    <script type="module" src="./src/app.js?v=2026.9.38"></script>
+    <script type="module" src="./src/app.js?v=2026.9.39"></script>
   </body>
 </html>

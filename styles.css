@@ -6074,10 +6074,11 @@ body.quiz-active .main-content {
 }
 
 /* --------------------------------------------------------------------------
-   白基調（ライト）
-   背景も面も完全な白にし、色のにじみやグラデーションは置かない。
-   面の区切りは薄い線で示す。レイアウトには手を入れない。
-   ダークモードには当てない。
+   白のミニマル（ライト）
+   背景は完全な白。枠線・区切り線・グラデーション・影はできるだけ置かず、
+   押せる面は淡いグレーの面（--tile）だけで示す。強調は黒の一色に絞り、
+   正解・不正解など意味のある色だけを残す。
+   ダークモードには当てない（ダークは白い線で面を示す設計のまま）。
    -------------------------------------------------------------------------- */
 
 :root:not([data-theme="dark"]) {
@@ -6086,8 +6087,24 @@ body.quiz-active .main-content {
   --surface: #ffffff;
   --surface-solid: #ffffff;
   --surface-rgb: 255, 255, 255;
+  --surface-muted: #f4f4f5;
+  --surface-muted-strong: #e4e4e7;
+  --tile: #f4f4f5;
+  --tile-pressed: #e9e9ec;
+  --track: #e4e4e7;
+  --text: #111113;
+  --ink: #111113;
+  --secondary: #71717a;
+  --text-secondary: #71717a;
+  --tertiary: #a1a1aa;
+  --line: transparent;
+  --line-strong: transparent;
+  --accent: #111113;
+  --blue: #111113;
   --shadow-card: none;
   --shadow-raised: none;
+  --focus-ring: 0 0 0 3px rgba(17, 17, 19, 0.14);
+  --gloss-alpha: 0;
 }
 
 :root:not([data-theme="dark"]),
@@ -6095,18 +6112,150 @@ body.quiz-active .main-content {
   background: #ffffff;
 }
 
+/* 見出しは大きく太く、詰めて組む。 */
+:root:not([data-theme="dark"]) h1,
+:root:not([data-theme="dark"]) h2 {
+  color: var(--text);
+  font-weight: 780;
+  letter-spacing: -0.04em;
+}
+
+:root:not([data-theme="dark"]) .eyebrow {
+  color: var(--tertiary);
+  letter-spacing: 0.14em;
+}
+
+/* ヘッダー：線も影もなく、白の上にロゴと丸ボタンだけ。 */
 :root:not([data-theme="dark"]) .app-header {
-  background: rgba(255, 255, 255, 0.94);
-  border-bottom-color: var(--line);
+  background: rgba(255, 255, 255, 0.86);
+  border-bottom: 0;
   box-shadow: none;
 }
 
-:root:not([data-theme="dark"]) .header-status {
-  background: #ffffff;
+:root:not([data-theme="dark"]) .brand-mark,
+:root:not([data-theme="dark"]) .entry-mark,
+:root:not([data-theme="dark"]) .onboarding-logo {
+  background: #111113;
+  border: 0;
+  box-shadow: none;
 }
 
-:root:not([data-theme="dark"]) .entry-card {
+:root:not([data-theme="dark"]) .brand-mark {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  font-size: 14px;
+}
+
+:root:not([data-theme="dark"]) .header-status {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: var(--tertiary);
+  font-weight: 600;
+}
+
+:root:not([data-theme="dark"]) .header-round-button {
+  background: var(--tile);
+  border-color: transparent;
+}
+
+:root:not([data-theme="dark"]) .header-round-button.active {
+  background: #111113;
+  border-color: #111113;
+}
+
+/* ボタン：黒一色の主ボタンと、グレーの面の副ボタン。 */
+:root:not([data-theme="dark"]) .primary-button,
+:root:not([data-theme="dark"]) .alphabet-key--submit {
+  color: #ffffff;
+  background: #111113;
+  border-color: #111113;
+  box-shadow: none;
+}
+
+:root:not([data-theme="dark"]) .secondary-button,
+:root:not([data-theme="dark"]) .icon-button,
+:root:not([data-theme="dark"]) .kb-button,
+:root:not([data-theme="dark"]) .character-count-toggle {
+  background: var(--tile);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+:root:not([data-theme="dark"]) .text-button {
+  color: var(--text);
+  font-weight: 650;
+}
+
+/* 押せる面はすべて、枠のないグレーの面にそろえる。 */
+:root:not([data-theme="dark"]) .period-button,
+:root:not([data-theme="dark"]) .subject-button,
+:root:not([data-theme="dark"]) .subject-button.english,
+:root:not([data-theme="dark"]) .subject-button.public,
+:root:not([data-theme="dark"]) .subject-button.health,
+:root:not([data-theme="dark"]) .subject-button.kobun,
+:root:not([data-theme="dark"]) .range-choice,
+:root:not([data-theme="dark"]) .mode-progress-card,
+:root:not([data-theme="dark"]) .content-choice,
+:root:not([data-theme="dark"]) .selection-card,
+:root:not([data-theme="dark"]) .multi-select-card,
+:root:not([data-theme="dark"]) .criterion-option,
+:root:not([data-theme="dark"]) .settings-card,
+:root:not([data-theme="dark"]) .word-card,
+:root:not([data-theme="dark"]) .kb-menu-card,
+:root:not([data-theme="dark"]) .kb-record {
+  color: var(--text);
+  background: var(--tile);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+:root:not([data-theme="dark"]) .range-choice:active,
+:root:not([data-theme="dark"]) .mode-progress-card:active,
+:root:not([data-theme="dark"]) .content-choice:active,
+:root:not([data-theme="dark"]) .selection-card:active,
+:root:not([data-theme="dark"]) .multi-select-card:active,
+:root:not([data-theme="dark"]) .criterion-option:active,
+:root:not([data-theme="dark"]) .subject-button:active,
+:root:not([data-theme="dark"]) .period-button:active {
+  background: var(--tile-pressed);
+}
+
+/* 選んでいる面は黒く反転させる。 */
+:root:not([data-theme="dark"]) .multi-select-card.selected,
+:root:not([data-theme="dark"]) .multi-select-card[aria-pressed="true"],
+:root:not([data-theme="dark"]) .criterion-option.selected {
+  color: #ffffff;
+  background: #111113;
+}
+
+/* 「複数の範囲を選ぶ」「その他」は点線の箱をやめ、控えめな行にする。 */
+:root:not([data-theme="dark"]) .range-multi-entry,
+:root:not([data-theme="dark"]) .content-choice--secondary {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+:root:not([data-theme="dark"]) .range-multi-icon {
+  color: var(--text);
+  background: var(--tile);
+  border: 0;
+  border-radius: 50%;
+}
+
+/* 区切り線はなくし、余白で区切る。 */
+:root:not([data-theme="dark"]) .dashboard-links {
+  padding-top: 0;
+  border-top: 0;
+}
+
+:root:not([data-theme="dark"]) .entry-card,
+:root:not([data-theme="dark"]) .onboarding-card,
+:root:not([data-theme="dark"]) .result-panel {
   background: #ffffff;
+  border: 0;
   box-shadow: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -6116,48 +6265,360 @@ body.quiz-active .main-content {
   display: none;
 }
 
+:root:not([data-theme="dark"]) .entry-card {
+  padding-right: 4px;
+  padding-left: 4px;
+}
+
+/* 回の選択：大きな数字だけを置いた黒いカード。 */
 :root:not([data-theme="dark"]) .period-button {
-  color: var(--text);
-  background: #ffffff;
-  border: 1px solid var(--line-strong);
-  box-shadow: none;
+  color: #ffffff;
+  background: #111113;
 }
 
-:root:not([data-theme="dark"]) .subject-button,
-:root:not([data-theme="dark"]) .subject-button.english,
-:root:not([data-theme="dark"]) .subject-button.public,
-:root:not([data-theme="dark"]) .subject-button.health,
-:root:not([data-theme="dark"]) .subject-button.kobun {
-  background: #ffffff;
-  border-color: var(--line-strong);
-  box-shadow: none;
+:root:not([data-theme="dark"]) .period-button small {
+  opacity: 0.6;
 }
 
-/* 教科の色はアイコンの文字にだけ残す。 */
+/* 教科：教科の色は丸いアイコンの文字にだけ残す。 */
 :root:not([data-theme="dark"]) .subject-button .subject-icon {
   background: #ffffff;
-  border-color: var(--line-strong);
+  border: 0;
+  border-radius: 50%;
 }
 
-:root:not([data-theme="dark"]) .range-choice,
-:root:not([data-theme="dark"]) .range-multi-entry,
-:root:not([data-theme="dark"]) .mode-progress-card,
-:root:not([data-theme="dark"]) .content-choice,
-:root:not([data-theme="dark"]) .selection-card,
-:root:not([data-theme="dark"]) .multi-select-card,
-:root:not([data-theme="dark"]) .criterion-option,
-:root:not([data-theme="dark"]) .settings-card,
-:root:not([data-theme="dark"]) .word-card,
-:root:not([data-theme="dark"]) .question-card,
-:root:not([data-theme="dark"]) .result-panel,
-:root:not([data-theme="dark"]) .onboarding-card {
+:root:not([data-theme="dark"]) .subject-button .subject-icon,
+:root:not([data-theme="dark"]) .subject-button.public .subject-icon,
+:root:not([data-theme="dark"]) .subject-button.health .subject-icon,
+:root:not([data-theme="dark"]) .subject-button.kobun .subject-icon {
+  border-color: transparent;
+}
+
+/* 進み具合のバー：細く、黒の濃淡だけで見せる（2セット目以降は今まで通り色が変わる）。 */
+:root:not([data-theme="dark"]) .progress-gauge,
+:root:not([data-theme="dark"]) .progress-legend {
+  --gauge-strong: #111113;
+  --gauge-soft: rgba(17, 17, 19, 0.2);
+}
+
+:root:not([data-theme="dark"]) .progress-gauge {
+  height: 6px;
   background: #ffffff;
-  border-color: var(--line-strong);
 }
 
+:root:not([data-theme="dark"]) .progress-gauge.is-finished {
+  height: 4px;
+}
+
+:root:not([data-theme="dark"]) .progress-figure::before {
+  border-radius: 50%;
+}
+
+:root:not([data-theme="dark"]) .quiz-progress {
+  height: 4px;
+  background: var(--tile);
+}
+
+:root:not([data-theme="dark"]) .quiz-progress span {
+  background: #111113;
+}
+
+/* 学習画面：カードは白で浮かせ、線の代わりにやわらかい影だけを置く。 */
+:root:not([data-theme="dark"]) .question-card,
+:root:not([data-theme="dark"]) .public-recall-card {
+  background: #ffffff;
+  border-color: transparent;
+  box-shadow: 0 1px 3px rgba(17, 17, 19, 0.04), 0 24px 60px -28px rgba(17, 17, 19, 0.22);
+}
+
+:root:not([data-theme="dark"]) .mode-pill {
+  background: var(--tile);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+:root:not([data-theme="dark"]) .choice-button {
+  background: var(--tile);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+:root:not([data-theme="dark"]) .choice-button > span {
+  background: #ffffff;
+  border-radius: 50%;
+}
+
+:root:not([data-theme="dark"]) .choice-button.choice-unknown {
+  background: transparent;
+  border-color: transparent;
+}
+
+:root:not([data-theme="dark"]) .choice-button.correct {
+  background: #e7f6ee;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+:root:not([data-theme="dark"]) .choice-button.wrong {
+  background: #fdecee;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+:root:not([data-theme="dark"]) .feedback-card,
+:root:not([data-theme="dark"]) .swipe-choice-card > .feedback-card,
+:root:not([data-theme="dark"]) .swipe-input-card > .keyboard-feedback-card {
+  border-top-color: transparent;
+}
+
+:root:not([data-theme="dark"]) .source-box,
+:root:not([data-theme="dark"]) .input-correct-answer,
+:root:not([data-theme="dark"]) .question-translation,
+:root:not([data-theme="dark"]) .feedback-explanation {
+  background: var(--tile);
+  border-color: transparent;
+}
+
+:root:not([data-theme="dark"]) .gesture-guide-item,
+:root:not([data-theme="dark"]) .choice-gesture-footer {
+  background: transparent;
+  border-color: transparent;
+}
+
+:root:not([data-theme="dark"]) .public-recall-answer,
+:root:not([data-theme="dark"]) .vocab-recall-card .vocab-answer {
+  border-color: transparent;
+}
+
+:root:not([data-theme="dark"]) .word-slot,
+:root:not([data-theme="dark"]) .answer-field input {
+  background: var(--tile);
+  border-color: transparent;
+}
+
+:root:not([data-theme="dark"]) .word-slot:focus-within,
+:root:not([data-theme="dark"]) .word-slot.is-active-slot,
+:root:not([data-theme="dark"]) .answer-field input:focus {
+  background: #ffffff;
+  border-color: #111113;
+  box-shadow: none;
+}
+
+:root:not([data-theme="dark"]) .alphabet-key {
+  background: var(--tile);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+:root:not([data-theme="dark"]) .alphabet-keyboard {
+  background: rgba(255, 255, 255, 0.96);
+  border-top-color: transparent;
+}
+
+:root:not([data-theme="dark"]) .alphabet-key.alphabet-key--submit {
+  color: #ffffff;
+  background: #111113;
+}
+
+/* まだ押せない主ボタンは、薄いグレーの文字で示す。 */
+:root:not([data-theme="dark"]) .primary-button:disabled {
+  color: var(--tertiary);
+  background: var(--tile);
+  border-color: transparent;
+}
+
+/* 単語帳・設定 */
+:root:not([data-theme="dark"]) .search-field {
+  background: var(--tile);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+:root:not([data-theme="dark"]) .search-field:focus-within {
+  background: #ffffff;
+  box-shadow: 0 0 0 1.5px #111113;
+}
+
+:root:not([data-theme="dark"]) .settings-row,
+:root:not([data-theme="dark"]) .ai-link-field,
+:root:not([data-theme="dark"]) .ai-link-log li,
+:root:not([data-theme="dark"]) .ai-link-card .settings-row:first-of-type {
+  border-top-color: rgba(17, 17, 19, 0.06);
+}
+
+:root:not([data-theme="dark"]) .segmented-options {
+  background: var(--tile-pressed);
+  border-color: transparent;
+}
+
+:root:not([data-theme="dark"]) .segmented-options button {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+:root:not([data-theme="dark"]) .segmented-options button.selected,
+:root:not([data-theme="dark"]) .cycle-performance-actions .selected {
+  color: var(--text);
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(17, 17, 19, 0.08);
+}
+
+:root:not([data-theme="dark"]) .switch > span[aria-hidden] {
+  background: var(--track);
+}
+
+:root:not([data-theme="dark"]) .switch input:checked + span {
+  background: #111113;
+}
+
+:root:not([data-theme="dark"]) .settings-input,
+:root:not([data-theme="dark"]) .settings-select,
+:root:not([data-theme="dark"]) .ai-link-url-value code,
+:root:not([data-theme="dark"]) .ai-link-token,
+:root:not([data-theme="dark"]) .ai-link-guide pre {
+  background: #ffffff;
+  border-color: transparent;
+}
+
+/* 結果画面の小さな面も、枠をなくしてグレーの面にそろえる。 */
+:root:not([data-theme="dark"]) .result-record-grid > div,
+:root:not([data-theme="dark"]) .result-next-card,
+:root:not([data-theme="dark"]) .result-review-list,
+:root:not([data-theme="dark"]) .result-cycle,
+:root:not([data-theme="dark"]) .kb-empty,
+:root:not([data-theme="dark"]) .kb-result {
+  background: var(--tile);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+/* 選択肢のボタンにマウスを載せたときも、線ではなく面の濃さで示す。 */
 @media (hover: hover) and (pointer: fine) {
-  :root:not([data-theme="dark"]) .period-button:hover {
-    border-color: var(--text);
+  :root:not([data-theme="dark"]) .range-choice:hover,
+  :root:not([data-theme="dark"]) .mode-progress-card:hover,
+  :root:not([data-theme="dark"]) .content-choice:hover,
+  :root:not([data-theme="dark"]) .selection-card:hover,
+  :root:not([data-theme="dark"]) .multi-select-card:hover,
+  :root:not([data-theme="dark"]) .criterion-option:hover,
+  :root:not([data-theme="dark"]) .subject-button:hover,
+  :root:not([data-theme="dark"]) .word-card:hover,
+  :root:not([data-theme="dark"]) .secondary-button:hover {
+    background: var(--tile-pressed);
+    border-color: transparent;
     box-shadow: none;
+    transform: none;
+  }
+
+  :root:not([data-theme="dark"]) .choice-button:hover:not(:disabled) {
+    background: var(--tile-pressed);
+    border-color: transparent;
+  }
+
+  :root:not([data-theme="dark"]) .primary-button:hover,
+  :root:not([data-theme="dark"]) .period-button:hover {
+    box-shadow: none;
+    transform: none;
+    opacity: 0.88;
+  }
+}
+
+/* 小さなラベル類も枠を外し、置かれた面と逆の色で示す。 */
+:root:not([data-theme="dark"]) .item-tag,
+:root:not([data-theme="dark"]) .word-form-kind,
+:root:not([data-theme="dark"]) .result-context-list > *,
+:root:not([data-theme="dark"]) .result-context-list li,
+:root:not([data-theme="dark"]) .in-progress-badge {
+  background: #ffffff;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+:root:not([data-theme="dark"]) .result-context-list > *,
+:root:not([data-theme="dark"]) .result-context-list li {
+  background: var(--tile);
+}
+
+/* 面の中に置くボタンは白にして、面と見分けられるようにする。 */
+:root:not([data-theme="dark"]) .settings-card .secondary-button,
+:root:not([data-theme="dark"]) .settings-card .criterion-option,
+:root:not([data-theme="dark"]) .result-next-card .secondary-button,
+:root:not([data-theme="dark"]) .word-card .secondary-button {
+  background: #ffffff;
+}
+
+:root:not([data-theme="dark"]) .settings-card .criterion-option.selected {
+  background: #111113;
+}
+
+:root:not([data-theme="dark"]) .choice-button.choice-unknown > span {
+  background: var(--tile);
+}
+
+:root:not([data-theme="dark"]) .back-link {
+  color: var(--secondary);
+}
+
+:root:not([data-theme="dark"]) .public-recall-explanation,
+:root:not([data-theme="dark"]) .public-recall-card:not(.vocab-recall-card) .public-recall-explanation,
+:root:not([data-theme="dark"]) .textbook-evidence {
+  background: var(--tile);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+:root:not([data-theme="dark"]) .recall-gesture-guide,
+:root:not([data-theme="dark"]) .public-recall-card:not(.vocab-recall-card) .recall-gesture-guide {
+  border-top-color: transparent;
+}
+
+/* --------------------------------------------------------------------------
+   いらない線を外す（ライト・ダーク共通）
+   点線の箱と、ホームの区切り線はどちらの明るさでも置かない。
+   -------------------------------------------------------------------------- */
+
+:root {
+  --tile: #f4f4f5;
+}
+
+:root[data-theme="dark"] {
+  --tile: rgba(255, 255, 255, 0.1);
+}
+
+:root .range-multi-entry,
+:root .content-choice--secondary,
+:root[data-theme="dark"] .range-multi-entry,
+:root[data-theme="dark"] .content-choice--secondary {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+:root .dashboard-links {
+  padding-top: 0;
+  border-top: 0;
+}
+
+:root .dashboard-links .text-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  color: var(--text);
+  background: var(--tile);
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+:root .dashboard-links .text-button::after {
+  content: "→";
+}
+
+/* 幅の狭い端末では、ヘッダーはロゴと丸ボタンだけにする。 */
+@media (max-width: 379px) {
+  .header-actions .header-status {
+    display: none;
   }
 }

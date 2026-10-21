@@ -225,3 +225,16 @@ test("学習する回は3定だけを選べ、2定は隠れている", () => {
   assert.match(appSource, /state\.selectedPeriod = normalizeSelectedPeriod\(selectedPeriod\);/);
   assert.doesNotMatch(appSource, /· 2026\.2"/);
 });
+
+test("3定の教科は英語と公共だけで、保健・古文は隠れている", () => {
+  assert.match(indexSource, /<button class="subject-button english" type="button" data-subject="english">/);
+  assert.match(indexSource, /<button class="subject-button public" type="button" data-subject="public">/);
+  assert.match(indexSource, /<button class="subject-button health" type="button" data-subject="health" hidden>/);
+  assert.match(indexSource, /<button class="subject-button kobun" type="button" data-subject="kobun" hidden>/);
+});
+
+test("白のミニマル：点線の箱とホームの区切り線を置かない", () => {
+  assert.match(stylesSource, /:root \.range-multi-entry,[\s\S]*?border-color: transparent/);
+  assert.match(stylesSource, /:root \.dashboard-links \{\s*padding-top: 0;\s*border-top: 0;/);
+  assert.match(stylesSource, /:root:not\(\[data-theme="dark"\]\) \{[\s\S]*?--line: transparent;/);
+});

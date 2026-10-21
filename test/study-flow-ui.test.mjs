@@ -238,3 +238,10 @@ test("白のミニマル：点線の箱とホームの区切り線を置かな�
   assert.match(stylesSource, /:root \.dashboard-links \{\s*padding-top: 0;\s*border-top: 0;/);
   assert.match(stylesSource, /:root:not\(\[data-theme="dark"\]\) \{[\s\S]*?--line: transparent;/);
 });
+
+test("3定は学習範囲のデータがまだ無いことを示し、学習の記録への入口は置かない", () => {
+  assert.match(appSource, /const PERIODS_WITHOUT_DATA = \["2026\.3"\];/);
+  assert.match(appSource, /学習範囲のデータはまだありません/);
+  assert.match(appSource, /if \(view === "analysis"\) view = "dashboard";/);
+  assert.doesNotMatch(indexSource, /学習の記録を見る/);
+});

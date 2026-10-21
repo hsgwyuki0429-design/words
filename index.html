@@ -9,9 +9,9 @@
     <meta name="apple-mobile-web-app-title" content="Words" />
     <meta
       name="description"
-      content="英語・古文の基礎暗記と公共・保健の一問一答に対応した定期テスト対策アプリ"
+      content="英語の基礎暗記と公共の一問一答に対応した定期テスト対策アプリ"
     />
-    <title>Words — 英語・古文・公共・保健対策</title>
+    <title>Words — 英語・公共対策</title>
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icons/app-icon.svg" type="image/svg+xml" />
     <link rel="icon" href="./icons/app-icon-192.png" sizes="192x192" type="image/png" />
@@ -35,8 +35,8 @@
         }
       })();
     </script>
-    <link rel="stylesheet" href="./styles.css?v=2026.9.39" />
-    <link rel="stylesheet" href="./kobun.css?v=2026.9.39" />
+    <link rel="stylesheet" href="./styles.css?v=2026.9.40" />
+    <link rel="stylesheet" href="./kobun.css?v=2026.9.40" />
   </head>
   <body>
     <div class="fx-backdrop" id="fx-backdrop" aria-hidden="true">
@@ -101,12 +101,13 @@
                 <span><strong>公共</strong><small>一問一答 207問</small></span>
                 <span aria-hidden="true">›</span>
               </button>
-              <button class="subject-button health" type="button" data-subject="health">
+              <!-- 3定では英語と公共だけを学習する。保健・古文は隠しておき、使うときに hidden を外す。 -->
+              <button class="subject-button health" type="button" data-subject="health" hidden>
                 <span class="subject-icon" aria-hidden="true">保</span>
                 <span><strong>保健</strong><small>一問一答 282問</small></span>
                 <span aria-hidden="true">›</span>
               </button>
-              <button class="subject-button kobun" type="button" data-subject="kobun">
+              <button class="subject-button kobun" type="button" data-subject="kobun" hidden>
                 <span class="subject-icon" aria-hidden="true">古</span>
                 <span><strong>古文</strong><small>助動詞・古文単語360語句</small></span>
                 <span aria-hidden="true">›</span>
@@ -336,6 +337,6 @@
     </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-    <script type="module" src="./src/app.js?v=2026.9.39"></script>
+    <script type="module" src="./src/app.js?v=2026.9.40"></script>
   </body>
 </html>

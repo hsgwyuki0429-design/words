@@ -1,5 +1,5 @@
-import { createHaptics } from "./haptics.js?v=2026.9.39";
-import { createKobunController } from "./kobun.js?v=2026.9.39";
+import { createHaptics } from "./haptics.js?v=2026.9.40";
+import { createKobunController } from "./kobun.js?v=2026.9.40";
 import {
   ALL_MODES,
   ALPHABET_KEYBOARD_ROWS,
@@ -72,7 +72,7 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.39";
+} from "./logic.js?v=2026.9.40";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -93,7 +93,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.9.39";
+} from "./storage.js?v=2026.9.40";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -101,7 +101,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.39";
+} from "./quiz-gestures.js?v=2026.9.40";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
@@ -110,7 +110,7 @@ import {
   normalizeSpeechRate,
   normalizeSpeechVoiceURI,
   voiceKey,
-} from "./speech.js?v=2026.9.39";
+} from "./speech.js?v=2026.9.40";
 import {
   AI_LINK_JOURNAL_KEY,
   AI_LINK_META_KEY,
@@ -126,7 +126,7 @@ import {
   isAiLinkConfigured,
   mcpUrlFor,
   normalizeAiLinkConfig,
-} from "./ai-link.js?v=2026.9.39";
+} from "./ai-link.js?v=2026.9.40";
 import {
   DEFAULT_DEVICE_SYNC,
   DEVICE_SYNC_META_KEY,
@@ -143,13 +143,13 @@ import {
   syncStateLabel,
   transferFileName,
   unsentEntries,
-} from "./sync.js?v=2026.9.39";
+} from "./sync.js?v=2026.9.40";
 import {
   applyThemePreference,
   normalizeThemePreference,
   readStoredThemePreference,
   watchSystemTheme,
-} from "./theme.js?v=2026.9.39";
+} from "./theme.js?v=2026.9.40";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -5764,7 +5764,7 @@ async function boot() {
       fetch("./data/items.json?v=2026.08.31b"),
       fetch("./data/public-items.json?v=2026.09.01"),
       fetch("./data/health-items.json?v=2026.09.01"),
-      fetch("./data/kobun-vocabulary.json?v=2026.9.39"),
+      fetch("./data/kobun-vocabulary.json?v=2026.9.40"),
       loadHistory(),
       getMeta("selectedMode"),
       getMetaObject("settings", DEFAULT_SETTINGS),
@@ -5837,7 +5837,7 @@ async function boot() {
         .catch((error) => console.warn("AI連携の同期に失敗しました", error));
     }
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.39").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.40").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

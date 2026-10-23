@@ -581,11 +581,13 @@ function selectSubject(subject) {
   elements.listTitle.textContent = isKobunVocabSubject()
     ? "重要語句一覧"
     : isRecallSubject() ? "一問一答" : "単語帳";
-  elements.navListButton.dataset.viewTarget = isHealthSubject()
-    ? "health-notes"
-    : isPublicSubject()
-      ? "public-notes"
-      : "list";
+  elements.navListButton.dataset.viewTarget = !periodHasData()
+    ? "list"
+    : isHealthSubject()
+      ? "health-notes"
+      : isPublicSubject()
+        ? "public-notes"
+        : "list";
   elements.navListLabel.textContent = isHealthSubject()
     ? "まとめノート"
     : isPublicSubject()
@@ -3222,10 +3224,11 @@ function setView(view) {
   // 学習の記録は、いったん画面から外している。
   if (view === "analysis") view = "dashboard";
   if (view === "range-detail" && !state.filters.ranges.length) view = "dashboard";
-  if (view === "list" && isHealthSubject()) view = "health-notes";
-  if (view === "list" && isPublicSubject()) view = "public-notes";
-  if (view === "health-notes" && !isHealthSubject()) view = "list";
-  if (view === "public-notes" && !isPublicSubject()) view = "list";
+  // データの無い回では、まとめノートの代わりに「データはまだありません」を出す（list画面）。
+  if (view === "list" && isHealthSubject() && periodHasData()) view = "health-notes";
+  if (view === "list" && isPublicSubject() && periodHasData()) view = "public-notes";
+  if (view === "health-notes" && (!isHealthSubject() || !periodHasData())) view = "list";
+  if (view === "public-notes" && (!isPublicSubject() || !periodHasData())) view = "list";
   if (!["period", "subject"].includes(view) && !state.subject) view = state.selectedPeriod ? "subject" : "period";
   if (view !== "quiz" && state.session?.reviewTimer) {
     clearTimeout(state.session.reviewTimer);

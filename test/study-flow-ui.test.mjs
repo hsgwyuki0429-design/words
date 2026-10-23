@@ -245,3 +245,9 @@ test("3定は学習範囲のデータがまだ無いことを示し、学習の�
   assert.match(appSource, /if \(view === "analysis"\) view = "dashboard";/);
   assert.doesNotMatch(indexSource, /学習の記録を見る/);
 });
+
+test("データの無い回では、まとめノートの代わりに「データはまだありません」を出す", () => {
+  assert.match(appSource, /view === "list" && isPublicSubject\(\) && periodHasData\(\)/);
+  assert.match(appSource, /view === "public-notes" && \(!isPublicSubject\(\) \|\| !periodHasData\(\)\)/);
+  assert.match(appSource, /navListButton\.dataset\.viewTarget = !periodHasData\(\)\s*\? "list"/);
+});

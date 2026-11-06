@@ -3,9 +3,9 @@ import {
   allConnectionOptions, allMeaningOptions, conjugationOptions, gradeQuestion,
   questionsForMode, restoreKobunSession, splitForms, summarizeKobun, toggleForm,
   validateAuxiliaries, validateVocabulary,
-} from "./kobun-logic.js?v=2026.11.10";
-import { mergeAttempt, summarizeProgressGauge } from "./logic.js?v=2026.11.10";
-import { getMetaObject, putHistory, setMeta, stashMeta } from "./storage.js?v=2026.11.10";
+} from "./kobun-logic.js?v=2026.11.11";
+import { mergeAttempt, summarizeProgressGauge } from "./logic.js?v=2026.11.11";
+import { getMetaObject, putHistory, setMeta, stashMeta } from "./storage.js?v=2026.11.11";
 
 const META_KEY = "kobunStudy:v1";
 const escape = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
@@ -32,8 +32,8 @@ export function createKobunController({ root, getHistory, onQuizChange, onHeader
   async function load() {
     if (!loading) loading = (async () => {
       const [auxResponse, vocabResponse, progress] = await Promise.all([
-        fetch("./data/kobun-auxiliaries.json?v=2026.11.10"),
-        fetch("./data/kobun-vocabulary.json?v=2026.11.10"),
+        fetch("./data/kobun-auxiliaries.json?v=2026.11.11"),
+        fetch("./data/kobun-vocabulary.json?v=2026.11.11"),
         getMetaObject(META_KEY, {}),
       ]);
       if (!auxResponse.ok || !vocabResponse.ok) throw new Error("古文の教材を読み込めませんでした。通信を確認して再試行してください。");
@@ -113,7 +113,7 @@ export function createKobunController({ root, getHistory, onQuizChange, onHeader
     // 長期履歴の直近の完全正解を表示する。周回の習得とは区別して名前を付ける。
     return button("start", `<span class="mode-progress-head"><strong>${KOBUN_MODES[key]}</strong>${inProgress ? '<span class="mode-progress-cycle">続きから</span>' : ""}<span class="card-arrow" aria-hidden="true">›</span></span>
       <span class="progress-gauge-stack"><span class="progress-gauge" data-cycle="1" role="img" aria-label="解答済み ${gauge.answeredPercent}%、正解済み ${gauge.masteredPercent}%"><span class="progress-gauge-answered" style="width:${gauge.answeredWidth}%"></span><span class="progress-gauge-mastered" style="width:${gauge.masteredWidth}%"></span></span></span>
-      <span class="progress-legend" data-cycle="1"><span class="progress-figure is-answered">解答済み ${gauge.answeredPercent}%（${gauge.answeredItems}/${gauge.totalItems}）</span><span class="progress-figure is-mastered">正解済み ${gauge.masteredPercent}%（${gauge.masteredItems}/${gauge.totalItems}）</span></span>`, `data-kb-mode="${key}"`, `mode-progress-card${inProgress ? " is-in-progress" : ""}`);
+      <span class="progress-legend" data-cycle="1"><span class="progress-figure is-mastered">正解済み ${gauge.masteredPercent}%（${gauge.masteredItems}/${gauge.totalItems}）</span><span class="progress-figure is-answered">解答済み ${gauge.answeredPercent}%（${gauge.answeredItems}/${gauge.totalItems}）</span></span>`, `data-kb-mode="${key}"`, `mode-progress-card${inProgress ? " is-in-progress" : ""}`);
   }
 
   // 古文単語の作品一覧。ホームからそのまま作品を選べるように、

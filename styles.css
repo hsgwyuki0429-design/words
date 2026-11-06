@@ -94,6 +94,7 @@
 
 :root:not([data-theme="dark"]) {
   --line: transparent;
+  --gauge-stripe: rgba(255, 255, 255, 0.6);
 }
 
 /* --------------------------------------------------------------------------
@@ -711,6 +712,14 @@ textarea:focus-visible,
   color: rgba(255, 255, 255, 0.72);
 }
 
+.continue-card .progress-figure.is-mastered {
+  color: #ffffff;
+}
+
+.continue-card {
+  --gauge-stripe: rgba(17, 17, 19, 0.5);
+}
+
 .continue-card .progress-gauge-stack {
   margin-top: 8px;
 }
@@ -1017,8 +1026,9 @@ textarea:focus-visible,
 }
 
 .mode-progress-head strong {
-  flex: 0 1 auto;
+  flex: 0 0 auto;
   min-width: 0;
+  white-space: nowrap;
   font-size: 16px;
   font-weight: 800;
 }
@@ -1105,8 +1115,16 @@ textarea:focus-visible,
   transition: width 260ms var(--ease-out);
 }
 
-.progress-gauge-answered {
-  background: var(--gauge-soft);
+/* 解答済み（まだ習得していない分）は斜めの縞、習得は塗りつぶし。
+   色の濃さだけに頼らず、形で見分けられるようにする。 */
+.progress-gauge-answered,
+.progress-figure.is-answered::before {
+  background-color: var(--gauge-soft);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--gauge-stripe, rgba(255, 255, 255, 0.55)) 0 2px,
+    transparent 2px 5px
+  );
 }
 
 .progress-gauge-mastered {
@@ -1116,14 +1134,15 @@ textarea:focus-visible,
 .progress-legend {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
-  gap: 2px 12px;
+  align-items: center;
+  gap: 4px 14px;
+  margin-top: 1px;
 }
 
 .progress-figure {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   color: var(--secondary);
   font-size: 11px;
   font-weight: 650;
@@ -1131,14 +1150,17 @@ textarea:focus-visible,
 }
 
 .progress-figure::before {
-  width: 8px;
+  flex: 0 0 auto;
+  width: 14px;
   height: 8px;
-  border-radius: 3px;
+  border-radius: 999px;
   content: "";
 }
 
-.progress-figure.is-answered::before {
-  background: var(--gauge-soft);
+/* 習得がいちばん大事な数字なので、先頭に濃く出す。 */
+.progress-figure.is-mastered {
+  color: var(--text);
+  font-weight: 800;
 }
 
 .progress-figure.is-mastered::before {
@@ -4737,6 +4759,10 @@ body.max-mode .combo-pill--pop .combo-pill-text::after { animation: combo-ghost-
   background: var(--background);
 }
 
+:root[data-theme="dark"] {
+  --gauge-stripe: rgba(11, 11, 13, 0.45);
+}
+
 /* 面の中に置く行は、面よりもう一段明るくする（ライトの白い行と同じ役割）。 */
 :root[data-theme="dark"] .settings-row,
 :root[data-theme="dark"] .criterion-option,
@@ -4806,6 +4832,14 @@ body.max-mode .combo-pill--pop .combo-pill-text::after { animation: combo-ghost-
 :root[data-theme="dark"] .continue-cycle,
 :root[data-theme="dark"] .continue-card .progress-figure {
   color: rgba(11, 11, 13, 0.6);
+}
+
+:root[data-theme="dark"] .continue-card {
+  --gauge-stripe: rgba(255, 255, 255, 0.6);
+}
+
+:root[data-theme="dark"] .continue-card .progress-figure.is-mastered {
+  color: #0b0b0d;
 }
 
 :root[data-theme="dark"] .onboarding-backdrop {

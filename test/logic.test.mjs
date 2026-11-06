@@ -610,3 +610,19 @@ test("3定の英語は、訳に答えの英語がそのまま出ず、熟語の�
   // 重要度Cだけの基本語は収録しない。
   for (const basic of ["and", "of", "be", "I", "the"]) assert.ok(!byEnglish.has(basic), basic);
 });
+
+test("4択の誤答は品詞と訳の形をそろえ、正解だけが浮かないようにする", async () => {
+  const { generateChoices, glossShape } = await import("../src/logic.js");
+  const { readFileSync } = await import("node:fs");
+  const items = JSON.parse(readFileSync(new URL("../data/english-2026-3.json", import.meta.url), "utf8"));
+  assert.equal(glossShape("〜を逮捕する"), "~suru");
+  assert.equal(glossShape("消防の"), "na");
+  let matched = 0;
+  const targets = items.filter((item) => item.questionModes.includes("en_to_ja_choice"));
+  for (const item of targets) {
+    const choices = generateChoices(item, "en_to_ja_choice", items, () => 0.5);
+    const shape = glossShape(item.japanese);
+    if (choices.filter((choice) => choice !== item.japanese).every((choice) => glossShape(choice) === shape)) matched += 1;
+  }
+  assert.ok(matched / targets.length > 0.85, `形のそろう問題が少ない（${matched}/${targets.length}）`);
+});

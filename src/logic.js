@@ -731,6 +731,31 @@ function placeholderSignature(value) {
   return signature;
 }
 
+// 誤答の候補は、正解と見た目の形がそろうものを選ぶ。品詞や訳の語尾（〜する・〜な・〜に…）が
+// 1つだけ違うと、意味を知らなくても正解が分かってしまうため。
+function partOfSpeechKey(candidate) {
+  return String(candidate.partOfSpeech ?? candidate.type ?? "").split(/[・（(]/)[0];
+}
+
+const glossShapeCache = new Map();
+
+export function glossShape(text) {
+  const key = String(text ?? "");
+  const cached = glossShapeCache.get(key);
+  if (cached) return cached;
+  const gloss = key.split("／")[0].replace(/（[^）]*）/g, "").trim();
+  const tilde = /^[〜~]/.test(gloss);
+  const ending = /する$/.test(gloss) ? "suru"
+    : /(な|の|的)$/.test(gloss) ? "na"
+      : /い$/.test(gloss) ? "i"
+        : /(に|く|て|で|と)$/.test(gloss) ? "adv"
+          : /[うくすつぬむぶぐるた]$/.test(gloss) ? "verb"
+            : "noun";
+  const shape = `${tilde ? "~" : ""}${ending}`;
+  glossShapeCache.set(key, shape);
+  return shape;
+}
+
 export function generateChoices(item, mode, pool, rng = Math.random, excludedItemIds = []) {
   const correct = choiceAnswer(item, mode);
   const excluded = new Set(excludedItemIds);
@@ -747,12 +772,15 @@ export function generateChoices(item, mode, pool, rng = Math.random, excludedIte
     ));
 
   const targetTokenCount = tokenCountFor(item.english);
+  const targetPos = partOfSpeechKey(item);
+  const targetShape = glossShape(item.japanese);
   const rankCandidates = (source) =>
     shuffle(source, rng).map((candidate) => {
       const wordDifference = Math.abs(tokenCountFor(candidate.english) - targetTokenCount);
       const score =
         (candidate.type === item.type ? 8 : 0) +
-        (candidate.range !== item.range ? 3 : 0) +
+        (partOfSpeechKey(candidate) === targetPos ? 6 : 0) +
+        (glossShape(candidate.japanese) === targetShape ? 6 : 0) +
         (candidate.importance === item.importance ? 1 : 0) +
         Math.max(0, 2 - wordDifference);
       return { candidate, score };
@@ -766,21 +794,16 @@ export function generateChoices(item, mode, pool, rng = Math.random, excludedIte
   );
 
   const seen = new Set([normalizeAnswer(correct)]);
-  const usedRanges = new Set([item.range]);
   const distractors = [];
   const addDistractors = (source) => {
-    for (const requireNewRange of [true, false]) {
-      for (const { candidate } of source) {
-        if (requireNewRange && usedRanges.has(candidate.range)) continue;
-        const value = choiceAnswer(candidate, mode);
-        const key = normalizeAnswer(value);
-        if (!seen.has(key)) {
-          seen.add(key);
-          usedRanges.add(candidate.range);
-          distractors.push(value);
-        }
-        if (distractors.length === 3) return;
+    for (const { candidate } of source) {
+      const value = choiceAnswer(candidate, mode);
+      const key = normalizeAnswer(value);
+      if (!seen.has(key)) {
+        seen.add(key);
+        distractors.push(value);
       }
+      if (distractors.length === 3) return;
     }
   };
   addDistractors(candidates);

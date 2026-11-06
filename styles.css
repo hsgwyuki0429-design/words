@@ -72,8 +72,9 @@
   --tint-purple: #f3ecff;
 
   --gauge-track: #ececef;
-  --shadow-card: 0 1px 2px rgba(17, 17, 19, 0.04), 0 14px 40px rgba(17, 17, 19, 0.07);
-  --shadow-raised: 0 10px 30px rgba(17, 17, 19, 0.16);
+  /* 影は「ふちの影」と「遠くの影」を重ね、紙が少し浮いた程度にとどめる。 */
+  --shadow-card: 0 0 0 1px rgba(17, 17, 19, 0.035), 0 2px 6px rgba(17, 17, 19, 0.04), 0 18px 40px rgba(17, 17, 19, 0.06);
+  --shadow-raised: 0 0 0 1px rgba(17, 17, 19, 0.04), 0 12px 32px rgba(17, 17, 19, 0.14);
   --focus-ring: 0 0 0 3px rgba(43, 80, 255, 0.28);
   --gloss-alpha: 0;
   --toast-surface: rgba(17, 17, 19, 0.94);
@@ -688,7 +689,7 @@ textarea:focus-visible,
   background: var(--accent);
   border: 0;
   border-radius: var(--radius-lg);
-  box-shadow: 0 16px 36px rgba(17, 17, 19, 0.18);
+  box-shadow: 0 2px 6px rgba(17, 17, 19, 0.08), 0 14px 32px rgba(17, 17, 19, 0.16);
   transition: transform 140ms var(--ease-out);
 }
 
@@ -1653,11 +1654,11 @@ textarea:focus-visible,
   min-height: 100vh;
   min-height: 100dvh;
   padding: 0;
-  background: var(--surface-solid);
+  background: var(--background);
 }
 
 body.quiz-active {
-  background: var(--surface-solid);
+  background: var(--background);
 }
 
 body.quiz-active .main-content {
@@ -4678,128 +4679,123 @@ body.max-mode .combo-pill--pop .combo-pill-text::after { animation: combo-ghost-
 
 /* --------------------------------------------------------------------------
    11. ダークモード
-   いちばん暗い色は完全な黒。面の区切りは白い線、強調はビビッドな色で示す。
-   押せるものは白く塗り、文字は黒にする。
+   ライトと同じ組み立てを、明るさだけ反転させる。線では区切らず、
+   ほんの少し明るい面で押せるものを示し、差し色は同じ青の一色だけ。
+   ライトの「白い地・グレーの面・黒の主ボタン」が、
+   「黒に近い地・少し明るい面・白の主ボタン」になる。
    -------------------------------------------------------------------------- */
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --background: #000000;
-  --background-rgb: 0, 0, 0;
-  --surface: #000000;
-  --surface-solid: #000000;
-  --surface-rgb: 0, 0, 0;
-  --tile: #000000;
-  --tile-pressed: rgba(255, 255, 255, 0.12);
-  --surface-muted: rgba(255, 255, 255, 0.08);
-  --surface-muted-strong: rgba(255, 255, 255, 0.2);
-  --track: #33333a;
-  --text: #ffffff;
-  --ink: #ffffff;
-  --secondary: #b8b8c0;
-  --text-secondary: #c7c7cd;
-  --muted: #9a9aa3;
-  --ink-muted: #b8b8c0;
-  --tertiary: #85858f;
-  /* 面の境目は白い線で示す。 */
-  --line: rgba(255, 255, 255, 0.28);
-  --line-strong: rgba(255, 255, 255, 0.46);
-  /* 押せるものは白く塗り、文字は黒にする。 */
-  --accent: #ffffff;
-  --on-accent: #000000;
-  /* 強調用のビビッドカラー。 */
-  --pop: #5c7cff;
-  --pop-soft: rgba(92, 124, 255, 0.2);
-  --blue: #5c7cff;
-  --green: #00e08a;
-  --red: #ff3b5c;
-  --ink-blue: #8aa2ff;
-  --tint-blue: #000c24;
-  --ink-green: #00f0a0;
-  --tint-green: #00160f;
-  --ink-red: #ff5c7a;
-  --tint-red: #1a0308;
-  --ink-amber: #ffc233;
-  --tint-amber: #1a1200;
-  --ink-purple: #b47bff;
-  --tint-purple: #0d0022;
-  --gauge-track: rgba(255, 255, 255, 0.16);
-  /* 黒の上では影は見えないので、線で立体感を出す。 */
-  --shadow-card: none;
-  --shadow-raised: 0 0 0 1px rgba(255, 255, 255, 0.4);
-  --focus-ring: 0 0 0 3px rgba(92, 124, 255, 0.55);
-  --toast-surface: rgba(255, 255, 255, 0.96);
+  --background: #0b0b0d;
+  --background-rgb: 11, 11, 13;
+  --surface: #1b1b1f;
+  /* カードや面の中の行など、地より一段持ち上がった面。 */
+  --surface-solid: #1b1b1f;
+  --surface-rgb: 27, 27, 31;
+  /* 押せる面。置かれた面に重ねるので、地の上でもカードの上でも一段明るく見える。 */
+  --tile: rgba(255, 255, 255, 0.075);
+  --tile-pressed: rgba(255, 255, 255, 0.13);
+  --surface-muted: rgba(255, 255, 255, 0.06);
+  --surface-muted-strong: rgba(255, 255, 255, 0.16);
+  --track: rgba(255, 255, 255, 0.2);
+  --text: #f4f4f5;
+  --ink: #f4f4f5;
+  --secondary: #a1a1aa;
+  --text-secondary: #c4c4cc;
+  --muted: #8b8b94;
+  --ink-muted: #b4b4bc;
+  --tertiary: #71717a;
+  --line: transparent;
+  --line-strong: rgba(255, 255, 255, 0.16);
+  --accent: #f4f4f5;
+  --on-accent: #0b0b0d;
+  --pop: #6683ff;
+  --pop-soft: rgba(102, 131, 255, 0.16);
+  --blue: #6683ff;
+  --green: #34c46b;
+  --red: #f0524a;
+  --ink-green: #5fdc8f;
+  --tint-green: rgba(52, 196, 107, 0.14);
+  --ink-red: #ff8a82;
+  --tint-red: rgba(240, 82, 74, 0.15);
+  --ink-blue: #9aaeff;
+  --tint-blue: rgba(102, 131, 255, 0.14);
+  --ink-amber: #f5c15c;
+  --tint-amber: rgba(245, 193, 92, 0.14);
+  --ink-purple: #c4a5ff;
+  --tint-purple: rgba(167, 139, 250, 0.15);
+  --gauge-track: rgba(255, 255, 255, 0.1);
+  /* 黒い地の上の影は、ふちのごく淡い光と深い影でつくる。 */
+  --shadow-card: 0 0 0 1px rgba(255, 255, 255, 0.05), 0 18px 44px rgba(0, 0, 0, 0.55);
+  --shadow-raised: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 14px 36px rgba(0, 0, 0, 0.6);
+  --focus-ring: 0 0 0 3px rgba(102, 131, 255, 0.45);
+  --toast-surface: rgba(244, 244, 245, 0.96);
 }
 
 :root[data-theme="dark"] body {
-  background: #000000;
+  background: var(--background);
 }
 
-/* 押せる面は、黒のまま白い線で形を示す。 */
-:root[data-theme="dark"] .question-card,
-:root[data-theme="dark"] .public-recall-card,
-:root[data-theme="dark"] .onboarding-card {
-  border-color: var(--line);
-}
-
+/* 面の中に置く行は、面よりもう一段明るくする（ライトの白い行と同じ役割）。 */
 :root[data-theme="dark"] .settings-row,
 :root[data-theme="dark"] .criterion-option,
-:root[data-theme="dark"] .settings-card .secondary-button {
-  background: #000000;
+:root[data-theme="dark"] .settings-card .secondary-button,
+:root[data-theme="dark"] .settings-input,
+:root[data-theme="dark"] .ai-link-log li,
+:root[data-theme="dark"] .ai-link-token code,
+:root[data-theme="dark"] .ai-link-guide pre,
+:root[data-theme="dark"] .public-list-answer,
+:root[data-theme="dark"] .multi-check,
+:root[data-theme="dark"] .choice-button > span,
+:root[data-theme="dark"] .subject-icon,
+:root[data-theme="dark"] .item-tag,
+:root[data-theme="dark"] .type-label,
+:root[data-theme="dark"] .word-form-kind,
+:root[data-theme="dark"] .choice-gesture-directions i {
+  background: rgba(255, 255, 255, 0.07);
 }
 
-:root[data-theme="dark"] .settings-card,
-:root[data-theme="dark"] .period-empty {
-  border-color: rgba(255, 255, 255, 0.16);
-}
-
-:root[data-theme="dark"] .primary-button:disabled {
-  color: var(--tertiary);
-  background: #000000;
-  border-color: var(--line);
-}
-
-/* 選ばれているものは白く塗りつぶして、はっきり区別する。 */
 :root[data-theme="dark"] .segmented-options button.selected {
-  color: #000000;
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.16);
   box-shadow: none;
 }
 
-:root[data-theme="dark"] .switch input:not(:checked) + span {
-  background: rgba(255, 255, 255, 0.24);
+:root[data-theme="dark"] .switch span {
+  background: rgba(255, 255, 255, 0.18);
 }
 
-:root[data-theme="dark"] .subject-tab.is-active::after {
-  background: #ffffff;
+:root[data-theme="dark"] .switch input:checked + span {
+  background: var(--pop);
 }
 
-/* ロゴの四角は黒地に白抜き。白い線で輪郭を出す。 */
-:root[data-theme="dark"] .brand-mark,
-:root[data-theme="dark"] .entry-mark,
-:root[data-theme="dark"] .onboarding-logo {
-  color: #ffffff;
-  background: #000000;
-  border: 1px solid var(--line-strong);
-  box-shadow: none;
+:root[data-theme="dark"] .alphabet-keyboard {
+  background: rgba(255, 255, 255, 0.05);
 }
 
-:root[data-theme="dark"] .header-round-button.active {
-  color: #000000;
-  background: #ffffff;
-  border-color: #ffffff;
+:root[data-theme="dark"] .alphabet-key {
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
 }
 
-/* 続きからのカードは白地に黒文字。 */
+:root[data-theme="dark"] .alphabet-key--action {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+:root[data-theme="dark"] .alphabet-key--submit {
+  background: var(--accent);
+}
+
+/* 続きからのカードは、ライトの黒いカードを反転させた明るい面。 */
 :root[data-theme="dark"] .continue-card {
-  --gauge-track: rgba(0, 0, 0, 0.12);
-  box-shadow: none;
+  --gauge-track: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
 }
 
 :root[data-theme="dark"] .continue-card .progress-gauge,
 :root[data-theme="dark"] .continue-card .progress-legend {
   --gauge-strong: #2b50ff;
-  --gauge-soft: rgba(43, 80, 255, 0.28);
+  --gauge-soft: rgba(43, 80, 255, 0.26);
 }
 
 :root[data-theme="dark"] .continue-eyebrow {
@@ -4809,127 +4805,43 @@ body.max-mode .combo-pill--pop .combo-pill-text::after { animation: combo-ghost-
 :root[data-theme="dark"] .continue-detail,
 :root[data-theme="dark"] .continue-cycle,
 :root[data-theme="dark"] .continue-card .progress-figure {
-  color: rgba(0, 0, 0, 0.62);
-}
-
-:root[data-theme="dark"] .multi-check,
-:root[data-theme="dark"] .choice-button > span,
-:root[data-theme="dark"] .subject-icon {
-  color: var(--text);
-  background: #000000;
-  border: 1px solid var(--line);
-}
-
-:root[data-theme="dark"] .multi-select-card.selected .multi-check {
-  color: #000000;
-  background: #ffffff;
-}
-
-/* 正解・不正解は、黒地にビビッドな線と文字で示す。 */
-:root[data-theme="dark"] .choice-button.correct,
-:root[data-theme="dark"] .kobun-view .correct {
-  color: var(--ink-green);
-  background: #000000;
-  border-color: var(--green);
-  box-shadow: inset 0 0 0 1px var(--green);
-}
-
-:root[data-theme="dark"] .choice-button.wrong,
-:root[data-theme="dark"] .kobun-view .incorrect {
-  color: var(--ink-red);
-  background: #000000;
-  border-color: var(--red);
-  box-shadow: inset 0 0 0 1px var(--red);
-}
-
-:root[data-theme="dark"] .choice-button.correct > span {
-  color: #000000;
-  background: var(--green);
-  border-color: var(--green);
-}
-
-:root[data-theme="dark"] .choice-button.wrong > span {
-  color: #000000;
-  background: var(--red);
-  border-color: var(--red);
-}
-
-:root[data-theme="dark"] .word-slot {
-  background: #000000;
-  border-color: var(--line);
-}
-
-:root[data-theme="dark"] .word-slot.is-active-slot,
-:root[data-theme="dark"] .word-slot:focus-within {
-  border-color: #ffffff;
-}
-
-:root[data-theme="dark"] .word-slot.is-correct { border-color: var(--green); }
-:root[data-theme="dark"] .word-slot.is-wrong { border-color: var(--red); }
-
-:root[data-theme="dark"] .alphabet-keyboard {
-  background: #0b0b0d;
-  border-top: 1px solid var(--line);
-}
-
-:root[data-theme="dark"] .alphabet-key {
-  background: #2a2a2e;
-  box-shadow: none;
-}
-
-:root[data-theme="dark"] .alphabet-key--action {
-  background: #1a1a1d;
-}
-
-:root[data-theme="dark"] .alphabet-key--submit {
-  color: #000000;
-  background: #ffffff;
-}
-
-:root[data-theme="dark"] .public-recall-answer {
-  background: #000000;
-  box-shadow: inset 0 0 0 1px var(--green);
-}
-
-:root[data-theme="dark"] .result-next-card {
-  background: #000000;
-  border-color: var(--pop);
+  color: rgba(11, 11, 13, 0.6);
 }
 
 :root[data-theme="dark"] .onboarding-backdrop {
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.6);
+}
+
+:root[data-theme="dark"] .onboarding-card {
+  background: #1b1b1f;
 }
 
 :root[data-theme="dark"] .textbook-evidence mark {
-  background: linear-gradient(transparent 48%, rgba(255, 194, 51, 0.45) 48%);
+  background: linear-gradient(transparent 48%, rgba(245, 193, 92, 0.4) 48%);
 }
 
-/* 重要度のバッジは、黒地でもはっきり見えるビビッドな色にする。 */
-:root[data-theme="dark"] .importance-sss { color: #000; background: #ff2d55; }
-:root[data-theme="dark"] .importance-ss { color: #000; background: #ff8a1f; }
-:root[data-theme="dark"] .importance-s { color: #000; background: #ffd60a; }
-:root[data-theme="dark"] .importance-a { color: #000; background: #3d8bff; }
-:root[data-theme="dark"] .importance-b { color: #000; background: #b8b8c0; }
-:root[data-theme="dark"] .importance-c { color: #fff; background: #000; border: 1px solid var(--line-strong); }
-:root[data-theme="dark"] .importance-d { color: var(--secondary); background: #000; border: 1px solid var(--line); }
+/* 重要度のバッジは、ライトと同じ色を少しだけ落ち着かせて使う。 */
+:root[data-theme="dark"] .importance-b { color: #e4e4e7; background: rgba(255, 255, 255, 0.16); }
+:root[data-theme="dark"] .importance-c { color: #c4c4cc; background: rgba(255, 255, 255, 0.1); }
+:root[data-theme="dark"] .importance-d { color: #a1a1aa; background: transparent; border-color: rgba(255, 255, 255, 0.16); }
 
-/* 進み具合のバー：1セット目は差し色、2セット目以降は今まで通り色が変わる。 */
+/* 進捗バーの3〜5セット目は、暗い地でも沈まない明るさにする。 */
 :root[data-theme="dark"] .progress-gauge[data-cycle="3"],
 :root[data-theme="dark"] .progress-legend[data-cycle="3"] {
-  --gauge-strong: #b47bff;
-  --gauge-soft: rgba(180, 123, 255, 0.3);
+  --gauge-strong: #a78bfa;
+  --gauge-soft: rgba(167, 139, 250, 0.28);
 }
 
 :root[data-theme="dark"] .progress-gauge[data-cycle="4"],
 :root[data-theme="dark"] .progress-legend[data-cycle="4"] {
-  --gauge-strong: #00e08a;
-  --gauge-soft: rgba(0, 224, 138, 0.28);
+  --gauge-strong: #34c46b;
+  --gauge-soft: rgba(52, 196, 107, 0.26);
 }
 
 :root[data-theme="dark"] .progress-gauge[data-cycle="5"],
 :root[data-theme="dark"] .progress-legend[data-cycle="5"] {
-  --gauge-strong: #ffc233;
-  --gauge-soft: rgba(255, 194, 51, 0.3);
+  --gauge-strong: #f5a524;
+  --gauge-soft: rgba(245, 165, 36, 0.28);
 }
 
 /* --------------------------------------------------------------------------

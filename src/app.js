@@ -1,5 +1,5 @@
-import { createHaptics } from "./haptics.js?v=2026.11.10";
-import { createKobunController } from "./kobun.js?v=2026.11.10";
+import { createHaptics } from "./haptics.js?v=2026.11.11";
+import { createKobunController } from "./kobun.js?v=2026.11.11";
 import {
   ALL_MODES,
   ALPHABET_KEYBOARD_ROWS,
@@ -73,7 +73,7 @@ import {
   summarizeReviewItems,
   summarizeSession,
   toggleSetupValue,
-} from "./logic.js?v=2026.11.10";
+} from "./logic.js?v=2026.11.11";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -94,7 +94,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.11.10";
+} from "./storage.js?v=2026.11.11";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -102,7 +102,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.11.10";
+} from "./quiz-gestures.js?v=2026.11.11";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
@@ -111,7 +111,7 @@ import {
   normalizeSpeechRate,
   normalizeSpeechVoiceURI,
   voiceKey,
-} from "./speech.js?v=2026.11.10";
+} from "./speech.js?v=2026.11.11";
 import {
   AI_LINK_JOURNAL_KEY,
   AI_LINK_META_KEY,
@@ -127,7 +127,7 @@ import {
   isAiLinkConfigured,
   mcpUrlFor,
   normalizeAiLinkConfig,
-} from "./ai-link.js?v=2026.11.10";
+} from "./ai-link.js?v=2026.11.11";
 import {
   DEFAULT_DEVICE_SYNC,
   DEVICE_SYNC_META_KEY,
@@ -144,13 +144,13 @@ import {
   syncStateLabel,
   transferFileName,
   unsentEntries,
-} from "./sync.js?v=2026.11.10";
+} from "./sync.js?v=2026.11.11";
 import {
   applyThemePreference,
   normalizeThemePreference,
   readStoredThemePreference,
   watchSystemTheme,
-} from "./theme.js?v=2026.11.10";
+} from "./theme.js?v=2026.11.11";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -1040,7 +1040,7 @@ function cardStudyProgress(card) {
 // 上限までしか増えず、保存データが壊れていても幅が不正な値にならない。
 function progressGaugeMarkup(progress, roundNumber = 1) {
   const gauge = summarizeProgressGauge(progress, roundNumber);
-  const label = `${gauge.roundNumber}セット目：解答済み ${gauge.answeredPercent}パーセント、習得 ${gauge.masteredPercent}パーセント`;
+  const label = `${gauge.roundNumber}セット目：習得 ${gauge.masteredPercent}パーセント、解答済み ${gauge.answeredPercent}パーセント`;
   const finishedBars = gauge.finishedBars.map((bar) => `
         <span class="progress-gauge is-finished" data-cycle="${bar.colorIndex}" role="img" aria-label="${escapeHtml(bar.label)}">
           <span class="progress-gauge-answered" style="width:100%"></span>
@@ -1056,8 +1056,8 @@ function progressGaugeMarkup(progress, roundNumber = 1) {
       </span>
       <span class="progress-legend" data-cycle="${gauge.colorIndex}">
         ${gauge.roundNumber > 1 ? `<span class="progress-figure is-cycle">${gauge.roundNumber}セット目</span>` : ""}
-        <span class="progress-figure is-answered">解答済み ${gauge.answeredPercent}%（${gauge.answeredItems}/${gauge.totalItems}）</span>
         <span class="progress-figure is-mastered">習得 ${gauge.masteredPercent}%（${gauge.masteredItems}/${gauge.totalItems}）</span>
+        <span class="progress-figure is-answered">解答済み ${gauge.answeredPercent}%（${gauge.answeredItems}/${gauge.totalItems}）</span>
       </span>`;
 }
 
@@ -5612,7 +5612,7 @@ async function boot() {
       fetch(ENGLISH_DATA_URL),
       fetch("./data/public-items.json?v=2026.09.01"),
       fetch("./data/health-items.json?v=2026.09.01"),
-      fetch("./data/kobun-vocabulary.json?v=2026.11.10"),
+      fetch("./data/kobun-vocabulary.json?v=2026.11.11"),
       loadHistory(),
       getMeta("selectedMode"),
       getMetaObject("settings", DEFAULT_SETTINGS),
@@ -5692,7 +5692,7 @@ async function boot() {
         .catch((error) => console.warn("AI連携の同期に失敗しました", error));
     }
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.11.10").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.11.11").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

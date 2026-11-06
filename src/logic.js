@@ -1493,6 +1493,22 @@ export function dashboardStudyCards(options = {}) {
   return studyTargetsForDashboard(options).flatMap((group) => group.cards);
 }
 
+// 学習の準備で、内容・重要度の札を押したときの選び方。空の配列は「すべて」。
+// 「すべて」から1つを押すとそれだけに、選んでいる中で押すと付け外し。
+// 全部を外したら「すべて」に戻す。全部を個別に選んだときも「すべて」と同じ周回にする。
+export function toggleSetupValue(current = [], value, all = []) {
+  if (value === "all") return [];
+  const list = Array.isArray(current) ? current : [];
+  const wasAll = !list.length || list.length === all.length;
+  const next = wasAll
+    ? [value]
+    : list.includes(value)
+      ? list.filter((entry) => entry !== value)
+      : [...list, value];
+  const ordered = all.filter((entry) => next.includes(entry));
+  return ordered.length === all.length ? [] : ordered;
+}
+
 // 形式カードを押した時点で「範囲」と「形式」を確定させた学習設定を作る。
 // この後のフローで範囲・出題方向・形式を再度たずねてはいけない。
 export function studyConfigForTarget({

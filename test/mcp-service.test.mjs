@@ -9,11 +9,15 @@ import { ValidationError } from "../server/core/validate.js";
 
 const dataDirectory = new URL("../data/", import.meta.url).pathname;
 
+// 「直近◯日」を数えるテストが実行日に左右されないよう、時計を固定する。
+const FIXED_NOW = Date.parse("2026-09-11T12:00:00+09:00");
+
 function newService() {
   return createWordsService({
     catalog: createQuestionCatalog(createFileDataSource(dataDirectory)),
     storage: createMemoryDriver(),
     idSuffix: (() => { let count = 0; return () => `t${(count += 1)}`; })(),
+    now: () => FIXED_NOW,
   });
 }
 

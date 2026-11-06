@@ -28,19 +28,19 @@ test("学習を始める画面の履歴は廃止され、続きは周回の状�
   assert.match(appSource, /pendingCycleItemIds\(progress\)/);
 });
 
-test("学習途中のセットは分析画面から続きを始められる", () => {
-  // 完走直後は今回の結果、それ以外は途中のセットを優先する。
-  assert.match(appSource, /const resume = state\.session\?\.complete \? null : resumableStudy\(\);/);
-  // 続きのカードの下に、学習直後や保存済みの結果を続けて見せる。
-  assert.match(appSource, /resume \? resumeStudyMarkup\(resume\) : ""/);
-  assert.match(appSource, /completed \? sessionResultMarkup\(completed\) : ""/);
+test("学習途中のセットは、ホームの「続きから」からひと押しで始められる", () => {
+  // いちばん最近学習したセットに続きがあれば、ホームの先頭に出す。
+  const dashboardSource = functionSource("renderDashboard", "contentLabelFromProgressKey");
+  assert.match(dashboardSource, /const resume = resumableStudy\(\);/);
+  assert.match(dashboardSource, /elements\.homeContinue\.innerHTML = resume \? resumeStudyMarkup\(resume\) : "";/);
   // 条件の控えが残っているものだけを続きの対象にする。
-  assert.match(
-    functionSource("resumableStudy", "resumeStudyMarkup"),
-    /const config = entry \? state\.studyConfigs\[entry\.key\] : null;/,
-  );
-  assert.match(appSource, /data-resume-study>続きを始める/);
-  assert.match(appSource, /data-resume-study"\)\) \{[\s\S]*?startSession\(resume\.config\)/);
+  const resumable = functionSource("resumableStudy", "typesForSelection");
+  assert.match(resumable, /const entry = latestStudyEntry\(\);/);
+  assert.match(resumable, /const config = entry \? state\.studyConfigs\[entry\.key\] : null;/);
+  // カードそのものを押すと、前回と同じ条件で周回の続きが始まる。
+  assert.match(functionSource("resumeStudyMarkup", "resultSession"), /<button class="continue-card" type="button" data-resume-study/);
+  assert.match(appSource, /data-resume-study"\)\) \{\s*\n\s*const resume = resumableStudy\(\);\s*\n\s*if \(resume\) startSession\(resume\.config\);/);
+  assert.match(indexSource, /class="home-continue" id="home-continue"/);
 });
 
 test("range and English content selections start with all items selected", () => {
@@ -54,8 +54,9 @@ test("range and English content selections start with all items selected", () =>
 
 test("an individual selection replaces the initial select-all state", () => {
   assert.doesNotMatch(appSource, /disabled-by-all/);
-  assert.match(appSource, /const current = state\.contentSelectionMode === "all"\s*\? \[\]/);
-  assert.match(appSource, /const contents = state\.contentSelectionMode === "all"\s*\? \[content\]/);
+  // 学習内容：「すべて」の状態から押した内容だけに切り替える。
+  assert.match(appSource, /setStudyContents\(toggleSetupValue\(\s*\n\s*current\.length === ENGLISH_CONTENT_TYPES\.length \? \[\] : current,/);
+  // 範囲の複数選択：全選択の状態から押した範囲だけに切り替える。
   assert.match(appSource, /const wasAllSelected = state\.rangeSelectionMode === "all"/);
   assert.match(appSource, /state\.filters\.ranges = wasAllSelected\s*\? \[range\]/);
 });
@@ -122,18 +123,22 @@ test("result navigation keeps actions visually distinct and routes correctly", (
   assert.match(resultSource, /class="secondary-button"[^>]*data-change-study>学習条件を変える/);
   assert.match(resultSource, /class="text-button"[^>]*data-dismiss-result>結果を閉じる/);
   assert.doesNotMatch(resultSource, /data-view-analysis/);
-  assert.match(appSource, /data-change-study[\s\S]*?setView\("study-range-select"\)/);
+  // 「学習条件を変える」は同じ範囲の形式カードへ戻る。
+  assert.match(appSource, /data-change-study"\)\) \{[\s\S]*?setView\(kept\.length \? "range-detail" : "dashboard"\)/);
   assert.match(appSource, /data-dismiss-result[\s\S]*?clearSessionResult\(\)[\s\S]*?setView\("dashboard"\)/);
   assert.match(stylesSource, /\.result-panel\s*\{[\s\S]*?width:\s*min\(100%, 720px\)/);
   assert.match(stylesSource, /\.main-content\s*\{[\s\S]*?var\(--safe-bottom\)/);
 });
 
-test("finishing a session opens the analysis view with the result on top", () => {
-  const completeSource = functionSource("renderSessionComplete", "renderAnalysis");
-  assert.match(completeSource, /session\.complete = true;\s*\n\s*setView\("analysis"\)/);
-  assert.match(appSource, /completed \? sessionResultMarkup\(completed\) : ""/);
-  assert.match(indexSource, /<div class="dashboard-result" id="analysis-result" hidden><\/div>/);
-  // ダッシュボードには結果を出さない。
+test("学習を終えると結果画面を開き、次の一歩をひと押しで選べる", () => {
+  const completeSource = functionSource("renderSessionComplete", "renderResult");
+  assert.match(completeSource, /session\.complete = true;\s*\n\s*setView\("result"\)/);
+  assert.match(functionSource("renderResult", "retryWrongItems"), /elements\.resultContent\.innerHTML = sessionResultMarkup\(completed\);/);
+  assert.match(indexSource, /id="view-result" data-view="result"/);
+  assert.match(indexSource, /<div id="result-content"><\/div>/);
+  // 学習を終えた直後だけ開く。結果が無ければホームへ戻す。
+  assert.match(appSource, /if \(view === "result" && !resultSession\(\)\) view = "dashboard";/);
+  // ホームには結果を出さない。
   assert.doesNotMatch(appSource, /dashboardResult/);
   assert.doesNotMatch(indexSource, /id="dashboard-result"/);
   assert.doesNotMatch(appSource, /elements\.quizContent\.innerHTML = `\s*<div class="result/);
@@ -180,15 +185,11 @@ test("周回の保存は履歴の保存を待たずに先に行う", () => {
   assert.ok(progressAt < recordAt, "周回の保存が履歴の保存より先であること");
 });
 
-test("分析画面は学習の記録だけを見せ、統計の一覧は持たない", () => {
-  assert.doesNotMatch(appSource, /summarizeByRange|summarizeByMode|analysisContent/);
-  assert.doesNotMatch(indexSource, /id="analysis-content"|学習分析/);
-  // 記録も学習途中のセットも無いときは、学習への入口を案内する。
-  assert.match(
-    functionSource("emptyResultMarkup", "retryWrongItems"),
-    /まだ学習の記録がありません[\s\S]*?data-view-target="dashboard"/,
-  );
-  assert.match(appSource, /: emptyResultMarkup\(\);/);
+test("分析画面は持たず、統計の一覧も出さない", () => {
+  assert.doesNotMatch(appSource, /summarizeByRange|summarizeByMode|analysisContent|renderAnalysis/);
+  assert.doesNotMatch(indexSource, /id="analysis-content"|学習分析|data-view="analysis"/);
+  // 以前の「分析」へ移ろうとしても、ホームへ戻す。
+  assert.match(appSource, /if \(view === "analysis"\) view = "dashboard";/);
 });
 
 test("単語帳の絞り込みと並び替えは廃止され、検索だけが残る", () => {
@@ -214,16 +215,31 @@ test("「条件を細かく選んで学習する」の入口は廃止される",
   assert.match(appSource, /hasAttribute\("data-header-toggle"\) && target\.classList\.contains\("active"\)[\s\S]*?setView\(closing \? "dashboard"/);
   // 範囲をまとめて選ぶ導線と、結果からの「学習条件を変える」は残る。
   assert.match(indexSource, /data-dashboard-multi-range/);
-  assert.match(appSource, /data-change-study[\s\S]*?setView\("study-range-select"\)/);
+  assert.match(appSource, /data-dashboard-multi-range"\)\) \{[\s\S]*?setView\("study-range-select"\)/);
+  assert.match(appSource, /data-change-study"\)\) \{[\s\S]*?setView\(kept\.length \? "range-detail" : "dashboard"\)/);
 });
 
 test("学習する回は3定だけを選べ、2定は隠れている", () => {
   assert.match(indexSource, /<button class="period-button" type="button" data-period="2026\.3">/);
   assert.match(indexSource, /<button class="period-button" type="button" data-period="2026\.2" hidden>/);
   assert.match(appSource, /const AVAILABLE_PERIODS = \["2026\.3"\];/);
-  // 2定を選んでいた端末は、回を選ぶ画面からやり直す。
-  assert.match(appSource, /state\.selectedPeriod = normalizeSelectedPeriod\(selectedPeriod\);/);
+  // 選べる回が1つだけなら、回を選ぶ画面は出さずに自動で選ぶ（2定を選んでいた端末も3定へ）。
+  assert.match(appSource, /state\.selectedPeriod = normalizeSelectedPeriod\(selectedPeriod\) \?\? defaultPeriod\(\);/);
+  assert.match(functionSource("defaultPeriod", "startingSubject"), /AVAILABLE_PERIODS\.length === 1 \? AVAILABLE_PERIODS\[0\] : null/);
   assert.doesNotMatch(appSource, /· 2026\.2"/);
+});
+
+test("前回開いた教科のホームから始まり、教科はホーム上部のタブで切り替える", () => {
+  assert.match(appSource, /const PERIOD_SUBJECTS = \{ "2026\.3": \["english", "public"\]/);
+  assert.match(appSource, /function startingSubject\(lastSubject\) \{\s*\n\s*const subjects = periodSubjects\(\);\s*\n\s*return subjects\.includes\(lastSubject\) \? lastSubject : subjects\[0\];/);
+  assert.match(appSource, /getMeta\("lastSubject", null\)/);
+  assert.match(appSource, /if \(state\.selectedPeriod\) selectSubject\(startingSubject\(lastSubject\)\);/);
+  assert.match(functionSource("rememberSubject", "selectSubject"), /setMeta\("lastSubject", subject\)/);
+  // タブはいまの回の教科だけ。押すと既存の教科切り替え（data-subject）を通る。
+  const tabs = functionSource("renderSubjectTabs", "homeSummaryText");
+  assert.match(tabs, /\.\.\.periodSubjects\(\)/);
+  assert.match(tabs, /class="subject-tab\$\{active \? " is-active" : ""\}" type="button" data-subject="\$\{subject\}"/);
+  assert.match(indexSource, /<nav class="subject-tabs" id="subject-tabs" aria-label="教科"><\/nav>/);
 });
 
 test("3定の教科は英語と公共だけで、保健・古文は隠れている", () => {
@@ -234,7 +250,7 @@ test("3定の教科は英語と公共だけで、保健・古文は隠れてい�
 });
 
 test("白のミニマル：点線の箱とホームの区切り線を置かない", () => {
-  assert.match(stylesSource, /:root \.range-multi-entry,[\s\S]*?border-color: transparent/);
+  assert.match(stylesSource, /:root \.range-multi-entry[,\s][^{]*\{[^}]*border-color: transparent/);
   assert.match(stylesSource, /:root \.dashboard-links \{\s*padding-top: 0;\s*border-top: 0;/);
   assert.match(stylesSource, /:root:not\(\[data-theme="dark"\]\) \{[\s\S]*?--line: transparent;/);
 });

@@ -186,30 +186,24 @@ test("ゲージの数値は何の数字かが分かる形で出す", () => {
   assert.doesNotMatch(cardSource, /modeStats/);
 });
 
-test("学習内容と重要度のボタンにも形式カードと同じゲージを入れる", () => {
-  // 3画面が同じ progressGaugeMarkup を使う
+test("学習の準備にも形式カードと同じゲージを出し、選んだ内容・重要度で絞り込む", () => {
+  // 形式カード・学習の準備・続きからが同じ progressGaugeMarkup を使う
   assert.match(
     functionSource("modeProgressCard", "renderRangeDetail"),
     /\$\{progressGaugeMarkup\(progress, cycle\?\.masteryRound \?\? 1\)\}/,
   );
-  assert.match(
-    functionSource("contentChoiceRow", "renderStudyContentMulti"),
-    /\$\{progressGaugeMarkup\(progress, roundNumber\)\}/,
-  );
-  // 学習内容は「その形式 × その内容」、重要度は「その形式 × 選択中の内容 × その重要度」で集計
-  const contentSource = functionSource("renderStudyContent", "contentChoiceRow");
-  assert.match(contentSource, /progress: count\(content\) \? selectionProgress\(\{ types: \[content\] \}\) : null/);
-  assert.match(contentSource, /progress: selectionProgress\(\{ types: \[\.\.\.ENGLISH_CONTENT_TYPES\] \}\)/);
-  const importanceSource = functionSource("renderStudyImportance", "renderStudyImportanceSelect");
-  assert.match(importanceSource, /progress: selectionProgress\(\{ types \}\)/);
-  assert.match(importanceSource, /progress: count \? selectionProgress\(\{ types, importance: \[importance\] \}\) : null/);
+  const setupSource = functionSource("renderSetupProgress", "renderStudySetup");
+  // 学習の準備は「その形式 × 選んだ内容 × 選んだ重要度」で集計する
+  assert.match(setupSource, /selectionProgress\(\{ types: studyContentTypes\(\), importance: state\.filters\.importance \}\)/);
+  assert.match(setupSource, /progressGaugeMarkup\(progress, plan\.summary\?\.masteryRound \?\? 1\)/);
+  assert.match(functionSource("resumeStudyMarkup", "resultSession"), /progressGaugeMarkup\(progress, cycle\.masteryRound\)/);
   // 仕組みは形式カードと同じ（同じ集計関数・同じ習得ラウンド）
   const selectionSource = functionSource("selectionProgress", "modeProgressCard");
   assert.match(selectionSource, /summarizeRangeModeProgress\(\{/);
   assert.match(selectionSource, /masteredIdsForMode\(state\.studyProgress, mode, \{ criterion: masteryCriterion\(\) \}\)/);
   assert.match(selectionSource, /exactStudyMode\(state\.studySelection\)/);
-  // ゲージ付きの行も 44px 以上
-  assert.match(stylesSource, /\.content-choice--gauge \{[^}]*min-height: 44px/);
+  // 選ぶ札も 44px 以上
+  assert.match(stylesSource, /\.setup-chip \{[^}]*min-height: 54px/);
 });
 
 test("tapping a format card settles range and format in one step", () => {
@@ -231,8 +225,8 @@ test("tapping a format card settles range and format in one step", () => {
   const startSource = functionSource("startStudyFromTarget", "showToast");
   assert.match(startSource, /studyConfigForTarget\(\{/);
   assert.match(startSource, /state\.studySelection = config\.selection/);
-  // 次は「何を学習するか」。範囲・出題方向・形式は聞き直さない。
-  assert.match(startSource, /setView\(isRecallSubject\(\) \? "study-importance" : "study-content"\)/);
+  // 次は学習の準備。範囲・出題方向・形式は聞き直さない。
+  assert.match(startSource, /setView\("study-setup"\)/);
   assert.doesNotMatch(startSource, /setView\("study-(range-select|method|scope)"\)/);
   assert.match(appSource, /if \(target\.dataset\.studyTarget\) startStudyFromTarget\(target\.dataset\.studyTarget\)/);
 });
@@ -243,7 +237,7 @@ test("a dedicated multi-range entry reuses the existing multi-select flow", () =
   assert.match(appSource, /data-dashboard-multi-range"\)\) \{[\s\S]*?setView\("study-range-select"\)/);
   assert.match(
     appSource,
-    /confirm-study-ranges[\s\S]*?setView\(state\.rangeFlow === "dashboard" \? "range-detail" : "study-content"\)/,
+    /target\.id === "confirm-study-ranges" && state\.filters\.ranges\.length\) \{\s*\n\s*setView\("range-detail"\)/,
   );
   // 既存の複数選択ロジックを壊していないこと
   assert.match(indexSource, /id="study-range-options"/);
@@ -289,25 +283,18 @@ test("the mastery gauge is fed by the current mastery round, not by long-term hi
   );
 });
 
-test("重要度と並び替えは毎回選ぶ画面として通常フローに入る", () => {
-  // 重要度は「何を学習しますか？」と同じ1列リスト
-  const importanceSource = functionSource("renderStudyImportance", "renderStudyImportanceSelect");
-  assert.match(importanceSource, /contentChoiceRow\(\{/);
-  assert.match(importanceSource, /data-study-importance-choice="all"/);
-  assert.match(importanceSource, /data-study-importance-other/);
-  assert.match(indexSource, /class="content-choice-list" id="study-importance-options-single"/);
+test("重要度と並び替えは学習の準備で毎回見直せる", () => {
+  const setupSource = functionSource("renderStudySetup", "renderStudyRangeSelect");
+  assert.match(setupSource, /currentImportanceOrder\(\)\.map\(\(importance\) =>/);
+  assert.match(setupSource, /primarySortOptions\(\)/);
   // 並び替えの選択肢（重要度・苦手順・ランダム・その他）は削っていない
   assert.match(appSource, /\["random", "ランダム"\]/);
   assert.match(appSource, /difficulty: "苦手順"/);
   assert.match(appSource, /"importance-desc": "重要度順"/);
-  // 従来のステップ形式も残す
-  assert.match(indexSource, /id="view-study-sort-kind"/);
-  assert.match(indexSource, /id="view-study-importance-select"/);
-  assert.match(indexSource, /id="view-study-method"/);
   // 回答状況を毎回選ばせる画面は通常フローから外す
   assert.doesNotMatch(indexSource, /id="view-study-performance"/);
   assert.doesNotMatch(appSource, /data-study-performance=/);
-  // 範囲詳細の「詳細設定」は毎回選ぶ画面へ移したので残さない
+  // 範囲詳細の「詳細設定」は学習の準備へまとめたので残さない
   assert.doesNotMatch(indexSource, /range-detail-advanced/);
   assert.doesNotMatch(appSource, /data-detail-importance|data-detail-sort/);
 });
@@ -361,7 +348,7 @@ test("ダッシュボードが入口であり、学習終了後の戻り先で�
   // 44px 以上のタップ領域を保つ
   assert.match(stylesSource, /\.range-choice \{[^}]*min-height: 56px/);
   assert.match(stylesSource, /\.mode-progress-card \{[^}]*min-height: 44px/);
-  assert.match(stylesSource, /\.content-choice \{[^}]*min-height: 56px/);
+  assert.match(stylesSource, /\.setup-chip \{[^}]*min-height: 54px/);
   // 画面が低い端末向けに詰めるときも 44px は下回らない
   const shortScreen = stylesSource.slice(stylesSource.indexOf("@media (max-height: 720px)"));
   [...shortScreen.matchAll(/min-height: (\d+)px/g)].forEach((match) => {
@@ -384,15 +371,15 @@ test("範囲一覧と形式カードは1画面に収まる高さで組む", () =
 test("選択画面の見出しは戻るボタンとタイトルを1行にまとめる", () => {
   // safe-area のある実機でも縦を使い切らないよう、見出しは1行
   const headings = [...indexSource.matchAll(/class="[^"]*compact-step-heading"/g)];
-  assert.equal(headings.length, 4, "範囲詳細・学習内容・重要度・並び替えの4画面");
-  assert.equal((indexSource.match(/class="step-heading-row"/g) ?? []).length, 4);
+  assert.equal(headings.length, 3, "範囲詳細・学習の準備・範囲の複数選択の3画面");
+  assert.equal((indexSource.match(/class="step-heading-row"/g) ?? []).length, 3);
   assert.match(stylesSource, /\.step-heading-row \{[\s\S]*?display: flex/);
-  // 1タップで進む4画面では、縦積みの戻るリンクを残さない
+  // 縦積みの戻るリンクは残さず、丸い戻るボタンだけにする
   [...indexSource.matchAll(/compact-step-heading">([\s\S]*?)<\/div>\s*\n\s*<\/div>/g)].forEach((match) => {
     assert.doesNotMatch(match[1], /class="text-button back-link"/);
     assert.match(match[1], /class="icon-button step-back"/);
   });
-  assert.match(functionSource("renderRangeDetail", "startStudyFromTarget"), /rangeDetailCopy\.textContent = ranges\.length > 1 \? `\$\{ranges\.length\}範囲` : ""/);
+  assert.match(functionSource("renderRangeDetail", "lastConfigForTarget"), /rangeDetailCopy\.textContent = ranges\.length > 1 \? `\$\{ranges\.length\}範囲` : ""/);
   // 低い画面向けの調整を用意する
   assert.match(stylesSource, /@media \(max-height: 720px\)/);
 });
@@ -502,9 +489,9 @@ test("周回が進んでもバーは増えず、セットが変わったとき�
   const cardSource = functionSource("modeProgressCard", "renderRangeDetail");
   assert.match(cardSource, /progressGaugeMarkup\(progress, cycle\?\.masteryRound \?\? 1\)/);
   assert.doesNotMatch(cardSource, /progressGaugeMarkup\(progress, cycle\?\.cycleNumber/);
-  const roundSource = functionSource("masteryRoundForContents", "selectedMasteryRound");
-  assert.match(roundSource, /entry\?\.progress\?\.masteryRound \?\? 1/);
-  assert.doesNotMatch(roundSource, /progress\?\.cycleNumber/);
+  const setupSource = functionSource("renderSetupProgress", "renderStudySetup");
+  assert.match(setupSource, /plan\.summary\?\.masteryRound \?\? 1/);
+  assert.doesNotMatch(setupSource, /progressGaugeMarkup\(progress, [^)]*cycleNumber/);
 
   // 1セット目のうちは、何周目でもバーは1本のまま伸びる
   const firstRound = summarizeProgressGauge({ totalItems: 10, answeredItems: 10, masteredItems: 9 }, 1);
@@ -575,27 +562,19 @@ test("習得が解答済みを上回っても薄い塗りが消えない", () =>
   assert.ok(gauge.answeredWidth >= gauge.masteredWidth);
 });
 
-test("低い画面向けの詰めが、重要度の個別指定に打ち消されない", () => {
-  // 同じ詳細度なので、あとに書いたほうが勝つ。重要度の指定はメディアクエリより
-  // 前に置いておかないと、iPhone SE などで行が詰まらず1画面に収まらなくなる。
-  const importanceIndex = stylesSource.indexOf("#study-importance-options-single .content-choice--gauge");
+test("低い画面でも、学習の準備をスタートまで1画面に収める", () => {
   const shortScreenIndex = stylesSource.indexOf("@media (max-height: 720px)");
-  assert.ok(importanceIndex > 0 && shortScreenIndex > 0);
-  assert.ok(
-    importanceIndex < shortScreenIndex,
-    "重要度の個別指定は低い画面向けのメディアクエリより前に置く",
-  );
+  assert.ok(shortScreenIndex > stylesSource.indexOf(".setup-chip {"), "札の指定は低い画面向けの指定より前に置く");
   const shortScreen = stylesSource.slice(shortScreenIndex);
-  assert.match(shortScreen, /#study-importance-options-single \.progress-gauge \{[^}]*height: 7px/);
-  assert.match(shortScreen, /#study-importance-options-single \.progress-gauge\.is-finished \{[^}]*height: 5px/);
+  assert.match(shortScreen, /\.setup-chip \{[^}]*min-height: 48px/);
+  assert.match(shortScreen, /\.setup-groups \{/);
+  // スタートは画面の下に貼りつく
+  assert.match(stylesSource, /\.sticky-action \{[^}]*position: fixed/);
 });
 
-test("重要度のゲージも形式カード・学習内容と同じセットを指す", () => {
-  const importanceSource = functionSource("renderStudyImportance", "renderStudyImportanceSelect");
-  assert.match(importanceSource, /const roundNumber = selectedMasteryRound\(\);/);
-  // ゲージを出す行にはすべてセット番号を渡す
-  assert.equal((importanceSource.match(/roundNumber,/g) ?? []).length, 2);
-  const selectedSource = functionSource("selectedMasteryRound", "contentsInProgress");
-  assert.match(selectedSource, /masteryRoundForContents\(/);
-  assert.match(selectedSource, /studyContentsKey\(selection\.contents \?\? \[\]\)/);
+test("続きからのカードも、同じ条件の周回と同じセットを指す", () => {
+  const resumeSource = functionSource("resumeStudyMarkup", "resultSession");
+  assert.match(resumeSource, /const cycle = studyProgressSummary\(entry\.progress\);/);
+  assert.match(resumeSource, /importance: config\.filters\.importance/);
+  assert.match(resumeSource, /types: typesForSelection\(config\.selection\)/);
 });

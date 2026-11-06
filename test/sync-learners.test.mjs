@@ -11,12 +11,13 @@ import { ValidationError } from "../server/core/validate.js";
 const OWNER_KEY = "owner-key-for-tests-0123456789abcdef";
 const dataDirectory = new URL("../data/", import.meta.url).pathname;
 
-function newApp() {
+function newApp({ now } = {}) {
   const storage = createMemoryDriver();
   const app = createWordsMcpApp({
     storage,
     env: { WORDS_OWNER_KEY: OWNER_KEY, WORDS_SITE_ORIGIN: "https://words.example" },
     catalog: createQuestionCatalog(createFileDataSource(dataDirectory)),
+    ...(now ? { now } : {}),
   });
   const call = (path, init = {}) => app.fetch(new Request(`https://mcp.example${path}`, init));
   const owner = { authorization: `Bearer ${OWNER_KEY}`, "content-type": "application/json" };
@@ -267,7 +268,8 @@ test("問題は全員で共有される。生徒の端末にも先生が足し�
 });
 
 test("MCPからは学習者ごとの成績が読め、名前で指定できる", async () => {
-  const harness = newApp();
+  // 「直近1日」を数えるので、実行日に左右されないよう時計を固定する。
+  const harness = newApp({ now: () => Date.parse("2026-09-11T12:00:00+09:00") });
   await harness.admin("/api/admin/settings", "POST", { enabled: true });
   const { token } = await json(harness.admin("/api/admin/token", "POST", { scopes: ["read"] }));
   const tanaka = await json(harness.admin("/api/admin/learners", "POST", { name: "田中" }));

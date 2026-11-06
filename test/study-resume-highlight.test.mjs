@@ -88,7 +88,7 @@ test("押した先で実際に続けられるボタンだけをハイライト�
   // 形式カードは、いま選んでいる範囲・条件に一致する周回のときだけ光る。
   assert.match(appSource, /const resumable = Boolean\(entry\) && entry\.key === latestStudyEntry\(\)\?\.key;/);
   assert.match(appSource, /class="mode-progress-card\$\{resumable \? " is-in-progress" : ""\}/);
-  assert.match(stylesSource, /\.mode-progress-card\.is-in-progress \{[\s\S]*?border-color: var\(--red\)/);
+  assert.match(stylesSource, /\.mode-progress-card\.is-in-progress[,\s][^{]*\{[^}]*border-color: var\(--red\)/);
   // 複数範囲選択は選び終わるまで条件が決まらないので、個別の範囲カードは光らせない。
   assert.doesNotMatch(appSource, /data-study-range="\$\{escapeHtml\(range\)\}"[\s\S]{0,200}?is-in-progress/);
 });
@@ -107,17 +107,13 @@ test("全範囲の周回は「全範囲」ボタンだけを光らせ、個別�
   assert.equal(singleRangeOnly.size, 0);
 });
 
-test("続きのある学習内容（単語・熟語・構文・全選択）もハイライトする", () => {
-  const source = functionSource("contentsInProgress", "rangeDetailLabel");
-  // いちばん最近学習したセットが、範囲（と決まっていれば形式）に一致するときだけ光らせる。
-  assert.match(source, /const meta = latestStudyEntry\(\)\?\.meta;/);
-  assert.match(source, /if \(studyContentsKey\(meta\.ranges \?\? \[\]\) !== wantedRanges\) return new Set\(\);/);
-  assert.match(source, /if \(mode && meta\.mode !== mode\) return new Set\(\);/);
-  assert.match(source, /return new Set\(\[meta\.contents\]\);/);
-  // 単体の内容も「全選択」も、進捗キーと同じ並びで突き合わせる。
-  assert.match(appSource, /inProgress: resumableContents\.has\(studyContentsKey\(\[content\]\)\)/);
-  assert.match(appSource, /inProgress: resumableContents\.has\(studyContentsKey\(\[\.\.\.ENGLISH_CONTENT_TYPES\]\)\)/);
-  assert.match(stylesSource, /\.content-choice\.is-in-progress,/);
+test("学習の準備でも、いま選んでいる条件が最後のセットならハイライトする", () => {
+  const source = functionSource("renderSetupProgress", "renderStudySetup");
+  // 進捗キーまで一致する（＝そのまま押せば続きになる）ときだけ光らせる。
+  assert.match(source, /const isLatest = Boolean\(plan\.stored\) && plan\.key === latestStudyEntry\(\)\?\.key;/);
+  assert.match(source, /setup-progress-card\$\{isLatest \? " is-in-progress" : ""\}/);
+  assert.match(source, /\$\{isLatest \? studyBadgeMarkup\(\) : ""\}/);
+  assert.match(stylesSource, /\.setup-progress-card\.is-in-progress \{[^}]*border-color: var\(--red\)/);
 });
 
 test("周回を終えたセットでも、最後にやったものならハイライトの基準になる", () => {

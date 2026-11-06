@@ -23,6 +23,7 @@ import {
   studyProgressSummary,
   RANDOM_TIE_BREAK_SORT_KEYS,
   sortItems,
+  toggleSetupValue,
 } from "../src/logic.js";
 
 const appSource = readFileSync(new URL("../src/app.js", import.meta.url), "utf8");
@@ -286,53 +287,57 @@ test("mode-level streaks are recorded per format and never taken from the global
   assert.equal(record.modeStats.ja_to_en_choice.currentCorrectStreak, 1);
 });
 
-// テスト13・14・15：学習内容選択
-test("単語・熟語・構文は1タップで確定して次へ進む", () => {
-  const renderSource = functionSource("renderStudyContent", "contentChoiceRow");
-  assert.match(renderSource, /data-study-content-choice="\$\{content\}"/);
-  assert.match(renderSource, /data-study-content-choice="all"/);
-  assert.match(renderSource, /data-study-content-other/);
-  assert.match(appSource, /if \(target\.dataset\.studyContentChoice\) \{\s*\n\s*applyContentChoice\(target\.dataset\.studyContentChoice\);\s*\n\s*setView\(state\.studyFlowMode === "dashboard" \? "study-importance" : "study-method"\)/);
-  const applySource = functionSource("applyContentChoice", "showToast");
-  assert.match(applySource, /choice === "all" \? \[\.\.\.ENGLISH_CONTENT_TYPES\] : \[choice\]/);
-  // 単一選択画面には「次へ」を置かない
-  assert.doesNotMatch(renderSource, /confirmStudyContent/);
-});
-
-test("学習内容の画面は5行に収まり、複数選択は「その他」だけで開く", () => {
-  assert.match(indexSource, /id="view-study-content"[\s\S]*?class="content-choice-list" id="study-content-options"/);
-  assert.match(indexSource, /id="view-study-content-multi"/);
-  assert.doesNotMatch(
-    indexSource.slice(indexSource.indexOf('id="view-study-content"'), indexSource.indexOf('id="view-study-content-multi"')),
-    /sticky-action/,
-  );
-  assert.match(appSource, /data-study-content-other"\)\) \{[\s\S]*?setView\("study-content-multi"\)/);
-  assert.match(stylesSource, /\.content-choice \{[^}]*min-height: 56px/);
-  assert.match(stylesSource, /\.content-choice--secondary \{[^}]*min-height: 50px/);
+// テスト13・14・15・16：学習の準備（内容・重要度・並び順を1画面で選ぶ）
+test("形式カードの次は学習の準備1画面で、内容・重要度・並び順をまとめて選ぶ", () => {
+  const setupSource = functionSource("renderStudySetup", "renderStudyRangeSelect");
+  assert.match(setupSource, /setupGroup\("内容"/);
+  assert.match(setupSource, /setupGroup\("重要度"/);
+  assert.match(setupSource, /setupGroup\("並び順"/);
+  assert.match(setupSource, /data-setup-content="all"/);
+  assert.match(setupSource, /data-setup-content="\$\{content\}"/);
+  assert.match(setupSource, /data-setup-importance="all"/);
+  assert.match(setupSource, /data-setup-importance="\$\{importance\}"/);
+  assert.match(setupSource, /data-setup-sort="\$\{option\.key\}"/);
+  assert.match(setupSource, /data-setup-sort-other/);
+  // 一問一答の教科は形式カードで内容が決まるので、内容の札は出さない。
+  assert.match(setupSource, /if \(!isRecallSubject\(\)\) \{[\s\S]*?setupGroup\("内容"/);
+  // スタートは画面の下に貼りつき、押すとそのまま学習が始まる。
+  assert.match(indexSource, /id="view-study-setup" data-view="study-setup"[\s\S]*?class="sticky-action setup-start-bar"[\s\S]*?data-setup-start/);
+  assert.match(appSource, /if \(target\.hasAttribute\("data-setup-start"\)\) startSession\(\);/);
+  // 1つずつ選んでいた段階式の画面は残さない。
+  for (const view of ["study-content", "study-content-multi", "study-method", "study-scope", "study-importance", "study-importance-select", "study-sort-kind", "study-sort-other"]) {
+    assert.doesNotMatch(indexSource, new RegExp(`data-view="${view}"`), `${view} の画面は無い`);
+  }
   // 単語・熟語・構文の表記
   assert.match(appSource, /title: "構文"/);
   assert.match(logicSource, /structure: "構文"/);
 });
 
-// テスト16：並び替えは主要4種＋その他。並びは「何を学習しますか？」と同じ形式
-test("並び替えは主要4種とその他を、学習内容の画面と同じ1列リストで並べる", () => {
-  const sortSource = functionSource("renderStudySortKind", "renderStudySortOther");
+test("「すべて」から1つを押すとそれだけ、選んでいる中では付け外し、空や全部はすべてに戻る", () => {
+  const all = ["word", "phrase", "structure"];
+  assert.deepEqual(toggleSetupValue([], "phrase", all), ["phrase"], "すべて → 1つだけ");
+  assert.deepEqual(toggleSetupValue(["phrase"], "word", all), ["word", "phrase"], "並びは元の順にそろえる");
+  assert.deepEqual(toggleSetupValue(["word", "phrase"], "word", all), ["phrase"], "選んでいるものは外す");
+  assert.deepEqual(toggleSetupValue(["phrase"], "phrase", all), [], "全部外したらすべてに戻る");
+  assert.deepEqual(toggleSetupValue(["word", "phrase"], "structure", all), [], "全部を選んだらすべてと同じ");
+  assert.deepEqual(toggleSetupValue(["word"], "all", all), [], "「すべて」はいつでも全部");
+  // 内容と重要度のどちらも、この決まりで選ぶ。
+  assert.match(appSource, /setStudyContents\(toggleSetupValue\(/);
+  assert.match(appSource, /state\.filters\.importance = toggleSetupValue\(/);
+});
+
+test("並び替えは主要4種を札で、その他は端末の選択肢で選ぶ", () => {
+  const sortSource = functionSource("primarySortOptions", "setupChip");
   assert.match(sortSource, /key: "importance-desc", title: "重要度順"/);
   assert.match(sortSource, /key: "difficulty-level-desc", title: "難易度順"/);
   assert.match(sortSource, /key: "difficulty", title: "苦手順"/);
   assert.match(sortSource, /key: "random", title: "ランダム"/);
-  // 学習内容の画面と同じ contentChoiceRow / content-choice-list を使う
-  assert.match(sortSource, /contentChoiceRow\(\{/);
-  assert.match(sortSource, /attribute: 'data-study-sort-kind="other"'/);
-  assert.match(sortSource, /variant: "secondary"/);
-  assert.match(indexSource, /class="content-choice-list" id="study-sort-kind-options"/);
-  assert.match(indexSource, /class="content-choice-list" id="study-content-options"/);
-  // 主要4種は押した時点で学習開始
-  assert.match(appSource, /target\.dataset\.studySortKind === "other"[\s\S]*?setView\("study-sort-other"\)[\s\S]*?startSession\(\)/);
+  // 札を押しても学習はまだ始めない（条件を見直してからスタートを押す）。
+  assert.match(appSource, /if \(target\.dataset\.setupSort\) \{\s*\n\s*state\.sortKey = target\.dataset\.setupSort;\s*\n\s*renderStudySetup\(\);/);
   // 既存の詳細並び替えは削除しない
   assert.match(appSource, /\["accuracy-asc", "正答率が低い順"\]/);
   assert.match(appSource, /\["alpha-ja", "あいうえお順"\]/);
-  assert.match(indexSource, /id="view-study-sort-other"/);
+  assert.match(appSource, /event\.target\.dataset\?\.setupSortOther !== undefined[\s\S]*?state\.sortKey = event\.target\.value/);
 });
 
 // テスト17：設定の保存
@@ -421,9 +426,8 @@ test("通常フローでは回答状況をたずねない", () => {
   assert.match(functionSource("studyPoolItems", "ensureStudyProgress"), /performance: "all"/);
   assert.doesNotMatch(appSource, /renderStudyPerformance/);
   assert.doesNotMatch(indexSource, /data-study-performance/);
-  // 範囲 → 形式 → 学習内容 → 重要度 → 並び替え → 学習
-  assert.match(appSource, /setView\(isRecallSubject\(\) \? "study-importance" : "study-content"\)/);
-  assert.match(appSource, /setView\(state\.studyFlowMode === "dashboard" \? "study-importance" : "study-method"\)/);
+  // 範囲 → 形式 → 学習の準備 → 学習
+  assert.match(functionSource("startStudyFromTarget", "stashStudyProgress"), /setView\("study-setup"\)/);
 });
 
 // ③ 同じレベル帯の中だけをランダムに並べる
@@ -477,40 +481,25 @@ test("単語帳など既定の呼び出しでは並びが変わらない", () =>
   assert.match(functionSource("buildCycleQueue", "beginSession"), /\{ randomizeTies: true \}/);
 });
 
-// ④ 重要度も「何を学習しますか？」と同じ形式で毎回選ぶ
-test("重要度は全重要度を先頭にした1列リストで毎回選ぶ", () => {
-  const source = functionSource("renderStudyImportance", "renderStudyImportanceSelect");
-  // 全重要度が一番上
-  const allIndex = source.indexOf('data-study-importance-choice="all"');
-  const eachIndex = source.indexOf("available.map((importance)");
-  const otherIndex = source.indexOf("data-study-importance-other");
-  assert.ok(allIndex > 0 && allIndex < eachIndex, "全重要度が個別の重要度より前にある");
-  assert.ok(eachIndex < otherIndex, "「その他」は最後");
-  // 学習内容の画面と同じ部品
-  assert.match(source, /contentChoiceRow\(\{/);
-  assert.match(indexSource, /class="content-choice-list" id="study-importance-options-single"/);
-  // 1タップで確定して並び替えへ
-  assert.match(appSource, /if \(target\.dataset\.studyImportanceChoice\) \{[\s\S]*?setView\("study-sort-kind"\)/);
-  assert.match(appSource, /state\.filters\.importance = choice === "all" \? \[\] : \[choice\]/);
-  // 「その他」だけ複数選択画面
-  assert.match(appSource, /data-study-importance-other"\)\) \{[\s\S]*?setView\("study-importance-select"\)/);
-  assert.match(indexSource, /id="view-study-importance-select"/);
-  // 全部／指定の2択だった旧画面は残さない
-  assert.doesNotMatch(indexSource, /view-study-importance-kind/);
-  assert.doesNotMatch(appSource, /data-importance-filter-mode/);
+// ④ 学習の準備は、前回その範囲・形式で学習した条件から始まる
+test("学習の準備は前回の条件を初期値にし、そのまま押せば同じ周回の続きになる", () => {
+  const lastSource = functionSource("lastConfigForTarget", "startStudyFromTarget");
+  assert.match(lastSource, /studyProgressEntriesForMode\(state\.studyProgress, \{/);
+  assert.match(lastSource, /state\.studyConfigs\[key\]/);
+  const startSource = functionSource("startStudyFromTarget", "stashStudyProgress");
+  assert.match(startSource, /const previous = lastConfigForTarget\(target, ranges\);/);
+  assert.match(startSource, /filters: previous\?\.filters \?\? \{ importance: \[\] \}/);
+  assert.match(startSource, /sortKey: previous\?\.sortKey \?\? "importance-desc"/);
+  assert.match(startSource, /setStudyContents\(previous\?\.selection\?\.contents \?\? \[\.\.\.ENGLISH_CONTENT_TYPES\]\)/);
 });
 
-test("学習内容の次に重要度、その次に並び替えを通る", () => {
-  // ダッシュボード導線：範囲 → 形式 → 学習内容 → 重要度 → 並び替え
-  assert.match(appSource, /setView\(state\.studyFlowMode === "dashboard" \? "study-importance" : "study-method"\)/);
-  // 一問一答は、4択も選べる教科なら出題方法を挟んでから重要度へ
-  assert.match(
-    appSource,
-    /method: supportsChoiceRecall\(\) \? null : "recall",[\s\S]*?setView\(supportsChoiceRecall\(\) \? "study-method" : "study-importance"\)/,
-  );
-  assert.match(appSource, /if \(target\.dataset\.recallMethod\) \{[\s\S]*?setView\("study-importance"\)/);
-  assert.match(appSource, /state\.studySelection\.scope = "full";\s*\n\s*setView\("study-importance"\)/);
-  // 並び替えからは重要度へ戻る
-  assert.match(appSource, /data-back-before-sort"\)\) \{\s*\n\s*setView\("study-importance"\)/);
-  assert.match(appSource, /if \(view === "study-importance"\) renderStudyImportance\(\)/);
+test("スタートのボタンは、何問から・何周目から始まるかを示す", () => {
+  const planSource = functionSource("setupPlan", "renderSetupProgress");
+  assert.match(planSource, /const key = studyProgressKey\(config\);/);
+  assert.match(planSource, /plan\.label = "続きから"/);
+  assert.match(planSource, /`残り\$\{summary\.remainingCount\}\$\{unit\}`/);
+  assert.match(planSource, /advanceStudyProgress\(stored, \{ roundItemIds: pool\.map\(\(item\) => item\.id\) \}\)/);
+  assert.match(planSource, /newRound \? "次のセットを始める" : `\$\{next\.cycleNumber\}周目を始める`/);
+  // 出題できる問題が無ければ押せない。
+  assert.match(functionSource("renderSetupProgress", "renderStudySetup"), /elements\.setupStart\.disabled = !plan\.pool\.length;/);
 });

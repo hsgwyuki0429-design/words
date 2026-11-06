@@ -1,5 +1,5 @@
-import { createHaptics } from "./haptics.js?v=2026.9.42";
-import { createKobunController } from "./kobun.js?v=2026.9.42";
+import { createHaptics } from "./haptics.js?v=2026.11.07";
+import { createKobunController } from "./kobun.js?v=2026.11.07";
 import {
   ALL_MODES,
   ALPHABET_KEYBOARD_ROWS,
@@ -72,7 +72,8 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.42";
+  toggleSetupValue,
+} from "./logic.js?v=2026.11.07";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -93,7 +94,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.9.42";
+} from "./storage.js?v=2026.11.07";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -101,7 +102,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.42";
+} from "./quiz-gestures.js?v=2026.11.07";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
@@ -110,7 +111,7 @@ import {
   normalizeSpeechRate,
   normalizeSpeechVoiceURI,
   voiceKey,
-} from "./speech.js?v=2026.9.42";
+} from "./speech.js?v=2026.11.07";
 import {
   AI_LINK_JOURNAL_KEY,
   AI_LINK_META_KEY,
@@ -126,7 +127,7 @@ import {
   isAiLinkConfigured,
   mcpUrlFor,
   normalizeAiLinkConfig,
-} from "./ai-link.js?v=2026.9.42";
+} from "./ai-link.js?v=2026.11.07";
 import {
   DEFAULT_DEVICE_SYNC,
   DEVICE_SYNC_META_KEY,
@@ -143,13 +144,13 @@ import {
   syncStateLabel,
   transferFileName,
   unsentEntries,
-} from "./sync.js?v=2026.9.42";
+} from "./sync.js?v=2026.11.07";
 import {
   applyThemePreference,
   normalizeThemePreference,
   readStoredThemePreference,
   watchSystemTheme,
-} from "./theme.js?v=2026.9.42";
+} from "./theme.js?v=2026.11.07";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -211,8 +212,8 @@ const state = {
   importanceFilterMode: null,
   rangeSelectionMode: null,
   contentSelectionMode: null,
-  rangeFlow: "dashboard",
-  studyFlowMode: "dashboard",
+  // 学習の準備の見出し（形式カードの名前）。
+  setupTitle: null,
   studyProgress: {},
   // AI連携（MCP）。既定は無効で、有効にするまでネットワークへは出ない。
   aiLink: { ...DEFAULT_AI_LINK },
@@ -239,7 +240,10 @@ const elements = Object.fromEntries(
     "app-shell",
     "app-header",
     "header-status",
-    "dashboard-eyebrow",
+    "subject-tabs",
+    "subject-period-label",
+    "home-summary",
+    "home-continue",
     "dashboard-title",
     "dashboard-copy",
     "dashboard-range-list",
@@ -247,28 +251,14 @@ const elements = Object.fromEntries(
     "range-detail-title",
     "range-detail-copy",
     "range-detail-groups",
-    "study-range-back",
-    "study-range-eyebrow",
-    "study-content-heading",
-    "study-content-copy",
-    "study-content-options",
-    "study-content-back",
-    "confirm-study-content",
-    "study-content-action-copy",
-    "study-method-back",
-    "study-method-heading",
-    "study-method-copy",
-    "study-method-options",
-    "study-scope-options",
+    "setup-title",
+    "setup-note",
+    "setup-progress",
+    "setup-groups",
+    "setup-start",
     "study-range-options",
     "confirm-study-ranges",
     "study-range-action-copy",
-    "study-importance-options-single",
-    "study-importance-options",
-    "confirm-study-importance",
-    "study-content-multi-options",
-    "study-sort-kind-options",
-    "study-sort-other-options",
     "list-search",
     "list-count",
     "list-eyebrow",
@@ -278,7 +268,7 @@ const elements = Object.fromEntries(
     "word-list",
     "load-more",
     "quiz-content",
-    "analysis-result",
+    "result-content",
     "settings-content",
     "effects-canvas",
     "fx-backdrop",
@@ -336,10 +326,31 @@ function emptyPeriodMarkup() {
 const ENGLISH_DATA_URL = "./data/english-2026-3.json?v=2026.11.06";
 
 // いま選べる定期テストの回。2定（2026.2）は終えたので外し、3定だけにしている。
+// 選べる回が1つだけのときは、回を選ぶ画面を出さずに自動で選ぶ。
 const AVAILABLE_PERIODS = ["2026.3"];
+
+const PERIOD_LABELS = { "2026.3": "3定", "2026.2": "2定" };
+
+// 回ごとに学習する教科。ホームのタブにはここにある教科だけを並べる。
+// 3定では英語と公共だけ。保健・古文を戻すときはここと index.html の hidden を直す。
+const PERIOD_SUBJECTS = { "2026.3": ["english", "public"], "2026.2": ["english", "public", "health", "kobun"] };
+
+function periodSubjects(period = state.selectedPeriod) {
+  return PERIOD_SUBJECTS[period] ?? ["english"];
+}
 
 function normalizeSelectedPeriod(period) {
   return AVAILABLE_PERIODS.includes(period) ? period : null;
+}
+
+function defaultPeriod() {
+  return AVAILABLE_PERIODS.length === 1 ? AVAILABLE_PERIODS[0] : null;
+}
+
+// 起動したときに開く教科。前回の教科がいまの回に無ければ、回の最初の教科にする。
+function startingSubject(lastSubject) {
+  const subjects = periodSubjects();
+  return subjects.includes(lastSubject) ? lastSubject : subjects[0];
 }
 
 const OTHER_SORT_OPTIONS = [
@@ -395,17 +406,6 @@ const STUDY_CONTENT_META = {
   phrase: { icon: "…", title: "熟語", detail: "熟語だけを学習", tags: ["熟語"] },
   structure: { icon: "V", title: "構文", detail: "構文だけを学習", tags: ["構文"] },
   all: { icon: "＋", title: "全選択", detail: "単語・熟語・構文をまとめて学習", tags: ["単語", "熟語", "構文"] },
-};
-
-const STUDY_DIRECTION_META = {
-  en_to_ja: { icon: "英→日", title: "英語 → 日本語", detail: "英語を見て日本語の意味を答える", tags: ["英語から"] },
-  ja_to_en: { icon: "日→英", title: "日本語 → 英語", detail: "日本語を見て対応する英語を答える", tags: ["日本語から"] },
-};
-
-const STUDY_FORMAT_META = {
-  choice: { icon: "4", title: "4択問題", detail: "4つの候補から正しい答えを選ぶ", tags: ["選択式"] },
-  flashcard: { icon: "▣", title: "フラッシュカード", detail: "タップで表裏、スワイプで自己採点", tags: ["自己採点"] },
-  input: { icon: "⌨", title: "キーボード入力", detail: "日本語を見て、英語をキーボードで入力する", tags: ["単語", "熟語・語法"] },
 };
 
 const TAG_LABELS = {
@@ -562,7 +562,13 @@ function resetStudyFlow() {
   state.contentSelectionMode = selectAllEnglishContents ? "all" : null;
 }
 
+// 最後に開いた教科を覚えておき、次に開いたときはその教科のホームから始める。
+function rememberSubject(subject) {
+  setMeta("lastSubject", subject).catch(console.warn);
+}
+
 function selectSubject(subject) {
+  rememberSubject(subject);
   if (subject === "kobun") {
     state.subject = "kobun";
     state.items = [];
@@ -599,7 +605,6 @@ function selectSubject(subject) {
       : isKobunVocabSubject()
         ? "語句一覧"
         : "単語帳";
-  state.rangeFlow = "dashboard";
   setView("dashboard");
   if (!state.settings.effectsMode) elements.onboarding.hidden = false;
 }
@@ -624,139 +629,37 @@ function studyContentLabel(selection = state.studySelection) {
 }
 
 // 学習条件から範囲の見出しを作る（続きのカードで使う）。
+// 「全範囲」かどうかは、いまの回で出題できる範囲と比べて決める。
 function configRangeLabel(config) {
   const ranges = config.filters?.ranges ?? [];
-  const allRanges = rangeOrderForSubject(config.subject);
+  const allRanges = config.subject === state.subject ? dashboardRanges() : rangeOrderForSubject(config.subject);
   if (!ranges.length || allRanges.every((range) => ranges.includes(range))) return "全範囲";
   if (ranges.length <= 2) return ranges.join("・");
   return `${ranges.slice(0, 2).join("・")}＋ほか${ranges.length - 2}`;
 }
 
-function selectionCard({ icon, title, detail, tags, dataAttribute }) {
-  return `
-    <button class="selection-card" type="button" ${dataAttribute}>
-      <span class="selection-card-icon" aria-hidden="true">${escapeHtml(icon)}</span>
-      <span class="selection-card-copy">
-        <strong>${escapeHtml(title)}</strong>
-        <small>${escapeHtml(detail)}</small>
-        <span class="item-tags">${renderTags(tags)}</span>
-      </span>
-      <span class="card-arrow" aria-hidden="true">›</span>
-    </button>`;
+// 形式の短い呼び名。ホームの「続きから」や学習の準備の見出しに使う。
+const MODE_SHORT_LABELS = {
+  en_to_ja_choice: "英→日 4択",
+  en_to_ja_flashcard: "英→日 カード",
+  ja_to_en_choice: "日→英 4択",
+  ja_to_en_flashcard: "日→英 カード",
+  ja_to_en_input: "日→英 入力",
+  public_recall: "一問一答",
+  public_choice: "4択",
+  health_recall: "一問一答",
+  "kobun-vocab_recall": "重要語句カード",
+};
+
+function modeShortLabel(mode) {
+  return MODE_SHORT_LABELS[mode] ?? MODE_LABELS[mode] ?? "学習";
 }
 
-function recallContentMeta() {
-  const termCount = state.items.filter((item) => item.answerFormat === "term").length;
-  const shortCount = state.items.filter((item) => item.answerFormat === "short").length;
-  const meta = {};
-  if (termCount && isKobunVocabSubject()) {
-    const { title, detail } = recallContentMetaFor("kobun-vocab", "term");
-    meta.term = { icon: "語", title, detail, tags: [`${termCount}語句`] };
-  } else if (termCount) {
-    meta.term = { icon: "語", title: "語句回答問題", detail: "用語・人物・制度名・年号など", tags: [`${termCount}問`] };
-  }
-  if (shortCount) {
-    meta.short = { icon: "文", title: "短文回答問題", detail: "定義・理由・特徴・しくみなど", tags: [`${shortCount}問`] };
-  }
-  if (termCount && shortCount) {
-    meta.all = { icon: "＋", title: "どっちとも", detail: "語句回答と短文回答をまとめて学習", tags: [`${termCount + shortCount}問`] };
-  }
-  return meta;
+function importanceLabel(importance = []) {
+  return importance?.length ? importance.join("・") : "全重要度";
 }
 
-// 単語 / 熟語 / 構文 / 全選択 は1タップで確定して次へ。「その他」だけ複数選択へ。
-function renderStudyContent() {
-  const fromDashboard = state.studyFlowMode === "dashboard";
-  elements.studyContentBack.dataset.viewTarget = fromDashboard ? "range-detail" : "study-range-select";
-  elements.studyContentBack.setAttribute("aria-label", fromDashboard ? "形式を選び直す" : "範囲を選び直す");
-  elements.studyContentHeading.textContent = isRecallSubject()
-    ? "どの問題を学習しますか？"
-    : "何を学習しますか？";
-  // 続きのある学習内容（単語・熟語・構文・全選択）を赤枠で示す。
-  const resumableContents = contentsInProgress();
-  if (isRecallSubject()) {
-    const recallContents = recallContentMeta();
-    elements.studyContentCopy.textContent = "";
-    elements.studyContentOptions.className = "content-choice-list";
-    elements.studyContentOptions.innerHTML = Object.entries(recallContents)
-      .map(([content, meta]) => contentChoiceRow({
-        title: meta.title,
-        detail: meta.detail,
-        attribute: `data-study-content="${content}"`,
-        progress: selectionProgress({ types: recallTypesForContent(content) }),
-        inProgress: resumableContents.has(content),
-        roundNumber: masteryRoundForContents(content),
-      }))
-      .join("");
-    return;
-  }
-
-  elements.studyContentCopy.textContent = "";
-  const baseItems = studyContentBaseItems();
-  const count = (type) => baseItems.filter((item) => item.type === type).length;
-  elements.studyContentOptions.className = "content-choice-list";
-  elements.studyContentOptions.innerHTML = [
-    ...ENGLISH_CONTENT_TYPES.map((content) => contentChoiceRow({
-      title: STUDY_CONTENT_META[content].title,
-      detail: count(content) ? `${count(content)}語句` : "出題できません",
-      attribute: `data-study-content-choice="${content}"${count(content) ? "" : ' disabled aria-disabled="true"'}`,
-      progress: count(content) ? selectionProgress({ types: [content] }) : null,
-      inProgress: resumableContents.has(studyContentsKey([content])),
-      roundNumber: masteryRoundForContents(studyContentsKey([content])),
-    })),
-    contentChoiceRow({
-      title: "全選択",
-      detail: `${baseItems.length}語句`,
-      attribute: 'data-study-content-choice="all"',
-      progress: selectionProgress({ types: [...ENGLISH_CONTENT_TYPES] }),
-      inProgress: resumableContents.has(studyContentsKey([...ENGLISH_CONTENT_TYPES])),
-      roundNumber: masteryRoundForContents(studyContentsKey([...ENGLISH_CONTENT_TYPES])),
-    }),
-    contentChoiceRow({
-      title: "その他",
-      detail: "組み合わせを複数選択する",
-      attribute: "data-study-content-other",
-      variant: "secondary",
-    }),
-  ].join("");
-}
-
-function contentChoiceRow({
-  title,
-  detail,
-  attribute,
-  variant = "primary",
-  progress = null,
-  inProgress = false,
-  roundNumber = 1,
-}) {
-  const classes = [
-    "content-choice",
-    variant === "secondary" ? "content-choice--secondary" : "",
-    progress ? "content-choice--gauge" : "",
-    inProgress ? "is-in-progress" : "",
-  ].filter(Boolean).join(" ");
-  const badge = inProgress ? studyBadgeMarkup() : "";
-  if (!progress) {
-    return `
-    <button class="${classes}" type="button" ${attribute}>
-      <span class="content-choice-copy"><strong>${escapeHtml(title)}</strong><small>${escapeHtml(detail)}</small></span>
-      ${badge}
-      <span class="card-arrow" aria-hidden="true">›</span>
-    </button>`;
-  }
-  return `
-    <button class="${classes}" type="button" ${attribute}>
-      <span class="content-choice-head">
-        <strong>${escapeHtml(title)}</strong>
-        <small>${escapeHtml(detail)}</small>
-        ${badge}
-        <span class="card-arrow" aria-hidden="true">›</span>
-      </span>${progressGaugeMarkup(progress, roundNumber)}
-    </button>`;
-}
-
-// 学習内容の件数は、範囲だけで絞った母数を使う（重要度はこの後の画面で選ぶ）
+// 学習内容の件数は、範囲だけで絞った母数を使う（重要度は同じ画面で別に選ぶ）
 function studyContentBaseItems() {
   return applyFilters(state.items, state.history, {
     ...state.filters,
@@ -768,96 +671,177 @@ function studyContentBaseItems() {
   });
 }
 
-function renderStudyContentMulti() {
-  const selectedContents = state.studySelection.contents ?? [];
-  const baseItems = studyContentBaseItems();
-  elements.studyContentMultiOptions.innerHTML = ENGLISH_CONTENT_TYPES.map((content) => {
-    const selected = selectedContents.includes(content);
-    const meta = STUDY_CONTENT_META[content];
-    const count = baseItems.filter((item) => item.type === content).length;
-    return `<button class="multi-select-card${selected ? " selected" : ""}" type="button" data-study-content="${content}" aria-pressed="${selected}">
-      <span class="multi-check" aria-hidden="true">${selected ? "✓" : ""}</span>
-      <span><strong>${escapeHtml(meta.title)}</strong><small>${count}語句</small></span>
-    </button>`;
-  }).join("");
-  const ready = selectedContents.length > 0;
-  elements.confirmStudyContent.disabled = !ready;
-  elements.confirmStudyContent.classList.toggle("ready-to-continue", ready);
-  elements.studyContentActionCopy.hidden = !ready;
-  elements.studyContentActionCopy.textContent = `${selectedContents.length}種類を選択中。次へ進めます`;
+// ---------------------------------------------------------------------------
+// 学習の準備
+//
+// 形式カードを押したあとは、この1画面だけで内容・重要度・並び順を選ぶ。
+// 初めは前回その範囲・形式で学習した条件を入れておくので、そのまま
+// 「スタート」を押せば同じ周回の続きになる。選ぶ状態は state.studySelection /
+// state.filters / state.sortKey をそのまま使い、startSession() へ渡す。
+// ---------------------------------------------------------------------------
+
+// 押してすぐ選べる並び順。ほかの並び順は「その他」（端末の選択肢）から選ぶ。
+function primarySortOptions() {
+  return [
+    { key: "importance-desc", title: "重要度順" },
+    ...(!isRecallSubject() ? [{ key: "difficulty-level-desc", title: "難易度順" }] : []),
+    { key: "difficulty", title: "苦手順" },
+    { key: "random", title: "ランダム" },
+  ];
 }
 
-function applyContentChoice(choice) {
-  const contents = choice === "all" ? [...ENGLISH_CONTENT_TYPES] : [choice];
-  state.contentSelectionMode = choice === "all" ? "all" : "custom";
+function setupChip({ label, count = null, selected = false, attribute, disabled = false }) {
+  return `
+      <button class="setup-chip${selected ? " is-selected" : ""}" type="button" ${attribute} aria-pressed="${selected}"${disabled ? ' disabled aria-disabled="true"' : ""}>
+        <span>${escapeHtml(label)}</span>${count === null ? "" : `<small>${escapeHtml(count)}</small>`}
+      </button>`;
+}
+
+function setupGroup(title, chips) {
+  return `
+    <section class="setup-group" aria-label="${escapeHtml(title)}">
+      <h2 class="setup-group-title">${escapeHtml(title)}</h2>
+      <div class="setup-chips">${chips.join("")}</div>
+    </section>`;
+}
+
+function setStudyContents(contents) {
+  const list = contents.length ? contents : [...ENGLISH_CONTENT_TYPES];
+  state.contentSelectionMode = list.length === ENGLISH_CONTENT_TYPES.length ? "all" : "custom";
   state.studySelection = {
     ...state.studySelection,
     subject: "english",
-    content: contents.length === ENGLISH_CONTENT_TYPES.length ? "all" : contents[0],
-    contents,
+    content: list.length === ENGLISH_CONTENT_TYPES.length ? "all" : list.length === 1 ? list[0] : null,
+    contents: list,
   };
 }
 
-const RECALL_METHOD_META = {
-  recall: {
-    icon: "▣",
-    title: "一問一答",
-    detail: "タップで表裏、スワイプで自己採点",
-    tags: ["自己採点"],
-  },
-  choice: {
-    icon: "4",
-    title: "4択問題",
-    detail: "教科書の選択肢から正しい答えを選ぶ",
-    tags: ["選択式"],
-  },
-};
-
-function renderStudyMethod() {
-  const contentLabel = studyContentLabel();
-  if (isRecallSubject()) {
-    elements.studyMethodBack.dataset.viewTarget = "study-content";
-    elements.studyMethodBack.textContent = "← 学習内容を選び直す";
-    elements.studyMethodHeading.textContent = `${contentLabel}の出題方法`;
-    elements.studyMethodCopy.textContent = "一回の学習では一つの方法に集中します。";
-    elements.studyMethodOptions.innerHTML = Object.entries(RECALL_METHOD_META)
-      .map(([method, meta]) => selectionCard({
-        ...meta,
-        dataAttribute: `data-recall-method="${method}"`,
-      }))
-      .join("");
-    return;
-  }
-  elements.studyMethodBack.dataset.viewTarget = "study-content";
-  elements.studyMethodBack.textContent = "← 学習内容を選び直す";
-  elements.studyMethodHeading.textContent = `${contentLabel}の出題方向`;
-  elements.studyMethodCopy.textContent = "問題と答えの向きを選んでください。";
-  elements.studyMethodOptions.innerHTML = Object.entries(STUDY_DIRECTION_META)
-    .map(([direction, meta]) => selectionCard({
-      ...meta,
-      dataAttribute: `data-study-direction="${direction}"`,
-    }))
-    .join("");
+function currentSetupConfig() {
+  return {
+    subject: state.subject,
+    filters: { ...state.filters, search: "" },
+    selection: normalizeStudySelection(state.studySelection),
+    sortKey: state.sortKey,
+    count: "all",
+    itemIds: null,
+  };
 }
 
-function renderStudyScope() {
-  const formats = Object.entries(STUDY_FORMAT_META).filter(([format]) => {
-    if (format !== "input") return true;
-    return state.studySelection.direction === "ja_to_en";
-  });
-  elements.studyScopeOptions.innerHTML = formats
-    .map(([format, meta]) => selectionCard({
-      ...meta,
-      dataAttribute: `data-study-format="${format}"`,
-    }))
-    .join("");
+// いまの条件で始めると、何問から・何周目から始まるか。
+function setupPlan() {
+  const config = currentSetupConfig();
+  const pool = studyPoolItems(config);
+  const key = studyProgressKey(config);
+  const stored = key ? storedStudyProgress(key, { itemIds: pool.map((item) => item.id) }) : null;
+  const unit = recallUnit();
+  const summary = studyProgressSummary(stored);
+  const plan = { config, pool, key, stored, summary, label: "スタート", detail: `${pool.length}${unit}`, cycleCopy: "" };
+  if (!stored || !summary) return plan;
+  const round = summary.masteryRound > 1 ? `${summary.masteryRound}セット目 ` : "";
+  if (summary.remainingCount > 0) {
+    if (isStudyInProgress(stored)) plan.label = "続きから";
+    plan.detail = `残り${summary.remainingCount}${unit}`;
+    plan.cycleCopy = `${round}${summary.cycleNumber}周目`;
+    return plan;
+  }
+  const next = studyProgressSummary(advanceStudyProgress(stored, { roundItemIds: pool.map((item) => item.id) }));
+  const newRound = next.masteryRound > summary.masteryRound;
+  plan.label = newRound ? "次のセットを始める" : `${next.cycleNumber}周目を始める`;
+  plan.detail = `${next.remainingCount}${unit}`;
+  plan.cycleCopy = `${round}${summary.cycleNumber}周目まで完了`;
+  return plan;
+}
+
+function renderSetupProgress() {
+  const plan = setupPlan();
+  const progress = selectionProgress({ types: studyContentTypes(), importance: state.filters.importance });
+  const isLatest = Boolean(plan.stored) && plan.key === latestStudyEntry()?.key;
+  elements.setupProgress.innerHTML = `
+    <div class="setup-progress-card${isLatest ? " is-in-progress" : ""}">
+      <div class="setup-progress-head">
+        <span class="setup-progress-label">出題する問題</span>
+        <strong>${plan.pool.length}${recallUnit()}</strong>
+        ${plan.cycleCopy ? `<span class="mode-progress-cycle">${escapeHtml(plan.cycleCopy)}</span>` : ""}
+        ${isLatest ? studyBadgeMarkup() : ""}
+      </div>
+      ${progress ? progressGaugeMarkup(progress, plan.summary?.masteryRound ?? 1) : ""}
+    </div>`;
+  elements.setupStart.disabled = !plan.pool.length;
+  elements.setupStart.innerHTML = plan.pool.length
+    ? `<span class="setup-start-label">${escapeHtml(plan.label)}</span><small>${escapeHtml(plan.detail)}</small><span aria-hidden="true">→</span>`
+    : '<span class="setup-start-label">この条件に合う問題がありません</span>';
+}
+
+function renderStudySetup() {
+  const mode = exactStudyMode(state.studySelection);
+  if (!mode || !state.filters.ranges.length) {
+    setView("dashboard");
+    return;
+  }
+  elements.setupTitle.textContent = state.setupTitle ?? modeShortLabel(mode);
+  elements.setupNote.textContent = rangeDetailLabel();
+  const groups = [];
+  if (!isRecallSubject()) {
+    const baseItems = studyContentBaseItems();
+    const selected = state.studySelection.contents ?? [];
+    const allSelected = selected.length === ENGLISH_CONTENT_TYPES.length;
+    groups.push(setupGroup("内容", [
+      setupChip({ label: "すべて", count: baseItems.length, selected: allSelected, attribute: 'data-setup-content="all"' }),
+      ...ENGLISH_CONTENT_TYPES.map((content) => {
+        const count = baseItems.filter((item) => item.type === content).length;
+        return setupChip({
+          label: STUDY_CONTENT_META[content].title,
+          count,
+          selected: !allSelected && selected.includes(content),
+          attribute: `data-setup-content="${content}"`,
+          disabled: !count,
+        });
+      }),
+    ]));
+  }
+  const countFor = (importance) => learningItems({
+    ...state.filters,
+    importance: importance ? [importance] : [],
+    performance: "all",
+    minimumWrong: 0,
+  }).length;
+  const chosen = state.filters.importance ?? [];
+  groups.push(setupGroup("重要度", [
+    setupChip({ label: "すべて", count: countFor(null), selected: !chosen.length, attribute: 'data-setup-importance="all"' }),
+    ...currentImportanceOrder().map((importance) => {
+      const count = countFor(importance);
+      return setupChip({
+        label: importance,
+        count,
+        selected: chosen.includes(importance),
+        attribute: `data-setup-importance="${importance}"`,
+        disabled: !count,
+      });
+    }),
+  ]));
+  const primary = primarySortOptions();
+  const isOther = !primary.some((option) => option.key === state.sortKey);
+  const others = OTHER_SORT_OPTIONS.filter(([key]) => !primary.some((option) => option.key === key));
+  groups.push(setupGroup("並び順", [
+    ...primary.map((option) => setupChip({
+      label: option.title,
+      selected: state.sortKey === option.key,
+      attribute: `data-setup-sort="${option.key}"`,
+    })),
+    `
+      <label class="setup-chip setup-chip--select${isOther ? " is-selected" : ""}">
+        <span>${escapeHtml(isOther ? STUDY_SORT_LABELS[state.sortKey] ?? "その他" : "その他")}</span><span class="setup-chip-caret" aria-hidden="true">▾</span>
+        <select data-setup-sort-other aria-label="その他の並び順">
+          <option value="" disabled${isOther ? "" : " selected"}>その他の並び順</option>
+          ${others.map(([key, label]) => `<option value="${key}"${state.sortKey === key ? " selected" : ""}>${escapeHtml(label)}</option>`).join("")}
+        </select>
+      </label>`,
+  ]));
+  elements.setupGroups.innerHTML = groups.join("");
+  renderSetupProgress();
 }
 
 function renderStudyRangeSelect() {
-  const fromDashboard = state.rangeFlow === "dashboard";
-  elements.studyRangeBack.dataset.viewTarget = "dashboard";
-  elements.studyRangeBack.textContent = fromDashboard ? "← 範囲一覧へ戻る" : "← ダッシュボードへ戻る";
-  elements.studyRangeEyebrow.textContent = fromDashboard ? "MULTIPLE RANGES" : "STEP 1 · MULTIPLE";
   // 出題できる範囲だけを並べる。「全範囲」ボタンと同じ集合にそろえておくと、
   // どちらから入っても同じ周回のつづきになる。
   const ranges = dashboardRanges();
@@ -884,98 +868,6 @@ function renderStudyRangeSelect() {
   elements.studyRangeActionCopy.textContent = allSelected
     ? "全範囲を選択しました。次へ進めます"
     : `${state.filters.ranges.length}範囲を選択中。次へ進めます`;
-}
-
-// 「何を学習しますか？」と同じ1列リスト。全重要度だけは一番上に置く。
-function renderStudyImportance() {
-  const available = currentImportanceOrder();
-  const unit = recallUnit();
-  const countFor = (importance) => learningItems({
-    ...state.filters,
-    importance: importance ? [importance] : [],
-    performance: "all",
-    minimumWrong: 0,
-  }).length;
-  const types = studyContentTypes();
-  // 直前の画面（学習内容）と同じセットのバーを見せる。
-  const roundNumber = selectedMasteryRound();
-  const rows = [
-    contentChoiceRow({
-      title: "全重要度",
-      detail: `${countFor(null)}${unit}`,
-      attribute: 'data-study-importance-choice="all"',
-      progress: selectionProgress({ types }),
-      roundNumber,
-    }),
-    ...available.map((importance) => {
-      const count = countFor(importance);
-      return contentChoiceRow({
-        title: importance,
-        detail: count ? `${count}${unit}` : "出題できません",
-        attribute: `data-study-importance-choice="${importance}"${count ? "" : ' disabled aria-disabled="true"'}`,
-        progress: count ? selectionProgress({ types, importance: [importance] }) : null,
-        roundNumber,
-      });
-    }),
-    contentChoiceRow({
-      title: "その他",
-      detail: "重要度を複数選択する",
-      attribute: "data-study-importance-other",
-      variant: "secondary",
-    }),
-  ];
-  elements.studyImportanceOptionsSingle.innerHTML = rows.join("");
-}
-
-function renderStudyImportanceSelect() {
-  elements.studyImportanceOptions.innerHTML = currentImportanceOrder().map((importance) => {
-    const selected = state.filters.importance.includes(importance);
-    const count = learningItems({ ...state.filters, importance: [importance] }).length;
-    return `<button class="multi-select-card importance-option${selected ? " selected" : ""}" type="button" data-study-importance="${importance}" aria-pressed="${selected}">
-      <span class="multi-check" aria-hidden="true">${selected ? "✓" : ""}</span>
-      <span><strong>${importance}</strong><small>${count}${recallUnit()}</small></span>
-    </button>`;
-  }).join("");
-  elements.confirmStudyImportance.disabled = state.filters.importance.length === 0;
-}
-
-function renderStudySortKind() {
-  const rows = [
-    { key: "importance-desc", title: "重要度順", detail: "重要度が高い問題から（同じ重要度の中はランダム）" },
-    ...(!isRecallSubject()
-      ? [{ key: "difficulty-level-desc", title: "難易度順", detail: "難易度が高い問題から（同じ難易度の中はランダム）" }]
-      : []),
-    { key: "difficulty", title: "苦手順", detail: "間違いが多い問題から" },
-    { key: "random", title: "ランダム", detail: "毎回シャッフルして出題" },
-  ].map((option) => contentChoiceRow({
-    title: option.title,
-    detail: option.detail,
-    attribute: `data-study-sort-kind="${option.key}"`,
-  }));
-  rows.push(contentChoiceRow({
-    title: "その他",
-    detail: "正答率順・範囲順・A–Z など",
-    attribute: 'data-study-sort-kind="other"',
-    variant: "secondary",
-  }));
-  elements.studySortKindOptions.innerHTML = rows.join("");
-}
-
-function renderStudySortOther() {
-  elements.studySortOtherOptions.innerHTML = OTHER_SORT_OPTIONS.map(([key, label]) => `
-    <button class="multi-select-card sort-option" type="button" data-study-sort="${key}">
-      <span class="multi-check sort-icon" aria-hidden="true">↕</span>
-      <span><strong>${label}</strong><small>この順番で出題</small></span>
-    </button>`).join("");
-}
-
-function viewBeforeImportanceSelection() {
-  if (supportsChoiceRecall()) return "study-method";
-  if (state.studyFlowMode === "dashboard") {
-    return isRecallSubject() ? "range-detail" : "study-content";
-  }
-  if (isRecallSubject()) return "study-content";
-  return "study-scope";
 }
 
 function dashboardTargetGroups() {
@@ -1040,43 +932,6 @@ function allRangesInProgress() {
   return latestStudyRanges().length >= total;
 }
 
-// いま選んでいる範囲（形式まで決まっていればその形式）に一致する、
-// 学習途中の周回が対象にしている学習内容。単語・熟語・構文・全選択の
-// どれを選べば続きになるかを示すために使う。
-// いま選んでいる範囲・形式で、その学習内容が何セット目かを返す（バーの本数と色に使う）。
-// 周回（1周目→2周目）ではなく習得ラウンドを見る。全問題を習得しきって新しい
-// ラウンドが始まったときにだけ、次のバーを足したい。
-function masteryRoundForContents(contentsKey) {
-  const mode = exactStudyMode(state.studySelection);
-  if (!mode) return 1;
-  const entry = studyProgressEntriesForMode(state.studyProgress, {
-    mode,
-    ranges: state.filters.ranges,
-    filters: state.filters,
-    criterion: masteryCriterion(),
-  }).find(({ meta }) => meta.contents === contentsKey);
-  return entry?.progress?.masteryRound ?? 1;
-}
-
-// 重要度画面のように、学習内容が決まったあとの画面で使うセット番号。
-// 形式カード・学習内容と同じ本数・同じ色のバーになるようにそろえる。
-function selectedMasteryRound() {
-  const selection = state.studySelection ?? {};
-  return masteryRoundForContents(isRecallSubject()
-    ? selection.content ?? ""
-    : studyContentsKey(selection.contents ?? []));
-}
-
-function contentsInProgress() {
-  const wantedRanges = studyContentsKey(state.filters.ranges);
-  const mode = exactStudyMode(state.studySelection);
-  const meta = latestStudyEntry()?.meta;
-  if (!meta) return new Set();
-  if (studyContentsKey(meta.ranges ?? []) !== wantedRanges) return new Set();
-  if (mode && meta.mode !== mode) return new Set();
-  return new Set([meta.contents]);
-}
-
 // ハイライトのラベル。周回の途中なら残りがあることを、終えていれば
 // 次の周回へ進めることを示す。
 function studyBadgeMarkup() {
@@ -1091,49 +946,58 @@ function rangeDetailLabel(ranges = state.filters.ranges) {
   return `${ranges.length}範囲`;
 }
 
+// ホームの上に並べる教科のタブ。いまの回で学習する教科だけを出す。
+function renderSubjectTabs() {
+  const subjects = [...new Set([
+    ...periodSubjects(),
+    ...(state.subject && state.subject !== "kobun" ? [state.subject] : []),
+  ])];
+  elements.subjectTabs.innerHTML = subjects.map((subject) => {
+    const active = subject === state.subject;
+    return `<button class="subject-tab${active ? " is-active" : ""}" type="button" data-subject="${subject}" aria-current="${active ? "page" : "false"}">${escapeHtml(SUBJECT_LABELS[subject] ?? subject)}</button>`;
+  }).join("");
+}
+
+function homeSummaryText() {
+  const period = `${state.selectedPeriod ?? ""} ${PERIOD_LABELS[state.selectedPeriod] ?? ""}`.trim();
+  if (!periodHasData()) return period;
+  const summary = summarizeHistory(state.items, state.history);
+  const parts = [period, `${state.items.length.toLocaleString()}${recallUnit()}`];
+  if (summary.attempts) parts.push(`累計 ${summary.correct.toLocaleString()}正解 / ${summary.attempts.toLocaleString()}回答`);
+  return parts.filter(Boolean).join(" · ");
+}
+
+// ホーム：教科タブ → 続きから（あれば） → 範囲一覧。
 // 範囲一覧は範囲名だけを見せる。正答率・習得率などの数値はここでは出さない。
 function renderDashboard() {
-  const completed = state.session?.complete ? state.session : null;
-  const hour = new Date().getHours();
-  elements.dashboardEyebrow.textContent = completed
-    ? "NEXT STUDY"
-    : isPublicSubject()
-      ? `PUBLIC · ${state.selectedPeriod}`
-      : isHealthSubject()
-        ? `HEALTH · ${state.selectedPeriod}`
-        : isKobunVocabSubject()
-          ? `KOBUN · ${state.selectedPeriod}`
-          : hour < 11 ? "Good morning." : hour < 18 ? "Good afternoon." : "Good evening.";
+  renderSubjectTabs();
+  elements.homeSummary.textContent = homeSummaryText();
   elements.dashboardTitle.textContent = isPublicSubject()
-    ? (completed ? "次の題名を選ぶ" : "学習する題名を選ぶ")
-    : completed ? "次の学習範囲" : "学習する範囲を選ぶ";
-  elements.dashboardCopy.textContent = completed
-    ? "結果を確認したら、そのまま次の範囲へ進めます。"
-    : isPublicSubject()
-      ? "教科書の題名から、学習したい内容を選んでください。"
+    ? "題名を選ぶ"
     : isKobunVocabSubject()
-      ? "作品を選ぶと、重要語句カードの現在地が見られます。"
-      : isRecallSubject()
-        ? "範囲を選ぶと、一問一答の現在地が見られます。"
-        : "範囲を選ぶと、5つの学習形式それぞれの現在地が見られます。";
+      ? "作品を選ぶ"
+      : "範囲を選ぶ";
   elements.dashboardMultiRange.hidden = !periodHasData();
   if (!periodHasData()) {
-    elements.dashboardTitle.textContent = isPublicSubject() ? "学習する題名を選ぶ" : "学習する範囲を選ぶ";
+    elements.homeContinue.innerHTML = "";
     elements.dashboardCopy.textContent = "";
     elements.dashboardRangeList.innerHTML = emptyPeriodMarkup();
     renderHeader();
     return;
   }
+  const resume = resumableStudy();
+  elements.homeContinue.innerHTML = resume ? resumeStudyMarkup(resume) : "";
   const ranges = dashboardRanges();
   const unit = recallUnit();
-  // 学習途中の範囲は赤枠で示し、続きから進められることを伝える。
+  elements.dashboardCopy.textContent = `${ranges.length}${isPublicSubject() ? "題名" : "範囲"}`;
+  // 学習途中の範囲は印で示し、続きから進められることを伝える。
   const resumableRanges = rangesInProgress();
   const allResumable = allRangesInProgress();
   elements.dashboardRangeList.innerHTML = [
     `<button class="range-choice range-choice--all${allResumable ? " is-in-progress" : ""}" type="button" data-dashboard-all-ranges>
       <span class="range-choice-name">全範囲</span>
       ${allResumable ? studyBadgeMarkup() : ""}
-      <span class="range-choice-detail">${ranges.length}範囲 ${state.items.length}${unit}</span>
+      <span class="range-choice-detail">${state.items.length}${unit}</span>
       <span class="card-arrow" aria-hidden="true">›</span>
     </button>`,
     ...ranges.map((range) => `
@@ -1158,13 +1022,13 @@ function contentLabelFromProgressKey(meta, subject = state.subject) {
 }
 
 // 表示中の範囲・形式に一致する周回のうち、最後に学習したものを見せる。
+// 重要度などの絞り込みは問わず、その範囲・形式でいちばん最近の周回を出す。
 function cardStudyProgress(card) {
   return studyProgressEntriesForMode(state.studyProgress, {
     mode: card.mode,
     ranges: state.filters.ranges.length ? state.filters.ranges : dashboardRanges(),
-    filters: state.filters,
     criterion: masteryCriterion(),
-  })[0] ?? null;
+  }).find(({ meta }) => !isRecallSubject() || meta.contents === card.selection?.content) ?? null;
 }
 
 // 形式カード・学習内容・重要度で共通の進捗ゲージ。
@@ -1251,6 +1115,7 @@ function modeProgressCard(card) {
         ${progress.totalItems
           ? cycleCopy ? `<span class="mode-progress-cycle">${escapeHtml(cycleCopy)}</span>` : ""
           : '<span class="mode-progress-cycle">出題できません</span>'}
+        ${resumable ? studyBadgeMarkup() : ""}
         <span class="card-arrow" aria-hidden="true">›</span>
       </span>
 ${progressGaugeMarkup(progress, cycle?.masteryRound ?? 1)}
@@ -1272,21 +1137,38 @@ function renderRangeDetail() {
     </section>`).join("");
 }
 
+// その範囲・形式で前回学習したときの条件。学習の準備の初期値に使う。
+function lastConfigForTarget(target, ranges) {
+  const wantedContent = isRecallSubject() ? target.selection?.content : null;
+  const entry = studyProgressEntriesForMode(state.studyProgress, {
+    mode: target.mode,
+    ranges,
+    criterion: masteryCriterion(),
+  }).find(({ key, meta }) => state.studyConfigs[key] && (!wantedContent || meta.contents === wantedContent));
+  return entry ? state.studyConfigs[entry.key] : null;
+}
+
+// 形式カードを押した時点で範囲と形式を確定し、学習の準備へ進む。
+// 範囲・出題方向・形式はこの先で聞き直さない。
 function startStudyFromTarget(key) {
   const target = dashboardTargetByKey(key);
   if (!target) return;
+  const ranges = state.filters.ranges.length ? state.filters.ranges : dashboardRanges();
+  const previous = lastConfigForTarget(target, ranges);
   const config = studyConfigForTarget({
     target,
-    ranges: state.filters.ranges.length ? state.filters.ranges : dashboardRanges(),
-    filters: state.filters,
-    sortKey: state.sortKey,
+    ranges,
+    filters: previous?.filters ?? { importance: [] },
+    sortKey: previous?.sortKey ?? "importance-desc",
   });
   state.filters = { ...state.filters, ...config.filters };
   state.rangeSelectionMode = "custom";
   state.studySelection = config.selection;
-  state.studyFlowMode = "dashboard";
-  // 一問一答は形式カードの時点で学習内容も決まっているので重要度へ直行する。
-  setView(isRecallSubject() ? "study-importance" : "study-content");
+  if (!isRecallSubject()) setStudyContents(previous?.selection?.contents ?? [...ENGLISH_CONTENT_TYPES]);
+  state.importanceFilterMode = state.filters.importance.length ? "custom" : "all";
+  state.sortKey = config.sortKey;
+  state.setupTitle = isRecallSubject() ? target.title : modeShortLabel(target.mode);
+  setView("study-setup");
 }
 
 // 画面を離れる直前に、いまの周回を同期で控えへ逃がす。非同期の保存が
@@ -2176,31 +2058,10 @@ function renderSettings() {
       <span><strong>${title}</strong><small>${detail}</small></span>
       <span class="switch"><input type="checkbox" data-setting="${key}" ${state.settings[key] ? "checked" : ""}><span aria-hidden="true"></span></span>
     </label>`;
+  // よく触るもの（明るさ・学習画面・演出）を上に、データの管理は下にまとめる。
   elements.settingsContent.innerHTML = `
     <section class="settings-card">
-      <h2>演出モード</h2><p>問題と正答判定はどちらのモードでも同じです。</p>
-      <div class="segmented-options" role="radiogroup" aria-label="演出モード">
-        <button type="button" data-effects-mode="simple" class="${isMaxMode() ? "" : "selected"}">SIMPLE</button>
-        <button type="button" data-effects-mode="max" class="${isMaxMode() ? "selected" : ""}">MAX</button>
-      </div>
-    </section>
-    <section class="settings-card">
-      <h2>MAX MODE</h2><p>端末の負荷と好みに合わせて個別に切り替えられます。</p>
-      ${toggle("particles", "パーティクル", "正解時にCanvasの光を表示")}
-      ${toggle("shake", "画面シェイク", "コンボ時に画面を短く揺らす")}
-      ${toggle("sound", "効果音", "初期設定はオフ")}
-      <div class="settings-row sound-intensity-row">
-        <span><strong>効果音の強さ</strong><small>音量ではなくレイヤーと余韻を調整</small></span>
-        <div class="segmented-options compact-segments" role="radiogroup" aria-label="効果音の強さ">
-          <button type="button" data-sound-intensity="gentle" class="${state.settings.soundIntensity === "full" ? "" : "selected"}">控えめ</button>
-          <button type="button" data-sound-intensity="full" class="${state.settings.soundIntensity === "full" ? "selected" : ""}">フル</button>
-        </div>
-      </div>
-      ${toggle("vibration", "振動", haptics.supported ? "カード・正誤・起動後の最初の操作で振動" : "このブラウザは振動に非対応です（iPhoneなど）")}
-    </section>
-    <section class="settings-card">
       <h2>画面の明るさ</h2>
-      <p>夜は目にやさしいダークモードに切り替えられます。「端末に合わせる」を選ぶと、スマホやパソコンの設定にそのまま従います。</p>
       <div class="segmented-options" role="radiogroup" aria-label="画面の明るさ">
         ${THEME_OPTIONS.map(({ value, label }) => `
           <button
@@ -2212,24 +2073,6 @@ function renderSettings() {
           >${label}</button>`).join("")}
       </div>
       <p class="settings-note">${THEME_NOTES[themePreference()]}</p>
-    </section>
-    <section class="settings-card">
-      <h2>学習状況・周回</h2>
-      <p>出題する問題はアプリが周回状況から自動で決めます。ここでは「習得」とみなす条件だけを選びます。</p>
-      <div class="criterion-options" role="radiogroup" aria-label="習得条件">
-        ${MASTERY_CRITERIA.map((criterion) => `
-          <button
-            class="criterion-option${masteryCriterion() === criterion ? " selected" : ""}"
-            type="button"
-            role="radio"
-            aria-checked="${masteryCriterion() === criterion}"
-            data-mastery-criterion="${criterion}"
-          >
-            <span class="criterion-mark" aria-hidden="true"></span>
-            <span><strong>${escapeHtml(MASTERY_CRITERION_LABELS[criterion].title)}</strong><small>${escapeHtml(MASTERY_CRITERION_LABELS[criterion].detail)}</small></span>
-          </button>`).join("")}
-      </div>
-      <p class="settings-note">習得条件を変えると、周回と習得の判定だけを新しいセットとしてやり直します。回答数・正解数などの学習履歴は残ります。</p>
     </section>
     <section class="settings-card">
       <h2>学習画面</h2>
@@ -2250,7 +2093,46 @@ function renderSettings() {
       ${speechVoiceRow()}
       ${toggle("showSources", "出典を表示", "回答後に教材と範囲を表示")}
       ${toggle("useSystemKeyboard", "端末のキーボードを使う", "オフにすると、キーボード入力でアプリ内の小文字英字キーボードを表示します")}
+      ${toggle("vibration", "振動", haptics.supported ? "カード・正誤・起動後の最初の操作で振動" : "このブラウザは振動に非対応です（iPhoneなど）")}
     </section>
+    <section class="settings-card">
+      <h2>演出モード</h2><p>問題と正答判定はどちらのモードでも同じです。</p>
+      <div class="segmented-options" role="radiogroup" aria-label="演出モード">
+        <button type="button" data-effects-mode="simple" class="${isMaxMode() ? "" : "selected"}">SIMPLE</button>
+        <button type="button" data-effects-mode="max" class="${isMaxMode() ? "selected" : ""}">MAX</button>
+      </div>
+      ${isMaxMode() ? `
+      <h3 class="settings-subheading">MAX MODE</h3>
+      ${toggle("particles", "パーティクル", "正解時にCanvasの光を表示")}
+      ${toggle("shake", "画面シェイク", "コンボ時に画面を短く揺らす")}
+      ${toggle("sound", "効果音", "初期設定はオフ")}
+      <div class="settings-row sound-intensity-row">
+        <span><strong>効果音の強さ</strong><small>音量ではなくレイヤーと余韻を調整</small></span>
+        <div class="segmented-options compact-segments" role="radiogroup" aria-label="効果音の強さ">
+          <button type="button" data-sound-intensity="gentle" class="${state.settings.soundIntensity === "full" ? "" : "selected"}">控えめ</button>
+          <button type="button" data-sound-intensity="full" class="${state.settings.soundIntensity === "full" ? "selected" : ""}">フル</button>
+        </div>
+      </div>` : ""}
+    </section>
+    <section class="settings-card">
+      <h2>学習状況・周回</h2>
+      <p>出題する問題はアプリが周回状況から自動で決めます。ここでは「習得」とみなす条件だけを選びます。</p>
+      <div class="criterion-options" role="radiogroup" aria-label="習得条件">
+        ${MASTERY_CRITERIA.map((criterion) => `
+          <button
+            class="criterion-option${masteryCriterion() === criterion ? " selected" : ""}"
+            type="button"
+            role="radio"
+            aria-checked="${masteryCriterion() === criterion}"
+            data-mastery-criterion="${criterion}"
+          >
+            <span class="criterion-mark" aria-hidden="true"></span>
+            <span><strong>${escapeHtml(MASTERY_CRITERION_LABELS[criterion].title)}</strong><small>${escapeHtml(MASTERY_CRITERION_LABELS[criterion].detail)}</small></span>
+          </button>`).join("")}
+      </div>
+      <p class="settings-note">習得条件を変えると、周回と習得の判定だけを新しいセットとしてやり直します。回答数・正解数などの学習履歴は残ります。</p>
+    </section>
+    <h2 class="settings-group-title">データ</h2>
     ${transferCard()}
     ${deviceSyncCard()}
     ${aiLinkCard()}
@@ -3228,6 +3110,12 @@ function setView(view) {
   // 学習の記録は、いったん画面から外している。
   if (view === "analysis") view = "dashboard";
   if (view === "range-detail" && !state.filters.ranges.length) view = "dashboard";
+  // 学習の準備は、範囲と形式が決まっているときだけ開ける。
+  if (view === "study-setup" && (!state.filters.ranges.length || !exactStudyMode(state.studySelection))) {
+    view = state.filters.ranges.length ? "range-detail" : "dashboard";
+  }
+  // 結果画面は、学習を終えた直後だけ開く。ホームから開く入口は置かない。
+  if (view === "result" && !resultSession()) view = "dashboard";
   // データの無い回では、まとめノートの代わりに「データはまだありません」を出す（list画面）。
   if (view === "list" && isHealthSubject() && periodHasData()) view = "health-notes";
   if (view === "list" && isPublicSubject() && periodHasData()) view = "public-notes";
@@ -3251,21 +3139,16 @@ function setView(view) {
   document.body.classList.toggle("quiz-active", view === "quiz");
   document.body.classList.toggle("health-notes-active", view === "health-notes");
   document.body.classList.toggle("public-notes-active", view === "public-notes");
+  document.body.dataset.screen = view;
   window.scrollTo({ top: 0, behavior: "auto" });
 
+  if (view === "subject") elements.subjectPeriodLabel.textContent = `${state.selectedPeriod ?? ""} ${PERIOD_LABELS[state.selectedPeriod] ?? ""}`.trim();
   if (view === "dashboard") renderDashboard();
   if (view === "range-detail") renderRangeDetail();
-  if (view === "study-content") renderStudyContent();
-  if (view === "study-method") renderStudyMethod();
-  if (view === "study-scope") renderStudyScope();
+  if (view === "study-setup") renderStudySetup();
   if (view === "study-range-select") renderStudyRangeSelect();
-  if (view === "study-importance") renderStudyImportance();
-  if (view === "study-importance-select") renderStudyImportanceSelect();
-  if (view === "study-content-multi") renderStudyContentMulti();
-  if (view === "study-sort-kind") renderStudySortKind();
-  if (view === "study-sort-other") renderStudySortOther();
   if (view === "list") renderList(true);
-  if (view === "analysis") renderAnalysis();
+  if (view === "result") renderResult();
   // 設定画面を離れたら、表示していた接続トークンは残さない。
   if (view !== "settings") state.aiLinkIssuedToken = null;
   if (view === "settings") renderSettings();
@@ -3596,8 +3479,8 @@ function startSession(overrides = {}) {
       && !overrides.modes,
   );
   if (!usesSelection && (!mode || !ALL_MODES.includes(mode))) {
-    showToast("先に学習内容と出題方法を選んでください");
-    setView("study-content");
+    showToast("先に範囲と出題形式を選んでください");
+    setView("range-detail");
     return;
   }
   const config = {
@@ -4508,7 +4391,7 @@ function renderRecallQuiz() {
       <div class="quiz-progress"><span style="width:${progress}%"></span></div>
       <div class="quiz-card-stage recall-card-stage${revealed ? " is-swipe-ready" : ""}">
         <article
-          class="public-recall-card quiz-gesture-card${vocabCard ? " vocab-recall-card" : ""}"
+          class="public-recall-card quiz-gesture-card${vocabCard ? " vocab-recall-card" : ""}${question.mode.endsWith("_flashcard") ? " word-recall-card" : ""}"
           ${vocabCard ? `data-density="${vocabCardDensity(question.item, revealed)}"` : ""}
           data-quiz-gesture-surface
           data-gesture-state="${revealed ? "recall-answer" : "recall-question"}"
@@ -5031,50 +4914,59 @@ function adoptLegacyStudyConfigs(entries) {
   setMeta("studyConfigs", state.studyConfigs).catch(console.warn);
 }
 
-// 学習途中の周回があれば、その続きを始められるようにする。条件の控えが
-// 残っているものだけを対象にする（控えが無いと同じ条件で始め直せないため）。
+// いちばん最近学習したセットに続きがあれば、ホームからひと押しで再開できるようにする。
+// 条件の控えが残っているものだけを対象にする（控えが無いと同じ条件で始め直せないため）。
 function resumableStudy() {
-  const entry = inProgressEntries()[0];
+  const entry = latestStudyEntry();
   const config = entry ? state.studyConfigs[entry.key] : null;
   return config ? { entry, config } : null;
 }
 
+function typesForSelection(selection) {
+  const normalized = normalizeStudySelection(selection);
+  if (normalized.subject === "english") return normalized.contents.length ? normalized.contents : [...ENGLISH_CONTENT_TYPES];
+  return normalized.content === "all"
+    ? [`${normalized.subject}-term`, `${normalized.subject}-short`]
+    : [`${normalized.subject}-${normalized.content}`];
+}
+
+// ホームの「続きから」。押すと、前回と同じ条件のまま周回の続きを始める。
 function resumeStudyMarkup({ entry, config }) {
   const cycle = studyProgressSummary(entry.progress);
+  const inProgress = isStudyInProgress(entry.progress);
+  const mode = exactStudyMode(config.selection);
+  const unit = recallUnit();
+  const progress = summarizeRangeModeProgress({
+    items: state.items,
+    history: state.history,
+    ranges: config.filters.ranges,
+    types: typesForSelection(config.selection),
+    importance: config.filters.importance,
+    mode,
+    masteredIds: masteredIdsForMode(state.studyProgress, mode, { criterion: masteryCriterion() }),
+  });
   const contentLabel = contentLabelFromProgressKey(entry.meta, config.subject) || "教材";
-  const methodLabel = STUDY_METHOD_LABELS[config.selection.method] ?? "学習";
-  const context = [
-    ["教科", SUBJECT_LABELS[config.subject] ?? "英語"],
-    ["範囲", configRangeLabel(config)],
-    ["教材", contentLabel],
-    ["出題形式", methodLabel],
-  ];
+  const detail = [
+    ...(isRecallSubjectId(config.subject) ? [] : [contentLabel]),
+    importanceLabel(config.filters.importance),
+    STUDY_SORT_LABELS[config.sortKey] ?? "重要度順",
+  ].join(" · ");
+  const round = cycle.masteryRound > 1 ? `${cycle.masteryRound}セット目 ` : "";
+  const cycleCopy = inProgress
+    ? `${round}${cycle.cycleNumber}周目 · 残り${cycle.remainingCount}${unit}`
+    : `${round}${cycle.cycleNumber}周目まで完了`;
+  const title = `${configRangeLabel(config)} · ${modeShortLabel(mode)}`;
   return `
-    <section class="result-panel" aria-labelledby="resume-panel-title">
-      <header class="result-complete-header">
-        <p class="eyebrow">CONTINUE</p>
-        <h1 id="resume-panel-title">学習途中のセットがあります</h1>
-        <ul class="result-context-list" aria-label="学習条件">
-          ${context.map(([label, value]) => `<li><span>${label}</span><strong>${escapeHtml(value)}</strong></li>`).join("")}
-        </ul>
-      </header>
-      <section class="result-record" aria-labelledby="resume-record-title">
-        <h2 id="resume-record-title">${cycle.masteryRound > 1 ? `${cycle.masteryRound}セット目・` : ""}${cycle.cycleNumber}周目の途中</h2>
-        <div class="result-record-grid">
-          <div><span>今回の対象</span><strong>${cycle.targetCount}</strong></div>
-          <div><span>正解済み</span><strong>${cycle.correctCount}</strong></div>
-          <div><span>残り</span><strong>${cycle.remainingCount}</strong></div>
-        </div>
-      </section>
-      <section class="result-next-card" aria-labelledby="resume-next-title">
-        <div>
-          <p class="eyebrow">NEXT STEP</p>
-          <h2 id="resume-next-title">続きから学習する</h2>
-          <p>まだ正解していない${cycle.remainingCount}問から再開します</p>
-        </div>
-        <button class="primary-button result-primary-action" type="button" data-resume-study>続きを始める<span aria-hidden="true">→</span></button>
-      </section>
-    </section>`;
+    <button class="continue-card" type="button" data-resume-study aria-label="${escapeHtml(`${inProgress ? "続きから" : "次の周回へ"}：${title}、${cycleCopy}`)}">
+      <span class="continue-eyebrow">${inProgress ? "続きから" : "次の周回へ"}</span>
+      <span class="continue-title">${escapeHtml(title)}</span>
+      <span class="continue-detail">${escapeHtml(detail)}</span>
+      ${progressGaugeMarkup(progress, cycle.masteryRound)}
+      <span class="continue-foot">
+        <span class="continue-cycle">${escapeHtml(cycleCopy)}</span>
+        <span class="continue-action">${inProgress ? "続ける" : "始める"}<span aria-hidden="true">→</span></span>
+      </span>
+    </button>`;
 }
 
 // 学習中のセッションが完了していればそれを、無ければ保存済みの直近の結果を返す。
@@ -5213,12 +5105,12 @@ function sessionResultMarkup(session) {
     </section>`;
 }
 
-// 学習終了後は分析画面を開き、その先頭に今回の結果を表示する。
+// 学習を終えたら結果画面を開く。次の一歩（間違い直し・次の周回）をひと押しで選べる。
 function renderSessionComplete() {
   const session = state.session;
   if (!session) return;
   session.complete = true;
-  setView("analysis");
+  setView("result");
   const summary = summarizeSession(session.results);
   if (summary.total && summary.correct === summary.total) {
     const sssOnly = session.results.every((result) => result.item.importance === "SSS");
@@ -5232,38 +5124,12 @@ function renderSessionComplete() {
   }
 }
 
-function renderAnalysis() {
-  // 学習途中のセットがあれば、その続きを先頭に出す。学習直後の結果や
-  // 保存してある直近の結果は、その下に続けて見せる。
-  const resume = state.session?.complete ? null : resumableStudy();
+// 学習を終えた直後の結果画面。
+function renderResult() {
   const completed = resultSession();
-  elements.analysisResult.hidden = false;
-  elements.analysisResult.innerHTML = resume || completed
-    ? [
-        resume ? resumeStudyMarkup(resume) : "",
-        completed ? sessionResultMarkup(completed) : "",
-      ].join("")
-    : emptyResultMarkup();
+  if (!completed) return;
+  elements.resultContent.innerHTML = sessionResultMarkup(completed);
   renderHeader();
-}
-
-// 学習の記録も学習途中のセットも無いときの案内。
-function emptyResultMarkup() {
-  return `
-    <section class="result-panel" aria-labelledby="result-empty-title">
-      <header class="result-complete-header">
-        <p class="eyebrow">NO RECORD</p>
-        <h1 id="result-empty-title">まだ学習の記録がありません</h1>
-      </header>
-      <section class="result-next-card" aria-labelledby="result-empty-next">
-        <div>
-          <p class="eyebrow">NEXT STEP</p>
-          <h2 id="result-empty-next">学習を始めましょう</h2>
-          <p>学習を終えると、ここに結果が残ります</p>
-        </div>
-        <button class="primary-button result-primary-action" type="button" data-view-target="dashboard">学習する範囲を選ぶ<span aria-hidden="true">→</span></button>
-      </section>
-    </section>`;
 }
 
 function retryWrongItems() {
@@ -5340,7 +5206,6 @@ function bindEvents() {
     if (range && !dashboardRanges().includes(range)) return;
     state.filters.ranges = range ? [range] : dashboardRanges();
     state.rangeSelectionMode = range ? "custom" : "all";
-    state.rangeFlow = "dashboard";
     setView("range-detail");
   });
   addEventListener("resize", markFxResize, { passive: true });
@@ -5384,7 +5249,7 @@ function bindEvents() {
     if (target.dataset.period) {
       state.selectedPeriod = target.dataset.period;
       setMeta("selectedPeriod", state.selectedPeriod).catch(console.warn);
-      setView("subject");
+      selectSubject(startingSubject(null));
     }
     if (target.dataset.subject) selectSubject(target.dataset.subject);
     if (target.dataset.selectEffects) {
@@ -5480,83 +5345,42 @@ function bindEvents() {
     if (target.hasAttribute("data-dashboard-all-ranges")) {
       state.filters.ranges = dashboardRanges();
       state.rangeSelectionMode = "all";
-      state.rangeFlow = "dashboard";
       setView("range-detail");
     }
     if (target.dataset.dashboardRange) {
       state.filters.ranges = [target.dataset.dashboardRange];
       state.rangeSelectionMode = "custom";
-      state.rangeFlow = "dashboard";
       setView("range-detail");
     }
     if (target.hasAttribute("data-dashboard-multi-range")) {
-      state.rangeFlow = "dashboard";
       state.rangeSelectionMode = "all";
       state.filters.ranges = dashboardRanges();
       setView("study-range-select");
     }
     if (target.dataset.studyTarget) startStudyFromTarget(target.dataset.studyTarget);
-    if (target.dataset.studyContentChoice) {
-      applyContentChoice(target.dataset.studyContentChoice);
-      setView(state.studyFlowMode === "dashboard" ? "study-importance" : "study-method");
+    if (target.dataset.setupContent) {
+      const current = state.studySelection.contents ?? [];
+      setStudyContents(toggleSetupValue(
+        current.length === ENGLISH_CONTENT_TYPES.length ? [] : current,
+        target.dataset.setupContent,
+        ENGLISH_CONTENT_TYPES,
+      ));
+      renderStudySetup();
     }
-    if (target.hasAttribute("data-study-content-other")) {
-      state.contentSelectionMode = "custom";
-      state.studySelection = { ...state.studySelection, subject: "english", content: null, contents: [] };
-      setView("study-content-multi");
+    if (target.dataset.setupImportance) {
+      state.filters.importance = toggleSetupValue(
+        state.filters.importance ?? [],
+        target.dataset.setupImportance,
+        currentImportanceOrder(),
+      );
+      state.importanceFilterMode = state.filters.importance.length ? "custom" : "all";
+      renderStudySetup();
     }
-    if (target.dataset.studyContent) {
-      if (isRecallSubject()) {
-        state.studySelection = {
-          subject: state.subject,
-          content: target.dataset.studyContent,
-          contents: [],
-          direction: null,
-          method: supportsChoiceRecall() ? null : "recall",
-          scope: "full",
-        };
-        setView(supportsChoiceRecall() ? "study-method" : "study-importance");
-      } else {
-        const content = target.dataset.studyContent;
-        const current = state.contentSelectionMode === "all"
-          ? []
-          : state.studySelection.contents ?? [];
-        const contents = state.contentSelectionMode === "all"
-          ? [content]
-          : current.includes(content)
-            ? current.filter((value) => value !== content)
-            : [...current, content];
-        state.contentSelectionMode = contents.length ? "custom" : null;
-        state.studySelection = {
-          ...state.studySelection,
-          subject: "english",
-          content: contents.length === ENGLISH_CONTENT_TYPES.length
-            ? "all"
-            : contents.length === 1
-              ? contents[0]
-              : null,
-          contents,
-        };
-        renderStudyContentMulti();
-      }
+    if (target.dataset.setupSort) {
+      state.sortKey = target.dataset.setupSort;
+      renderStudySetup();
     }
-    if (target.id === "confirm-study-content" && state.studySelection.contents?.length) {
-      setView(state.studyFlowMode === "dashboard" ? "study-importance" : "study-method");
-    }
-    if (target.dataset.recallMethod) {
-      state.studySelection = { ...state.studySelection, method: target.dataset.recallMethod };
-      setView("study-importance");
-    }
-    if (target.dataset.studyDirection) {
-      state.studySelection.direction = target.dataset.studyDirection;
-      state.studySelection.method = null;
-      setView("study-scope");
-    }
-    if (target.dataset.studyFormat && state.studySelection.direction) {
-      state.studySelection.method = `${state.studySelection.direction}_${target.dataset.studyFormat}`;
-      state.studySelection.scope = "full";
-      setView("study-importance");
-    }
+    if (target.hasAttribute("data-setup-start")) startSession();
     if (target.hasAttribute("data-study-range-all")) {
       state.rangeSelectionMode = "all";
       state.filters.ranges = dashboardRanges();
@@ -5575,46 +5399,7 @@ function bindEvents() {
       renderStudyRangeSelect();
     }
     if (target.id === "confirm-study-ranges" && state.filters.ranges.length) {
-      setView(state.rangeFlow === "dashboard" ? "range-detail" : "study-content");
-    }
-    if (target.hasAttribute("data-back-before-importance")) {
-      setView(viewBeforeImportanceSelection());
-    }
-    if (target.dataset.studyImportanceChoice) {
-      const choice = target.dataset.studyImportanceChoice;
-      state.importanceFilterMode = choice === "all" ? "all" : "custom";
-      state.filters.importance = choice === "all" ? [] : [choice];
-      setView("study-sort-kind");
-    }
-    if (target.hasAttribute("data-study-importance-other")) {
-      state.importanceFilterMode = "custom";
-      state.filters.importance = [];
-      setView("study-importance-select");
-    }
-    if (target.dataset.studyImportance) {
-      const importance = target.dataset.studyImportance;
-      state.filters.importance = state.filters.importance.includes(importance)
-        ? state.filters.importance.filter((value) => value !== importance)
-        : [...state.filters.importance, importance];
-      renderStudyImportanceSelect();
-    }
-    if (target.id === "confirm-study-importance" && state.filters.importance.length) {
-      setView("study-sort-kind");
-    }
-    if (target.hasAttribute("data-back-before-sort")) {
-      setView("study-importance");
-    }
-    if (target.dataset.studySortKind) {
-      if (target.dataset.studySortKind === "other") {
-        setView("study-sort-other");
-      } else {
-        state.sortKey = target.dataset.studySortKind;
-        startSession();
-      }
-    }
-    if (target.dataset.studySort) {
-      state.sortKey = target.dataset.studySort;
-      startSession();
+      setView("range-detail");
     }
     if (target.id === "load-more") {
       state.listLimit += 60;
@@ -5648,10 +5433,7 @@ function bindEvents() {
     }
     if (target.hasAttribute("data-resume-study")) {
       const resume = resumableStudy();
-      if (resume) {
-        if (resume.config.subject !== state.subject) selectSubject(resume.config.subject);
-        startSession(resume.config);
-      }
+      if (resume) startSession(resume.config);
     }
     if (target.hasAttribute("data-retry-wrong")) retryWrongItems();
     if (target.hasAttribute("data-repeat-session")) repeatCompletedSession();
@@ -5670,15 +5452,21 @@ function bindEvents() {
       const completed = resultSession();
       if (completed) {
         completed.showAllReviewItems = true;
-        renderAnalysis();
+        renderResult();
       }
     }
     if (target.hasAttribute("data-change-study")) {
+      // 同じ範囲の形式カードへ戻り、形式から選び直す。
+      const ranges = resultSession()?.config?.filters?.ranges ?? [];
       state.session = null;
       resetStudyFlow();
-      state.rangeFlow = "study";
-      state.studyFlowMode = "step";
-      setView("study-range-select");
+      const available = dashboardRanges();
+      const kept = ranges.filter((range) => available.includes(range));
+      if (kept.length) {
+        state.filters.ranges = kept;
+        state.rangeSelectionMode = kept.length >= available.length ? "all" : "custom";
+      }
+      setView(kept.length ? "range-detail" : "dashboard");
     }
     if (target.hasAttribute("data-dismiss-result")) {
       state.session = null;
@@ -5690,6 +5478,11 @@ function bindEvents() {
   elements.listSearch.addEventListener("input", () => renderList(true));
 
   document.addEventListener("change", (event) => {
+    if (event.target.dataset?.setupSortOther !== undefined) {
+      if (event.target.value) state.sortKey = event.target.value;
+      renderStudySetup();
+      return;
+    }
     if (event.target.dataset?.speechVoice !== undefined) {
       state.settings.speechVoiceURI = normalizeSpeechVoiceURI(event.target.value);
       saveSettings();
@@ -5814,12 +5607,12 @@ async function boot() {
     if (themePreference() === "system") applyTheme();
   });
   try {
-    const [response, publicResponse, healthResponse, vocabResponse, history, selectedMode, settings, bestCombo, selectedPeriod, studyConfigs, legacyRecentStudies, studyProgress, lastSessionResult, aiLink, aiLinkJournal, deviceSync] = await Promise.all([
+    const [response, publicResponse, healthResponse, vocabResponse, history, selectedMode, settings, bestCombo, selectedPeriod, studyConfigs, legacyRecentStudies, studyProgress, lastSessionResult, aiLink, aiLinkJournal, deviceSync, lastSubject] = await Promise.all([
       // 英語は3定（2026.3）の範囲。2定の英語は data/items.json に残している。
       fetch(ENGLISH_DATA_URL),
       fetch("./data/public-items.json?v=2026.09.01"),
       fetch("./data/health-items.json?v=2026.09.01"),
-      fetch("./data/kobun-vocabulary.json?v=2026.9.42"),
+      fetch("./data/kobun-vocabulary.json?v=2026.11.07"),
       loadHistory(),
       getMeta("selectedMode"),
       getMetaObject("settings", DEFAULT_SETTINGS),
@@ -5832,6 +5625,7 @@ async function boot() {
       getMetaObject(AI_LINK_META_KEY, DEFAULT_AI_LINK),
       getMeta(AI_LINK_JOURNAL_KEY, []),
       getMetaObject(DEVICE_SYNC_META_KEY, DEFAULT_DEVICE_SYNC),
+      getMeta("lastSubject", null),
     ]);
     if (!response.ok) throw new Error(`教材データを読み込めませんでした (${response.status})`);
     if (!publicResponse.ok) throw new Error(`公共データを読み込めませんでした (${publicResponse.status})`);
@@ -5872,12 +5666,18 @@ async function boot() {
     adoptLegacyStudyConfigs(legacyRecentStudies);
     state.lastSessionResult = normalizeSessionResultSnapshot(lastSessionResult);
     // 2定を選んでいた端末は、もう一度回を選ぶ画面から始める。
-    state.selectedPeriod = normalizeSelectedPeriod(selectedPeriod);
+    // 選べる回が1つだけなら、選ぶ画面は出さずにその回にする。
+    state.selectedPeriod = normalizeSelectedPeriod(selectedPeriod) ?? defaultPeriod();
+    if (state.selectedPeriod && state.selectedPeriod !== selectedPeriod) {
+      setMeta("selectedPeriod", state.selectedPeriod).catch(console.warn);
+    }
     state.aiLink = normalizeAiLinkConfig(aiLink);
     state.aiLinkJournal = Array.isArray(aiLinkJournal) ? aiLinkJournal : [];
     state.deviceSync = normalizeDeviceSync(deviceSync);
     elements.appShell.setAttribute("aria-busy", "false");
-    setView(state.selectedPeriod ? "subject" : "period");
+    // 前回開いていた教科のホームから始める。初めてなら、その回の最初の教科から。
+    if (state.selectedPeriod) selectSubject(startingSubject(lastSubject));
+    else setView("period");
     haptics.start();
     // AI連携が有効なときだけ、AIの変更を取り込んで履歴を預ける。
     // 画面の表示は待たせない。失敗しても今までどおり学習できる。
@@ -5892,7 +5692,7 @@ async function boot() {
         .catch((error) => console.warn("AI連携の同期に失敗しました", error));
     }
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.42").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.11.07").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

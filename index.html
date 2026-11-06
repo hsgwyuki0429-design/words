@@ -5,8 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#ffffff" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Words" />
+    <meta name="format-detection" content="telephone=no" />
     <meta
       name="description"
       content="英語の基礎暗記と公共の一問一答に対応した定期テスト対策アプリ"
@@ -35,8 +37,8 @@
         }
       })();
     </script>
-    <link rel="stylesheet" href="./styles.css?v=2026.9.42" />
-    <link rel="stylesheet" href="./kobun.css?v=2026.9.42" />
+    <link rel="stylesheet" href="./styles.css?v=2026.11.07" />
+    <link rel="stylesheet" href="./kobun.css?v=2026.11.07" />
   </head>
   <body>
     <div class="fx-backdrop" id="fx-backdrop" aria-hidden="true">
@@ -47,9 +49,10 @@
 
     <div class="app-shell" id="app-shell" aria-busy="true">
       <header class="app-header" id="app-header">
-        <button class="brand" type="button" data-view-target="subject" aria-label="教科選択へ">
+        <!-- ロゴはいつでもホームへ戻る入口。 -->
+        <button class="brand" type="button" data-view-target="dashboard" aria-label="ホームへ">
           <span class="brand-mark" aria-hidden="true">W</span>
-          <span>Words</span>
+          <span class="brand-name">Words</span>
         </button>
         <div class="header-actions">
           <div class="header-status" id="header-status">読み込み中</div>
@@ -68,7 +71,8 @@
       </header>
 
       <main class="main-content">
-        <section class="view entry-view" id="view-period" data-view="period">
+        <!-- 学習する回。選べる回が1つだけのときは自動で選ぶので、この画面は出ない。 -->
+        <section class="view entry-view" id="view-period" data-view="period" hidden>
           <div class="entry-card period-card">
             <span class="entry-mark" aria-hidden="true">W</span>
             <p class="eyebrow">定期テスト対策</p>
@@ -85,11 +89,11 @@
           </div>
         </section>
 
+        <!-- 教科の一覧。ふだんはホーム上部のタブで切り替えるので、古文から戻るときに使う。 -->
         <section class="view entry-view" id="view-subject" data-view="subject" hidden>
           <div class="entry-card subject-card">
-            <p class="eyebrow">2026.3</p>
+            <p class="eyebrow" id="subject-period-label">2026.3</p>
             <h1>教科を選ぶ</h1>
-            <p>学習する教科を選んでください。</p>
             <div class="subject-grid">
               <button class="subject-button english" type="button" data-subject="english">
                 <span class="subject-icon" aria-hidden="true">Aa</span>
@@ -101,7 +105,8 @@
                 <span><strong>公共</strong><small>一問一答</small></span>
                 <span aria-hidden="true">›</span>
               </button>
-              <!-- 3定では英語と公共だけを学習する。保健・古文は隠しておき、使うときに hidden を外す。 -->
+              <!-- 3定では英語と公共だけを学習する。保健・古文は隠しておき、使うときに hidden を外し、
+                   app.js の PERIOD_SUBJECTS にも足す。 -->
               <button class="subject-button health" type="button" data-subject="health" hidden>
                 <span class="subject-icon" aria-hidden="true">保</span>
                 <span><strong>保健</strong><small>一問一答 282問</small></span>
@@ -118,11 +123,14 @@
 
         <section class="view kobun-view" id="view-kobun" data-view="kobun" aria-label="古文学習" hidden></section>
 
-        <section class="view dashboard-view" id="view-dashboard" data-view="dashboard" hidden>
-          <div class="page-heading dashboard-heading">
-            <p class="eyebrow" id="dashboard-eyebrow">STUDY DASHBOARD</p>
-            <h1 id="dashboard-title">学習する範囲を選ぶ</h1>
-            <p id="dashboard-copy">範囲を選ぶと、形式ごとの現在地が見られます。</p>
+        <!-- ホーム。教科タブ → 続きから → 範囲、の順に上から並べる。 -->
+        <section class="view home-view" id="view-dashboard" data-view="dashboard" hidden>
+          <nav class="subject-tabs" id="subject-tabs" aria-label="教科"></nav>
+          <p class="home-summary" id="home-summary"></p>
+          <div class="home-continue" id="home-continue"></div>
+          <div class="section-head">
+            <h2 id="dashboard-title">範囲を選ぶ</h2>
+            <span class="section-note" id="dashboard-copy"></span>
           </div>
           <div class="range-choice-list" id="dashboard-range-list"></div>
           <button class="range-multi-entry" id="dashboard-multi-range" type="button" data-dashboard-multi-range>
@@ -132,8 +140,9 @@
           </button>
         </section>
 
+        <!-- 範囲を選んだあとの、出題形式ごとの現在地。 -->
         <section class="view range-detail-view compact-step-view" id="view-range-detail" data-view="range-detail" hidden>
-          <div class="page-heading range-detail-heading compact-step-heading">
+          <div class="page-heading compact-step-heading">
             <div class="step-heading-row">
               <button class="icon-button step-back" type="button" data-view-target="dashboard" aria-label="範囲を選び直す">←</button>
               <h1 id="range-detail-title">範囲</h1>
@@ -143,119 +152,46 @@
           <div id="range-detail-groups"></div>
         </section>
 
+        <!-- 学習の準備。内容・重要度・並び順を1画面で選び、下のボタンで始める。 -->
+        <section class="view setup-view compact-step-view" id="view-study-setup" data-view="study-setup" hidden>
+          <div class="page-heading compact-step-heading">
+            <div class="step-heading-row">
+              <button class="icon-button step-back" type="button" data-view-target="range-detail" aria-label="形式を選び直す">←</button>
+              <h1 id="setup-title">学習の準備</h1>
+              <span class="step-heading-note" id="setup-note"></span>
+            </div>
+          </div>
+          <div class="setup-progress" id="setup-progress"></div>
+          <div class="setup-groups" id="setup-groups"></div>
+          <div class="sticky-action setup-start-bar">
+            <button class="primary-button setup-start" id="setup-start" type="button" data-setup-start>スタート</button>
+          </div>
+        </section>
+
         <section class="view compact-range-view" id="view-study-range-select" data-view="study-range-select" hidden>
-          <div class="page-heading selection-page-heading">
-            <button class="text-button back-link" type="button" id="study-range-back" data-view-target="dashboard">← ダッシュボードへ戻る</button>
-            <p class="eyebrow" id="study-range-eyebrow">MULTIPLE RANGES</p>
-            <h1>学習範囲を選ぶ</h1>
-            <p>最初は全範囲が選択されています。必要な範囲だけに絞ることもできます。</p>
+          <div class="page-heading compact-step-heading">
+            <div class="step-heading-row">
+              <button class="icon-button step-back" type="button" data-view-target="dashboard" aria-label="ホームへ戻る">←</button>
+              <h1>範囲を選ぶ</h1>
+              <span class="step-heading-note">複数選択</span>
+            </div>
           </div>
           <div class="multi-select-grid range-select-grid" id="study-range-options"></div>
-          <div class="sticky-action compact-range-action selection-next-action">
+          <div class="sticky-action selection-next-action">
             <p class="selection-ready-copy" id="study-range-action-copy" hidden></p>
             <button class="primary-button" id="confirm-study-ranges" type="button">次へ <span aria-hidden="true">→</span></button>
           </div>
         </section>
 
-        <section class="view compact-step-view" id="view-study-content" data-view="study-content" hidden>
-          <div class="page-heading selection-page-heading compact-step-heading">
-            <div class="step-heading-row">
-              <button class="icon-button step-back" type="button" id="study-content-back" data-view-target="range-detail" aria-label="形式を選び直す">←</button>
-              <h1 id="study-content-heading">何を学習しますか？</h1>
-              <span class="step-heading-note" id="study-content-copy"></span>
-            </div>
-          </div>
-          <div class="content-choice-list" id="study-content-options"></div>
-        </section>
-
-        <section class="view" id="view-study-content-multi" data-view="study-content-multi" hidden>
-          <div class="page-heading selection-page-heading">
-            <button class="text-button back-link" type="button" data-view-target="study-content">← 戻る</button>
-            <p class="eyebrow">MULTIPLE</p>
-            <h1>組み合わせを選ぶ</h1>
-            <p>単語・熟語・構文から複数選べます。</p>
-          </div>
-          <div class="multi-select-grid content-select-grid" id="study-content-multi-options"></div>
-          <div class="sticky-action selection-next-action">
-            <p class="selection-ready-copy" id="study-content-action-copy" hidden></p>
-            <button class="primary-button" id="confirm-study-content" type="button" disabled>次へ <span aria-hidden="true">→</span></button>
-          </div>
-        </section>
-
-        <section class="view" id="view-study-method" data-view="study-method" hidden>
-          <div class="page-heading selection-page-heading">
-            <button class="text-button back-link" type="button" id="study-method-back" data-view-target="study-content">← 学習内容を選び直す</button>
-            <p class="eyebrow">STEP 3</p>
-            <h1 id="study-method-heading">出題方法を選ぶ</h1>
-            <p id="study-method-copy">一回の学習では一つの方法に集中します。</p>
-          </div>
-          <div class="selection-grid" id="study-method-options"></div>
-        </section>
-
-        <section class="view" id="view-study-scope" data-view="study-scope" hidden>
-          <div class="page-heading selection-page-heading">
-            <button class="text-button back-link" type="button" data-view-target="study-method">← 出題方向を選び直す</button>
-            <p class="eyebrow">STEP 4</p>
-            <h1>問題形式を選ぶ</h1>
-            <p>4択問題、キーボード入力、またはフラッシュカードから選んでください。</p>
-          </div>
-          <div class="selection-grid scope-selection-grid" id="study-scope-options"></div>
-        </section>
-
-        <section class="view compact-step-view" id="view-study-importance" data-view="study-importance" hidden>
-          <div class="page-heading compact-step-heading">
-            <div class="step-heading-row">
-              <button class="icon-button step-back" type="button" data-back-before-importance aria-label="前へ戻る">←</button>
-              <h1>重要度を選ぶ</h1>
-            </div>
-          </div>
-          <div class="content-choice-list" id="study-importance-options-single"></div>
-        </section>
-
-        <section class="view" id="view-study-importance-select" data-view="study-importance-select" hidden>
-          <div class="page-heading selection-page-heading">
-            <button class="text-button back-link" type="button" data-view-target="study-importance">← 選び直す</button>
-            <p class="eyebrow">MULTIPLE</p>
-            <h1>重要度を組み合わせる</h1>
-            <p>複数選択できます。学習したい重要度をすべて選んでください。</p>
-          </div>
-          <div class="multi-select-grid importance-select-grid" id="study-importance-options"></div>
-          <div class="sticky-action">
-            <button class="primary-button" id="confirm-study-importance" type="button">次へ <span aria-hidden="true">→</span></button>
-          </div>
-        </section>
-
-        <section class="view compact-step-view" id="view-study-sort-kind" data-view="study-sort-kind" hidden>
-          <div class="page-heading compact-step-heading">
-            <div class="step-heading-row">
-              <button class="icon-button step-back" type="button" data-back-before-sort aria-label="前へ戻る">←</button>
-              <h1>並び替えを選ぶ</h1>
-            </div>
-          </div>
-          <div class="content-choice-list" id="study-sort-kind-options"></div>
-        </section>
-
-        <section class="view" id="view-study-sort-other" data-view="study-sort-other" hidden>
-          <div class="page-heading selection-page-heading">
-            <button class="text-button back-link" type="button" data-view-target="study-sort-kind">← 並び替えを選び直す</button>
-            <p class="eyebrow">SORT · OTHER</p>
-            <h1>その他の並び替え</h1>
-            <p>使いたい並び順を一つ選んでください。</p>
-          </div>
-          <div class="multi-select-grid sort-other-grid" id="study-sort-other-options"></div>
-        </section>
-
-        <section class="view" id="view-list" data-view="list" hidden>
+        <section class="view list-view" id="view-list" data-view="list" hidden>
           <div class="page-heading list-heading">
-            <div>
-              <p class="eyebrow" id="list-eyebrow">WORD BOOK</p>
-              <h1 id="list-title">単語帳</h1>
-            </div>
+            <p class="eyebrow" id="list-eyebrow">WORD BOOK</p>
+            <h1 id="list-title">単語帳</h1>
           </div>
           <div class="list-toolbar">
             <label class="search-field">
               <span aria-hidden="true">⌕</span>
-              <input id="list-search" type="search" placeholder="英語・日本語で検索" autocomplete="off" />
+              <input id="list-search" type="search" placeholder="英語・日本語で検索" autocomplete="off" enterkeyhint="search" />
             </label>
           </div>
           <div class="list-count" id="list-count"></div>
@@ -269,6 +205,7 @@
             id="health-notes-frame"
             src="./health-notes.html?v=2026.9.39"
             title="保健 要点まとめ・知識つながりノート"
+            loading="lazy"
           ></iframe>
         </section>
 
@@ -278,19 +215,19 @@
             id="public-notes-frame"
             src="./public-notes.html?v=2026.9.39"
             title="公共 まとめノート"
+            loading="lazy"
           ></iframe>
         </section>
 
-        <section class="view" id="view-analysis" data-view="analysis" hidden>
-          <button class="text-button back-link" type="button" data-view-target="dashboard">← ホームへ戻る</button>
-          <div class="dashboard-result" id="analysis-result" hidden></div>
+        <!-- 学習を終えた直後の結果。ホームから開く入口は置かない。 -->
+        <section class="view result-view" id="view-result" data-view="result" hidden>
+          <div id="result-content"></div>
         </section>
 
-        <section class="view" id="view-settings" data-view="settings" hidden>
+        <section class="view settings-view" id="view-settings" data-view="settings" hidden>
           <div class="page-heading">
             <p class="eyebrow">SETTINGS</p>
             <h1>設定</h1>
-            <p>演出と学習画面の動作を端末に合わせて調整できます。</p>
           </div>
           <div class="settings-grid" id="settings-content"></div>
         </section>
@@ -299,7 +236,6 @@
           <div id="quiz-content"></div>
         </section>
       </main>
-
     </div>
 
     <div class="fx-vignette" id="fx-vignette" aria-hidden="true"></div>
@@ -334,6 +270,6 @@
     </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-    <script type="module" src="./src/app.js?v=2026.9.42"></script>
+    <script type="module" src="./src/app.js?v=2026.11.07"></script>
   </body>
 </html>

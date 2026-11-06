@@ -126,12 +126,14 @@ test("legacy letter-choice spelling is removed from user-facing code", () => {
 });
 
 test("keyboard input is the official Japanese-to-English format for every English content type", () => {
-  assert.match(appSource, /title: "キーボード入力", detail: "日本語を見て、英語をキーボードで入力する"/);
+  // 形式カードは「日本語 → 英語」の組にキーボード入力を持つ。
+  assert.match(logicSource, /ja_to_en_input: \{ title: "キーボード入力", detail: "日本語を見て、英語を入力する" \}/);
+  assert.match(logicSource, /\["ja_to_en", \["ja_to_en_choice", "ja_to_en_flashcard", "ja_to_en_input"\]\]/);
+  // 学習の準備では、どの形式でも単語・熟語・構文をそのまま選べる（形式で内容を絞らない）。
+  const setup = functionSource("renderStudySetup", "renderStudyRangeSelect");
+  assert.match(setup, /ENGLISH_CONTENT_TYPES\.map\(\(content\) =>/);
+  assert.doesNotMatch(setup, /ja_to_en_input/);
   assert.match(appSource, /word: \{[\s\S]*?phrase: \{[\s\S]*?structure: \{/);
-  const scope = functionSource("renderStudyScope", "renderStudyRangeSelect");
-  assert.match(scope, /if \(format !== "input"\) return true/);
-  assert.match(scope, /state\.studySelection\.direction === "ja_to_en"/);
-  assert.doesNotMatch(scope, /content|contents|word|phrase|structure/);
 });
 
 test("legacy settings load safely and character-count preference persists", () => {

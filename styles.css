@@ -73,8 +73,8 @@
 
   --gauge-track: #ececef;
   /* 影は「ふちの影」と「遠くの影」を重ね、紙が少し浮いた程度にとどめる。 */
-  --shadow-card: 0 0 0 1px rgba(17, 17, 19, 0.035), 0 2px 6px rgba(17, 17, 19, 0.04), 0 18px 40px rgba(17, 17, 19, 0.06);
-  --shadow-raised: 0 0 0 1px rgba(17, 17, 19, 0.04), 0 12px 32px rgba(17, 17, 19, 0.14);
+  --shadow-card: 0 0 0 1px rgba(17, 17, 19, 0.045), 0 2px 6px rgba(17, 17, 19, 0.055), 0 18px 40px rgba(17, 17, 19, 0.085);
+  --shadow-raised: 0 0 0 1px rgba(17, 17, 19, 0.05), 0 12px 32px rgba(17, 17, 19, 0.18);
   --focus-ring: 0 0 0 3px rgba(43, 80, 255, 0.28);
   --gloss-alpha: 0;
   --toast-surface: rgba(17, 17, 19, 0.94);
@@ -466,7 +466,7 @@ textarea:focus-visible,
 .segmented-options button.selected {
   color: var(--text);
   background: var(--surface-solid);
-  box-shadow: 0 1px 3px rgba(17, 17, 19, 0.12);
+  box-shadow: 0 1px 3px rgba(17, 17, 19, 0.16);
 }
 
 .compact-segments button {
@@ -689,7 +689,7 @@ textarea:focus-visible,
   background: var(--accent);
   border: 0;
   border-radius: var(--radius-lg);
-  box-shadow: 0 2px 6px rgba(17, 17, 19, 0.08), 0 14px 32px rgba(17, 17, 19, 0.16);
+  box-shadow: 0 2px 6px rgba(17, 17, 19, 0.1), 0 14px 32px rgba(17, 17, 19, 0.2);
   transition: transform 140ms var(--ease-out);
 }
 
@@ -4727,8 +4727,8 @@ body.max-mode .combo-pill--pop .combo-pill-text::after { animation: combo-ghost-
   --tint-purple: rgba(167, 139, 250, 0.15);
   --gauge-track: rgba(255, 255, 255, 0.1);
   /* 黒い地の上の影は、ふちのごく淡い光と深い影でつくる。 */
-  --shadow-card: 0 0 0 1px rgba(255, 255, 255, 0.05), 0 18px 44px rgba(0, 0, 0, 0.55);
-  --shadow-raised: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 14px 36px rgba(0, 0, 0, 0.6);
+  --shadow-card: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 18px 44px rgba(0, 0, 0, 0.65);
+  --shadow-raised: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 14px 36px rgba(0, 0, 0, 0.7);
   --focus-ring: 0 0 0 3px rgba(102, 131, 255, 0.45);
   --toast-surface: rgba(244, 244, 245, 0.96);
 }
@@ -4789,7 +4789,7 @@ body.max-mode .combo-pill--pop .combo-pill-text::after { animation: combo-ghost-
 /* 続きからのカードは、ライトの黒いカードを反転させた明るい面。 */
 :root[data-theme="dark"] .continue-card {
   --gauge-track: rgba(0, 0, 0, 0.1);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65);
 }
 
 :root[data-theme="dark"] .continue-card .progress-gauge,

@@ -145,7 +145,7 @@ test("問題を読み取り、検索し、追加し、編集できる", async ()
   const token = await connect(harness);
 
   const info = await tool(harness, token, "getAppInfo");
-  assert.equal(info.totalQuestions, 2163);
+  assert.equal(info.totalQuestions, 1216);
 
   const found = await tool(harness, token, "searchQuestions", { query: "社会的ジレンマ", limit: 5 });
   assert.ok(found.total >= 1);
@@ -155,7 +155,7 @@ test("問題を読み取り、検索し、追加し、編集できる", async ()
 
   const added = await tool(harness, token, "addQuestions", {
     subject: "english",
-    questions: [{ question: "resilient", answer: "回復力のある", range: "Mars", type: "word", importance: "A" }],
+    questions: [{ question: "perseverance", answer: "忍耐力", range: "Edo", type: "word", importance: "A" }],
   });
   assert.equal(added.added, 1);
 
@@ -184,7 +184,7 @@ test("権限がオフのあいだは、書き込みも削除も断られる", as
   assert.equal(deleted.error, "permission_denied");
 
   // 読み取りはできる。
-  assert.equal((await tool(harness, token, "getAppInfo")).totalQuestions, 2163);
+  assert.equal((await tool(harness, token, "getAppInfo")).totalQuestions, 1216);
   // 追加は本当に起きていない。
   assert.equal((await tool(harness, token, "getAppInfo")).aiAddedQuestions, 0);
 });

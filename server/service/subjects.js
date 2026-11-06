@@ -15,7 +15,8 @@ export const SUBJECTS = Object.freeze({
   english: {
     id: "english",
     label: "英語",
-    file: "items.json",
+    // 3定（2026.3）の英語。アプリが読む教材と同じものを使う。
+    file: "english-2026-3.json",
     pick: (json) => json,
     ranges: RANGE_ORDER,
     types: ["word", "phrase", "structure"],

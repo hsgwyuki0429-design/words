@@ -15,7 +15,10 @@ import {
 
 const recallExplanationOf = (item) => String(item.explanation ?? item.editorial?.explanation ?? "").trim();
 
+// 2定（2026.2）の英語。
 const items = JSON.parse(fs.readFileSync(new URL("../data/items.json", import.meta.url), "utf8"));
+// 3定（2026.3）の英語。アプリが読むのはこちら。
+const englishPeriod3 = JSON.parse(fs.readFileSync(new URL("../data/english-2026-3.json", import.meta.url), "utf8"));
 const publicItems = JSON.parse(fs.readFileSync(new URL("../data/public-items.json", import.meta.url), "utf8"));
 const healthItems = JSON.parse(fs.readFileSync(new URL("../data/health-items.json", import.meta.url), "utf8"));
 const kobunVocabulary = JSON.parse(fs.readFileSync(new URL("../data/kobun-vocabulary.json", import.meta.url), "utf8")).items;
@@ -60,7 +63,7 @@ const contentTokens = (value) =>
       .filter((token) => token.length > 1)
       .map((token) => token.toLocaleLowerCase()),
   );
-for (const item of items) {
+for (const item of [...items, ...englishPeriod3]) {
   const answer = contentTokens(item.english);
   const prompt = contentTokens(item.japanese);
   assert.ok(
@@ -69,7 +72,7 @@ for (const item of items) {
   );
 }
 
-for (const item of items) {
+for (const item of [...items, ...englishPeriod3]) {
   for (const field of [
     "id",
     "english",
@@ -116,9 +119,39 @@ for (const item of items) {
 }
 
 const ranges = new Set(items.map((item) => item.range));
-assert.deepEqual([...ranges].sort(), [...RANGE_ORDER].sort(), "All eight ranges are required");
+assert.deepEqual([...ranges].sort(), RANGE_ORDER.slice(0, 8).sort(), "All eight ranges are required");
 
 console.log(`Data check passed: ${items.length} items across ${ranges.size} ranges.`);
+
+// 3定（2026.3）の英語。tools/import_english_csv.py で語彙表（CSV）から作る。
+assert.equal(englishPeriod3.length, 367, "3定の英語は367語句（重要度Cだけの基本語を除く）");
+assert.equal(new Set(englishPeriod3.map((item) => item.id)).size, englishPeriod3.length, "3定の英語のIDが重複している");
+assert.ok(
+  englishPeriod3.every((item) => !items.some((old) => old.id === item.id)),
+  "3定の英語のIDが2定の英語と重なっている",
+);
+assert.equal(
+  new Set(englishPeriod3.map((item) => item.english.toLocaleLowerCase())).size,
+  englishPeriod3.length,
+  "3定の英語の見出しが重複している",
+);
+assert.deepEqual(
+  Object.fromEntries(["word", "phrase", "structure"].map((type) => [type, englishPeriod3.filter((item) => item.type === type).length])),
+  { word: 322, phrase: 44, structure: 1 },
+  "3定の英語の内訳（単語・熟語・構文）",
+);
+assert.deepEqual(
+  [...new Set(englishPeriod3.map((item) => item.range))],
+  ["A Loving Story", "Edo"],
+  "3定の英語の範囲は A Loving Story と Edo の2つ",
+);
+for (const item of englishPeriod3) {
+  assert.ok(!/P\d{3}-S\d+/.test(item.japanese), `${item.id}: 本文の位置（P136-S8 など）が訳に残っている`);
+  assert.ok(!/^[（(][^）)]*[）)]$/.test(item.japanese), `${item.id}: 訳が注記だけになっている`);
+  assert.ok(item.sources.every((source) => RANGE_ORDER.includes(source.range)), `${item.id}: 出典の範囲が不明`);
+  assert.ok(item.importance !== "C" || item.type !== "word", `${item.id}: 重要度Cの単語は収録しない`);
+}
+console.log(`3定の英語: ${englishPeriod3.length}語句（${[...new Set(englishPeriod3.map((item) => item.range))].join("・")}）`);
 
 assert.equal(publicItems.length, 207, "Public data must contain 207 unique reviewed questions");
 assert.equal(new Set(publicItems.map((item) => item.id)).size, 207, "Public IDs must be unique");

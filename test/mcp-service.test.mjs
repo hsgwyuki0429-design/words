@@ -31,11 +31,11 @@ const publicQuestion = {
 test("教材データはそのまま読み込まれ、既存の問題数が変わらない", async () => {
   const service = newService();
   const info = await service.getAppInfo();
-  assert.equal(info.subjects.english.questions, 1314);
+  assert.equal(info.subjects.english.questions, 367);
   assert.equal(info.subjects.public.questions, 207);
   assert.equal(info.subjects.health.questions, 282);
   assert.equal(info.subjects["kobun-vocab"].questions, 360);
-  assert.equal(info.totalQuestions, 2163);
+  assert.equal(info.totalQuestions, 1216);
   assert.equal(info.dataSchemaVersion, 1);
 });
 
@@ -310,7 +310,7 @@ test("履歴で絞り込める（間違えた問題だけを一覧する）", as
   assert.equal(wrong.questions[0].study.wrong, 2);
 
   const unanswered = await service.listQuestions({ performance: "unanswered", limit: 1 });
-  assert.equal(unanswered.total, 2162);
+  assert.equal(unanswered.total, 1215);
 });
 
 test("教科ごとの範囲は、wordsの画面が知っている値と同じ", async () => {

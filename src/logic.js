@@ -1,5 +1,6 @@
 export const IMPORTANCE_ORDER = ["SSS", "SS", "S", "A", "B", "C", "D"];
 export const DIFFICULTY_ORDER = ["—", "A", "B", "C", "D", "E", "F"];
+// 英語の範囲。前半が2定（2026.2）、後半が3定（2026.3）。画面には教材にある範囲だけが出る。
 export const RANGE_ORDER = [
   "OriHime",
   "Mars",
@@ -9,6 +10,8 @@ export const RANGE_ORDER = [
   "Snow",
   "Shinkansen",
   "Taste Buds",
+  "A Loving Story",
+  "Edo",
 ];
 export const PUBLIC_RANGE_ORDER = [
   "p.36–37",
@@ -212,6 +215,9 @@ function parseInputAnswer(answer) {
     if (optional) core = core.slice(1, -1);
     const alternatives = core
       .split("/")
+      // 「D.C.」「a.m.」のような略語は、ピリオドを外して1語（DC・am）として入力させる。
+      // アプリ内キーボードにピリオドが無く、そのままだと D と C の2語に割れてしまう。
+      .map((part) => part.replace(/(?:[A-Za-z]\.){2,}/g, (abbreviation) => abbreviation.replaceAll(".", "")))
       .flatMap((part) => part.match(INPUT_TOKEN_PATTERN) ?? [])
       .filter(Boolean);
 
@@ -511,6 +517,7 @@ function includesSearch(item, query) {
     item.lemma,
     (item.surfaceForms ?? []).join(" "),
     item.japanese,
+    item.generalMeaning,
     item.term,
     item.point,
     item.range,

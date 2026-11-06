@@ -585,3 +585,28 @@ test("health study selections match the public self-grading flow", () => {
   assert.equal(question.answer, term.healthAnswer);
   assert.equal(summarizeByRange(healthItems, new Map()).length, 8);
 });
+
+test("「D.C.」「a.m.」のような略語は、ピリオドを外した1語として入力できる", () => {
+  const capital = { acceptedAnswers: ["Washington D.C.", "Washington, D.C."] };
+  assert.deepEqual(slotTokensForQuestion(capital, "ja_to_en_input"), ["Washington", "DC"]);
+  assert.ok(isAnswerCorrect("Washington DC", capital.acceptedAnswers));
+  assert.ok(isAnswerCorrect("washington d.c.", capital.acceptedAnswers));
+  assert.ok(!isAnswerCorrect("Washington D", capital.acceptedAnswers));
+  assert.deepEqual(acceptedInputAnswers(["a.m."]), ["am"]);
+  assert.ok(isAnswerCorrect("a.m.", ["a.m."]));
+});
+
+test("3定の英語は、訳に答えの英語がそのまま出ず、熟語の一部だけの訳も残さない", () => {
+  const period3 = JSON.parse(fs.readFileSync(new URL("../data/english-2026-3.json", import.meta.url), "utf8"));
+  const byEnglish = new Map(period3.map((item) => [item.english, item]));
+  assert.equal(byEnglish.get("fast").japanese, "（___ asleep で）ぐっすりと");
+  assert.equal(byEnglish.get("expect").japanese, "（be ___ a baby で）子どもが生まれる予定である");
+  assert.equal(byEnglish.get("report").japanese, "〜を通報する／〜を報じる");
+  assert.equal(byEnglish.get("well").japanese, "うまく・順調に");
+  assert.equal(byEnglish.get("jail").japanese, "刑務所／〜を刑務所に入れる");
+  assert.equal(byEnglish.get("arrest").japanese, "〜を逮捕する");
+  assert.equal(byEnglish.get("sir").memo, "⇔ ma'am（女性への敬称）");
+  assert.equal(byEnglish.get("legal").generalMeaning, "法律の・法律に関する");
+  // 重要度Cだけの基本語は収録しない。
+  for (const basic of ["and", "of", "be", "I", "the"]) assert.ok(!byEnglish.has(basic), basic);
+});

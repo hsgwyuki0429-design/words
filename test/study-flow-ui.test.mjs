@@ -239,8 +239,9 @@ test("白のミニマル：点線の箱とホームの区切り線を置かな�
   assert.match(stylesSource, /:root:not\(\[data-theme="dark"\]\) \{[\s\S]*?--line: transparent;/);
 });
 
-test("3定は学習範囲のデータがまだ無いことを示し、学習の記録への入口は置かない", () => {
-  assert.match(appSource, /const PERIODS_WITHOUT_DATA = \["2026\.3"\];/);
+test("3定は英語のデータを入れ、公共だけ学習範囲のデータがまだ無いことを示す。学習の記録への入口は置かない", () => {
+  assert.match(appSource, /const SUBJECTS_WITHOUT_DATA = \{ "2026\.3": \["public"\] \};/);
+  assert.match(appSource, /const ENGLISH_DATA_URL = "\.\/data\/english-2026-3\.json/);
   assert.match(appSource, /学習範囲のデータはまだありません/);
   assert.match(appSource, /if \(view === "analysis"\) view = "dashboard";/);
   assert.doesNotMatch(indexSource, /学習の記録を見る/);

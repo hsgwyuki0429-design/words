@@ -1,5 +1,5 @@
-import { createHaptics } from "./haptics.js?v=2026.9.41";
-import { createKobunController } from "./kobun.js?v=2026.9.41";
+import { createHaptics } from "./haptics.js?v=2026.9.42";
+import { createKobunController } from "./kobun.js?v=2026.9.42";
 import {
   ALL_MODES,
   ALPHABET_KEYBOARD_ROWS,
@@ -72,7 +72,7 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
-} from "./logic.js?v=2026.9.41";
+} from "./logic.js?v=2026.9.42";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -93,7 +93,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.9.41";
+} from "./storage.js?v=2026.9.42";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -101,7 +101,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.9.41";
+} from "./quiz-gestures.js?v=2026.9.42";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
@@ -110,7 +110,7 @@ import {
   normalizeSpeechRate,
   normalizeSpeechVoiceURI,
   voiceKey,
-} from "./speech.js?v=2026.9.41";
+} from "./speech.js?v=2026.9.42";
 import {
   AI_LINK_JOURNAL_KEY,
   AI_LINK_META_KEY,
@@ -126,7 +126,7 @@ import {
   isAiLinkConfigured,
   mcpUrlFor,
   normalizeAiLinkConfig,
-} from "./ai-link.js?v=2026.9.41";
+} from "./ai-link.js?v=2026.9.42";
 import {
   DEFAULT_DEVICE_SYNC,
   DEVICE_SYNC_META_KEY,
@@ -143,13 +143,13 @@ import {
   syncStateLabel,
   transferFileName,
   unsentEntries,
-} from "./sync.js?v=2026.9.41";
+} from "./sync.js?v=2026.9.42";
 import {
   applyThemePreference,
   normalizeThemePreference,
   readStoredThemePreference,
   watchSystemTheme,
-} from "./theme.js?v=2026.9.41";
+} from "./theme.js?v=2026.9.42";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -314,12 +314,13 @@ const kobun = createKobunController({
   onHeaderChange: (label) => { if (state.subject === "kobun") elements.headerStatus.textContent = label; },
 });
 
-// 学習範囲のデータがまだ入っていない回。ここにある回では、範囲の代わりに
+// 回ごとに、学習範囲のデータがまだ入っていない教科。ここにある教科では、範囲の代わりに
 // 「データはまだありません」を出す。データを入れたら外す。
-const PERIODS_WITHOUT_DATA = ["2026.3"];
+// 3定の英語は data/english-2026-3.json を入れたので外している。
+const SUBJECTS_WITHOUT_DATA = { "2026.3": ["public"] };
 
-function periodHasData() {
-  return !PERIODS_WITHOUT_DATA.includes(state.selectedPeriod);
+function periodHasData(subject = state.subject) {
+  return !(SUBJECTS_WITHOUT_DATA[state.selectedPeriod] ?? []).includes(subject);
 }
 
 function emptyPeriodMarkup() {
@@ -330,6 +331,9 @@ function emptyPeriodMarkup() {
       <p>3定の範囲が決まったら、ここに表示されます。</p>
     </div>`;
 }
+
+// いま学習する英語の教材データ（3定）。sw.js の APP_SHELL にも同じURLを載せる。
+const ENGLISH_DATA_URL = "./data/english-2026-3.json?v=2026.11.06";
 
 // いま選べる定期テストの回。2定（2026.2）は終えたので外し、3定だけにしている。
 const AVAILABLE_PERIODS = ["2026.3"];
@@ -3392,6 +3396,12 @@ function renderList(resetLimit = false) {
           ${item.type === "word" && item.surfaceForms?.length
             ? `<p class="word-surface-forms"><span>本文中の形</span>${escapeHtml(item.surfaceForms.join(" / "))}</p>`
             : ""}
+          ${item.generalMeaning
+            ? `<p class="word-surface-forms"><span>一般的な意味</span>${escapeHtml(item.generalMeaning)}</p>`
+            : ""}
+          ${item.memo
+            ? `<p class="word-surface-forms"><span>メモ</span>${escapeHtml(item.memo)}</p>`
+            : ""}
           <div class="item-tags word-card-tags">${renderTags([item.type, ...item.tags])}</div>
         </div>
         <div class="word-card-meta">
@@ -5805,10 +5815,11 @@ async function boot() {
   });
   try {
     const [response, publicResponse, healthResponse, vocabResponse, history, selectedMode, settings, bestCombo, selectedPeriod, studyConfigs, legacyRecentStudies, studyProgress, lastSessionResult, aiLink, aiLinkJournal, deviceSync] = await Promise.all([
-      fetch("./data/items.json?v=2026.08.31b"),
+      // 英語は3定（2026.3）の範囲。2定の英語は data/items.json に残している。
+      fetch(ENGLISH_DATA_URL),
       fetch("./data/public-items.json?v=2026.09.01"),
       fetch("./data/health-items.json?v=2026.09.01"),
-      fetch("./data/kobun-vocabulary.json?v=2026.9.41"),
+      fetch("./data/kobun-vocabulary.json?v=2026.9.42"),
       loadHistory(),
       getMeta("selectedMode"),
       getMetaObject("settings", DEFAULT_SETTINGS),
@@ -5881,7 +5892,7 @@ async function boot() {
         .catch((error) => console.warn("AI連携の同期に失敗しました", error));
     }
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.9.41").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.9.42").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

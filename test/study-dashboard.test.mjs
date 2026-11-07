@@ -17,6 +17,7 @@ import {
   summarizeProgressGauge,
   summarizeRangeModeProgress,
   summarizeRangeModes,
+  summarizeCycleMeter,
 } from "../src/logic.js";
 
 const appSource = readFileSync(new URL("../src/app.js", import.meta.url), "utf8");
@@ -174,39 +175,57 @@ test("the range list shows range names only, with no rates or scores", () => {
   assert.match(indexSource, /id="dashboard-range-list"/);
 });
 
-test("ゲージの数値は何の数字かが分かる形で出す", () => {
-  const gaugeSource = functionSource("progressGaugeMarkup", "selectionProgress");
-  // 習得率を大きく出し、「習得した数 / 全体」を添える。
-  assert.match(gaugeSource, /<span class="progress-rate"><small>習得<\/small>\$\{gauge\.masteredPercent\}<small>%<\/small><\/span>/);
-  assert.match(gaugeSource, /\$\{gauge\.masteredCount\} \/ \$\{gauge\.totalItems\}\$\{unit\}/);
+test("進み具合は、習得を円・今の周回を横棒で、形を分けて見せる", () => {
+  // 円：全体のうち何%を習得したか（遠い目標）。
+  const ringSource = functionSource("progressRingMarkup", "progressBreakdownMarkup");
+  assert.match(ringSource, /class="meter-ring" data-cycle="\$\{gauge\.colorIndex\}" style="--mastered:\$\{gauge\.masteredWidth\}%;--answered:\$\{gauge\.answeredWidth\}%"/);
+  assert.match(ringSource, /<span class="meter-ring-value">\$\{gauge\.masteredPercent\}<small>%<\/small><\/span>/);
   // 内訳は重ならない3つ（習得・練習中・未回答）で、足すと全体の数になる。
-  assert.match(gaugeSource, /習得 <b>\$\{gauge\.masteredCount\}<\/b>/);
-  assert.match(gaugeSource, /練習中 <b>\$\{gauge\.practicingCount\}<\/b>/);
-  assert.match(gaugeSource, /未回答 <b>\$\{gauge\.untouchedCount\}<\/b>/);
+  const breakdownSource = functionSource("progressBreakdownMarkup", "cycleBarMarkup");
+  assert.match(breakdownSource, /習得 <b>\$\{gauge\.masteredCount\}<\/b>/);
+  assert.match(breakdownSource, /練習中 <b>\$\{gauge\.practicingCount\}<\/b>/);
+  assert.match(breakdownSource, /未回答 <b>\$\{gauge\.untouchedCount\}<\/b>/);
   for (const [answeredItems, masteredItems] of [[0, 0], [12, 8], [10, 10], [3, 7], [188, 0]]) {
     const gauge = summarizeProgressGauge({ totalItems: 188, answeredItems, masteredItems }, 1);
     assert.equal(gauge.masteredCount + gauge.practicingCount + gauge.untouchedCount, 188, "内訳を足すと全体になる");
     assert.ok(gauge.practicingCount >= 0 && gauge.untouchedCount >= 0);
   }
+  // 横棒：今の周回があと何問か（近い目標）。
+  const barSource = functionSource("cycleBarMarkup", "recallTypesForContent");
+  assert.match(barSource, /const meter = summarizeCycleMeter\(cycle\);/);
+  assert.match(barSource, /`あと<b>\$\{meter\.remainingCount\}<\/b>\$\{unit\}`/);
+  assert.match(barSource, /まだ始めていません/);
+  assert.match(barSource, /\$\{meter\.cycleNumber\}周目/);
+  assert.match(barSource, /\$\{meter\.masteryRound\}セット目・/);
+  const meter = summarizeCycleMeter({ cycleNumber: 2, masteryRound: 1, targetCount: 40, remainingCount: 10 });
+  assert.deepEqual(
+    [meter.started, meter.doneCount, meter.remainingCount, meter.percent, meter.complete],
+    [true, 30, 10, 75, false],
+  );
+  assert.equal(summarizeCycleMeter({ cycleNumber: 1, targetCount: 5, remainingCount: 0 }).complete, true);
+  assert.equal(summarizeCycleMeter(null).started, false);
+  assert.equal(summarizeCycleMeter({ targetCount: 5, remainingCount: 99 }).percent, 0, "壊れた値でも0〜100%");
+  // 形式カードは、その形式で最後に学習した周回を横棒に出す
   const cardSource = functionSource("modeProgressCard", "renderRangeDetail");
-  assert.match(cardSource, /\$\{cycle\.cycleNumber\}周目 残り\$\{cycle\.remainingCount\}/);
-  assert.match(cardSource, /\$\{cycle\.masteryRound\}セット目/);
+  assert.match(cardSource, /cycleBarMarkup\(cycle, \{ prefix, total: progress\.totalItems \}\)/);
   // 集計そのものは logic.js の純粋関数に任せる
   assert.match(cardSource, /summarizeRangeModeProgress\(\{/);
   assert.doesNotMatch(cardSource, /modeStats/);
 });
 
-test("学習の準備にも形式カードと同じゲージを出し、選んだ内容・重要度で絞り込む", () => {
-  // 形式カード・学習の準備・続きからが同じ progressGaugeMarkup を使う
-  assert.match(
-    functionSource("modeProgressCard", "renderRangeDetail"),
-    /\$\{progressGaugeMarkup\(progress, cycle\?\.masteryRound \?\? 1\)\}/,
-  );
+test("学習の準備・続きからにも形式カードと同じ円と横棒を出し、選んだ内容・重要度で絞り込む", () => {
+  const cardSource = functionSource("modeProgressCard", "renderRangeDetail");
+  assert.match(cardSource, /const roundNumber = cycle\?\.masteryRound \?\? 1;/);
+  assert.match(cardSource, /progressRingMarkup\(progress, roundNumber\)/);
   const setupSource = functionSource("renderSetupProgress", "renderStudySetup");
   // 学習の準備は「その形式 × 選んだ内容 × 選んだ重要度」で集計する
   assert.match(setupSource, /selectionProgress\(\{ types: studyContentTypes\(\), importance: state\.filters\.importance \}\)/);
-  assert.match(setupSource, /progressGaugeMarkup\(progress, plan\.summary\?\.masteryRound \?\? 1\)/);
-  assert.match(functionSource("resumeStudyMarkup", "resultSession"), /progressGaugeMarkup\(progress, cycle\.masteryRound\)/);
+  assert.match(setupSource, /const roundNumber = plan\.summary\?\.masteryRound \?\? 1;/);
+  assert.match(setupSource, /progressRingMarkup\(progress, roundNumber\)/);
+  assert.match(setupSource, /cycleBarMarkup\(plan\.summary, \{ total: plan\.pool\.length \}\)/);
+  const resumeSource = functionSource("resumeStudyMarkup", "resultSession");
+  assert.match(resumeSource, /progressRingMarkup\(progress, cycle\.masteryRound\)/);
+  assert.match(resumeSource, /cycleBarMarkup\(cycle, \{ total: progress\.totalItems \}\)/);
   // 仕組みは形式カードと同じ（同じ集計関数・同じ習得ラウンド）
   const selectionSource = functionSource("selectionProgress", "modeProgressCard");
   assert.match(selectionSource, /summarizeRangeModeProgress\(\{/);
@@ -466,14 +485,13 @@ test("ゲージは重要度と学習内容でも絞り込める", () => {
 });
 
 test("セットごとに新しいバーを積み、基調色を変える", () => {
-  const gaugeSource = functionSource("progressGaugeMarkup", "recallTypesForContent");
-  // 終えたセットのバーは満了のまま残し、現在のセットのバーを最後に置く。
-  assert.match(gaugeSource, /const finishedBars = gauge\.finishedBars\.map\(\(bar\)/);
-  assert.match(gaugeSource, /class="progress-gauge is-finished" data-cycle="\$\{bar\.colorIndex\}"/);
-  assert.match(gaugeSource, /class="progress-gauge" data-cycle="\$\{gauge\.colorIndex\}"/);
+  const gaugeSource = functionSource("progressRingMarkup", "progressBreakdownMarkup");
+  // 円の色はセットで変え、2セット目以降は円の中に「◯セット目」を出す。
+  assert.match(gaugeSource, /class="meter-ring" data-cycle="\$\{gauge\.colorIndex\}"/);
+  assert.match(gaugeSource, /gauge\.roundNumber > 1 \? `\$\{gauge\.roundNumber\}セット目` : "習得"/);
   // 2セット目は赤。色は5セットで一巡する。
-  assert.match(stylesSource, /\.progress-gauge\[data-cycle="2"\][\s\S]*?--gauge-strong: var\(--red\)/);
-  assert.match(stylesSource, /\.progress-gauge\[data-cycle="3"\][\s\S]*?--gauge-strong: #7c3aed/);
+  assert.match(stylesSource, /\.meter-ring\[data-cycle="2"\][\s\S]*?--gauge-strong: var\(--red\)/);
+  assert.match(stylesSource, /\.meter-ring\[data-cycle="3"\][\s\S]*?--gauge-strong: #7c3aed/);
   assert.equal(GAUGE_COLOR_COUNT, 5);
   assert.equal(gaugeColorIndex(1), 1);
   assert.equal(gaugeColorIndex(2), 2);
@@ -497,11 +515,11 @@ test("周回が進んでもバーは増えず、セットが変わったとき�
   // バーを積む単位は周回（未習得の絞り込み）ではなく、全問題を習得しきって
   // 始まる次のセット（習得ラウンド）。
   const cardSource = functionSource("modeProgressCard", "renderRangeDetail");
-  assert.match(cardSource, /progressGaugeMarkup\(progress, cycle\?\.masteryRound \?\? 1\)/);
-  assert.doesNotMatch(cardSource, /progressGaugeMarkup\(progress, cycle\?\.cycleNumber/);
+  assert.match(cardSource, /const roundNumber = cycle\?\.masteryRound \?\? 1;/);
+  assert.doesNotMatch(cardSource, /progressRingMarkup\(progress, cycle\?\.cycleNumber/);
   const setupSource = functionSource("renderSetupProgress", "renderStudySetup");
   assert.match(setupSource, /plan\.summary\?\.masteryRound \?\? 1/);
-  assert.doesNotMatch(setupSource, /progressGaugeMarkup\(progress, [^)]*cycleNumber/);
+  assert.doesNotMatch(setupSource, /progressRingMarkup\(progress, [^)]*cycleNumber/);
 
   // 1セット目のうちは、何周目でもバーは1本のまま伸びる
   const firstRound = summarizeProgressGauge({ totalItems: 10, answeredItems: 10, masteredItems: 9 }, 1);
@@ -531,9 +549,9 @@ test("セットをいくら重ねてもバーは増え続けない", () => {
   assert.equal(many.collapsedRounds, 398);
   assert.deepEqual(many.finishedBars.map((bar) => bar.roundNumber), [399]);
   assert.equal(many.finishedBars[0].label, "1〜399セット目は完了", "畳んだぶんも読み上げで分かる");
-  // 凡例にはセット番号がそのまま出るので、本数を畳んでも何セット目かは分かる
-  const gaugeSource = functionSource("progressGaugeMarkup", "recallTypesForContent");
-  assert.match(gaugeSource, /progress-figure is-cycle">\$\{gauge\.roundNumber\}セット目/);
+  // 円の中にセット番号がそのまま出るので、何セット重ねても何セット目かは分かる
+  const gaugeSource = functionSource("progressRingMarkup", "progressBreakdownMarkup");
+  assert.match(gaugeSource, /\$\{gauge\.roundNumber\}セット目/);
 });
 
 test("壊れた保存データでもゲージの幅は0〜100%に収まる", () => {

@@ -1,5 +1,5 @@
-import { createHaptics } from "./haptics.js?v=2026.11.12";
-import { createKobunController } from "./kobun.js?v=2026.11.12";
+import { createHaptics } from "./haptics.js?v=2026.11.13";
+import { createKobunController } from "./kobun.js?v=2026.11.13";
 import {
   ALL_MODES,
   ALPHABET_KEYBOARD_ROWS,
@@ -72,8 +72,9 @@ import {
   summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
+  summarizeCycleMeter,
   toggleSetupValue,
-} from "./logic.js?v=2026.11.12";
+} from "./logic.js?v=2026.11.13";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -94,7 +95,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.11.12";
+} from "./storage.js?v=2026.11.13";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -102,7 +103,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.11.12";
+} from "./quiz-gestures.js?v=2026.11.13";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
@@ -111,7 +112,7 @@ import {
   normalizeSpeechRate,
   normalizeSpeechVoiceURI,
   voiceKey,
-} from "./speech.js?v=2026.11.12";
+} from "./speech.js?v=2026.11.13";
 import {
   AI_LINK_JOURNAL_KEY,
   AI_LINK_META_KEY,
@@ -127,7 +128,7 @@ import {
   isAiLinkConfigured,
   mcpUrlFor,
   normalizeAiLinkConfig,
-} from "./ai-link.js?v=2026.11.12";
+} from "./ai-link.js?v=2026.11.13";
 import {
   DEFAULT_DEVICE_SYNC,
   DEVICE_SYNC_META_KEY,
@@ -144,13 +145,13 @@ import {
   syncStateLabel,
   transferFileName,
   unsentEntries,
-} from "./sync.js?v=2026.11.12";
+} from "./sync.js?v=2026.11.13";
 import {
   applyThemePreference,
   normalizeThemePreference,
   readStoredThemePreference,
   watchSystemTheme,
-} from "./theme.js?v=2026.11.12";
+} from "./theme.js?v=2026.11.13";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -756,15 +757,19 @@ function renderSetupProgress() {
   const plan = setupPlan();
   const progress = selectionProgress({ types: studyContentTypes(), importance: state.filters.importance });
   const isLatest = Boolean(plan.stored) && plan.key === latestStudyEntry()?.key;
+  const roundNumber = plan.summary?.masteryRound ?? 1;
   elements.setupProgress.innerHTML = `
-    <div class="setup-progress-card${isLatest ? " is-in-progress" : ""}">
-      <div class="setup-progress-head">
-        <span class="setup-progress-label">出題する問題</span>
-        <strong>${plan.pool.length}${recallUnit()}</strong>
-        ${plan.cycleCopy ? `<span class="mode-progress-cycle">${escapeHtml(plan.cycleCopy)}</span>` : ""}
-        ${isLatest ? studyBadgeMarkup() : ""}
-      </div>
-      ${progress ? progressGaugeMarkup(progress, plan.summary?.masteryRound ?? 1) : ""}
+    <div class="setup-progress-card meter-card${isLatest ? " is-in-progress" : ""}">
+      ${progress ? progressRingMarkup(progress, roundNumber) : ""}
+      <span class="meter-body">
+        <span class="setup-progress-head">
+          <span class="setup-progress-label">出題する問題</span>
+          <strong>${plan.pool.length}${recallUnit()}</strong>
+          ${isLatest ? studyBadgeMarkup() : ""}
+        </span>
+        ${cycleBarMarkup(plan.summary, { total: plan.pool.length })}
+      </span>
+      ${progress ? progressBreakdownMarkup(progress, roundNumber) : ""}
     </div>`;
   elements.setupStart.disabled = !plan.pool.length;
   elements.setupStart.innerHTML = plan.pool.length
@@ -1038,33 +1043,49 @@ function cardStudyProgress(card) {
 // バーは増やさず1本のまま伸ばす。
 // バーの本数と幅は summarizeProgressGauge がそろえる。セットを重ねてもバーは
 // 上限までしか増えず、保存データが壊れていても幅が不正な値にならない。
-function progressGaugeMarkup(progress, roundNumber = 1) {
+// 進み具合は2つの目標を形で分けて見せる。
+//   円（遠い目標）… この範囲・形式で、全体のうち何%を習得したか
+//   横棒（近い目標）… 今の周回が、あと何問で終わるか
+// 円の中は習得率だけ。下に「習得・練習中・未回答」の内訳（足すと全体の数）を添える。
+function progressRingMarkup(progress, roundNumber = 1) {
   const gauge = summarizeProgressGauge(progress, roundNumber);
   const unit = recallUnit();
-  const label = `${gauge.roundNumber}セット目：全${gauge.totalItems}${unit}のうち、習得${gauge.masteredCount}、練習中${gauge.practicingCount}、未回答${gauge.untouchedCount}（習得 ${gauge.masteredPercent}パーセント）`;
-  const finishedBars = gauge.finishedBars.map((bar) => `
-        <span class="progress-gauge is-finished" data-cycle="${bar.colorIndex}" role="img" aria-label="${escapeHtml(bar.label)}">
-          <span class="progress-gauge-answered" style="width:100%"></span>
-          <span class="progress-gauge-mastered" style="width:100%"></span>
-        </span>`).join("");
-  // 上に「習得 ◯%」を大きく、下にバーと、重ならない3つの内訳（足すと全体の数）を置く。
+  const label = `${gauge.roundNumber > 1 ? `${gauge.roundNumber}セット目、` : ""}全${gauge.totalItems}${unit}のうち${gauge.masteredCount}${unit}を習得（${gauge.masteredPercent}パーセント）`;
   return `
-      <span class="progress-summary" data-cycle="${gauge.colorIndex}">
-        <span class="progress-rate"><small>習得</small>${gauge.masteredPercent}<small>%</small></span>
-        ${gauge.roundNumber > 1 ? `<span class="progress-figure is-cycle">${gauge.roundNumber}セット目</span>` : ""}
-        <span class="progress-total">${gauge.masteredCount} / ${gauge.totalItems}${unit}</span>
-      </span>
-      <span class="progress-gauge-stack">
-        ${finishedBars}
-        <span class="progress-gauge" data-cycle="${gauge.colorIndex}" role="img" aria-label="${escapeHtml(label)}">
-          <span class="progress-gauge-answered" style="width:${gauge.answeredWidth}%"></span>
-          <span class="progress-gauge-mastered" style="width:${gauge.masteredWidth}%"></span>
-        </span>
-      </span>
-      <span class="progress-legend" data-cycle="${gauge.colorIndex}" aria-hidden="true">
-        <span class="progress-figure is-mastered">習得 <b>${gauge.masteredCount}</b></span>
-        <span class="progress-figure is-answered">練習中 <b>${gauge.practicingCount}</b></span>
-        <span class="progress-figure is-untouched">未回答 <b>${gauge.untouchedCount}</b></span>
+      <span class="meter-ring" data-cycle="${gauge.colorIndex}" style="--mastered:${gauge.masteredWidth}%;--answered:${gauge.answeredWidth}%" role="img" aria-label="${escapeHtml(label)}">
+        <span class="meter-ring-value">${gauge.masteredPercent}<small>%</small></span>
+        <span class="meter-ring-label">${gauge.roundNumber > 1 ? `${gauge.roundNumber}セット目` : "習得"}</span>
+      </span>`;
+}
+
+function progressBreakdownMarkup(progress, roundNumber = 1) {
+  const gauge = summarizeProgressGauge(progress, roundNumber);
+  return `
+      <span class="meter-breakdown" data-cycle="${gauge.colorIndex}">
+        <span class="meter-key is-mastered">習得 <b>${gauge.masteredCount}</b></span>
+        <span class="meter-key is-answered">練習中 <b>${gauge.practicingCount}</b></span>
+        <span class="meter-key is-untouched">未回答 <b>${gauge.untouchedCount}</b></span>
+      </span>`;
+}
+
+// 今の周回の横棒。まだ始めていなければ、その旨だけを出す。
+function cycleBarMarkup(cycle, { prefix = "", total = 0 } = {}) {
+  const meter = summarizeCycleMeter(cycle);
+  const unit = recallUnit();
+  if (!meter.started) {
+    return `
+      <span class="meter-cycle is-idle">
+        <span class="meter-cycle-head"><strong>まだ始めていません</strong><span>全${total}${unit}</span></span>
+        <span class="meter-cycle-bar" aria-hidden="true"><span style="width:0%"></span></span>
+      </span>`;
+  }
+  const round = meter.masteryRound > 1 ? `${meter.masteryRound}セット目・` : "";
+  const title = `${prefix ? `${prefix} · ` : ""}${round}${meter.cycleNumber}周目`;
+  const note = meter.complete ? "この周は完了" : `あと<b>${meter.remainingCount}</b>${unit}`;
+  return `
+      <span class="meter-cycle${meter.complete ? " is-complete" : ""}">
+        <span class="meter-cycle-head"><strong>${escapeHtml(title)}</strong><span>${note}</span></span>
+        <span class="meter-cycle-bar" role="img" aria-label="${escapeHtml(`${title}：${meter.targetCount}${unit}のうち${meter.doneCount}${unit}に正解${meter.complete ? "、完了" : `、あと${meter.remainingCount}${unit}`}`)}"><span style="width:${meter.percent}%"></span></span>
       </span>`;
 }
 
@@ -1111,21 +1132,23 @@ function modeProgressCard(card) {
   // 表示中の範囲・条件に一致する周回が、いちばん最近学習したセットのときだけ
   // この形式をハイライトする。
   const resumable = Boolean(entry) && entry.key === latestStudyEntry()?.key;
-  const cycleLabel = entry ? contentLabelFromProgressKey(entry.meta) : "";
-  const cycleCopy = cycle
-    ? `${cycleLabel ? `${cycleLabel} ` : ""}${cycle.masteryRound > 1 ? `${cycle.masteryRound}セット目 ` : ""}${cycle.cycleNumber}周目 残り${cycle.remainingCount}`
-    : "";
+  // 周回の横棒には、その周回がどの内容を対象にしているかを添える（全内容なら省く）。
+  const contentLabel = entry && !isRecallSubject() ? contentLabelFromProgressKey(entry.meta) : "";
+  const prefix = contentLabel && contentLabel !== "全内容" ? contentLabel : "";
+  const roundNumber = cycle?.masteryRound ?? 1;
   return `
-    <button class="mode-progress-card${resumable ? " is-in-progress" : ""}" type="button" data-study-target="${escapeHtml(card.key)}"${progress.totalItems ? "" : ' disabled aria-disabled="true"'}>
-      <span class="mode-progress-head">
-        <strong>${escapeHtml(card.title)}</strong>
-        ${progress.totalItems
-          ? cycleCopy ? `<span class="mode-progress-cycle">${escapeHtml(cycleCopy)}</span>` : ""
-          : '<span class="mode-progress-cycle">出題できません</span>'}
-        ${resumable ? studyBadgeMarkup() : ""}
-        <span class="card-arrow" aria-hidden="true">›</span>
+    <button class="mode-progress-card meter-card${resumable ? " is-in-progress" : ""}" type="button" data-study-target="${escapeHtml(card.key)}"${progress.totalItems ? "" : ' disabled aria-disabled="true"'}>
+      ${progressRingMarkup(progress, roundNumber)}
+      <span class="meter-body">
+        <span class="mode-progress-head">
+          <strong>${escapeHtml(card.title)}</strong>
+          ${progress.totalItems ? "" : '<span class="mode-progress-cycle">出題できません</span>'}
+          ${resumable ? studyBadgeMarkup() : ""}
+          <span class="card-arrow" aria-hidden="true">›</span>
+        </span>
+        ${cycleBarMarkup(cycle, { prefix, total: progress.totalItems })}
       </span>
-${progressGaugeMarkup(progress, cycle?.masteryRound ?? 1)}
+      ${progressBreakdownMarkup(progress, roundNumber)}
     </button>`;
 }
 
@@ -4958,19 +4981,22 @@ function resumeStudyMarkup({ entry, config }) {
     importanceLabel(config.filters.importance),
     STUDY_SORT_LABELS[config.sortKey] ?? "重要度順",
   ].join(" · ");
-  const round = cycle.masteryRound > 1 ? `${cycle.masteryRound}セット目 ` : "";
-  const cycleCopy = inProgress
-    ? `${round}${cycle.cycleNumber}周目 · 残り${cycle.remainingCount}${unit}`
-    : `${round}${cycle.cycleNumber}周目まで完了`;
   const title = `${configRangeLabel(config)} · ${modeShortLabel(mode)}`;
+  const meter = summarizeCycleMeter(cycle);
+  const status = meter.complete ? `${meter.cycleNumber}周目まで完了` : `${meter.cycleNumber}周目、あと${meter.remainingCount}${unit}`;
   return `
-    <button class="continue-card" type="button" data-resume-study aria-label="${escapeHtml(`${inProgress ? "続きから" : "次の周回へ"}：${title}、${cycleCopy}`)}">
-      <span class="continue-eyebrow">${inProgress ? "続きから" : "次の周回へ"}</span>
-      <span class="continue-title">${escapeHtml(title)}</span>
-      <span class="continue-detail">${escapeHtml(detail)}</span>
-      ${progressGaugeMarkup(progress, cycle.masteryRound)}
+    <button class="continue-card" type="button" data-resume-study aria-label="${escapeHtml(`${inProgress ? "続きから" : "次の周回へ"}：${title}、${status}`)}">
+      <span class="continue-top meter-card">
+        ${progressRingMarkup(progress, cycle.masteryRound)}
+        <span class="meter-body">
+          <span class="continue-eyebrow">${inProgress ? "続きから" : "次の周回へ"}</span>
+          <span class="continue-title">${escapeHtml(title)}</span>
+          <span class="continue-detail">${escapeHtml(detail)}</span>
+        </span>
+      </span>
+      ${cycleBarMarkup(cycle, { total: progress.totalItems })}
       <span class="continue-foot">
-        <span class="continue-cycle">${escapeHtml(cycleCopy)}</span>
+        ${progressBreakdownMarkup(progress, cycle.masteryRound)}
         <span class="continue-action">${inProgress ? "続ける" : "始める"}<span aria-hidden="true">→</span></span>
       </span>
     </button>`;
@@ -5619,7 +5645,7 @@ async function boot() {
       fetch(ENGLISH_DATA_URL),
       fetch("./data/public-items.json?v=2026.09.01"),
       fetch("./data/health-items.json?v=2026.09.01"),
-      fetch("./data/kobun-vocabulary.json?v=2026.11.12"),
+      fetch("./data/kobun-vocabulary.json?v=2026.11.13"),
       loadHistory(),
       getMeta("selectedMode"),
       getMetaObject("settings", DEFAULT_SETTINGS),
@@ -5699,7 +5725,7 @@ async function boot() {
         .catch((error) => console.warn("AI連携の同期に失敗しました", error));
     }
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.11.12").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.11.13").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

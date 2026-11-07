@@ -698,40 +698,47 @@ textarea:focus-visible,
   transform: scale(0.985);
 }
 
-.continue-card .progress-gauge,
-.continue-card .progress-summary,
-.continue-card .progress-legend {
+.continue-top {
+  margin-bottom: 8px;
+}
+
+.continue-top .meter-body {
+  gap: 3px;
+}
+
+.continue-card .meter-ring,
+.continue-card .meter-breakdown {
   --gauge-strong: #8fa6ff;
-  --gauge-soft: rgba(255, 255, 255, 0.32);
+  --gauge-soft: rgba(143, 166, 255, 0.4);
+  --gauge-track: rgba(255, 255, 255, 0.16);
 }
 
-.continue-card .progress-gauge {
-  background: var(--gauge-track);
-}
-
-.continue-card .progress-figure {
-  color: rgba(255, 255, 255, 0.72);
-}
-
-.continue-card .progress-figure b,
-.continue-card .progress-figure.is-mastered {
+.continue-card .meter-ring-value,
+.continue-card .meter-key b,
+.continue-card .meter-cycle-head strong {
   color: #ffffff;
 }
 
-.continue-card .progress-rate {
+.continue-card .meter-ring-label,
+.continue-card .meter-key,
+.continue-card .meter-cycle-head > span {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.continue-card .meter-cycle-head b {
   color: #ffffff;
 }
 
-.continue-card .progress-total {
-  color: rgba(255, 255, 255, 0.72);
+.continue-card .meter-cycle-bar {
+  background: rgba(255, 255, 255, 0.16);
 }
 
-.continue-card {
-  --gauge-stripe: rgba(17, 17, 19, 0.5);
+.continue-card .meter-cycle-bar > span {
+  background: #8fa6ff;
 }
 
-.continue-card .progress-summary {
-  margin-top: 8px;
+.continue-card .meter-key.is-untouched::before {
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.5);
 }
 
 .continue-eyebrow {
@@ -760,16 +767,22 @@ textarea:focus-visible,
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-top: 8px;
+  margin-top: 6px;
 }
 
-.continue-cycle {
-  color: rgba(255, 255, 255, 0.78);
-  font-size: 13px;
-  font-weight: 700;
+.continue-foot {
+  align-items: flex-end;
+  gap: 14px;
+}
+
+.continue-foot .meter-cycle {
+  flex: 1 1 auto;
+  margin-top: 0;
 }
 
 .continue-action {
+  flex: 0 0 auto;
+  white-space: nowrap;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -1023,30 +1036,6 @@ textarea:focus-visible,
   transition: transform 120ms var(--ease-out), background-color 120ms ease;
 }
 
-/* 形式カードは高さを抑えるため、習得率をバーの左に並べる。 */
-.mode-progress-card {
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  column-gap: 12px;
-}
-
-.mode-progress-card > .mode-progress-head,
-.mode-progress-card > .progress-legend {
-  grid-column: 1 / -1;
-}
-
-.mode-progress-card .progress-summary {
-  min-width: 4.2em;
-}
-
-.mode-progress-card .progress-summary .progress-total {
-  display: none;
-}
-
-.mode-progress-card .progress-rate {
-  font-size: 19px;
-}
-
 .mode-progress-card:disabled {
   cursor: default;
   opacity: 0.5;
@@ -1110,36 +1099,41 @@ textarea:focus-visible,
 /* バーの基調色はセットで変える。1セット目は差し色の青、2セット目は赤、
    3セット目以降も変わり、5セットまで一巡したら最初の色へ戻る。 */
 .progress-gauge,
-.progress-summary,
-.progress-legend {
+.progress-legend,
+.meter-ring,
+.meter-breakdown {
   --gauge-strong: var(--pop);
   --gauge-soft: rgba(43, 80, 255, 0.24);
 }
 
 .progress-gauge[data-cycle="2"],
-.progress-summary[data-cycle="2"],
-.progress-legend[data-cycle="2"] {
+.progress-legend[data-cycle="2"],
+.meter-ring[data-cycle="2"],
+.meter-breakdown[data-cycle="2"] {
   --gauge-strong: var(--red);
   --gauge-soft: rgba(217, 45, 32, 0.24);
 }
 
 .progress-gauge[data-cycle="3"],
-.progress-summary[data-cycle="3"],
-.progress-legend[data-cycle="3"] {
+.progress-legend[data-cycle="3"],
+.meter-ring[data-cycle="3"],
+.meter-breakdown[data-cycle="3"] {
   --gauge-strong: #7c3aed;
   --gauge-soft: rgba(124, 58, 237, 0.24);
 }
 
 .progress-gauge[data-cycle="4"],
-.progress-summary[data-cycle="4"],
-.progress-legend[data-cycle="4"] {
+.progress-legend[data-cycle="4"],
+.meter-ring[data-cycle="4"],
+.meter-breakdown[data-cycle="4"] {
   --gauge-strong: #0f7b46;
   --gauge-soft: rgba(15, 123, 70, 0.24);
 }
 
 .progress-gauge[data-cycle="5"],
-.progress-summary[data-cycle="5"],
-.progress-legend[data-cycle="5"] {
+.progress-legend[data-cycle="5"],
+.meter-ring[data-cycle="5"],
+.meter-breakdown[data-cycle="5"] {
   --gauge-strong: #b45309;
   --gauge-soft: rgba(180, 83, 9, 0.24);
 }
@@ -1171,45 +1165,7 @@ textarea:focus-visible,
   background: var(--gauge-strong);
 }
 
-/* 上の段：習得率を大きく。何セット目かと「習得した数 / 全体」を添える。 */
-.progress-summary {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  min-width: 0;
-}
-
-.progress-rate {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 2px;
-  color: var(--gauge-strong);
-  font-size: 22px;
-  font-weight: 850;
-  letter-spacing: -0.03em;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
-
-.progress-rate small {
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0;
-}
-
-.progress-rate small:first-child {
-  margin-right: 4px;
-}
-
-.progress-total {
-  margin-left: auto;
-  color: var(--secondary);
-  font-size: 12px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-/* 下の段：重ならない3つの内訳。足すと全体の数になる。見本はバーと同じ塗り・縞・空。 */
+/* 古文の形式カードで使う凡例（重ならない内訳）。 */
 .progress-legend {
   display: flex;
   flex-wrap: wrap;
@@ -1261,6 +1217,208 @@ textarea:focus-visible,
 
 .progress-figure.is-cycle::before {
   display: none;
+}
+
+/* --------------------------------------------------------------------------
+   進み具合：円（習得）と横棒（今の周回）
+   遠い目標（全体のうち何%を習得したか）は円、近い目標（今の周回があと何問か）は
+   横棒にして、2つを形で分ける。内訳は重ならない3つで、足すと全体の数になる。
+   -------------------------------------------------------------------------- */
+
+.meter-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 14px;
+  row-gap: 10px;
+}
+
+.meter-body {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.meter-card > .meter-breakdown {
+  grid-column: 1 / -1;
+}
+
+.meter-ring {
+  --ring-size: 60px;
+  --ring-thickness: 7px;
+  position: relative;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  width: var(--ring-size);
+  height: var(--ring-size);
+  flex: 0 0 auto;
+  line-height: 1;
+}
+
+/* 円そのもの。習得（濃い塗り）→ 練習中（薄い塗り）→ 未回答（空）の順に回る。 */
+.meter-ring::before {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--gauge-strong) 0 var(--mastered, 0%),
+    var(--gauge-soft) var(--mastered, 0%) var(--answered, 0%),
+    var(--gauge-track) var(--answered, 0%) 100%
+  );
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--ring-thickness)), #000 calc(100% - var(--ring-thickness) + 1px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - var(--ring-thickness)), #000 calc(100% - var(--ring-thickness) + 1px));
+  content: "";
+}
+
+.meter-ring-value {
+  position: relative;
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 850;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.meter-ring-value small {
+  margin-left: 1px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.meter-ring-label {
+  position: relative;
+  margin-top: 3px;
+  color: var(--secondary);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.meter-cycle {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.meter-cycle-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+  font-size: 12px;
+}
+
+.meter-cycle-head strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meter-cycle-head > span {
+  flex: 0 0 auto;
+  color: var(--secondary);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.meter-cycle-head b {
+  margin-right: 1px;
+  color: var(--pop);
+  font-size: 15px;
+  font-weight: 850;
+}
+
+.meter-cycle-bar {
+  display: block;
+  overflow: hidden;
+  height: 8px;
+  background: var(--gauge-track);
+  border-radius: 999px;
+}
+
+.meter-cycle-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--pop);
+  border-radius: inherit;
+  transition: width 260ms var(--ease-out);
+}
+
+.meter-cycle.is-complete .meter-cycle-bar > span {
+  background: var(--green);
+}
+
+.meter-cycle.is-complete .meter-cycle-head > span {
+  color: var(--green);
+}
+
+.meter-cycle.is-idle .meter-cycle-head strong {
+  color: var(--secondary);
+  font-weight: 700;
+}
+
+.meter-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+  min-width: 0;
+}
+
+.meter-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--secondary);
+  font-size: 12px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.meter-key b {
+  color: var(--text);
+  font-weight: 800;
+}
+
+.meter-key::before {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  content: "";
+}
+
+.meter-key.is-mastered::before { background: var(--gauge-strong); }
+.meter-key.is-answered::before { background: var(--gauge-soft); }
+.meter-key.is-untouched::before {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px rgba(128, 128, 136, 0.55);
+}
+
+/* 形式カード：円を左に、名前と今の周回を右に。 */
+.mode-progress-card.meter-card {
+  padding: 14px 14px 13px;
+}
+
+.mode-progress-card .meter-ring {
+  --ring-size: 56px;
+}
+
+/* 学習の準備・続きからは、円を少し大きく。 */
+.setup-progress-card .meter-ring,
+.continue-card .meter-ring {
+  --ring-size: 68px;
+  --ring-thickness: 8px;
+}
+
+.setup-progress-card .meter-ring-value,
+.continue-card .meter-ring-value {
+  font-size: 20px;
 }
 
 /* --------------------------------------------------------------------------
@@ -4895,35 +5053,44 @@ body.max-mode .combo-pill--pop .combo-pill-text::after { animation: combo-ghost-
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65);
 }
 
-:root[data-theme="dark"] .continue-card .progress-gauge,
-:root[data-theme="dark"] .continue-card .progress-summary,
-:root[data-theme="dark"] .continue-card .progress-legend {
-  --gauge-strong: #2b50ff;
-  --gauge-soft: rgba(43, 80, 255, 0.26);
-}
-
 :root[data-theme="dark"] .continue-eyebrow {
   color: #2b50ff;
 }
 
-:root[data-theme="dark"] .continue-detail,
-:root[data-theme="dark"] .continue-cycle,
-:root[data-theme="dark"] .continue-card .progress-figure {
+:root[data-theme="dark"] .continue-detail {
   color: rgba(11, 11, 13, 0.6);
 }
 
-:root[data-theme="dark"] .continue-card {
-  --gauge-stripe: rgba(255, 255, 255, 0.6);
+:root[data-theme="dark"] .continue-card .meter-ring,
+:root[data-theme="dark"] .continue-card .meter-breakdown {
+  --gauge-strong: #2b50ff;
+  --gauge-soft: rgba(43, 80, 255, 0.3);
+  --gauge-track: rgba(0, 0, 0, 0.1);
 }
 
-:root[data-theme="dark"] .continue-card .progress-figure b,
-:root[data-theme="dark"] .continue-card .progress-figure.is-mastered,
-:root[data-theme="dark"] .continue-card .progress-rate {
+:root[data-theme="dark"] .continue-card .meter-ring-value,
+:root[data-theme="dark"] .continue-card .meter-key b,
+:root[data-theme="dark"] .continue-card .meter-cycle-head strong,
+:root[data-theme="dark"] .continue-card .meter-cycle-head b {
   color: #0b0b0d;
 }
 
-:root[data-theme="dark"] .continue-card .progress-total {
+:root[data-theme="dark"] .continue-card .meter-ring-label,
+:root[data-theme="dark"] .continue-card .meter-key,
+:root[data-theme="dark"] .continue-card .meter-cycle-head > span {
   color: rgba(11, 11, 13, 0.6);
+}
+
+:root[data-theme="dark"] .continue-card .meter-cycle-bar {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+:root[data-theme="dark"] .continue-card .meter-cycle-bar > span {
+  background: #2b50ff;
+}
+
+:root[data-theme="dark"] .continue-card .meter-key.is-untouched::before {
+  box-shadow: inset 0 0 0 1.5px rgba(0, 0, 0, 0.4);
 }
 
 :root[data-theme="dark"] .onboarding-backdrop {
@@ -4945,21 +5112,24 @@ body.max-mode .combo-pill--pop .combo-pill-text::after { animation: combo-ghost-
 
 /* 進捗バーの3〜5セット目は、暗い地でも沈まない明るさにする。 */
 :root[data-theme="dark"] .progress-gauge[data-cycle="3"],
-:root[data-theme="dark"] .progress-summary[data-cycle="3"],
+:root[data-theme="dark"] :root[data-theme="dark"] .meter-ring[data-cycle="3"],
+:root[data-theme="dark"] .meter-breakdown[data-cycle="3"],
 :root[data-theme="dark"] .progress-legend[data-cycle="3"] {
   --gauge-strong: #a78bfa;
   --gauge-soft: rgba(167, 139, 250, 0.28);
 }
 
 :root[data-theme="dark"] .progress-gauge[data-cycle="4"],
-:root[data-theme="dark"] .progress-summary[data-cycle="4"],
+:root[data-theme="dark"] :root[data-theme="dark"] .meter-ring[data-cycle="4"],
+:root[data-theme="dark"] .meter-breakdown[data-cycle="4"],
 :root[data-theme="dark"] .progress-legend[data-cycle="4"] {
   --gauge-strong: #34c46b;
   --gauge-soft: rgba(52, 196, 107, 0.26);
 }
 
 :root[data-theme="dark"] .progress-gauge[data-cycle="5"],
-:root[data-theme="dark"] .progress-summary[data-cycle="5"],
+:root[data-theme="dark"] :root[data-theme="dark"] .meter-ring[data-cycle="5"],
+:root[data-theme="dark"] .meter-breakdown[data-cycle="5"],
 :root[data-theme="dark"] .progress-legend[data-cycle="5"] {
   --gauge-strong: #f5a524;
   --gauge-soft: rgba(245, 165, 36, 0.28);

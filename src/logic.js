@@ -1441,6 +1441,27 @@ export function summarizeProgressGauge(progress, roundNumber = 1) {
   };
 }
 
+// 今の周回がどこまで進んだか（近い目標）。周回の要約から、横棒に出す値を作る。
+// 習得（遠い目標）は円で、今の周回は横棒で見せ、2つを形で分ける。
+export function summarizeCycleMeter(cycle) {
+  if (!cycle || !(cycle.targetCount > 0)) {
+    return { started: false, cycleNumber: 1, masteryRound: 1, targetCount: 0, doneCount: 0, remainingCount: 0, percent: 0, complete: false };
+  }
+  const targetCount = safeCount(cycle.targetCount);
+  const remainingCount = Math.min(safeCount(cycle.remainingCount), targetCount);
+  const doneCount = targetCount - remainingCount;
+  return {
+    started: true,
+    cycleNumber: normalizeRoundNumber(cycle.cycleNumber),
+    masteryRound: normalizeRoundNumber(cycle.masteryRound),
+    targetCount,
+    doneCount,
+    remainingCount,
+    percent: percentOf(doneCount, targetCount),
+    complete: remainingCount === 0,
+  };
+}
+
 export function progressForRangeAndMode(items, history, range, mode, options = {}) {
   return summarizeRangeModeProgress({
     ...options,

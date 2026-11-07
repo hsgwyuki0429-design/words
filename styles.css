@@ -699,6 +699,7 @@ textarea:focus-visible,
 }
 
 .continue-card .progress-gauge,
+.continue-card .progress-summary,
 .continue-card .progress-legend {
   --gauge-strong: #8fa6ff;
   --gauge-soft: rgba(255, 255, 255, 0.32);
@@ -712,15 +713,24 @@ textarea:focus-visible,
   color: rgba(255, 255, 255, 0.72);
 }
 
+.continue-card .progress-figure b,
 .continue-card .progress-figure.is-mastered {
   color: #ffffff;
+}
+
+.continue-card .progress-rate {
+  color: #ffffff;
+}
+
+.continue-card .progress-total {
+  color: rgba(255, 255, 255, 0.72);
 }
 
 .continue-card {
   --gauge-stripe: rgba(17, 17, 19, 0.5);
 }
 
-.continue-card .progress-gauge-stack {
+.continue-card .progress-summary {
   margin-top: 8px;
 }
 
@@ -1013,6 +1023,30 @@ textarea:focus-visible,
   transition: transform 120ms var(--ease-out), background-color 120ms ease;
 }
 
+/* 形式カードは高さを抑えるため、習得率をバーの左に並べる。 */
+.mode-progress-card {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 12px;
+}
+
+.mode-progress-card > .mode-progress-head,
+.mode-progress-card > .progress-legend {
+  grid-column: 1 / -1;
+}
+
+.mode-progress-card .progress-summary {
+  min-width: 4.2em;
+}
+
+.mode-progress-card .progress-summary .progress-total {
+  display: none;
+}
+
+.mode-progress-card .progress-rate {
+  font-size: 19px;
+}
+
 .mode-progress-card:disabled {
   cursor: default;
   opacity: 0.5;
@@ -1054,6 +1088,7 @@ textarea:focus-visible,
   display: grid;
   gap: 3px;
   width: 100%;
+  margin: 2px 0;
 }
 
 .progress-gauge {
@@ -1061,7 +1096,7 @@ textarea:focus-visible,
   display: block;
   overflow: hidden;
   width: 100%;
-  height: 10px;
+  height: 12px;
   background: var(--gauge-track);
   border-radius: 999px;
 }
@@ -1075,30 +1110,35 @@ textarea:focus-visible,
 /* バーの基調色はセットで変える。1セット目は差し色の青、2セット目は赤、
    3セット目以降も変わり、5セットまで一巡したら最初の色へ戻る。 */
 .progress-gauge,
+.progress-summary,
 .progress-legend {
   --gauge-strong: var(--pop);
   --gauge-soft: rgba(43, 80, 255, 0.24);
 }
 
 .progress-gauge[data-cycle="2"],
+.progress-summary[data-cycle="2"],
 .progress-legend[data-cycle="2"] {
   --gauge-strong: var(--red);
   --gauge-soft: rgba(217, 45, 32, 0.24);
 }
 
 .progress-gauge[data-cycle="3"],
+.progress-summary[data-cycle="3"],
 .progress-legend[data-cycle="3"] {
   --gauge-strong: #7c3aed;
   --gauge-soft: rgba(124, 58, 237, 0.24);
 }
 
 .progress-gauge[data-cycle="4"],
+.progress-summary[data-cycle="4"],
 .progress-legend[data-cycle="4"] {
   --gauge-strong: #0f7b46;
   --gauge-soft: rgba(15, 123, 70, 0.24);
 }
 
 .progress-gauge[data-cycle="5"],
+.progress-summary[data-cycle="5"],
 .progress-legend[data-cycle="5"] {
   --gauge-strong: #b45309;
   --gauge-soft: rgba(180, 83, 9, 0.24);
@@ -1131,59 +1171,96 @@ textarea:focus-visible,
   background: var(--gauge-strong);
 }
 
+/* 上の段：習得率を大きく。何セット目かと「習得した数 / 全体」を添える。 */
+.progress-summary {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.progress-rate {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  color: var(--gauge-strong);
+  font-size: 22px;
+  font-weight: 850;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.progress-rate small {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.progress-rate small:first-child {
+  margin-right: 4px;
+}
+
+.progress-total {
+  margin-left: auto;
+  color: var(--secondary);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 下の段：重ならない3つの内訳。足すと全体の数になる。見本はバーと同じ塗り・縞・空。 */
 .progress-legend {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 4px 14px;
-  margin-top: 1px;
 }
 
 .progress-figure {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   color: var(--secondary);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 650;
   font-variant-numeric: tabular-nums;
 }
 
-.progress-figure::before {
-  flex: 0 0 auto;
-  width: 14px;
-  height: 8px;
-  border-radius: 999px;
-  content: "";
-}
-
-/* 習得がいちばん大事な数字なので、先頭に濃く出す。 */
-.progress-figure.is-mastered {
+.progress-figure b {
   color: var(--text);
   font-weight: 800;
+}
+
+.progress-figure::before {
+  flex: 0 0 auto;
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+  content: "";
 }
 
 .progress-figure.is-mastered::before {
   background: var(--gauge-strong);
 }
 
-/* 何セット目のバーなのかを凡例の先頭に置く */
+.progress-figure.is-untouched::before {
+  background: var(--gauge-track);
+  box-shadow: inset 0 0 0 1.5px rgba(128, 128, 136, 0.45);
+}
+
+/* 何セット目かは、習得率の横に小さな札で示す */
 .progress-figure.is-cycle {
+  padding: 2px 8px;
   color: var(--gauge-strong);
+  background: var(--gauge-soft);
+  border-radius: 999px;
+  font-size: 11px;
   font-weight: 800;
 }
 
 .progress-figure.is-cycle::before {
   display: none;
-}
-
-.progress-figure.is-pending {
-  color: var(--tertiary);
-}
-
-.progress-figure.is-pending::before {
-  background: transparent;
-  box-shadow: inset 0 0 0 1.5px var(--line-strong);
 }
 
 /* --------------------------------------------------------------------------
@@ -4819,6 +4896,7 @@ body.max-mode .combo-pill--pop .combo-pill-text::after { animation: combo-ghost-
 }
 
 :root[data-theme="dark"] .continue-card .progress-gauge,
+:root[data-theme="dark"] .continue-card .progress-summary,
 :root[data-theme="dark"] .continue-card .progress-legend {
   --gauge-strong: #2b50ff;
   --gauge-soft: rgba(43, 80, 255, 0.26);
@@ -4838,8 +4916,14 @@ body.max-mode .combo-pill--pop .combo-pill-text::after { animation: combo-ghost-
   --gauge-stripe: rgba(255, 255, 255, 0.6);
 }
 
-:root[data-theme="dark"] .continue-card .progress-figure.is-mastered {
+:root[data-theme="dark"] .continue-card .progress-figure b,
+:root[data-theme="dark"] .continue-card .progress-figure.is-mastered,
+:root[data-theme="dark"] .continue-card .progress-rate {
   color: #0b0b0d;
+}
+
+:root[data-theme="dark"] .continue-card .progress-total {
+  color: rgba(11, 11, 13, 0.6);
 }
 
 :root[data-theme="dark"] .onboarding-backdrop {
@@ -4861,18 +4945,21 @@ body.max-mode .combo-pill--pop .combo-pill-text::after { animation: combo-ghost-
 
 /* 進捗バーの3〜5セット目は、暗い地でも沈まない明るさにする。 */
 :root[data-theme="dark"] .progress-gauge[data-cycle="3"],
+:root[data-theme="dark"] .progress-summary[data-cycle="3"],
 :root[data-theme="dark"] .progress-legend[data-cycle="3"] {
   --gauge-strong: #a78bfa;
   --gauge-soft: rgba(167, 139, 250, 0.28);
 }
 
 :root[data-theme="dark"] .progress-gauge[data-cycle="4"],
+:root[data-theme="dark"] .progress-summary[data-cycle="4"],
 :root[data-theme="dark"] .progress-legend[data-cycle="4"] {
   --gauge-strong: #34c46b;
   --gauge-soft: rgba(52, 196, 107, 0.26);
 }
 
 :root[data-theme="dark"] .progress-gauge[data-cycle="5"],
+:root[data-theme="dark"] .progress-summary[data-cycle="5"],
 :root[data-theme="dark"] .progress-legend[data-cycle="5"] {
   --gauge-strong: #f5a524;
   --gauge-soft: rgba(245, 165, 36, 0.28);

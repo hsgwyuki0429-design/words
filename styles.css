@@ -698,48 +698,12 @@ textarea:focus-visible,
   transform: scale(0.985);
 }
 
-.continue-card .progress-gauge,
-.continue-card .progress-summary,
-.continue-card .progress-legend {
-  --gauge-strong: #8fa6ff;
-  --gauge-soft: rgba(255, 255, 255, 0.32);
-}
-
-.continue-card .progress-gauge {
-  background: var(--gauge-track);
-}
-
-.continue-card .progress-figure {
-  color: rgba(255, 255, 255, 0.72);
-}
-
-.continue-card .progress-figure b,
-.continue-card .progress-figure.is-mastered {
-  color: #ffffff;
-}
-
-.continue-card .progress-rate {
-  color: #ffffff;
-}
-
-.continue-card .progress-total {
-  color: rgba(255, 255, 255, 0.72);
-}
-
-.continue-card {
-  --gauge-stripe: rgba(17, 17, 19, 0.5);
-}
-
 .continue-top {
-  margin-bottom: 4px;
+  margin-bottom: 8px;
 }
 
 .continue-top .meter-body {
   gap: 3px;
-}
-
-.continue-card .meter-cycle {
-  margin-top: 6px;
 }
 
 .continue-card .meter-ring,
@@ -806,14 +770,14 @@ textarea:focus-visible,
   margin-top: 6px;
 }
 
-.continue-foot .meter-breakdown {
-  gap: 2px 10px;
+.continue-foot {
+  align-items: flex-end;
+  gap: 14px;
 }
 
-.continue-cycle {
-  color: rgba(255, 255, 255, 0.78);
-  font-size: 13px;
-  font-weight: 700;
+.continue-foot .meter-cycle {
+  flex: 1 1 auto;
+  margin-top: 0;
 }
 
 .continue-action {
@@ -1135,7 +1099,6 @@ textarea:focus-visible,
 /* バーの基調色はセットで変える。1セット目は差し色の青、2セット目は赤、
    3セット目以降も変わり、5セットまで一巡したら最初の色へ戻る。 */
 .progress-gauge,
-.progress-summary,
 .progress-legend,
 .meter-ring,
 .meter-breakdown {
@@ -1144,7 +1107,6 @@ textarea:focus-visible,
 }
 
 .progress-gauge[data-cycle="2"],
-.progress-summary[data-cycle="2"],
 .progress-legend[data-cycle="2"],
 .meter-ring[data-cycle="2"],
 .meter-breakdown[data-cycle="2"] {
@@ -1153,7 +1115,6 @@ textarea:focus-visible,
 }
 
 .progress-gauge[data-cycle="3"],
-.progress-summary[data-cycle="3"],
 .progress-legend[data-cycle="3"],
 .meter-ring[data-cycle="3"],
 .meter-breakdown[data-cycle="3"] {
@@ -1162,7 +1123,6 @@ textarea:focus-visible,
 }
 
 .progress-gauge[data-cycle="4"],
-.progress-summary[data-cycle="4"],
 .progress-legend[data-cycle="4"],
 .meter-ring[data-cycle="4"],
 .meter-breakdown[data-cycle="4"] {
@@ -1171,7 +1131,6 @@ textarea:focus-visible,
 }
 
 .progress-gauge[data-cycle="5"],
-.progress-summary[data-cycle="5"],
 .progress-legend[data-cycle="5"],
 .meter-ring[data-cycle="5"],
 .meter-breakdown[data-cycle="5"] {
@@ -1206,45 +1165,7 @@ textarea:focus-visible,
   background: var(--gauge-strong);
 }
 
-/* 上の段：習得率を大きく。何セット目かと「習得した数 / 全体」を添える。 */
-.progress-summary {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  min-width: 0;
-}
-
-.progress-rate {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 2px;
-  color: var(--gauge-strong);
-  font-size: 22px;
-  font-weight: 850;
-  letter-spacing: -0.03em;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
-
-.progress-rate small {
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0;
-}
-
-.progress-rate small:first-child {
-  margin-right: 4px;
-}
-
-.progress-total {
-  margin-left: auto;
-  color: var(--secondary);
-  font-size: 12px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-/* 下の段：重ならない3つの内訳。足すと全体の数になる。見本はバーと同じ塗り・縞・空。 */
+/* 古文の形式カードで使う凡例（重ならない内訳）。 */
 .progress-legend {
   display: flex;
   flex-wrap: wrap;
@@ -5132,34 +5053,11 @@ body.max-mode .combo-pill--pop .combo-pill-text::after { animation: combo-ghost-
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65);
 }
 
-:root[data-theme="dark"] .continue-card .progress-gauge,
-:root[data-theme="dark"] .continue-card .progress-summary,
-:root[data-theme="dark"] .continue-card .progress-legend {
-  --gauge-strong: #2b50ff;
-  --gauge-soft: rgba(43, 80, 255, 0.26);
-}
-
 :root[data-theme="dark"] .continue-eyebrow {
   color: #2b50ff;
 }
 
-:root[data-theme="dark"] .continue-detail,
-:root[data-theme="dark"] .continue-cycle,
-:root[data-theme="dark"] .continue-card .progress-figure {
-  color: rgba(11, 11, 13, 0.6);
-}
-
-:root[data-theme="dark"] .continue-card {
-  --gauge-stripe: rgba(255, 255, 255, 0.6);
-}
-
-:root[data-theme="dark"] .continue-card .progress-figure b,
-:root[data-theme="dark"] .continue-card .progress-figure.is-mastered,
-:root[data-theme="dark"] .continue-card .progress-rate {
-  color: #0b0b0d;
-}
-
-:root[data-theme="dark"] .continue-card .progress-total {
+:root[data-theme="dark"] .continue-detail {
   color: rgba(11, 11, 13, 0.6);
 }
 
@@ -5214,8 +5112,7 @@ body.max-mode .combo-pill--pop .combo-pill-text::after { animation: combo-ghost-
 
 /* 進捗バーの3〜5セット目は、暗い地でも沈まない明るさにする。 */
 :root[data-theme="dark"] .progress-gauge[data-cycle="3"],
-:root[data-theme="dark"] .progress-summary[data-cycle="3"],
-:root[data-theme="dark"] .meter-ring[data-cycle="3"],
+:root[data-theme="dark"] :root[data-theme="dark"] .meter-ring[data-cycle="3"],
 :root[data-theme="dark"] .meter-breakdown[data-cycle="3"],
 :root[data-theme="dark"] .progress-legend[data-cycle="3"] {
   --gauge-strong: #a78bfa;
@@ -5223,8 +5120,7 @@ body.max-mode .combo-pill--pop .combo-pill-text::after { animation: combo-ghost-
 }
 
 :root[data-theme="dark"] .progress-gauge[data-cycle="4"],
-:root[data-theme="dark"] .progress-summary[data-cycle="4"],
-:root[data-theme="dark"] .meter-ring[data-cycle="4"],
+:root[data-theme="dark"] :root[data-theme="dark"] .meter-ring[data-cycle="4"],
 :root[data-theme="dark"] .meter-breakdown[data-cycle="4"],
 :root[data-theme="dark"] .progress-legend[data-cycle="4"] {
   --gauge-strong: #34c46b;
@@ -5232,8 +5128,7 @@ body.max-mode .combo-pill--pop .combo-pill-text::after { animation: combo-ghost-
 }
 
 :root[data-theme="dark"] .progress-gauge[data-cycle="5"],
-:root[data-theme="dark"] .progress-summary[data-cycle="5"],
-:root[data-theme="dark"] .meter-ring[data-cycle="5"],
+:root[data-theme="dark"] :root[data-theme="dark"] .meter-ring[data-cycle="5"],
 :root[data-theme="dark"] .meter-breakdown[data-cycle="5"],
 :root[data-theme="dark"] .progress-legend[data-cycle="5"] {
   --gauge-strong: #f5a524;

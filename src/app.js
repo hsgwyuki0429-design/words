@@ -1,5 +1,5 @@
-import { createHaptics } from "./haptics.js?v=2026.11.13";
-import { createKobunController } from "./kobun.js?v=2026.11.13";
+import { createHaptics } from "./haptics.js?v=2026.11.14";
+import { createKobunController } from "./kobun.js?v=2026.11.14";
 import {
   ALL_MODES,
   ALPHABET_KEYBOARD_ROWS,
@@ -74,7 +74,7 @@ import {
   summarizeSession,
   summarizeCycleMeter,
   toggleSetupValue,
-} from "./logic.js?v=2026.11.13";
+} from "./logic.js?v=2026.11.14";
 import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
 import {
   MAX_TIMELINE_PHASES,
@@ -95,7 +95,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.11.13";
+} from "./storage.js?v=2026.11.14";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -103,7 +103,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.11.13";
+} from "./quiz-gestures.js?v=2026.11.14";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
@@ -112,7 +112,7 @@ import {
   normalizeSpeechRate,
   normalizeSpeechVoiceURI,
   voiceKey,
-} from "./speech.js?v=2026.11.13";
+} from "./speech.js?v=2026.11.14";
 import {
   AI_LINK_JOURNAL_KEY,
   AI_LINK_META_KEY,
@@ -128,7 +128,7 @@ import {
   isAiLinkConfigured,
   mcpUrlFor,
   normalizeAiLinkConfig,
-} from "./ai-link.js?v=2026.11.13";
+} from "./ai-link.js?v=2026.11.14";
 import {
   DEFAULT_DEVICE_SYNC,
   DEVICE_SYNC_META_KEY,
@@ -145,13 +145,13 @@ import {
   syncStateLabel,
   transferFileName,
   unsentEntries,
-} from "./sync.js?v=2026.11.13";
+} from "./sync.js?v=2026.11.14";
 import {
   applyThemePreference,
   normalizeThemePreference,
   readStoredThemePreference,
   watchSystemTheme,
-} from "./theme.js?v=2026.11.13";
+} from "./theme.js?v=2026.11.14";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -736,20 +736,17 @@ function setupPlan() {
   const stored = key ? storedStudyProgress(key, { itemIds: pool.map((item) => item.id) }) : null;
   const unit = recallUnit();
   const summary = studyProgressSummary(stored);
-  const plan = { config, pool, key, stored, summary, label: "スタート", detail: `${pool.length}${unit}`, cycleCopy: "" };
+  const plan = { config, pool, key, stored, summary, label: "スタート", detail: `${pool.length}${unit}` };
   if (!stored || !summary) return plan;
-  const round = summary.masteryRound > 1 ? `${summary.masteryRound}セット目 ` : "";
   if (summary.remainingCount > 0) {
     if (isStudyInProgress(stored)) plan.label = "続きから";
     plan.detail = `残り${summary.remainingCount}${unit}`;
-    plan.cycleCopy = `${round}${summary.cycleNumber}周目`;
     return plan;
   }
   const next = studyProgressSummary(advanceStudyProgress(stored, { roundItemIds: pool.map((item) => item.id) }));
   const newRound = next.masteryRound > summary.masteryRound;
   plan.label = newRound ? "次のセットを始める" : `${next.cycleNumber}周目を始める`;
   plan.detail = `${next.remainingCount}${unit}`;
-  plan.cycleCopy = `${round}${summary.cycleNumber}周目まで完了`;
   return plan;
 }
 
@@ -1075,8 +1072,7 @@ function cycleBarMarkup(cycle, { prefix = "", total = 0 } = {}) {
   if (!meter.started) {
     return `
       <span class="meter-cycle is-idle">
-        <span class="meter-cycle-head"><strong>まだ始めていません</strong><span>全${total}${unit}</span></span>
-        <span class="meter-cycle-bar" aria-hidden="true"><span style="width:0%"></span></span>
+        <span class="meter-cycle-head"><strong>まだ始めていません</strong><span>${total}${unit}</span></span>
       </span>`;
   }
   const round = meter.masteryRound > 1 ? `${meter.masteryRound}セット目・` : "";
@@ -1148,7 +1144,6 @@ function modeProgressCard(card) {
         </span>
         ${cycleBarMarkup(cycle, { prefix, total: progress.totalItems })}
       </span>
-      ${progressBreakdownMarkup(progress, roundNumber)}
     </button>`;
 }
 
@@ -4960,6 +4955,18 @@ function typesForSelection(selection) {
     : [`${normalized.subject}-${normalized.content}`];
 }
 
+// 学習条件のうち、初めの状態（すべての内容・すべての重要度）から変えたものだけを短く示す。
+// 並び順は周回に関係しないので出さない。
+function conditionLabel(config) {
+  const selection = normalizeStudySelection(config.selection);
+  const parts = [];
+  if (selection.subject === "english" && selection.contents.length < ENGLISH_CONTENT_TYPES.length) {
+    parts.push(selection.contents.map((content) => STUDY_CONTENT_META[content]?.title ?? content).join("・"));
+  }
+  if (config.filters?.importance?.length) parts.push(`重要度 ${config.filters.importance.join("・")}`);
+  return parts.join(" · ");
+}
+
 // ホームの「続きから」。押すと、前回と同じ条件のまま周回の続きを始める。
 function resumeStudyMarkup({ entry, config }) {
   const cycle = studyProgressSummary(entry.progress);
@@ -4975,28 +4982,22 @@ function resumeStudyMarkup({ entry, config }) {
     mode,
     masteredIds: masteredIdsForMode(state.studyProgress, mode, { criterion: masteryCriterion() }),
   });
-  const contentLabel = contentLabelFromProgressKey(entry.meta, config.subject) || "教材";
-  const detail = [
-    ...(isRecallSubjectId(config.subject) ? [] : [contentLabel]),
-    importanceLabel(config.filters.importance),
-    STUDY_SORT_LABELS[config.sortKey] ?? "重要度順",
-  ].join(" · ");
+  const detail = conditionLabel(config);
   const title = `${configRangeLabel(config)} · ${modeShortLabel(mode)}`;
   const meter = summarizeCycleMeter(cycle);
   const status = meter.complete ? `${meter.cycleNumber}周目まで完了` : `${meter.cycleNumber}周目、あと${meter.remainingCount}${unit}`;
   return `
-    <button class="continue-card" type="button" data-resume-study aria-label="${escapeHtml(`${inProgress ? "続きから" : "次の周回へ"}：${title}、${status}`)}">
+    <button class="continue-card" type="button" data-resume-study aria-label="${escapeHtml(`${inProgress ? "続きから" : "次の周回へ"}：${title}${detail ? `（${detail}）` : ""}、${status}`)}">
       <span class="continue-top meter-card">
         ${progressRingMarkup(progress, cycle.masteryRound)}
         <span class="meter-body">
           <span class="continue-eyebrow">${inProgress ? "続きから" : "次の周回へ"}</span>
           <span class="continue-title">${escapeHtml(title)}</span>
-          <span class="continue-detail">${escapeHtml(detail)}</span>
+          ${detail ? `<span class="continue-detail">${escapeHtml(detail)}</span>` : ""}
         </span>
       </span>
-      ${cycleBarMarkup(cycle, { total: progress.totalItems })}
       <span class="continue-foot">
-        ${progressBreakdownMarkup(progress, cycle.masteryRound)}
+        ${cycleBarMarkup(cycle, { total: progress.totalItems })}
         <span class="continue-action">${inProgress ? "続ける" : "始める"}<span aria-hidden="true">→</span></span>
       </span>
     </button>`;
@@ -5645,7 +5646,7 @@ async function boot() {
       fetch(ENGLISH_DATA_URL),
       fetch("./data/public-items.json?v=2026.09.01"),
       fetch("./data/health-items.json?v=2026.09.01"),
-      fetch("./data/kobun-vocabulary.json?v=2026.11.13"),
+      fetch("./data/kobun-vocabulary.json?v=2026.11.14"),
       loadHistory(),
       getMeta("selectedMode"),
       getMetaObject("settings", DEFAULT_SETTINGS),
@@ -5725,7 +5726,7 @@ async function boot() {
         .catch((error) => console.warn("AI連携の同期に失敗しました", error));
     }
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.11.13").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.11.14").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

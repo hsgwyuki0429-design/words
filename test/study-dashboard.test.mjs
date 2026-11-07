@@ -176,8 +176,18 @@ test("the range list shows range names only, with no rates or scores", () => {
 
 test("ゲージの数値は何の数字かが分かる形で出す", () => {
   const gaugeSource = functionSource("progressGaugeMarkup", "selectionProgress");
-  assert.match(gaugeSource, /解答済み \$\{gauge\.answeredPercent\}%（\$\{gauge\.answeredItems\}\/\$\{gauge\.totalItems\}）/);
-  assert.match(gaugeSource, /習得 \$\{gauge\.masteredPercent\}%（\$\{gauge\.masteredItems\}\/\$\{gauge\.totalItems\}）/);
+  // 習得率を大きく出し、「習得した数 / 全体」を添える。
+  assert.match(gaugeSource, /<span class="progress-rate"><small>習得<\/small>\$\{gauge\.masteredPercent\}<small>%<\/small><\/span>/);
+  assert.match(gaugeSource, /\$\{gauge\.masteredCount\} \/ \$\{gauge\.totalItems\}\$\{unit\}/);
+  // 内訳は重ならない3つ（習得・練習中・未回答）で、足すと全体の数になる。
+  assert.match(gaugeSource, /習得 <b>\$\{gauge\.masteredCount\}<\/b>/);
+  assert.match(gaugeSource, /練習中 <b>\$\{gauge\.practicingCount\}<\/b>/);
+  assert.match(gaugeSource, /未回答 <b>\$\{gauge\.untouchedCount\}<\/b>/);
+  for (const [answeredItems, masteredItems] of [[0, 0], [12, 8], [10, 10], [3, 7], [188, 0]]) {
+    const gauge = summarizeProgressGauge({ totalItems: 188, answeredItems, masteredItems }, 1);
+    assert.equal(gauge.masteredCount + gauge.practicingCount + gauge.untouchedCount, 188, "内訳を足すと全体になる");
+    assert.ok(gauge.practicingCount >= 0 && gauge.untouchedCount >= 0);
+  }
   const cardSource = functionSource("modeProgressCard", "renderRangeDetail");
   assert.match(cardSource, /\$\{cycle\.cycleNumber\}周目 残り\$\{cycle\.remainingCount\}/);
   assert.match(cardSource, /\$\{cycle\.masteryRound\}セット目/);
@@ -364,7 +374,7 @@ test("範囲一覧と形式カードは1画面に収まる高さで組む", () =
   // 形式カードは説明文と「この形式で学習する」を畳んで高さを抑える
   const cardSource = functionSource("modeProgressCard", "renderRangeDetail");
   assert.doesNotMatch(cardSource, /mode-progress-start|card\.detail/);
-  assert.match(stylesSource, /\.progress-gauge \{[^}]*height: 10px/);
+  assert.match(stylesSource, /\.progress-gauge \{[^}]*height: 12px/);
   assert.match(stylesSource, /\.mode-group \{[^}]*margin-bottom: 10px/);
 });
 

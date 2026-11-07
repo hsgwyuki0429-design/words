@@ -1431,6 +1431,11 @@ export function summarizeProgressGauge(progress, roundNumber = 1) {
     // データが来ても、薄い塗りが濃い塗りに隠れて消えないようにする。
     answeredWidth: Math.max(answeredPercent, masteredPercent),
     masteredWidth: masteredPercent,
+    // 画面に出す内訳。重ならない3つに分け、足すと必ず全体の数になる。
+    //   習得 … 習得した / 練習中 … 解いたがまだ習得していない / 未回答 … まだ解いていない
+    masteredCount: masteredItems,
+    practicingCount: Math.max(0, answeredItems - masteredItems),
+    untouchedCount: Math.max(0, totalItems - Math.max(answeredItems, masteredItems)),
     finishedBars,
     collapsedRounds,
   };

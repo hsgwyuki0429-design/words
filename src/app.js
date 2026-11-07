@@ -1,5 +1,5 @@
-import { createHaptics } from "./haptics.js?v=2026.11.14";
-import { createKobunController } from "./kobun.js?v=2026.11.14";
+import { createHaptics } from "./haptics.js?v=2026.11.15";
+import { createKobunController } from "./kobun.js?v=2026.11.15";
 import {
   ALL_MODES,
   ALPHABET_KEYBOARD_ROWS,
@@ -74,16 +74,23 @@ import {
   summarizeSession,
   summarizeCycleMeter,
   toggleSetupValue,
-} from "./logic.js?v=2026.11.14";
-import { createMaxAudioEngine } from "./audio.js?v=2026.2.18";
+} from "./logic.js?v=2026.11.15";
+import { createMaxAudioEngine } from "./audio.js?v=2026.11.15";
 import {
+  MAX_FEVER_GOAL,
   MAX_TIMELINE_PHASES,
+  createFeverState,
+  heatLevel,
+  isRecordMoment,
+  nextFeverState,
+  rollCritical,
+  speedRating,
   maxCueForAnswer,
   maxCueForFinale,
   resolveMaxCue,
   scaledVisualPlan,
   shouldPlayMaxSound,
-} from "./max-cues.js?v=2026.2.18";
+} from "./max-cues.js?v=2026.11.15";
 import {
   clearAllData,
   getMeta,
@@ -95,7 +102,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.11.14";
+} from "./storage.js?v=2026.11.15";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -103,7 +110,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.11.14";
+} from "./quiz-gestures.js?v=2026.11.15";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
@@ -112,7 +119,7 @@ import {
   normalizeSpeechRate,
   normalizeSpeechVoiceURI,
   voiceKey,
-} from "./speech.js?v=2026.11.14";
+} from "./speech.js?v=2026.11.15";
 import {
   AI_LINK_JOURNAL_KEY,
   AI_LINK_META_KEY,
@@ -128,7 +135,7 @@ import {
   isAiLinkConfigured,
   mcpUrlFor,
   normalizeAiLinkConfig,
-} from "./ai-link.js?v=2026.11.14";
+} from "./ai-link.js?v=2026.11.15";
 import {
   DEFAULT_DEVICE_SYNC,
   DEVICE_SYNC_META_KEY,
@@ -145,13 +152,13 @@ import {
   syncStateLabel,
   transferFileName,
   unsentEntries,
-} from "./sync.js?v=2026.11.14";
+} from "./sync.js?v=2026.11.15";
 import {
   applyThemePreference,
   normalizeThemePreference,
   readStoredThemePreference,
   watchSystemTheme,
-} from "./theme.js?v=2026.11.14";
+} from "./theme.js?v=2026.11.15";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -208,6 +215,8 @@ const state = {
   settings: { ...DEFAULT_SETTINGS },
   combo: 0,
   bestCombo: 0,
+  // MAXのフィーバーゲージ（見た目だけ。学習の記録には関わらない）。
+  fever: createFeverState(),
   // 学習途中の周回から続きを始めるための、周回キーごとの学習条件。
   studyConfigs: {},
   importanceFilterMode: null,
@@ -1235,6 +1244,8 @@ function isMaxMode() {
 
 function applySettings() {
   document.body.classList.toggle("max-mode", isMaxMode());
+  // 性能の低い端末では、重い演出（ガラスのぼかし・背景全体の色回し）を省いてなめらかさを保つ。
+  document.body.classList.toggle("fx-lite", isMaxMode() && isLowPowerDevice());
   document.querySelector('meta[name="theme-color"]')?.setAttribute(
     "content",
     isMaxMode() && state.view === "quiz"
@@ -2172,7 +2183,7 @@ function renderSettings() {
    background : #fx-backdrop（MAX中の背景エネルギー）
    world      : zoom punch / screen shake / invert / flash / vignette
    particles  : #effects-canvas（粒子・衝撃波・スピードライン／単一のrAF）
-   ui         : #max-callout / .combo-pill
+   ui         : #max-callout / .max-hud（コンボとフィーバー）/ .fx-float（ほめ言葉）
    --------------------------------------------------------------------------- */
 
 const REDUCED_MOTION_QUERY = matchMedia("(prefers-reduced-motion: reduce)");
@@ -2354,12 +2365,60 @@ function stepFx(now) {
   fx.running = false;
 }
 
+// 光の粒は、中心が白く外へにじむ丸い光の絵を色ごとに一度だけ作って使い回す。
+// 毎回グラデーションを作るより軽く、重ねると（加算合成）美しく光る。
+const glowSprites = new Map();
+
+function glowSprite(color) {
+  let sprite = glowSprites.get(color);
+  if (sprite) return sprite;
+  sprite = document.createElement("canvas");
+  sprite.width = 64;
+  sprite.height = 64;
+  const context = sprite.getContext("2d");
+  const gradient = context.createRadialGradient(32, 32, 0, 32, 32, 32);
+  gradient.addColorStop(0, "rgba(255,255,255,1)");
+  gradient.addColorStop(0.18, color);
+  gradient.addColorStop(0.45, `${color}66`);
+  gradient.addColorStop(1, `${color}00`);
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, 64, 64);
+  glowSprites.set(color, sprite);
+  return sprite;
+}
+
+// 正解の場所からコンボの数字へ吸い込まれていく光の粒（ごほうびを「集める」感覚）。
+function stepOrb(context, orb, step) {
+  orb.t = Math.min(1, orb.t + orb.speed * step);
+  const t = orb.ease ? 1 - (1 - orb.t) ** 2 : orb.t;
+  const inverse = 1 - t;
+  const x = inverse * inverse * orb.sx + 2 * inverse * t * orb.cx + t * t * orb.tx;
+  const y = inverse * inverse * orb.sy + 2 * inverse * t * orb.cy + t * t * orb.ty;
+  orb.trail.push({ x, y });
+  if (orb.trail.length > 7) orb.trail.shift();
+  orb.trail.forEach((point, index) => {
+    const size = orb.size * (0.4 + (index / orb.trail.length) * 0.9);
+    context.globalAlpha = (index + 1) / orb.trail.length * 0.7;
+    context.drawImage(glowSprite(orb.color), point.x - size * 3, point.y - size * 3, size * 6, size * 6);
+  });
+  if (orb.t >= 1) {
+    orb.onArrive?.();
+    orb.onArrive = null;
+    return false;
+  }
+  return true;
+}
+
 function drawParticles(context, step) {
   if (!fx.particles.length) return;
   const alive = [];
   context.save();
   context.globalCompositeOperation = "lighter";
   for (const particle of fx.particles) {
+    if (particle.kind === "orb") {
+      if (stepOrb(context, particle, step)) alive.push(particle);
+      continue;
+    }
     particle.life -= particle.decay * step;
     if (particle.life <= 0) continue;
     particle.x += particle.vx * step;
@@ -2400,9 +2459,8 @@ function drawParticles(context, step) {
       context.closePath();
       context.fill();
     } else {
-      context.beginPath();
-      context.arc(0, 0, particle.size, 0, Math.PI * 2);
-      context.fill();
+      const glow = particle.size * 3.2;
+      context.drawImage(glowSprite(particle.color), -glow, -glow, glow * 2, glow * 2);
     }
     context.restore();
     alive.push(particle);
@@ -3095,6 +3153,7 @@ function resetMaxEffects({ keepAmbience = false, keepAudio = false } = {}) {
     "fx-jackpot",
     "fx-destroyed",
   );
+  document.querySelectorAll(".fx-float").forEach((node) => node.remove());
   if (elements.maxCallout) {
     elements.maxCallout.hidden = true;
     elements.maxCallout.innerHTML = "";
@@ -3105,11 +3164,139 @@ function resetMaxEffects({ keepAmbience = false, keepAudio = false } = {}) {
   }
 }
 
-function correctEffect(special = "") {
+// ---------------------------------------------------------------------------
+// ドーパミンの演出（MAXのときだけ。見た目と音だけで、学習の記録には関わらない）
+// ---------------------------------------------------------------------------
+
+const PRAISE_WORDS = ["NICE!", "GOOD!", "GREAT!", "AWESOME!", "INCREDIBLE!", "GODLIKE!"];
+
+/** コンボの熱を背景と画面の色合いへ伝える（0〜5）。 */
+function syncMaxHeat() {
+  const level = isMaxMode() ? heatLevel(state.combo) : 0;
+  document.body.dataset.heat = String(level);
+  document.body.style.setProperty("--heat", (level / 5).toFixed(2));
+}
+
+/** 学習画面の右上：コンボの数と、フィーバーまでのゲージ。 */
+function renderMaxHud() {
+  const fever = state.fever;
+  const percent = fever.active ? 100 : Math.round((fever.gauge / MAX_FEVER_GOAL) * 100);
+  return `
+    <div class="max-hud${fever.active ? " is-fever" : ""}" data-heat="${heatLevel(state.combo)}" aria-label="${state.combo}コンボ${fever.active ? "、フィーバー中" : `、フィーバーまであと${MAX_FEVER_GOAL - fever.gauge}問`}">
+      <span class="max-hud-count"><strong>${state.combo}</strong><small>${fever.active ? "FEVER" : "COMBO"}</small></span>
+      <span class="max-hud-fever" aria-hidden="true"><i style="width:${percent}%"></i></span>
+    </div>`;
+}
+
+/** 画面を描き直さずに、右上の表示だけを最新にする（スワイプで答えたときなど）。 */
+function updateMaxHud({ pop = false, crack = false } = {}) {
+  const hud = elements.quizContent?.querySelector(".max-hud");
+  if (!hud) return;
+  hud.outerHTML = renderMaxHud();
+  const next = elements.quizContent.querySelector(".max-hud");
+  if (!next || effectsLevel() !== "full") return;
+  if (pop) {
+    fxAnimate(next.querySelector(".max-hud-count"), [
+      { transform: "scale(1)" },
+      { transform: "scale(1.45)", offset: 0.25 },
+      { transform: "scale(.92)", offset: 0.55 },
+      { transform: "scale(1)" },
+    ], { duration: 380, easing: "cubic-bezier(.2,.9,.25,1)" });
+  }
+  if (crack) {
+    fxAnimate(next, [
+      { transform: "translateX(0)", filter: "none" },
+      { transform: "translateX(-5px)", filter: "saturate(0) brightness(1.4)", offset: 0.2 },
+      { transform: "translateX(4px)", offset: 0.45 },
+      { transform: "translateX(-2px)", offset: 0.7 },
+      { transform: "translateX(0)", filter: "none" },
+    ], { duration: 360, easing: "ease-out" });
+  }
+}
+
+/** 正解の場所から、ほめ言葉が跳ねて浮かび上がる。 */
+function spawnFloatingText(origin, { label, sub = "", tone = "" } = {}) {
+  if (effectsLevel() !== "full" || !origin) return;
+  const node = document.createElement("div");
+  node.className = `fx-float${tone ? ` fx-float--${tone}` : ""}`;
+  node.setAttribute("aria-hidden", "true");
+  node.innerHTML = `<strong>${escapeHtml(label)}</strong>${sub ? `<small>${escapeHtml(sub)}</small>` : ""}`;
+  node.style.left = `${origin.x}px`;
+  node.style.top = `${origin.y}px`;
+  document.body.append(node);
+  const drift = (Math.random() - 0.5) * 40;
+  const animation = fxAnimate(node, [
+    { opacity: 0, transform: "translate(-50%, -50%) scale(.4)" },
+    { opacity: 1, transform: `translate(calc(-50% + ${drift * 0.3}px), -95%) scale(1.25)`, offset: 0.16 },
+    { opacity: 1, transform: `translate(calc(-50% + ${drift * 0.6}px), -140%) scale(1)`, offset: 0.5 },
+    { opacity: 0, transform: `translate(calc(-50% + ${drift}px), -230%) scale(.94)` },
+  ], { duration: 980, easing: "cubic-bezier(.2,.8,.25,1)", fill: "forwards" });
+  const remove = () => node.remove();
+  if (animation) animation.addEventListener("finish", remove, { once: true });
+  else setTimeout(remove, 1000);
+  fxTimeout(remove, 1200);
+}
+
+/** 光の粒を正解の場所からコンボの数字へ飛ばす。最初の粒が届いた瞬間に数字が跳ねる。 */
+function spawnCollectOrbs(origin, { count = 7, palette = PARTICLE_COLORS } = {}) {
+  if (!canvasEffectsEnabled() || !origin) return;
+  const target = elements.quizContent?.querySelector(".max-hud-count")?.getBoundingClientRect();
+  if (!target?.width) return;
+  ensureFxCanvas();
+  const tx = target.left + target.width / 2;
+  const ty = target.top + target.height / 2;
+  for (let index = 0; index < count; index += 1) {
+    const spread = (Math.random() - 0.5) * 220;
+    fx.particles.push({
+      kind: "orb",
+      sx: origin.x + (Math.random() - 0.5) * 30,
+      sy: origin.y + (Math.random() - 0.5) * 16,
+      cx: origin.x + spread,
+      cy: Math.min(origin.y, ty) - 80 - Math.random() * 120,
+      tx,
+      ty,
+      t: 0,
+      // 少しずつ速さを変えて、粒が列になって飛んでいくようにする。
+      speed: 0.042 - index * 0.0022 + Math.random() * 0.004,
+      ease: true,
+      size: 2.4 + Math.random() * 1.8,
+      color: palette[index % palette.length],
+      trail: [],
+      onArrive: index === 0 ? () => updateMaxHud({ pop: true }) : null,
+    });
+  }
+  startFxLoop();
+}
+
+/** 正解した選択肢がぐっと押し返すように弾む（押しつぶし→伸び→戻る）。 */
+function bounceCorrectTarget() {
+  if (effectsLevel() !== "full") return;
+  const target = elements.quizContent?.querySelector(".choice-button.correct, .word-slots, .public-recall-answer");
+  fxAnimate(target, [
+    { transform: "scale(1)" },
+    { transform: "scale(1.06, .92)", offset: 0.18 },
+    { transform: "scale(.97, 1.04)", offset: 0.42 },
+    { transform: "scale(1.01, .99)", offset: 0.7 },
+    { transform: "scale(1)" },
+  ], { duration: 420, easing: "cubic-bezier(.2,.9,.25,1)" });
+}
+
+function enterFever() {
+  document.body.classList.add("fx-fever");
+  runMaxCue("fever-start", { combo: state.combo, label: "FEVER!!", detail: "正解するたび、光が倍に" });
+  updateMaxHud({ pop: true });
+}
+
+function exitFever() {
+  document.body.classList.remove("fx-fever");
+}
+
+function correctEffect(special = "", { durationMs = null, fever = null } = {}) {
   if (!isMaxMode()) return;
+  syncMaxHeat();
   const event = maxCueForAnswer({ correct: true, combo: state.combo, special });
   const copy = {
-    correct: ["CORRECT", ""],
+    correct: ["", ""],
     "combo-3": [`${state.combo} COMBO`, "FLOW START"],
     "combo-5": [`${state.combo} COMBO`, "RISING"],
     "combo-10": [`${state.combo} COMBO`, "BLAZE"],
@@ -3117,8 +3304,32 @@ function correctEffect(special = "") {
     "combo-30": ["UNSTOPPABLE", `${state.combo} COMBO`],
     "new-record": ["NEW RECORD", `${state.combo} COMBO`],
     "weakness-destroyed": ["WEAKNESS DESTROYED", "BREAK THROUGH"],
-  }[event] ?? ["CORRECT", ""];
-  runMaxCue(event, { combo: state.combo, label: copy[0], detail: copy[1] });
+  }[event] ?? ["", ""];
+  const plan = runMaxCue(event, { combo: state.combo, label: copy[0], detail: copy[1] });
+  const origin = impactOrigin();
+  const feverOn = Boolean(fever?.active);
+  bounceCorrectTarget();
+  // ほめ言葉は、速さの評価を優先し、なければコンボの熱で強くしていく。
+  const rating = speedRating(durationMs);
+  spawnFloatingText(origin, rating === "lightning"
+    ? { label: "⚡ LIGHTNING", sub: feverOn ? "FEVER ×2" : "", tone: "lightning" }
+    : rating === "fast"
+      ? { label: "FAST!", sub: feverOn ? "FEVER ×2" : "", tone: "fast" }
+      : { label: PRAISE_WORDS[heatLevel(state.combo)], sub: feverOn ? "FEVER ×2" : "" });
+  spawnCollectOrbs(origin, { count: feverOn ? 14 : 7, palette: plan?.visual?.colors ?? PARTICLE_COLORS });
+  if (fever?.entered) {
+    fxTimeout(enterFever, 280);
+  } else if ((plan?.power ?? 0) < 4 && rollCritical({ durationMs, fever: feverOn, combo: state.combo })) {
+    fxTimeout(() => runMaxCue("critical", { combo: state.combo, label: "CRITICAL!", detail: "会心の一撃" }), 150);
+  }
+}
+
+function wrongEffect({ fever = null } = {}) {
+  if (!isMaxMode()) return;
+  syncMaxHeat();
+  runMaxCue(maxCueForAnswer({ correct: false }), { label: "", combo: 0 });
+  if (fever?.ended) exitFever();
+  updateMaxHud({ crack: true });
 }
 
 const STUDY_PROGRESS_LIMIT = 40;
@@ -3154,6 +3365,8 @@ function setView(view) {
   if (view !== "quiz") {
     clearCardFlights();
     quizGestureController?.reset();
+    exitFever();
+    document.body.dataset.heat = "0";
   }
   state.view = view;
   document.querySelectorAll("[data-view]").forEach((section) => {
@@ -3485,8 +3698,14 @@ function beginSession(queue, {
     startProgressSummary: studyProgressSummary(progress),
     cycleAdvanced: false,
     undo: null,
+    // 新記録の演出に使う、始めた時点の自己ベスト。
+    recordAtStart: state.bestCombo,
+    recordAnnounced: false,
   };
   state.combo = 0;
+  state.fever = createFeverState();
+  exitFever();
+  syncMaxHeat();
   setView("quiz");
   // 学習開始のタップから続けて呼ばれるので、最初の問題の読み上げも
   // ユーザー操作の中で始まる（iOS Safari の再生制限を満たす）。
@@ -4283,16 +4502,6 @@ function advanceAnsweredCard(direction = "right") {
   }
 }
 
-let lastRenderedCombo = 0;
-
-function renderComboPill(changed) {
-  const combo = state.combo;
-  const heat = combo >= 10 ? " combo-pill--blaze" : combo >= 5 ? " combo-pill--hot" : "";
-  const pop = changed ? " combo-pill--pop" : "";
-  const text = `🔥 ${combo} COMBO`;
-  return `<div class="combo-pill${heat}${pop}"><span class="combo-pill-text" data-text="${escapeHtml(text)}">${escapeHtml(text)}</span></div>`;
-}
-
 // 古文単語の重要語句は、本文の短い用例に下線とふりがなを付けたものを表に出す。
 // 下線とふりがなの位置は教材づくりの時点で決めてあるので、ここでは組み立てるだけ。
 function vocabExampleMarkup(item) {
@@ -4411,7 +4620,7 @@ function renderRecallQuiz() {
           ${undoButtonMarkup()}
         </div>
         <div class="quiz-progress-copy"><strong>${session.cursor + 1}</strong> / ${questionTotal}</div>
-        <span class="mode-pill">${TYPE_LABELS[question.item.type]}</span>
+        ${isMaxMode() ? renderMaxHud() : `<span class="mode-pill">${TYPE_LABELS[question.item.type]}</span>`}
       </header>
       <div class="quiz-progress"><span style="width:${progress}%"></span></div>
       <div class="quiz-card-stage recall-card-stage${revealed ? " is-swipe-ready" : ""}">
@@ -4457,8 +4666,6 @@ function renderQuiz() {
     return;
   }
   const answered = session.answered;
-  const comboChanged = state.combo !== lastRenderedCombo;
-  lastRenderedCombo = state.combo;
   const lastResult = session.results.at(-1);
   const questionTotal = sessionQuestionTotal(session);
   const progress = Math.round(((session.cursor + (answered ? 1 : 0)) / questionTotal) * 100);
@@ -4491,11 +4698,10 @@ function renderQuiz() {
         </div>
         <div class="quiz-progress-copy"><strong>${session.cursor + 1}</strong> / ${questionTotal}</div>
         ${isKeyboardInput ? `<div class="quiz-header-tools">
-          <span class="mode-pill">${escapeHtml(question.label)}</span>
+          ${isMaxMode() ? renderMaxHud() : `<span class="mode-pill">${escapeHtml(question.label)}</span>`}
           <button class="character-count-toggle" type="button" data-toggle-character-count aria-pressed="${state.settings.showCharacterCount}">文字数：${state.settings.showCharacterCount ? "表示" : "非表示"}</button>
-        </div>` : `<span class="mode-pill">${escapeHtml(question.label)}</span>`}
+        </div>` : isMaxMode() ? renderMaxHud() : `<span class="mode-pill">${escapeHtml(question.label)}</span>`}
       </header>
-      ${isMaxMode() && state.combo ? renderComboPill(comboChanged) : ""}
       <div class="quiz-progress"><span style="width:${progress}%"></span></div>
       <div class="quiz-card-stage${answered && isSwipeAdvance ? " is-swipe-ready" : ""}">
         <div
@@ -4592,6 +4798,8 @@ async function submitAnswer(
     progressKey: session.progressKey,
     combo: state.combo,
     bestCombo: state.bestCombo,
+    fever: { ...state.fever },
+    recordAnnounced: session.recordAnnounced,
     cursor: session.cursor,
     queue: session.queue.map((entry) => ({ ...entry })),
     deferredReviews: session.deferredReviews.map((review) => ({ dueAt: review.dueAt, entry: { ...review.entry } })),
@@ -4651,6 +4859,9 @@ async function submitAnswer(
     showToast("履歴の保存に失敗しました");
   }
 
+  // フィーバーゲージは見た目だけのものなので、MAXでなくても数えておく（切り替えたときに続きから光る）。
+  const feverChange = nextFeverState(state.fever, { correct });
+  state.fever = { gauge: feverChange.gauge, active: feverChange.active, streak: feverChange.streak };
   let pendingCorrectEffect = null;
   if (correct) {
     state.combo += 1;
@@ -4660,7 +4871,11 @@ async function submitAnswer(
     if (state.combo > state.bestCombo) {
       state.bestCombo = state.combo;
       setMeta("bestCombo", state.bestCombo).catch(console.warn);
-      if (state.combo >= 3) special = "NEW RECORD";
+    }
+    // 新記録の演出は、始めた時点の自己ベストを超えたその1回だけ。
+    if (isRecordMoment({ combo: state.combo, recordAtStart: session.recordAtStart, announced: session.recordAnnounced })) {
+      session.recordAnnounced = true;
+      special = "NEW RECORD";
     }
     pendingCorrectEffect = special;
   } else {
@@ -4681,9 +4896,9 @@ async function submitAnswer(
   // 現在カードを残したまま演出を始め、その後カード退場へつなぐ。
   if (pendingCorrectEffect !== null) {
     const special = pendingCorrectEffect;
-    requestAnimationFrame(() => correctEffect(special));
+    requestAnimationFrame(() => correctEffect(special, { durationMs, fever: feverChange }));
   } else if (isMaxMode()) {
-    requestAnimationFrame(() => runMaxCue(maxCueForAnswer({ correct: false }), { label: "", combo: 0 }));
+    requestAnimationFrame(() => wrongEffect({ fever: feverChange }));
   }
   return { correct, scheduledDelay };
 }
@@ -4772,11 +4987,14 @@ async function undoLastAnswer() {
     persistStudyProgress(undo.progressKey, undo.progress);
   }
   state.combo = undo.combo;
+  state.fever = undo.fever ?? createFeverState();
+  session.recordAnnounced = Boolean(undo.recordAnnounced);
+  document.body.classList.toggle("fx-fever", Boolean(state.fever.active) && isMaxMode());
+  syncMaxHeat();
   if (state.bestCombo !== undo.bestCombo) {
     state.bestCombo = undo.bestCombo;
     setMeta("bestCombo", state.bestCombo).catch(console.warn);
   }
-  lastRenderedCombo = state.combo;
   session.queue = undo.queue;
   session.cursor = undo.cursor;
   session.deferredReviews = undo.deferredReviews;
@@ -5646,7 +5864,7 @@ async function boot() {
       fetch(ENGLISH_DATA_URL),
       fetch("./data/public-items.json?v=2026.09.01"),
       fetch("./data/health-items.json?v=2026.09.01"),
-      fetch("./data/kobun-vocabulary.json?v=2026.11.14"),
+      fetch("./data/kobun-vocabulary.json?v=2026.11.15"),
       loadHistory(),
       getMeta("selectedMode"),
       getMetaObject("settings", DEFAULT_SETTINGS),
@@ -5726,7 +5944,7 @@ async function boot() {
         .catch((error) => console.warn("AI連携の同期に失敗しました", error));
     }
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.11.14").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.11.15").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

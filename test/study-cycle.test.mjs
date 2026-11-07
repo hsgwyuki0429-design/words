@@ -237,7 +237,8 @@ test("undo is reachable from the quiz and from the result panel until a new sess
   assert.match(appSource, /data-undo-answer"\)\) undoLastAnswer\(\)/);
   assert.match(appSource, /undoButtonMarkup\(\)/);
   assert.match(appSource, /data-undo-answer>↶ 直前の回答を取り消す/);
-  assert.match(appSource, /undo: null,\n  \};/);
+  // 新しい学習を始めると、取り消せる回答は無くなる。
+  assert.match(functionSource("beginSession", "startSession"), /undo: null,\n/);
   assert.match(stylesSource, /\.quiz-header-left \{/);
   assert.match(stylesSource, /\.undo-button \{/);
   // スワイプ面ではなくヘッダーに置き、既存ジェスチャーと干渉させない

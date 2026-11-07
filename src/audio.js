@@ -1,4 +1,4 @@
-import { MAX_AUDIO_LIMITS, resolveMaxCue } from "./max-cues.js?v=2026.2.18";
+import { MAX_AUDIO_LIMITS, resolveMaxCue } from "./max-cues.js?v=2026.11.15";
 
 const CORRECT_EVENTS = new Set(["correct", "combo-3", "combo-5", "combo-10", "combo-20", "combo-30"]);
 
@@ -391,6 +391,20 @@ export function createMaxAudioEngine({ getAudioContextClass = defaultAudioContex
         impact(hit, 0.95 * scale);
         chord(notes.slice(0, 4), hit + 0.03, { duration: 0.62, gain: 0.028 * scale, width: 0.65, send: 0.34 });
         if (full) run(notes, hit + 0.16, { spacing: 0.068, duration: 0.24, gain: 0.021 * scale, width: 0.7 });
+        break;
+      case "critical":
+        impact(hit, 0.9 * scale);
+        run(notes.map((frequency) => frequency * 2), hit, { spacing: 0.04, duration: 0.16, gain: 0.02 * scale, width: 0.7 });
+        chord(notes.slice(0, 4).map((frequency) => frequency * 1.5), hit + 0.12, { duration: 0.5, gain: 0.024 * scale, width: 0.6, send: 0.32 });
+        if (full) shimmer(root * 3, hit + 0.18, 0.5, 0.8);
+        break;
+      case "fever-start":
+        riser(root * 0.5, t, Math.max(0.12, plan.timeline.impactAt / 1000), scale);
+        impact(hit, 1.15 * scale);
+        if (full) impact(hit + 0.12, 0.8 * scale);
+        chord(notes.slice(0, 5), hit + 0.01, { duration: 0.9, gain: 0.03 * scale, width: 0.8, send: 0.36 });
+        run(notes.concat(notes.slice().reverse()), hit + 0.1, { spacing: 0.045, duration: 0.2, gain: 0.02 * scale, width: 0.84 });
+        if (full) shimmer(root * 2, hit + 0.3, 0.8, 0.9);
         break;
       case "perfect":
         riser(root * 0.55, t, Math.max(0.09, plan.timeline.impactAt / 1000), 0.8 * scale);

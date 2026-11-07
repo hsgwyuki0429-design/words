@@ -1,4 +1,4 @@
-const APP_VERSION = "2026.11.14";
+const APP_VERSION = "2026.11.15";
 const CACHE_NAME = `words-${APP_VERSION}`;
 const APP_SHELL = [
   "./",
@@ -13,8 +13,8 @@ const APP_SHELL = [
   `./src/ai-link.js?v=${APP_VERSION}`,
   `./src/sync.js?v=${APP_VERSION}`,
   `./src/haptics.js?v=${APP_VERSION}`,
-  "./src/audio.js?v=2026.2.18",
-  "./src/max-cues.js?v=2026.2.18",
+  `./src/audio.js?v=${APP_VERSION}`,
+  `./src/max-cues.js?v=${APP_VERSION}`,
   `./src/logic.js?v=${APP_VERSION}`,
   "./src/logic.js",
   `./src/quiz-gestures.js?v=${APP_VERSION}`,

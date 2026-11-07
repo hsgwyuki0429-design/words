@@ -203,6 +203,61 @@ test("PWA cache ships every versioned MAX effect asset", () => {
   assert.match(serviceWorker, /src\/logic\.js\?v=\$\{APP_VERSION\}/);
   assert.match(serviceWorker, /src\/quiz-gestures\.js\?v=\$\{APP_VERSION\}/);
   assert.match(serviceWorker, /src\/storage\.js\?v=\$\{APP_VERSION\}/);
-  assert.match(serviceWorker, /src\/audio\.js\?v=2026\.2\.18/);
-  assert.match(serviceWorker, /src\/max-cues\.js\?v=2026\.2\.18/);
+  // 演出の音と設計も、ほかの部品と同じバージョンでそろえて入れ替える。
+  assert.match(serviceWorker, /src\/audio\.js\?v=\$\{APP_VERSION\}/);
+  assert.match(serviceWorker, /src\/max-cues\.js\?v=\$\{APP_VERSION\}/);
+});
+
+test("フィーバー：正解でゲージがたまり、満タンで入り、間違えると終わる", async () => {
+  const { MAX_FEVER_GOAL, createFeverState, nextFeverState } = await import("../src/max-cues.js");
+  let fever = createFeverState();
+  for (let index = 1; index < MAX_FEVER_GOAL; index += 1) {
+    fever = nextFeverState(fever, { correct: true });
+    assert.equal(fever.active, false);
+    assert.equal(fever.gauge, index);
+  }
+  fever = nextFeverState(fever, { correct: true });
+  assert.equal(fever.active, true);
+  assert.equal(fever.entered, true, "満タンになった回答で入る");
+  fever = nextFeverState(fever, { correct: true });
+  assert.equal(fever.entered, false, "入ったあとは入り直さない");
+  assert.equal(fever.active, true);
+  fever = nextFeverState(fever, { correct: false });
+  assert.deepEqual([fever.active, fever.gauge, fever.ended], [false, 0, true]);
+  assert.equal(nextFeverState(createFeverState(), { correct: false }).ended, false, "入っていなければ終わりもない");
+});
+
+test("クリティカルは、ときどき出る。速い答えとフィーバー中は出やすく、コンボの節目には重ねない", async () => {
+  const { criticalChance, rollCritical, speedRating } = await import("../src/max-cues.js");
+  assert.equal(speedRating(1200), "lightning");
+  assert.equal(speedRating(2500), "fast");
+  assert.equal(speedRating(9000), null);
+  assert.equal(speedRating(undefined), null);
+  assert.ok(criticalChance({ durationMs: 9000 }) < criticalChance({ durationMs: 2500 }));
+  assert.ok(criticalChance({ durationMs: 2500 }) < criticalChance({ durationMs: 1200 }));
+  assert.ok(criticalChance({ durationMs: 1200, fever: true }) <= 0.3, "上限は3割");
+  assert.equal(rollCritical({ durationMs: 9000, random: () => 0.05 }), true);
+  assert.equal(rollCritical({ durationMs: 9000, random: () => 0.5 }), false);
+  assert.equal(rollCritical({ combo: 10, random: () => 0 }), false, "節目は節目の演出だけ");
+});
+
+test("新記録の演出は、始めた時点の自己ベストを超えた1回だけ", async () => {
+  const { isRecordMoment, heatLevel } = await import("../src/max-cues.js");
+  assert.equal(isRecordMoment({ combo: 9, recordAtStart: 8 }), true);
+  assert.equal(isRecordMoment({ combo: 10, recordAtStart: 8 }), false, "超えた1回だけ");
+  assert.equal(isRecordMoment({ combo: 9, recordAtStart: 8, announced: true }), false);
+  assert.equal(isRecordMoment({ combo: 3, recordAtStart: 2 }), false, "記録が小さいうちは毎回にならないよう出さない");
+  assert.deepEqual([0, 3, 5, 10, 20, 30, 99].map(heatLevel), [0, 1, 2, 3, 4, 5, 5]);
+});
+
+test("MAXの演出は見た目だけで、HUD・ほめ言葉・吸い込む光・フィーバーを画面に出す", () => {
+  assert.match(appSource, /function renderMaxHud\(\)/);
+  assert.match(appSource, /isMaxMode\(\) \? renderMaxHud\(\) : `<span class="mode-pill">/);
+  assert.match(appSource, /spawnFloatingText\(origin/);
+  assert.match(appSource, /spawnCollectOrbs\(origin/);
+  assert.match(appSource, /fxTimeout\(enterFever, 280\)/);
+  assert.match(appSource, /runMaxCue\("critical"/);
+  // フィーバーは回答の前の状態ごと取り消せる
+  assert.match(appSource, /fever: \{ \.\.\.state\.fever \},/);
+  assert.match(appSource, /state\.fever = undo\.fever \?\? createFeverState\(\);/);
 });

@@ -170,6 +170,24 @@ export const MAX_CUE_DEFINITIONS = Object.freeze({
     converge: 64, beams: 5, aura: 6, zoom: 0.066, shake: 7,
     flash: 0.6, freeze: 72, stereo: 0.86, tail: 1.65, layers: 15,
   }),
+  // まれに出る「会心の一撃」。いつ来るか分からないごほうびが、続けたくなる気持ちを作る。
+  critical: cue({
+    power: 3, duration: 900, anticipationAt: 0, hitStopAt: 0, impactAt: 40,
+    flashAt: 40, calloutAt: 30, particleBurstAt: 40, fanfareAt: 40,
+    palette: "gold", callout: "slam", emblem: "✦ CRITICAL ✦", particles: 90,
+    rings: 3, rays: 30, coins: 36, stars: 22, prisms: 18, shower: 26,
+    beams: 1, aura: 3, zoom: 0.05, shake: 6, flash: 0.42, freeze: 70,
+    stereo: 0.6, tail: 0.6, layers: 7,
+  }),
+  // フィーバーに入った瞬間。ゲージを満たしたことへの大きなごほうび。
+  "fever-start": cue({
+    power: 4, duration: 1300, anticipationAt: 0, hitStopAt: 60, impactAt: 150,
+    flashAt: 150, calloutAt: 140, particleBurstAt: 150, fanfareAt: 150,
+    palette: "jackpot", callout: "jackpot", emblem: "🔥 FEVER 🔥", particles: 170,
+    rings: 4, rays: 48, coins: 30, stars: 34, prisms: 46, shower: 40,
+    converge: 48, beams: 3, aura: 5, zoom: 0.065, shake: 7,
+    flash: 0.6, freeze: 70, stereo: 0.78, tail: 0.95, layers: 10,
+  }),
   wrong: cue({
     power: 0, duration: 220, palette: "muted", callout: "none", emblem: "",
     particles: 6, rings: 1, rays: 0, aura: 0, zoom: -0.006, shake: 0,
@@ -266,4 +284,79 @@ export function shouldPlayMaxSound(settings = {}, { hidden = false, audioAvailab
     && !hidden
     && audioAvailable,
   );
+}
+
+
+// ---------------------------------------------------------------------------
+// ドーパミンの仕組み（すべて見た目だけ。正誤・周回・習得には一切影響しない）
+//
+//   コンボ   … 続けて正解した数。熱（色と明るさ）が上がっていく
+//   フィーバー … 正解ごとにゲージがたまり、満タンでフィーバーに入る。間違えると終わる
+//   クリティカル … ときどき、予告なく出る大きなごほうび。速く答えるほど出やすい
+//   速さ     … すばやく答えると「LIGHTNING」「FAST」の文字が出る
+// ---------------------------------------------------------------------------
+
+export const MAX_FEVER_GOAL = 8;
+
+export function createFeverState() {
+  return Object.freeze({ gauge: 0, active: false, streak: 0 });
+}
+
+/** 1問答えたあとのフィーバーの状態。entered / ended は、その回答で切り替わったか。 */
+export function nextFeverState(current = createFeverState(), { correct = false, goal = MAX_FEVER_GOAL } = {}) {
+  const gauge = Math.max(0, Math.min(goal, Number(current?.gauge) || 0));
+  const active = Boolean(current?.active);
+  if (!correct) {
+    return Object.freeze({ gauge: 0, active: false, streak: 0, entered: false, ended: active });
+  }
+  if (active) {
+    return Object.freeze({ gauge: goal, active: true, streak: (Number(current?.streak) || 0) + 1, entered: false, ended: false });
+  }
+  const filled = gauge + 1;
+  if (filled >= goal) {
+    return Object.freeze({ gauge: goal, active: true, streak: 0, entered: true, ended: false });
+  }
+  return Object.freeze({ gauge: filled, active: false, streak: 0, entered: false, ended: false });
+}
+
+/** 答えるまでの時間からの評価。速いほど派手な文字が出る。 */
+export function speedRating(durationMs) {
+  const value = Number(durationMs);
+  if (!Number.isFinite(value) || value <= 0) return null;
+  if (value < 1800) return "lightning";
+  if (value < 3500) return "fast";
+  return null;
+}
+
+/** クリティカルが出る確率。基本は1割、速い答えとフィーバー中は上がる（上限3割）。 */
+export function criticalChance({ durationMs = null, fever = false } = {}) {
+  const rating = speedRating(durationMs);
+  const chance = 0.1 + (rating === "lightning" ? 0.1 : rating === "fast" ? 0.05 : 0) + (fever ? 0.08 : 0);
+  return Math.min(0.3, chance);
+}
+
+export function rollCritical({ durationMs = null, fever = false, combo = 0, random = Math.random } = {}) {
+  // コンボの節目（3・5・10…）は、それ自体が大きな演出なので重ねない。
+  if ([3, 5, 10, 20, 30].includes(Number(combo))) return false;
+  return random() < criticalChance({ durationMs, fever });
+}
+
+/** コンボの熱。0（平常）〜5（最高）。背景の色合いと明るさに使う。 */
+export function heatLevel(combo = 0) {
+  const value = Math.max(0, Number(combo) || 0);
+  if (value >= 30) return 5;
+  if (value >= 20) return 4;
+  if (value >= 10) return 3;
+  if (value >= 5) return 2;
+  if (value >= 3) return 1;
+  return 0;
+}
+
+/**
+ * 「NEW RECORD」を出す瞬間。学習を始めた時点の自己ベストを超えた、その1回だけ。
+ * 記録がまだ小さい（3未満）うちは、毎回が新記録になってしまうので出さない。
+ */
+export function isRecordMoment({ combo = 0, recordAtStart = 0, announced = false } = {}) {
+  const best = Math.max(0, Number(recordAtStart) || 0);
+  return !announced && best >= 3 && Number(combo) === best + 1;
 }

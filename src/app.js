@@ -1,5 +1,5 @@
-import { createHaptics } from "./haptics.js?v=2026.11.15";
-import { createKobunController } from "./kobun.js?v=2026.11.15";
+import { createHaptics } from "./haptics.js?v=2026.11.16";
+import { createKobunController } from "./kobun.js?v=2026.11.16";
 import {
   ALL_MODES,
   ALPHABET_KEYBOARD_ROWS,
@@ -74,8 +74,8 @@ import {
   summarizeSession,
   summarizeCycleMeter,
   toggleSetupValue,
-} from "./logic.js?v=2026.11.15";
-import { createMaxAudioEngine } from "./audio.js?v=2026.11.15";
+} from "./logic.js?v=2026.11.16";
+import { createMaxAudioEngine } from "./audio.js?v=2026.11.16";
 import {
   MAX_FEVER_GOAL,
   MAX_TIMELINE_PHASES,
@@ -90,7 +90,7 @@ import {
   resolveMaxCue,
   scaledVisualPlan,
   shouldPlayMaxSound,
-} from "./max-cues.js?v=2026.11.15";
+} from "./max-cues.js?v=2026.11.16";
 import {
   clearAllData,
   getMeta,
@@ -102,7 +102,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.11.15";
+} from "./storage.js?v=2026.11.16";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -110,7 +110,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.11.15";
+} from "./quiz-gestures.js?v=2026.11.16";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
@@ -119,7 +119,7 @@ import {
   normalizeSpeechRate,
   normalizeSpeechVoiceURI,
   voiceKey,
-} from "./speech.js?v=2026.11.15";
+} from "./speech.js?v=2026.11.16";
 import {
   AI_LINK_JOURNAL_KEY,
   AI_LINK_META_KEY,
@@ -135,7 +135,7 @@ import {
   isAiLinkConfigured,
   mcpUrlFor,
   normalizeAiLinkConfig,
-} from "./ai-link.js?v=2026.11.15";
+} from "./ai-link.js?v=2026.11.16";
 import {
   DEFAULT_DEVICE_SYNC,
   DEVICE_SYNC_META_KEY,
@@ -152,13 +152,13 @@ import {
   syncStateLabel,
   transferFileName,
   unsentEntries,
-} from "./sync.js?v=2026.11.15";
+} from "./sync.js?v=2026.11.16";
 import {
   applyThemePreference,
   normalizeThemePreference,
   readStoredThemePreference,
   watchSystemTheme,
-} from "./theme.js?v=2026.11.15";
+} from "./theme.js?v=2026.11.16";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -2187,7 +2187,7 @@ function renderSettings() {
    --------------------------------------------------------------------------- */
 
 const REDUCED_MOTION_QUERY = matchMedia("(prefers-reduced-motion: reduce)");
-const PARTICLE_COLORS = ["#70d7ff", "#ffffff", "#9b7cff", "#ffd86b", "#ff5db1"];
+const PARTICLE_COLORS = ["#ffffff", "#ffd45f", "#ffb020", "#ff5a3c", "#9fd0ff"];
 
 const fx = {
   context: null,
@@ -2824,8 +2824,9 @@ function renderMaxCallout(label, detail = "", variant = "pop", options = {}) {
   callout.style.setProperty("--max-callout-duration", `${duration}ms`);
   callout.innerHTML = `
     <div class="max-callout-inner" data-label="${escapeHtml(label)}">
+      <span class="max-callout-band" aria-hidden="true"></span>
       ${options.emblem ? `<span class="max-callout-emblem" aria-hidden="true">${escapeHtml(options.emblem)}</span>` : ""}
-      <span class="max-callout-label">${escapeHtml(label)}</span>
+      <span class="max-callout-label">${escapeHtml(label)}<span class="max-callout-label-fill" aria-hidden="true">${escapeHtml(label)}</span></span>
       ${detail ? `<small>${escapeHtml(detail)}</small>` : ""}
       <span class="max-callout-shine" aria-hidden="true"></span>
     </div>`;
@@ -2876,8 +2877,22 @@ function applyCueHitStop(plan, visual) {
   if (plan.event === "max-enter") triggerScreenInvert(54);
 }
 
+/** パチンコの当たりのような、短い明滅を数回くり返す光。 */
+function triggerStrobe(pulses = 3, strength = 0.7) {
+  if (effectsLevel() !== "full" || !elements.fxFlash) return;
+  const frames = [{ opacity: 0 }];
+  for (let index = 0; index < pulses; index += 1) {
+    const base = index / pulses;
+    frames.push({ opacity: strength, offset: base + 0.12 / pulses });
+    frames.push({ opacity: 0, offset: base + 0.7 / pulses });
+  }
+  frames.push({ opacity: 0 });
+  fxAnimate(elements.fxFlash, frames, { duration: 130 * pulses, easing: "linear" });
+}
+
 function applyCueFlash(plan, visual) {
-  if (visual.flash > 0) triggerScreenFlash(visual.flash, 220 + plan.power * 42);
+  if (plan.power >= 4 || plan.event === "critical") triggerStrobe(plan.power >= 4 ? 4 : 3, Math.min(0.8, visual.flash + 0.2));
+  else if (visual.flash > 0) triggerScreenFlash(visual.flash, 220 + plan.power * 42);
   if (visual.palette === "gold" || ["perfect", "sss-master", "combo-30"].includes(plan.event)) {
     fxAnimate(elements.fxGoldFrame, [
       { opacity: 0 },
@@ -3013,15 +3028,17 @@ function installMaxEffectsLab() {
   const samples = Object.freeze({
     "max-enter": { combo: 0, label: "MAX MODE", detail: "READY" },
     correct: { combo: 1, label: "CORRECT" },
-    "combo-3": { combo: 3, label: "3 COMBO", detail: "FLOW START" },
-    "combo-5": { combo: 5, label: "5 COMBO", detail: "RISING" },
-    "combo-10": { combo: 10, label: "10 COMBO", detail: "BLAZE" },
-    "combo-20": { combo: 20, label: "20 COMBO", detail: "JACKPOT NEAR" },
-    "combo-30": { combo: 30, label: "UNSTOPPABLE", detail: "30 COMBO" },
-    "new-record": { combo: 12, label: "NEW RECORD", detail: "12 COMBO" },
-    "weakness-destroyed": { combo: 8, label: "WEAKNESS DESTROYED", detail: "BREAK THROUGH" },
-    perfect: { combo: 20, label: "PERFECT", detail: "20 / 20" },
-    "sss-master": { combo: 30, label: "SSS MASTER", detail: "30 / 30" },
+    "combo-3": { combo: 3, label: "チャンス!", detail: "3連" },
+    "combo-5": { combo: 5, label: "激アツ!!", detail: "5連" },
+    "combo-10": { combo: 10, label: "10連チャン", detail: "超激アツ" },
+    "combo-20": { combo: 20, label: "20連チャン", detail: "止まらない" },
+    "combo-30": { combo: 30, label: "全回転!!", detail: "30連" },
+    "new-record": { combo: 12, label: "新記録!!", detail: "12連" },
+    "weakness-destroyed": { combo: 8, label: "苦手撃破!!", detail: "BREAK THROUGH" },
+    critical: { combo: 4, label: "大当たり!!", detail: "会心の一撃" },
+    "fever-start": { combo: 8, label: "確変突入!!", detail: "正解するたび、光が倍に" },
+    perfect: { combo: 20, label: "全問正解!!", detail: "20 / 20" },
+    "sss-master": { combo: 30, label: "SSS完全制覇", detail: "30 / 30" },
     wrong: { combo: 0, label: "" },
   });
   window.__WORDS_MAX_EFFECTS_LAB__ = Object.freeze({
@@ -3168,7 +3185,7 @@ function resetMaxEffects({ keepAmbience = false, keepAudio = false } = {}) {
 // ドーパミンの演出（MAXのときだけ。見た目と音だけで、学習の記録には関わらない）
 // ---------------------------------------------------------------------------
 
-const PRAISE_WORDS = ["NICE!", "GOOD!", "GREAT!", "AWESOME!", "INCREDIBLE!", "GODLIKE!"];
+const PRAISE_WORDS = ["ナイス!", "いいね!", "グレート!", "激アツ!", "超激アツ!!", "神!!"];
 
 /** コンボの熱を背景と画面の色合いへ伝える（0〜5）。 */
 function syncMaxHeat() {
@@ -3177,14 +3194,19 @@ function syncMaxHeat() {
   document.body.style.setProperty("--heat", (level / 5).toFixed(2));
 }
 
-/** 学習画面の右上：コンボの数と、フィーバーまでのゲージ。 */
+/** 学習画面の右上：連（コンボ）の数と、確変（フィーバー）までの保留玉。
+    保留玉はたまるほど 青 → 緑 → 赤 → 金 へ色が上がる。 */
 function renderMaxHud() {
   const fever = state.fever;
-  const percent = fever.active ? 100 : Math.round((fever.gauge / MAX_FEVER_GOAL) * 100);
+  const filled = fever.active ? MAX_FEVER_GOAL : fever.gauge;
+  const dots = Array.from({ length: MAX_FEVER_GOAL }, (unused, index) => {
+    const stage = index < 2 ? "blue" : index < 4 ? "green" : index < 6 ? "red" : "gold";
+    return `<i class="${index < filled ? `is-on is-${fever.active ? "gold" : stage}` : ""}"></i>`;
+  }).join("");
   return `
-    <div class="max-hud${fever.active ? " is-fever" : ""}" data-heat="${heatLevel(state.combo)}" aria-label="${state.combo}コンボ${fever.active ? "、フィーバー中" : `、フィーバーまであと${MAX_FEVER_GOAL - fever.gauge}問`}">
-      <span class="max-hud-count"><strong>${state.combo}</strong><small>${fever.active ? "FEVER" : "COMBO"}</small></span>
-      <span class="max-hud-fever" aria-hidden="true"><i style="width:${percent}%"></i></span>
+    <div class="max-hud${fever.active ? " is-fever" : ""}" data-heat="${heatLevel(state.combo)}" aria-label="${state.combo}連${fever.active ? "、確変中" : `、確変まであと${MAX_FEVER_GOAL - fever.gauge}問`}">
+      <span class="max-hud-count"><strong>${state.combo}</strong><small>${fever.active ? "確変" : "連"}</small></span>
+      <span class="max-hud-fever" aria-hidden="true">${dots}</span>
     </div>`;
 }
 
@@ -3283,7 +3305,7 @@ function bounceCorrectTarget() {
 
 function enterFever() {
   document.body.classList.add("fx-fever");
-  runMaxCue("fever-start", { combo: state.combo, label: "FEVER!!", detail: "正解するたび、光が倍に" });
+  runMaxCue("fever-start", { combo: state.combo, label: "確変突入!!", detail: "正解するたび、光が倍に" });
   updateMaxHud({ pop: true });
 }
 
@@ -3297,13 +3319,13 @@ function correctEffect(special = "", { durationMs = null, fever = null } = {}) {
   const event = maxCueForAnswer({ correct: true, combo: state.combo, special });
   const copy = {
     correct: ["", ""],
-    "combo-3": [`${state.combo} COMBO`, "FLOW START"],
-    "combo-5": [`${state.combo} COMBO`, "RISING"],
-    "combo-10": [`${state.combo} COMBO`, "BLAZE"],
-    "combo-20": [`${state.combo} COMBO`, "JACKPOT NEAR"],
-    "combo-30": ["UNSTOPPABLE", `${state.combo} COMBO`],
-    "new-record": ["NEW RECORD", `${state.combo} COMBO`],
-    "weakness-destroyed": ["WEAKNESS DESTROYED", "BREAK THROUGH"],
+    "combo-3": ["チャンス!", `${state.combo}連`],
+    "combo-5": ["激アツ!!", `${state.combo}連`],
+    "combo-10": [`${state.combo}連チャン`, "超激アツ"],
+    "combo-20": [`${state.combo}連チャン`, "止まらない"],
+    "combo-30": ["全回転!!", `${state.combo}連`],
+    "new-record": ["新記録!!", `${state.combo}連`],
+    "weakness-destroyed": ["苦手撃破!!", "BREAK THROUGH"],
   }[event] ?? ["", ""];
   const plan = runMaxCue(event, { combo: state.combo, label: copy[0], detail: copy[1] });
   const origin = impactOrigin();
@@ -3312,15 +3334,15 @@ function correctEffect(special = "", { durationMs = null, fever = null } = {}) {
   // ほめ言葉は、速さの評価を優先し、なければコンボの熱で強くしていく。
   const rating = speedRating(durationMs);
   spawnFloatingText(origin, rating === "lightning"
-    ? { label: "⚡ LIGHTNING", sub: feverOn ? "FEVER ×2" : "", tone: "lightning" }
+    ? { label: "⚡神速", sub: feverOn ? "確変 ×2" : "", tone: "lightning" }
     : rating === "fast"
-      ? { label: "FAST!", sub: feverOn ? "FEVER ×2" : "", tone: "fast" }
-      : { label: PRAISE_WORDS[heatLevel(state.combo)], sub: feverOn ? "FEVER ×2" : "" });
+      ? { label: "速い!", sub: feverOn ? "確変 ×2" : "", tone: "fast" }
+      : { label: PRAISE_WORDS[heatLevel(state.combo)], sub: feverOn ? "確変 ×2" : "" });
   spawnCollectOrbs(origin, { count: feverOn ? 14 : 7, palette: plan?.visual?.colors ?? PARTICLE_COLORS });
   if (fever?.entered) {
     fxTimeout(enterFever, 280);
   } else if ((plan?.power ?? 0) < 4 && rollCritical({ durationMs, fever: feverOn, combo: state.combo })) {
-    fxTimeout(() => runMaxCue("critical", { combo: state.combo, label: "CRITICAL!", detail: "会心の一撃" }), 150);
+    fxTimeout(() => runMaxCue("critical", { combo: state.combo, label: "大当たり!!", detail: "会心の一撃" }), 150);
   }
 }
 
@@ -5370,7 +5392,7 @@ function renderSessionComplete() {
     requestAnimationFrame(() => runMaxCue(finale, {
       combo: state.combo,
       power: 4,
-      label: sssOnly ? "SSS MASTER" : "PERFECT",
+      label: sssOnly ? "SSS完全制覇" : "全問正解!!",
       detail: `${summary.correct} / ${summary.total}`,
     }));
   }
@@ -5864,7 +5886,7 @@ async function boot() {
       fetch(ENGLISH_DATA_URL),
       fetch("./data/public-items.json?v=2026.09.01"),
       fetch("./data/health-items.json?v=2026.09.01"),
-      fetch("./data/kobun-vocabulary.json?v=2026.11.15"),
+      fetch("./data/kobun-vocabulary.json?v=2026.11.16"),
       loadHistory(),
       getMeta("selectedMode"),
       getMetaObject("settings", DEFAULT_SETTINGS),
@@ -5944,7 +5966,7 @@ async function boot() {
         .catch((error) => console.warn("AI連携の同期に失敗しました", error));
     }
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.11.15").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.11.16").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

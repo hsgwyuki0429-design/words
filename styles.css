@@ -4647,23 +4647,23 @@ body.fx-max-entrance .fx-invert { mix-blend-mode: difference; }
 }
 .max-callout--pop .max-callout-inner { animation: max-callout-pop var(--max-callout-duration, 680ms) cubic-bezier(.16,.9,.2,1) both; }
 .max-callout--pop .max-callout-inner::before {
-  color: #ff2d6f;
+  color: #ff3b2f;
   mix-blend-mode: screen;
   animation: max-ghost-left 300ms ease-out both;
 }
 .max-callout--pop .max-callout-inner::after {
-  color: #26e4ff;
+  color: #ffd45f;
   mix-blend-mode: screen;
   animation: max-ghost-right 300ms ease-out both;
 }
 .max-callout--slam .max-callout-inner { animation: max-callout-slam var(--max-callout-duration, 1000ms) cubic-bezier(.16,.86,.2,1) both; }
 .max-callout--slam .max-callout-inner::before {
-  color: #ff2d6f;
+  color: #ff3b2f;
   mix-blend-mode: screen;
   animation: max-ghost-left 420ms 150ms ease-out both;
 }
 .max-callout--slam .max-callout-inner::after {
-  color: #26e4ff;
+  color: #ffd45f;
   mix-blend-mode: screen;
   animation: max-ghost-right 420ms 150ms ease-out both;
 }
@@ -4698,25 +4698,8 @@ body.fx-max-entrance .fx-invert { mix-blend-mode: difference; }
 .max-callout--finale .max-callout-shine,
 .max-callout--sss .max-callout-shine,
 .max-callout--royal .max-callout-shine { animation: max-callout-shine 620ms 180ms ease-in-out both; }
-.max-callout--cue-combo-5 .max-callout-label,
-.max-callout--cue-combo-20 .max-callout-label,
-.max-callout--cue-combo-30 .max-callout-label,
-.max-callout--cue-new-record .max-callout-label,
-.max-callout--cue-perfect .max-callout-label {
-  background-image: linear-gradient(180deg, #fff 0 18%, #fff7c2 30%, #ffd45f 56%, #fff 72%, #ffae36 100%);
-  -webkit-text-stroke-color: rgba(255,246,194,.9);
-  filter: drop-shadow(0 3px 0 #9a5210) drop-shadow(0 8px 0 rgba(48,19,2,.62)) drop-shadow(0 0 26px rgba(255,199,63,.86));
-}
-.max-callout--cue-sss-master .max-callout-label {
-  background-image: linear-gradient(115deg, #fff 0%, #ffd865 18%, #ff9ee4 34%, #a98cff 51%, #72e8ff 68%, #fff 83%, #ffd865 100%);
-  -webkit-text-stroke-color: rgba(255,255,255,.92);
-  filter: drop-shadow(0 3px 0 #59409c) drop-shadow(0 8px 0 rgba(22,10,54,.72)) drop-shadow(0 0 34px rgba(201,157,255,.94));
-}
 .max-callout--cue-weakness-destroyed .max-callout-label { letter-spacing: -.075em; }
-.max-callout--cue-perfect,
-.max-callout--cue-sss-master { place-items: start center; padding-top: max(8vh, calc(env(safe-area-inset-top) + 34px)); }
-.max-callout--cue-perfect::before,
-.max-callout--cue-sss-master::before { background: radial-gradient(circle at 50% 22%, rgba(23,18,52,.5), rgba(6,8,26,.14) 46%, transparent 72%); }
+
 
 @keyframes max-callout-pop {
   0% { opacity: 0; transform: scale(.42) translate3d(0, 8px, 0); filter: blur(6px); }
@@ -4802,7 +4785,7 @@ body.max-mode.fx-max-entrance.quiz-active .question-card {
 /* RGB SPLIT は最重要の一瞬だけ。常時は適用しない。 */
 body.fx-rgb .question-card h1,
 body.fx-rgb .max-hud-count strong {
-  text-shadow: -3px 0 rgba(255, 45, 111, .85), 3px 0 rgba(38, 228, 255, .85);
+  text-shadow: -3px 0 rgba(255, 59, 47, .85), 3px 0 rgba(255, 212, 95, .85);
 }
 
 
@@ -4926,12 +4909,28 @@ body.max-mode.quiz-active .quiz-card-flight {
   color: var(--text);
 }
 
+/* 熱の色はパチンコの期待度の段階：青 → 緑 → 赤 → 金。 */
+body { --heat-color: #3b86ff; --heat-glow: rgba(59, 134, 255, 0.5); }
+body[data-heat="1"] { --heat-color: #19d36f; --heat-glow: rgba(25, 211, 111, 0.5); }
+body[data-heat="2"] { --heat-color: #ff2f2a; --heat-glow: rgba(255, 47, 42, 0.55); }
+body[data-heat="3"],
+body[data-heat="4"] { --heat-color: #ffb020; --heat-glow: rgba(255, 176, 32, 0.6); }
+body[data-heat="5"] { --heat-color: #ffd45f; --heat-glow: rgba(255, 212, 95, 0.7); }
+
 body.max-mode.quiz-active {
   background:
-    radial-gradient(120% 70% at 50% -10%, hsl(calc(232 + var(--heat, 0) * 70) 70% 22%), transparent 70%),
-    radial-gradient(90% 60% at 50% 110%, hsl(calc(300 - var(--heat, 0) * 260) 80% 18%), transparent 70%),
-    #05060f;
-  transition: background 600ms ease;
+    radial-gradient(110% 55% at 50% 112%, var(--heat-glow), transparent 70%),
+    radial-gradient(120% 70% at 50% -10%, #1a1d3a, transparent 70%),
+    #06060c;
+  transition: background 500ms ease;
+}
+
+/* 確変中は、赤と金の舞台になる。 */
+body.max-mode.fx-fever.quiz-active {
+  background:
+    radial-gradient(110% 60% at 50% 110%, rgba(255, 176, 32, 0.6), transparent 70%),
+    radial-gradient(120% 80% at 50% -10%, #5a0008, transparent 75%),
+    #120004;
 }
 
 body.max-mode.quiz-active .question-card,
@@ -4974,11 +4973,30 @@ body.max-mode.quiz-active .alphabet-key--submit {
   background: #ffffff;
 }
 
-/* 背景：コンボの熱で色が移る光と、奥へ流れるネオンの床。 */
-body.max-mode .fx-backdrop.is-on .fx-aurora,
-body.max-mode .fx-backdrop.is-on .fx-orbit {
-  filter: hue-rotate(calc(var(--heat, 0) * -150deg)) saturate(calc(1 + var(--heat, 0) * 0.6));
-  transition: filter 700ms ease;
+/* 背景：熱の色で光る床と、金と白の光の粒。虹色は使わない。 */
+body.max-mode .fx-aurora {
+  background:
+    radial-gradient(44% 30% at 20% 18%, var(--heat-glow), transparent 70%),
+    radial-gradient(40% 30% at 82% 26%, rgba(255, 212, 95, 0.32), transparent 72%),
+    radial-gradient(60% 40% at 50% 92%, var(--heat-glow), transparent 74%);
+  transition: background 500ms ease;
+}
+
+body.max-mode .fx-orbit {
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(255, 212, 95, 0.4) 30deg,
+    transparent 80deg,
+    rgba(255, 255, 255, 0.28) 170deg,
+    transparent 230deg,
+    rgba(255, 176, 32, 0.32) 300deg,
+    transparent 360deg
+  );
+}
+
+body.max-mode .fx-motes {
+  filter: sepia(1) saturate(4) hue-rotate(-12deg);
 }
 
 .fx-grid {
@@ -4987,8 +5005,8 @@ body.max-mode .fx-backdrop.is-on .fx-orbit {
   left: -60%;
   height: 46%;
   background-image:
-    linear-gradient(hsla(calc(220 - var(--heat, 0) * 190), 100%, 70%, 0.55) 1.5px, transparent 1.5px),
-    linear-gradient(90deg, hsla(calc(220 - var(--heat, 0) * 190), 100%, 70%, 0.55) 1.5px, transparent 1.5px);
+    linear-gradient(var(--heat-color) 1.5px, transparent 1.5px),
+    linear-gradient(90deg, var(--heat-color) 1.5px, transparent 1.5px);
   background-size: 54px 54px;
   transform: perspective(260px) rotateX(64deg);
   transform-origin: 50% 100%;
@@ -5011,14 +5029,24 @@ body.max-mode .fx-backdrop.is-on.is-quiz .fx-grid {
   to { background-position: 0 54px, 0 0; }
 }
 
-/* フィーバー：床は速く流れ、色が回り、カードの縁が光り続ける。 */
-body.max-mode.fx-fever .fx-backdrop.is-on {
-  animation: fx-fever-hue 3.2s linear infinite;
+/* 確変：赤い集中線が回り、床は速く流れ、カードの縁が金と赤で明滅する。 */
+body.max-mode.fx-fever .fx-backdrop.is-on .fx-orbit {
+  top: 50%;
+  left: 50%;
+  width: 180vmax;
+  height: 180vmax;
+  margin: -90vmax 0 0 -90vmax;
+  opacity: 0.75;
+  background: repeating-conic-gradient(from 0deg, rgba(255, 46, 30, 0.55) 0deg 5deg, transparent 5deg 12deg);
+  -webkit-mask-image: radial-gradient(circle, transparent 6%, #000 22%, #000 60%, transparent 72%);
+  mask-image: radial-gradient(circle, transparent 6%, #000 22%, #000 60%, transparent 72%);
+  animation: fx-orbit-spin 9s linear infinite;
 }
 
 body.max-mode.fx-fever .fx-backdrop.is-on .fx-grid {
+  --heat-color: #ffb020;
   opacity: 0.95;
-  animation-duration: 0.55s;
+  animation-duration: 0.5s;
 }
 
 body.max-mode.fx-fever .fx-backdrop.is-on .fx-aurora { opacity: 1; }
@@ -5026,18 +5054,12 @@ body.max-mode.fx-fever .fx-backdrop.is-on .fx-motes { opacity: 1; animation-dura
 
 body.max-mode.fx-fever.quiz-active .question-card,
 body.max-mode.fx-fever.quiz-active .public-recall-card {
-  animation: fx-fever-edge 1.6s linear infinite;
-}
-
-@keyframes fx-fever-hue {
-  from { filter: hue-rotate(0deg); }
-  to { filter: hue-rotate(360deg); }
+  animation: fx-fever-edge 0.9s steps(1, end) infinite;
 }
 
 @keyframes fx-fever-edge {
-  0%, 100% { box-shadow: 0 0 0 2px #ff5db1, 0 0 34px rgba(255, 93, 177, 0.55), 0 24px 70px rgba(4, 6, 30, 0.55); }
-  33% { box-shadow: 0 0 0 2px #72ddff, 0 0 34px rgba(114, 221, 255, 0.55), 0 24px 70px rgba(4, 6, 30, 0.55); }
-  66% { box-shadow: 0 0 0 2px #ffd45f, 0 0 34px rgba(255, 212, 95, 0.55), 0 24px 70px rgba(4, 6, 30, 0.55); }
+  0%, 100% { box-shadow: 0 0 0 2px #ffd45f, 0 0 30px rgba(255, 212, 95, 0.6), 0 24px 70px rgba(4, 6, 30, 0.55); }
+  50% { box-shadow: 0 0 0 2px #ff2f2a, 0 0 30px rgba(255, 47, 42, 0.6), 0 24px 70px rgba(4, 6, 30, 0.55); }
 }
 
 /* HUD：コンボの数とフィーバーゲージ（学習画面の右上）。 */
@@ -5073,29 +5095,31 @@ body.max-mode.fx-fever.quiz-active .public-recall-card {
   letter-spacing: 0.14em;
 }
 
+/* 確変までの保留玉。たまるほど 青 → 緑 → 赤 → 金。 */
 .max-hud-fever {
-  display: block;
-  overflow: hidden;
-  width: 76px;
-  height: 6px;
-  background: rgba(255, 255, 255, 0.14);
-  border-radius: 999px;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  display: flex;
+  gap: 3px;
 }
 
 .max-hud-fever i {
-  display: block;
-  height: 100%;
-  background: linear-gradient(90deg, #5b8cff, #b07bff 50%, #ff5db1);
-  border-radius: inherit;
-  box-shadow: 0 0 10px rgba(176, 123, 255, 0.8);
-  transition: width 320ms cubic-bezier(.2, .9, .25, 1);
+  width: 7px;
+  height: 7px;
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  transition: background-color 200ms ease, box-shadow 200ms ease;
 }
 
-.max-hud[data-heat="2"] .max-hud-count strong,
-.max-hud[data-heat="3"] .max-hud-count strong { text-shadow: 0 0 16px rgba(255, 120, 210, 0.9), 0 2px 0 rgba(70, 10, 60, 0.9); }
+.max-hud-fever i.is-on.is-blue { background: radial-gradient(circle at 35% 30%, #ffffff, #3b86ff 60%); box-shadow: 0 0 6px rgba(59, 134, 255, 0.9); }
+.max-hud-fever i.is-on.is-green { background: radial-gradient(circle at 35% 30%, #ffffff, #19d36f 60%); box-shadow: 0 0 6px rgba(25, 211, 111, 0.9); }
+.max-hud-fever i.is-on.is-red { background: radial-gradient(circle at 35% 30%, #ffffff, #ff2f2a 60%); box-shadow: 0 0 7px rgba(255, 47, 42, 0.95); }
+.max-hud-fever i.is-on.is-gold { background: radial-gradient(circle at 35% 30%, #ffffff, #ffb020 60%); box-shadow: 0 0 8px rgba(255, 190, 40, 1); }
+
+.max-hud[data-heat="1"] .max-hud-count strong { text-shadow: 0 0 14px rgba(25, 211, 111, 0.9), 0 2px 0 rgba(0, 50, 20, 0.9); }
+.max-hud[data-heat="2"] .max-hud-count strong { text-shadow: 0 0 16px rgba(255, 47, 42, 0.95), 0 2px 0 rgba(70, 0, 0, 0.9); }
+.max-hud[data-heat="3"] .max-hud-count strong,
 .max-hud[data-heat="4"] .max-hud-count strong,
-.max-hud[data-heat="5"] .max-hud-count strong { color: #fff3c4; text-shadow: 0 0 18px rgba(255, 200, 80, 1), 0 0 36px rgba(255, 120, 40, 0.8), 0 2px 0 rgba(80, 30, 0, 0.9); }
+.max-hud[data-heat="5"] .max-hud-count strong { color: #fff3c4; text-shadow: 0 0 18px rgba(255, 200, 80, 1), 0 0 36px rgba(255, 90, 30, 0.8), 0 2px 0 rgba(80, 30, 0, 0.9); }
 
 .max-hud.is-fever .max-hud-count small {
   color: #ffe27a;
@@ -5103,14 +5127,16 @@ body.max-mode.fx-fever.quiz-active .public-recall-card {
 }
 
 .max-hud.is-fever .max-hud-fever i {
-  background: linear-gradient(90deg, #ff5db1, #ffd45f, #72ddff, #b07bff, #ff5db1);
-  background-size: 200% 100%;
-  animation: fx-hud-fever 0.9s linear infinite;
+  animation: fx-hud-dot 0.5s steps(1, end) infinite;
 }
 
-@keyframes fx-hud-fever {
-  from { background-position: 0 0; }
-  to { background-position: 200% 0; }
+.max-hud.is-fever .max-hud-fever i:nth-child(even) {
+  animation-delay: 0.25s;
+}
+
+@keyframes fx-hud-dot {
+  0%, 100% { filter: brightness(1.3); }
+  50% { filter: brightness(0.7); }
 }
 
 /* 答えた場所から跳ねて浮かぶほめ言葉。 */
@@ -5125,49 +5151,201 @@ body.max-mode.fx-fever.quiz-active .public-recall-card {
 }
 
 .fx-float strong {
-  color: #ffffff;
+  color: #fff4c0;
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic StdN", "Noto Sans JP", sans-serif;
   font-size: 28px;
   font-style: italic;
   font-weight: 900;
   letter-spacing: -0.02em;
   line-height: 1;
-  text-shadow: 0 3px 0 rgba(30, 14, 80, 0.9), 0 0 18px rgba(120, 200, 255, 0.95), 0 0 40px rgba(120, 140, 255, 0.6);
+  -webkit-text-stroke: 5px #7a0400;
+  paint-order: stroke fill;
+  text-shadow: 0 3px 0 #2a0000, 0 0 16px rgba(255, 170, 40, 0.9);
 }
 
 .fx-float small {
-  margin-top: 4px;
+  margin-top: 5px;
   color: #ffe27a;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 900;
-  letter-spacing: 0.16em;
-  text-shadow: 0 0 10px rgba(255, 190, 60, 0.9);
+  letter-spacing: 0.12em;
+  -webkit-text-stroke: 3px #5a0000;
+  paint-order: stroke fill;
 }
 
 .fx-float--lightning strong {
-  color: #fff6a8;
+  color: #ffffff;
   font-size: 32px;
-  text-shadow: 0 3px 0 #6b3300, 0 0 22px rgba(255, 210, 80, 1), 0 0 48px rgba(255, 140, 40, 0.7);
+  -webkit-text-stroke: 6px #b31200;
+  text-shadow: 0 3px 0 #3a0000, 0 0 22px rgba(255, 210, 80, 1), 0 0 44px rgba(255, 80, 30, 0.75);
 }
 
 .fx-float--fast strong {
-  color: #c4f6ff;
+  color: #ffffff;
+  -webkit-text-stroke-color: #0040b8;
+  text-shadow: 0 3px 0 #001a4a, 0 0 18px rgba(80, 160, 255, 0.95);
 }
 
-/* 大きな文字は、上の方にくっきり出す（選択肢を隠さない・ぼかさない）。 */
+/* 大きな文字は、上の方にくっきり出す（選択肢を隠さない・ぼかさない）。
+   パチンコの演出のように、金の金属の文字に赤と黒の太い縁、後ろにカットインの帯。 */
 .max-callout {
   place-items: start center;
   padding-top: max(15vh, calc(env(safe-area-inset-top) + 86px));
-  font-size: clamp(40px, 13vw, 92px);
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic StdN", "Noto Sans JP", sans-serif;
+  font-size: clamp(42px, 13.5vw, 96px);
   font-style: italic;
+  letter-spacing: -0.04em;
+  text-shadow: none;
 }
 
 .max-callout::before {
-  background: radial-gradient(70% 34% at 50% 24%, rgba(6, 6, 26, 0.6), rgba(6, 6, 26, 0.2) 55%, transparent 80%);
+  background: radial-gradient(80% 30% at 50% 24%, rgba(10, 0, 0, 0.55), transparent 75%);
 }
 
+/* 文字は2枚重ね：下の文字が太い縁（赤）、上の文字が金の金属。 */
 .max-callout-label {
+  position: relative;
+  color: #8a0000;
+  background: none;
+  -webkit-text-fill-color: #8a0000;
+  -webkit-text-stroke: 0.16em #8a0000;
+  filter: drop-shadow(0 0.07em 0 #1a0000) drop-shadow(0 0 0.28em rgba(255, 150, 30, 0.75));
+}
+
+.max-callout-label-fill {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, #fffdf0 0%, #ffe98a 28%, #ffb020 50%, #fff3b8 52%, #ff9a00 78%, #ffe27a 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
   -webkit-text-stroke: 0;
-  filter: drop-shadow(0 4px 0 rgba(24, 14, 80, 0.95)) drop-shadow(0 0 22px rgba(120, 190, 255, 0.85));
+}
+
+.max-callout-emblem {
+  color: #ffffff;
+  font-size: 0.26em;
+  font-style: normal;
+  letter-spacing: 0.2em;
+  -webkit-text-stroke: 0.12em #8a0000;
+  paint-order: stroke fill;
+  text-shadow: 0 0 10px rgba(255, 200, 60, 0.9);
+}
+
+.max-callout small {
+  color: #ffffff;
+  font-style: normal;
+  -webkit-text-stroke: 0.1em #5a0000;
+  paint-order: stroke fill;
+  letter-spacing: 0.12em;
+}
+
+/* 段階ごとの文字の色：チャンス＝緑、激アツ＝赤、それより上と当たり＝金。 */
+.max-callout--cue-combo-3 .max-callout-label-fill {
+  background-image: linear-gradient(180deg, #ffffff 0%, #c8ffde 30%, #2ee07f 52%, #eafff2 54%, #19c76a 80%, #b6ffd2 100%);
+}
+
+.max-callout--cue-combo-3 .max-callout-label {
+  -webkit-text-fill-color: #003a18;
+  -webkit-text-stroke-color: #003a18;
+  filter: drop-shadow(0 0.07em 0 #001a0a) drop-shadow(0 0 0.28em rgba(25, 211, 111, 0.85));
+}
+
+.max-callout--cue-combo-5 .max-callout-label-fill {
+  background-image: linear-gradient(180deg, #ffffff 0%, #ffd2c4 28%, #ff4a3a 52%, #ffe6dc 54%, #ff2a1a 80%, #ffb09a 100%);
+}
+
+.max-callout--cue-combo-5 .max-callout-label {
+  -webkit-text-fill-color: #3a0000;
+  -webkit-text-stroke-color: #3a0000;
+  filter: drop-shadow(0 0.07em 0 #1a0000) drop-shadow(0 0 0.3em rgba(255, 47, 42, 0.9));
+}
+
+/* 新記録は銀、SSS完全制覇は金と赤のいちばん豪華な文字。 */
+.max-callout--cue-new-record .max-callout-label-fill {
+  background-image: linear-gradient(180deg, #ffffff 0%, #f2f5fa 30%, #a8b4c6 52%, #ffffff 54%, #d0d8e4 80%, #ffffff 100%);
+}
+
+.max-callout--cue-new-record .max-callout-label {
+  -webkit-text-fill-color: #1a2236;
+  -webkit-text-stroke-color: #1a2236;
+  filter: drop-shadow(0 0.07em 0 #000814) drop-shadow(0 0 0.3em rgba(255, 255, 255, 0.75));
+}
+
+.max-callout--cue-sss-master .max-callout-label-fill,
+.max-callout--cue-perfect .max-callout-label-fill,
+.max-callout--cue-fever-start .max-callout-label-fill,
+.max-callout--cue-critical .max-callout-label-fill {
+  background-image: linear-gradient(180deg, #ffffff 0%, #fff0a0 24%, #ffb020 48%, #fff6c8 50%, #ff8a00 76%, #ffd86b 100%);
+}
+
+.max-callout--cue-sss-master .max-callout-label,
+.max-callout--cue-perfect .max-callout-label,
+.max-callout--cue-fever-start .max-callout-label,
+.max-callout--cue-critical .max-callout-label {
+  filter: drop-shadow(0 0.07em 0 #1a0000) drop-shadow(0 0 0.3em rgba(255, 170, 30, 0.95)) drop-shadow(0 0 0.7em rgba(255, 40, 20, 0.6));
+}
+
+/* 当たりの瞬間の光も、金と白と赤に寄せる。 */
+body.max-mode .fx-energy-core {
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, .98) 0 3%, rgba(255, 226, 122, .85) 9%, rgba(255, 120, 30, .5) 26%, transparent 66%),
+    repeating-conic-gradient(from 10deg, rgba(255, 210, 90, .5) 0deg 6deg, transparent 6deg 18deg);
+  box-shadow: 0 0 34px rgba(255, 255, 255, .86), 0 0 100px rgba(255, 170, 40, .62), 0 0 180px rgba(255, 50, 30, .4);
+}
+
+body.max-mode .fx-light-column {
+  background: linear-gradient(90deg, transparent, rgba(255, 210, 90, .25) 15%, rgba(255, 255, 255, .78) 49%, rgba(255, 120, 40, .25) 82%, transparent);
+}
+
+body.max-mode .fx-flash {
+  background: radial-gradient(circle at 50% 40%, #ffffff 0%, rgba(255, 246, 214, .85) 40%, rgba(255, 200, 90, .45) 70%, transparent 100%);
+}
+
+/* カットインの帯：文字の後ろを横切る赤い帯と、上下の金の線。 */
+.max-callout-band {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: -1;
+  width: 140vw;
+  height: 1.3em;
+  background:
+    repeating-linear-gradient(-60deg, rgba(255, 255, 255, 0.07) 0 0.12em, transparent 0.12em 0.3em),
+    linear-gradient(90deg, transparent, rgba(150, 0, 0, 0.9) 12%, rgba(230, 20, 20, 0.95) 50%, rgba(150, 0, 0, 0.9) 88%, transparent);
+  box-shadow: 0 -0.05em 0 #ffd45f, 0 0.05em 0 #ffd45f, 0 0 0.4em rgba(255, 60, 30, 0.6);
+  transform: translate(-50%, -46%) skewY(-4deg);
+  pointer-events: none;
+}
+
+.max-callout--cue-combo-3 .max-callout-band {
+  background:
+    repeating-linear-gradient(-60deg, rgba(255, 255, 255, 0.07) 0 0.12em, transparent 0.12em 0.3em),
+    linear-gradient(90deg, transparent, rgba(0, 110, 50, 0.9) 12%, rgba(10, 170, 80, 0.95) 50%, rgba(0, 110, 50, 0.9) 88%, transparent);
+}
+
+.max-callout--sharp .max-callout-band,
+.max-callout--calm .max-callout-band {
+  display: none;
+}
+
+.max-callout--pop .max-callout-band,
+.max-callout--slam .max-callout-band,
+.max-callout--jackpot .max-callout-band,
+.max-callout--unstoppable .max-callout-band,
+.max-callout--record .max-callout-band,
+.max-callout--destroyed .max-callout-band,
+.max-callout--finale .max-callout-band,
+.max-callout--sss .max-callout-band,
+.max-callout--royal .max-callout-band {
+  animation: max-callout-band var(--max-callout-duration, 900ms) cubic-bezier(.2, .9, .25, 1) both;
+}
+
+@keyframes max-callout-band {
+  0% { opacity: 0; transform: translate(-150%, -46%) skewY(-4deg); }
+  14% { opacity: 1; transform: translate(-50%, -46%) skewY(-4deg); }
+  82% { opacity: 1; transform: translate(-50%, -46%) skewY(-4deg); }
+  100% { opacity: 0; transform: translate(50%, -46%) skewY(-4deg); }
 }
 
 @keyframes max-callout-pop {

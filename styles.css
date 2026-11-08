@@ -1261,18 +1261,13 @@ textarea:focus-visible,
   line-height: 1;
 }
 
-/* 円そのもの。今のセットの習得（今のセットの色）→ 2つめの区間 → 空の順に回る。
-   2つめの区間は、1セット目なら練習中（薄い青）、2セット目からは前のセットで
-   習得した分（前のセットの色）。何%が何セット目の習得かが色で分かる。 */
+/* 円そのもの。区間の塗り（--ring-fill）は app.js が件数から作る。
+   何%が何セット目の習得かが色で分かる（習得＝青、習得2＝赤、…、未習得は色なし）。 */
 .meter-ring::before {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: conic-gradient(
-    var(--ring-main, var(--set-color-1)) 0 var(--ring-a, 0%),
-    var(--ring-second, var(--set-soft-1)) var(--ring-a, 0%) var(--ring-b, 0%),
-    var(--gauge-track) var(--ring-b, 0%) 100%
-  );
+  background: var(--ring-fill, var(--gauge-track));
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--ring-thickness)), #000 calc(100% - var(--ring-thickness) + 1px));
   mask: radial-gradient(farthest-side, transparent calc(100% - var(--ring-thickness)), #000 calc(100% - var(--ring-thickness) + 1px));
   content: "";

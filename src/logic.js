@@ -1951,6 +1951,60 @@ export function summarizeSetRing({ progress = null, poolIds = [], answeredIds = 
 }
 
 /**
+ * 形式カードの円：その範囲・形式の全問題を、何セット目まで習得したかで塗り分ける。
+ * 重要度ごとの周回（progresses）をまとめて見て、1問ずつ「いちばん進んだセット」を数える。
+ *   今のセットで習得 … そのセットの番号
+ *   今のセットではまだ（2セット目以降）… 前のセットの番号（前のセットでは習得していた）
+ *   周回に入っていない・1セット目でまだ … 0（色なし）
+ * 塗りは進んだセットから順（習得2 → 習得1 → 色なし）。
+ */
+export function summarizeMasteryLevels({ poolIds = [], progresses = [] } = {}) {
+  const pool = uniqueIds(poolIds);
+  const inPool = new Set(pool);
+  const levels = new Map();
+  (Array.isArray(progresses) ? progresses : []).forEach((progress) => {
+    if (!progress) return;
+    const round = normalizeRoundNumber(progress.masteryRound ?? 1);
+    const mastered = new Set(uniqueIds(progress.masteredIds));
+    const roundIds = uniqueIds(progress.roundItemIds);
+    (roundIds.length ? roundIds : [...mastered]).forEach((id) => {
+      if (!inPool.has(id)) return;
+      const level = mastered.has(id) ? round : round - 1;
+      if (level > (levels.get(id) ?? 0)) levels.set(id, level);
+    });
+  });
+  const total = pool.length;
+  const counts = new Map();
+  levels.forEach((level) => {
+    if (level > 0) counts.set(level, (counts.get(level) ?? 0) + 1);
+  });
+  // 2セット目以降があるときは、1セット目の分も「習得1」と番号で書き分ける。
+  const numbered = Math.max(0, ...counts.keys()) > 1;
+  const segments = [...counts.entries()]
+    .sort(([left], [right]) => right - left)
+    .map(([round, count]) => ({
+      kind: "mastered",
+      round,
+      label: numbered ? `習得${round}` : "習得",
+      count,
+      percent: percentOf(count, total),
+    }));
+  const masteredCount = segments.reduce((sum, segment) => sum + segment.count, 0);
+  const untouched = total - masteredCount;
+  return {
+    round: segments[0]?.round ?? 1,
+    total,
+    label: "習得",
+    masteredCount,
+    masteredPercent: percentOf(masteredCount, total),
+    segments: [
+      ...segments,
+      { kind: "untouched", round: 0, label: "未習得", count: untouched, percent: percentOf(untouched, total) },
+    ],
+  };
+}
+
+/**
  * テストで間違えた問題を、演習の「習得」から外す。
  * 習得から外すだけでなく、今の周回の対象にも戻す（次の周回は今の周回の対象から
  * 作るので、戻さないと二度と出てこなくなる）。次に最初の回答で正解すれば、また習得になる。

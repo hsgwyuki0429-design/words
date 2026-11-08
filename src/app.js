@@ -66,6 +66,7 @@ import {
   summarizeCycleMeter,
   parseStudyProgressKey,
   shuffle,
+  summarizeMasteryLevels,
   summarizeSetRing,
   toggleSetupValue,
   summarizeTestResult,
@@ -707,11 +708,11 @@ function currentSetupConfig() {
   return practiceConfig({ range: state.filters.ranges[0], importance: state.filters.importance[0] });
 }
 
-// その組の円・周回の材料。withProgress が false なら周回は見ず、解いたかどうかだけで円を作る。
-function practiceStatus(config, { withProgress = true } = {}) {
+// その組の円・周回の材料。
+function practiceStatus(config) {
   const pool = studyPoolItems(config);
   const poolIds = pool.map((item) => item.id);
-  const key = withProgress ? studyProgressKey(config) : null;
+  const key = studyProgressKey(config);
   const stored = key ? storedStudyProgress(key, { itemIds: poolIds }) : null;
   const mode = exactStudyMode(config.selection);
   const answeredIds = pool
@@ -946,25 +947,45 @@ function renderDashboard() {
   renderHeader();
 }
 
-// 円：今のセットで習得した分を今のセットの色で、残りを
-//   1セット目 … 練習中（薄い色）と未回答（空）
-//   2セット目〜 … 前のセットで習得した分（前のセットの色）
-// で塗る。中央は習得率と「習得」「習得2」のような呼び名。
+// 円：区間ごとに色を変えて塗る。
+//   学習の準備・続きから（1つの組）… 今のセットの習得（今のセットの色）→ 1セット目なら練習中（薄い青）、
+//     2セット目からは前のセットで習得した分（前のセットの色）→ 色なし。中央は「習得」「習得2」。
+//   形式カード（その範囲・形式の全部）… 習得2（赤）→ 習得（青）→ 色なし。
 function setRingColor(round) {
   return `var(--set-color-${gaugeColorIndex(round)})`;
 }
 
+function ringSegmentColor(segment) {
+  if (segment.kind === "practicing") return "var(--set-soft-1)";
+  if (segment.kind === "untouched") return null;
+  return setRingColor(segment.round);
+}
+
+// 区間の割合を足し上げて、円の塗り（conic-gradient）を作る。端数は件数から直接出すのでずれない。
+function ringFill(ring) {
+  let done = 0;
+  const stops = [];
+  ring.segments.forEach((segment) => {
+    const color = ringSegmentColor(segment);
+    if (!color || !segment.count || !ring.total) return;
+    const from = Math.round((done / ring.total) * 1000) / 10;
+    done += segment.count;
+    const to = Math.round((done / ring.total) * 1000) / 10;
+    stops.push(`${color} ${from}% ${to}%`);
+  });
+  const end = ring.total ? Math.round((done / ring.total) * 1000) / 10 : 0;
+  stops.push(`var(--gauge-track) ${end}% 100%`);
+  return `conic-gradient(${stops.join(", ")})`;
+}
+
 function setRingMarkup(ring) {
-  const [main, second] = ring.segments;
-  const a = main.percent;
-  const b = Math.min(100, a + (second?.percent ?? 0));
-  const secondColor = ring.round > 1 ? setRingColor(ring.round - 1) : "var(--set-soft-1)";
   const unit = recallUnit();
-  const label = ring.round > 1
-    ? `全${ring.total}${unit}のうち、${main.label}が${main.count}${unit}（${main.percent}パーセント）、${second.label}が${second.count}${unit}`
-    : `全${ring.total}${unit}のうち、習得${main.count}${unit}（${main.percent}パーセント）`;
+  const label = `全${ring.total}${unit}のうち、${ring.segments
+    .filter((segment) => segment.count)
+    .map((segment) => `${segment.label}${segment.count}${unit}（${segment.percent}パーセント）`)
+    .join("、")}`;
   return `
-      <span class="meter-ring" style="--ring-a:${a}%;--ring-b:${b}%;--ring-main:${setRingColor(ring.round)};--ring-second:${secondColor}" role="img" aria-label="${escapeHtml(label)}">
+      <span class="meter-ring" style="--ring-fill:${ringFill(ring)}" role="img" aria-label="${escapeHtml(label)}">
         <span class="meter-ring-value">${ring.masteredPercent}<small>%</small></span>
         <span class="meter-ring-label">${escapeHtml(ring.label)}</span>
       </span>`;
@@ -973,14 +994,7 @@ function setRingMarkup(ring) {
 function ringLegendMarkup(ring) {
   return `
       <span class="meter-breakdown">
-        ${ring.segments.map((segment) => {
-          const color = segment.kind === "mastered"
-            ? setRingColor(segment.round)
-            : segment.kind === "previous"
-              ? setRingColor(segment.round)
-              : segment.kind === "practicing" ? "var(--set-soft-1)" : "transparent";
-          return `<span class="meter-key${segment.kind === "untouched" ? " is-untouched" : ""}" style="--key-color:${color}">${escapeHtml(segment.label)} <b>${segment.count}</b></span>`;
-        }).join("")}
+        ${ring.segments.map((segment) => `<span class="meter-key${segment.kind === "untouched" ? " is-untouched" : ""}" style="--key-color:${ringSegmentColor(segment) ?? "transparent"}">${escapeHtml(segment.label)} <b>${segment.count}</b></span>`).join("")}
       </span>`;
 }
 
@@ -1004,39 +1018,44 @@ function cycleBarMarkup(cycle, { prefix = "", total = 0 } = {}) {
       </span>`;
 }
 
-// その範囲・形式で、いちばん最近学習した演習の組（範囲1つ・重要度1つ）。
-function latestPracticeEntryForCard(card, range) {
+// その範囲・形式の演習の組（重要度ごと）を、最後に学習した順で。
+function practiceEntriesForCard(card, range) {
   return studyProgressEntriesForMode(state.studyProgress, {
     mode: card.mode,
     ranges: [range],
     criterion: masteryCriterion(),
-  }).find(({ meta }) => isPracticeMeta(meta)
-    && (!isRecallSubject() || meta.contents === card.selection?.content)) ?? null;
+  }).filter(({ meta }) => isPracticeMeta(meta)
+    && (!isRecallSubject() || meta.contents === card.selection?.content));
 }
 
-// 形式カード（演習）。円と横棒は、その範囲・形式でいちばん最近学習した重要度の組だけを見せる
-// （重要度をまたいでまとめない）。まだ学習していなければ、解いたかどうかだけの円にする。
+// 形式カード。円はその範囲・形式の全問題を、何セット目まで習得したか（習得2は赤・習得は青・
+// 未習得は色なし）で塗り分ける。重要度ごとの周回をまとめて見るので、全体のどこまで来たかが分かる。
+// 横棒は、その範囲・形式でいちばん最近学習した重要度の今の周回。
 function modeProgressCard(card) {
   const range = state.filters.ranges[0];
-  const entry = latestPracticeEntryForCard(card, range);
-  const importance = entry?.meta.importance?.[0] ?? null;
-  const status = practiceStatus(
-    practiceConfig({ range, importance, selection: card.selection }),
-    { withProgress: Boolean(importance) },
-  );
-  const resumable = Boolean(entry) && entry.key === latestStudyEntry()?.key;
+  const pool = studyPoolItems(practiceConfig({ range, selection: card.selection }));
+  const entries = practiceEntriesForCard(card, range);
+  const ring = summarizeMasteryLevels({
+    poolIds: pool.map((item) => item.id),
+    progresses: entries.map((entry) => entry.progress),
+  });
+  const latest = entries[0] ?? null;
+  const importance = latest?.meta.importance?.[0] ?? null;
+  const cycle = studyProgressSummary(latest?.progress ?? null);
+  const resumable = Boolean(latest) && latest.key === latestStudyEntry()?.key;
   return `
-    <button class="mode-progress-card meter-card${resumable ? " is-in-progress" : ""}" type="button" data-study-target="${escapeHtml(card.key)}"${status.pool.length ? "" : ' disabled aria-disabled="true"'}>
-      ${setRingMarkup(status.ring)}
+    <button class="mode-progress-card meter-card${resumable ? " is-in-progress" : ""}" type="button" data-study-target="${escapeHtml(card.key)}"${pool.length ? "" : ' disabled aria-disabled="true"'}>
+      ${setRingMarkup(ring)}
       <span class="meter-body">
         <span class="mode-progress-head">
           <strong>${escapeHtml(card.title)}</strong>
-          ${status.pool.length ? "" : '<span class="mode-progress-cycle">出題できません</span>'}
+          ${pool.length ? "" : '<span class="mode-progress-cycle">出題できません</span>'}
           ${resumable ? studyBadgeMarkup() : ""}
           <span class="card-arrow" aria-hidden="true">›</span>
         </span>
-        ${cycleBarMarkup(status.summary, { prefix: importance ? `重要度${importance}` : "", total: status.pool.length })}
+        ${cycleBarMarkup(cycle, { prefix: importance ? `重要度${importance}` : "", total: pool.length })}
       </span>
+      ${ring.masteredCount ? ringLegendMarkup(ring) : ""}
     </button>`;
 }
 

@@ -16,6 +16,7 @@ import {
   studyTargetsForDashboard,
   summarizeProgressGauge,
   summarizeRangeModeProgress,
+  summarizeMasteryLevels,
   summarizeSetRing,
   summarizeRangeModes,
   summarizeCycleMeter,
@@ -179,11 +180,11 @@ test("the range list shows range names only, with no rates or scores", () => {
 test("進み具合は、習得を円・今の周回を横棒で、形を分けて見せる", () => {
   // 円：その組（範囲・形式・重要度）の全体のうち何%を習得したか。
   const ringSource = functionSource("setRingMarkup", "ringLegendMarkup");
-  assert.match(ringSource, /class="meter-ring" style="--ring-a:\$\{a\}%;--ring-b:\$\{b\}%;--ring-main:\$\{setRingColor\(ring\.round\)\};--ring-second:\$\{secondColor\}"/);
+  assert.match(ringSource, /class="meter-ring" style="--ring-fill:\$\{ringFill\(ring\)\}"/);
   assert.match(ringSource, /<span class="meter-ring-value">\$\{ring\.masteredPercent\}<small>%<\/small><\/span>/);
   assert.match(ringSource, /<span class="meter-ring-label">\$\{escapeHtml\(ring\.label\)\}<\/span>/);
   // 内訳の色は円と同じ。
-  assert.match(functionSource("ringLegendMarkup", "cycleBarMarkup"), /style="--key-color:\$\{color\}"/);
+  assert.match(functionSource("ringLegendMarkup", "cycleBarMarkup"), /style="--key-color:\$\{ringSegmentColor\(segment\) \?\? "transparent"\}"/);
   // 横棒：今の周回があと何問か（近い目標）。「◯セット目」は書かない。
   const barSource = functionSource("cycleBarMarkup", "modeProgressCard");
   assert.match(barSource, /const meter = summarizeCycleMeter\(cycle\);/);
@@ -199,11 +200,13 @@ test("進み具合は、習得を円・今の周回を横棒で、形を分け�
   assert.equal(summarizeCycleMeter({ cycleNumber: 1, targetCount: 5, remainingCount: 0 }).complete, true);
   assert.equal(summarizeCycleMeter(null).started, false);
   assert.equal(summarizeCycleMeter({ targetCount: 5, remainingCount: 99 }).percent, 0, "壊れた値でも0〜100%");
-  // 形式カードは、その範囲・形式でいちばん最近学習した重要度の組だけを円と横棒で見せる（重要度をまたいでまとめない）。
+  // 形式カードの円は、その範囲・形式の全問題を何セット目まで習得したかで塗り分ける（重要度をまたいでまとめる）。
+  // 横棒は、いちばん最近学習した重要度の今の周回。
   const cardSource = functionSource("modeProgressCard", "renderRangeDetail");
-  assert.match(cardSource, /const entry = latestPracticeEntryForCard\(card, range\);/);
-  assert.match(cardSource, /setRingMarkup\(status\.ring\)/);
-  assert.match(cardSource, /cycleBarMarkup\(status\.summary, \{ prefix: importance \? `重要度\$\{importance\}` : "", total: status\.pool\.length \}\)/);
+  assert.match(cardSource, /const entries = practiceEntriesForCard\(card, range\);/);
+  assert.match(cardSource, /summarizeMasteryLevels\(\{\s*\n\s*poolIds: pool\.map\(\(item\) => item\.id\),\s*\n\s*progresses: entries\.map\(\(entry\) => entry\.progress\),/);
+  assert.match(cardSource, /setRingMarkup\(ring\)/);
+  assert.match(cardSource, /cycleBarMarkup\(cycle, \{ prefix: importance \? `重要度\$\{importance\}` : "", total: pool\.length \}\)/);
   assert.doesNotMatch(cardSource, /modeStats/);
 });
 
@@ -450,12 +453,15 @@ test("ゲージは重要度と学習内容でも絞り込める", () => {
 
 test("円はセットごとの色で塗り分け、何%が何セット目の習得かが分かる", () => {
   const ringSource = functionSource("setRingMarkup", "ringLegendMarkup");
-  // 2セット目からは、前のセットで習得した分を前のセットの色で塗る。
-  assert.match(ringSource, /const secondColor = ring\.round > 1 \? setRingColor\(ring\.round - 1\) : "var\(--set-soft-1\)";/);
+  // 区間ごとにセットの色で塗る（練習中は薄い青、未回答・未習得は色なし）。
+  const colorSource = functionSource("ringSegmentColor", "ringFill");
+  assert.match(colorSource, /if \(segment\.kind === "practicing"\) return "var\(--set-soft-1\)";/);
+  assert.match(colorSource, /return setRingColor\(segment\.round\);/);
+  assert.match(functionSource("ringFill", "setRingMarkup"), /stops\.push\(`var\(--gauge-track\) \$\{end\}% 100%`\);/);
   assert.match(functionSource("setRingColor", "setRingMarkup"), /`var\(--set-color-\$\{gaugeColorIndex\(round\)\}\)`/);
   assert.match(stylesSource, /--set-color-1: #2b50ff;/);
   assert.match(stylesSource, /--set-color-2: #d92d20;/);
-  assert.match(stylesSource, /\.meter-ring::before \{[\s\S]*?var\(--ring-main, var\(--set-color-1\)\) 0 var\(--ring-a, 0%\)/);
+  assert.match(stylesSource, /\.meter-ring::before \{[\s\S]*?background: var\(--ring-fill, var\(--gauge-track\)\);/);
   assert.equal(GAUGE_COLOR_COUNT, 5);
   assert.equal(gaugeColorIndex(1), 1);
   assert.equal(gaugeColorIndex(2), 2);
@@ -577,4 +583,37 @@ test("続きからのカードも、同じ条件の周回と同じセットを�
   assert.match(resumeSource, /const cycle = studyProgressSummary\(entry\.progress\);/);
   assert.match(resumeSource, /range: config\.filters\.ranges\[0\],\s*\n\s*importance: config\.filters\.importance\[0\],/);
   assert.match(resumeSource, /const detail = `重要度 \$\{config\.filters\.importance\[0\]\}`;/);
+});
+
+test("形式カードの円は、その範囲・形式の全問題を何セット目まで習得したかで塗り分ける", () => {
+  const poolIds = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"];
+  // 重要度SS（a〜d）は2セット目：a・b は2セット目でも習得、c・d は1セット目で習得したまま。
+  const ss = { masteryRound: 2, roundItemIds: ["a", "b", "c", "d"], masteredIds: ["a", "b"] };
+  // 重要度S（e〜h）は1セット目：e だけ習得。
+  const s1 = { masteryRound: 1, roundItemIds: ["e", "f", "g", "h"], masteredIds: ["e"] };
+  // 重要度A（i・j）はまだ学習していない。
+  const ring = summarizeMasteryLevels({ poolIds, progresses: [ss, s1, null] });
+  assert.deepEqual(ring.segments.map((segment) => [segment.label, segment.count, segment.percent]), [
+    ["習得2", 2, 20],
+    ["習得1", 3, 30],
+    ["未習得", 5, 50],
+  ]);
+  // 1セット目だけなら番号は付けない。
+  assert.deepEqual(summarizeMasteryLevels({ poolIds, progresses: [s1] }).segments.map((segment) => segment.label), ["習得", "未習得"]);
+  assert.equal(ring.masteredCount, 5);
+  assert.equal(ring.masteredPercent, 50);
+  assert.equal(ring.total, 10);
+  // 同じ問題が別の周回にもあれば、進んだほうのセットで数える。範囲外のIDは数えない。
+  const overlap = summarizeMasteryLevels({
+    poolIds: ["a", "b"],
+    progresses: [
+      { masteryRound: 1, roundItemIds: ["a", "b", "zz"], masteredIds: ["a", "zz"] },
+      { masteryRound: 3, roundItemIds: ["a"], masteredIds: ["a"] },
+    ],
+  });
+  assert.deepEqual(overlap.segments.map((segment) => [segment.label, segment.count]), [["習得3", 1], ["未習得", 1]]);
+  // 何も学習していなければ全部が色なし。
+  const empty = summarizeMasteryLevels({ poolIds, progresses: [] });
+  assert.equal(empty.masteredPercent, 0);
+  assert.deepEqual(empty.segments.map((segment) => segment.kind), ["untouched"]);
 });

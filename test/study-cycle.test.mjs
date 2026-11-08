@@ -500,7 +500,7 @@ test("スタートのボタンは、何問から・何周目から始まるか�
   assert.match(planSource, /`残り\$\{summary\.remainingCount\}\$\{unit\}`/);
   assert.match(planSource, /advanceStudyProgress\(stored, \{ roundItemIds: pool\.map\(\(item\) => item\.id\) \}\)/);
   assert.match(planSource, /newRound \? "次のセットを始める" : `\$\{next\.cycleNumber\}周目を始める`/);
-  assert.match(functionSource("practiceStatus", "setupPlan"), /const key = withProgress \? studyProgressKey\(config\) : null;/);
+  assert.match(functionSource("practiceStatus", "setupPlan"), /const key = studyProgressKey\(config\);/);
   // 出題できる問題が無ければ押せない。
   assert.match(functionSource("renderSetupProgress", "sortGroupMarkup"), /elements\.setupStart\.disabled = !plan\.pool\.length;/);
 });

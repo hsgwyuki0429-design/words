@@ -82,7 +82,7 @@ test("押した先で実際に続けられるボタンだけをハイライト�
   assert.match(functionSource("isPracticeMeta", "recentStudyEntries"), /\(meta\.ranges \?\? \[\]\)\.length !== 1 \|\| \(meta\.importance \?\? \[\]\)\.length !== 1/);
   // 形式カードは、いま選んでいる範囲・形式が最後の組のときだけ光る。
   const cardSource = functionSource("modeProgressCard", "renderRangeDetail");
-  assert.match(cardSource, /const resumable = Boolean\(entry\) && entry\.key === latestStudyEntry\(\)\?\.key;/);
+  assert.match(cardSource, /const resumable = Boolean\(latest\) && latest\.key === latestStudyEntry\(\)\?\.key;/);
   assert.match(cardSource, /class="mode-progress-card meter-card\$\{resumable \? " is-in-progress" : ""\}"/);
   assert.match(stylesSource, /\.mode-progress-card\.is-in-progress[,\s][^{]*\{[^}]*border-color: var\(--red\)/);
 });

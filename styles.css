@@ -1645,6 +1645,44 @@ textarea:focus-visible,
   scale: 0.94;
 }
 
+/* つまみを指で滑らせているあいだは、指にそのままついてくる。縦のスクロールは妨げない。 */
+.segment-switch {
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.segment-switch.is-dragging .segment-thumb {
+  scale: 1.04;
+  transition: none;
+  animation: none;
+}
+
+.segment-switch.is-dragging button:active {
+  scale: 1;
+}
+
+.segment-switch.is-dragging[role] button:not(.is-under) {
+  color: var(--secondary);
+}
+
+.segment-switch.is-dragging[role] button.is-under {
+  color: var(--on-accent);
+}
+
+.mode-switch.is-dragging[data-preview="practice"] .segment-thumb {
+  background: var(--accent);
+  box-shadow: 0 2px 6px rgba(17, 17, 19, 0.16), 0 6px 16px rgba(17, 17, 19, 0.14);
+}
+
+.mode-switch.is-dragging[data-preview="test"] .segment-thumb {
+  background: var(--pop);
+}
+
+.mode-switch.is-dragging[role][data-preview="test"] button.is-under {
+  color: #ffffff;
+}
+
 /* つまみはばねのように行き過ぎて戻り、動き出しに横へ伸びる。 */
 .segment-thumb {
   position: absolute;
@@ -1922,8 +1960,13 @@ body.home-test-mode .main-content {
   animation-delay: calc(var(--i, 0) * 22ms + 60ms);
 }
 
-.home-pane.is-entering-right .test-start-bar {
+/* 開始ボタンは面の外にあり、テストの面が出るときに下から上がってくる。 */
+.test-start-bar:not([hidden]) {
   animation: test-bar-in 560ms var(--spring) 120ms both;
+}
+
+.test-start-bar[hidden] {
+  display: none;
 }
 
 @keyframes test-bar-in {
@@ -2229,6 +2272,7 @@ body.home-test-mode .main-content {
 
 @media (prefers-reduced-motion: reduce) {
   .segment-thumb,
+  .test-start-bar,
   .home-pane,
   .home-pane *,
   .is-pulsing,

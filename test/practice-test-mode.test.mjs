@@ -172,3 +172,34 @@ test("右上の丸ボタンからテストの履歴を開ける", () => {
   // 履歴から開いた結果を閉じると履歴へ戻る。
   assert.match(appSource, /setView\(backToHistory \? "history" : "dashboard"\);/);
 });
+
+test("テストの形式は押すと選ばれ、開始ボタンは滑り込む面の外で画面の下に貼りつく", () => {
+  const home = functionSource("renderTestHome", "startTest");
+  // 形式は呼ぶたびに作り直すので、選んでいるかどうかはキーで比べる（物どうしで比べると選ばれて見えない）。
+  assert.match(home, /const formatKeys = formats\.map\(\(format\) => format\.key\);/);
+  assert.match(home, /selected: formatKeys\.includes\(option\.key\),/);
+  assert.doesNotMatch(home, /formats\.includes\(option\)/);
+  // 開始ボタンは面（#test-home）の外の #test-start-bar に描く。動いている面の中に置くと、
+  // 面が滑り込むあいだ画面の下に貼りつかず、途中の変な位置に出てしまう。
+  assert.match(home, /elements\.testStartBar\.innerHTML = `/);
+  assert.doesNotMatch(home, /elements\.testHome\.innerHTML = `[\s\S]*?test-start-bar/);
+  assert.match(indexSource, /id="test-home" hidden><\/div>\s*\n\s*<div class="sticky-action test-start-bar" id="test-start-bar" hidden><\/div>/);
+  assert.match(functionSource("renderDashboard", "setRingColor"), /elements\.testStartBar\.hidden = !test;/);
+});
+
+test("切り替えは、つまみを指で横へ滑らせても選べる", () => {
+  const drag = functionSource("bindSegmentSwitchDrag", "activateSegment");
+  assert.match(drag, /if \(Math\.abs\(dx\) < SWITCH_DRAG_THRESHOLD_PX\) return;/);
+  assert.match(drag, /drag\.thumb\.style\.translate = `\$\{drag\.offset\}px 0`;/);
+  assert.match(drag, /const index = Math\.round\(offset \/ segment\);/);
+  assert.match(drag, /activateSegment\(buttons\[index\]\);/);
+  // 離したあとに続けて届く click は押した扱いにしない。
+  assert.match(drag, /suppressClickUntil = performance\.now\(\) \+ 400;/);
+  const activate = functionSource("activateSegment", "bindEvents");
+  assert.match(activate, /if \(button\.dataset\.homeMode\) setHomeMode\(button\.dataset\.homeMode\);/);
+  assert.match(activate, /else if \(button\.dataset\.subject\) selectSubject\(button\.dataset\.subject\);/);
+  assert.match(appSource, /function bindEvents\(\) \{\s*\n\s*bindSegmentSwitchDrag\(\);/);
+  // 縦のスクロールは妨げず、滑らせているあいだはつまみが指にそのままついてくる。
+  assert.match(stylesSource, /\.segment-switch \{\s*\n\s*touch-action: pan-y;/);
+  assert.match(stylesSource, /\.segment-switch\.is-dragging \.segment-thumb \{[^}]*transition: none;/);
+});

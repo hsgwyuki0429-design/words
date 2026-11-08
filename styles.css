@@ -4844,6 +4844,41 @@ body.fx-rgb .max-hud-count strong {
 }
 .max-effects-lab button:active { background: rgba(106,220,255,.3); }
 
+/* ?sfx-lab のときだけJavaScriptが生成する、効果音の試聴パネル。 */
+.sfx-lab {
+  position: fixed;
+  left: max(8px, env(safe-area-inset-left));
+  right: max(8px, env(safe-area-inset-right));
+  bottom: max(8px, env(safe-area-inset-bottom));
+  z-index: 401;
+  max-width: 560px;
+  max-height: min(70vh, 640px);
+  margin-inline: auto;
+  overflow: auto;
+  padding: 8px;
+  color: #fff;
+  background: #16181f;
+  border-radius: 14px;
+  box-shadow: 0 12px 42px rgba(0, 0, 0, .36);
+  font: 600 12px/1.35 system-ui, sans-serif;
+}
+.sfx-lab summary { padding: 6px; cursor: pointer; }
+.sfx-lab summary span { float: right; color: #ffd96e; font-weight: 600; }
+.sfx-lab-heading { margin: 10px 4px 6px; color: rgba(255, 255, 255, .7); }
+.sfx-lab-buttons { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+.sfx-lab button {
+  min-height: 40px;
+  padding: 6px 8px;
+  color: #fff;
+  text-align: left;
+  background: rgba(255, 255, 255, .1);
+  border: 1px solid rgba(255, 255, 255, .16);
+  border-radius: 8px;
+  font: inherit;
+}
+.sfx-lab button small { display: block; margin-top: 2px; color: rgba(255, 255, 255, .62); font-weight: 500; }
+.sfx-lab button:active { background: rgba(255, 217, 110, .28); }
+
 @keyframes max-callout-sharp {
   0% { opacity: 0; transform: scale(.72) translate3d(0,4px,0); filter: blur(4px); }
   6% { opacity: 1; transform: scale(1.08); filter: blur(0); }

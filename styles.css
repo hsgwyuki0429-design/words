@@ -9,7 +9,7 @@
    5. 形式カード・進捗ゲージ
    6. 学習の準備
    6-2. 演習とテストの切り替え・テスト・履歴
-   7. 範囲の複数選択（テスト）・入口・初回
+   7. 入口・初回
    8. 学習画面（カード・4択・入力・キーボード・スワイプ）
    9. 結果・単語帳・設定・まとめノート
   10. MAX演出
@@ -634,42 +634,9 @@ textarea:focus-visible,
   padding-top: 4px;
 }
 
-/* 教科タブは大きな見出しを兼ねる。選んでいる教科だけ濃く出す。 */
+/* 教科と「演習｜テスト」は同じ切り替え（.segment-switch）で並べる。 */
 .subject-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 4px 20px;
-  margin: 4px 0 2px;
-}
-
-.subject-tab {
-  position: relative;
-  min-height: 48px;
-  padding: 0;
-  color: var(--tertiary);
-  background: transparent;
-  border: 0;
-  font-size: 32px;
-  font-weight: 850;
-  letter-spacing: -0.045em;
-  line-height: 1.1;
-  transition: color 160ms ease;
-}
-
-.subject-tab.is-active {
-  color: var(--text);
-}
-
-.subject-tab.is-active::after {
-  position: absolute;
-  right: 0;
-  bottom: 2px;
-  left: 0;
-  height: 3px;
-  background: var(--pop);
-  border-radius: 99px;
-  content: "";
+  display: contents;
 }
 
 .home-summary {
@@ -857,7 +824,6 @@ textarea:focus-visible,
 
 .range-choice:active,
 .mode-progress-card:active,
-.multi-select-card:active,
 .criterion-option:active,
 .subject-button:active,
 .period-button:active {
@@ -1622,100 +1588,97 @@ textarea:focus-visible,
 
 /* --------------------------------------------------------------------------
    6-2. 演習とテストの切り替え・重要度の行・テスト・履歴
-   教科タブの右に「演習｜テスト」のスライダーを置き、押した側へつまみが弾んで滑る。
+   教科と「演習｜テスト」は同じ形の切り替えで並べ、押した側へつまみが弾んで滑る。
    演習は範囲 → 形式 → 重要度（1つ）で周回を重ね、テストは好きな条件で全部を1回ずつ解く。
    -------------------------------------------------------------------------- */
 
 .home-tabs-row {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0 2px;
 }
 
-.home-tabs-row .subject-tabs {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.mode-switch {
+/* 切り替えの共通形：角を少しだけ落とした長方形の区画を並べ、選んだ区画へつまみが弾んで滑る。
+   文字は教科名の大きさ（--switch-font）にそろえる。区画の数は --count、選んでいる位置は --index。 */
+.segment-switch {
+  --switch-font: 32px;
+  --switch-pad: 4px;
   position: relative;
   display: grid;
-  flex: 0 0 auto;
-  grid-template-columns: 1fr 1fr;
-  width: 136px;
-  height: 42px;
-  padding: 4px;
+  flex: 1 1 auto;
+  grid-template-columns: repeat(var(--count, 2), minmax(0, 1fr));
+  min-width: 0;
+  padding: var(--switch-pad);
   background: var(--tile);
-  border-radius: 999px;
+  border-radius: 12px;
   isolation: isolate;
 }
 
-.mode-switch[hidden] {
+.segment-switch[hidden] {
   display: none;
 }
 
-.mode-switch button {
+.segment-switch button {
   position: relative;
   z-index: 1;
-  padding: 0;
-  color: var(--secondary);
+  min-width: 0;
+  min-height: 52px;
+  padding: 0 14px;
+  color: var(--tertiary);
   background: transparent;
   border: 0;
-  border-radius: 999px;
-  font-size: 14px;
+  border-radius: 9px;
+  font-size: var(--switch-font);
   font-weight: 850;
-  letter-spacing: 0.02em;
-  transition: color 280ms ease;
+  letter-spacing: -0.045em;
+  line-height: 1.1;
+  white-space: nowrap;
+  transition: color 280ms ease, scale 120ms var(--ease-out);
 }
 
-.mode-switch button[aria-checked="true"] {
+.segment-switch button[aria-checked="true"] {
   color: var(--on-accent);
+}
+
+.segment-switch button:active {
+  scale: 0.95;
+}
+
+/* つまみはばねのように行き過ぎて戻り、動き出しに横へ伸びる。 */
+.segment-thumb {
+  position: absolute;
+  top: var(--switch-pad);
+  bottom: var(--switch-pad);
+  left: var(--switch-pad);
+  z-index: 0;
+  width: calc((100% - var(--switch-pad) * 2) / var(--count, 2));
+  background: var(--accent);
+  border-radius: 9px;
+  box-shadow: 0 2px 6px rgba(17, 17, 19, 0.16), 0 6px 16px rgba(17, 17, 19, 0.14);
+  translate: calc(var(--index, 0) * 100%) 0;
+  transition: translate 520ms var(--spring), background-color 320ms ease, box-shadow 320ms ease;
+}
+
+.segment-switch.is-moving .segment-thumb {
+  animation: switch-thumb-stretch 520ms var(--ease-out);
+}
+
+@keyframes switch-thumb-stretch {
+  0% { scale: 1 1; }
+  30% { scale: 1.16 0.88; }
+  65% { scale: 0.97 1.04; }
+  100% { scale: 1 1; }
+}
+
+/* テストの側は差し色の青。 */
+.mode-switch[data-mode="test"] .segment-thumb {
+  background: var(--pop);
+  box-shadow: 0 2px 6px rgba(43, 80, 255, 0.28), 0 8px 20px rgba(43, 80, 255, 0.3);
 }
 
 .mode-switch[data-mode="test"] button[aria-checked="true"] {
   color: #ffffff;
-}
-
-/* つまみはばねのように行き過ぎて戻り、動き出しに横へ伸びる。 */
-.mode-switch-thumb {
-  position: absolute;
-  top: 4px;
-  bottom: 4px;
-  left: 4px;
-  z-index: 0;
-  width: calc(50% - 4px);
-  background: var(--accent);
-  border-radius: 999px;
-  box-shadow: 0 2px 6px rgba(17, 17, 19, 0.16), 0 6px 16px rgba(17, 17, 19, 0.14);
-  transition: translate 520ms var(--spring), background-color 320ms ease, box-shadow 320ms ease;
-  animation: mode-thumb-stretch-back 520ms var(--ease-out);
-}
-
-.mode-switch[data-mode="test"] .mode-switch-thumb {
-  translate: 100% 0;
-  background: var(--pop);
-  box-shadow: 0 2px 6px rgba(43, 80, 255, 0.28), 0 8px 20px rgba(43, 80, 255, 0.3);
-  animation-name: mode-thumb-stretch;
-}
-
-@keyframes mode-thumb-stretch {
-  0% { scale: 1 1; }
-  30% { scale: 1.28 0.86; }
-  65% { scale: 0.94 1.06; }
-  100% { scale: 1 1; }
-}
-
-@keyframes mode-thumb-stretch-back {
-  0% { scale: 1 1; }
-  30% { scale: 1.28 0.86; }
-  65% { scale: 0.94 1.06; }
-  100% { scale: 1 1; }
-}
-
-.mode-switch button:active {
-  scale: 0.94;
-  transition: scale 120ms var(--ease-out);
 }
 
 /* 面の入れ替え：押した側から滑り込み、中の札が少しずつ遅れて弾む。 */
@@ -1762,69 +1725,190 @@ textarea:focus-visible,
   100% { scale: 1; }
 }
 
-/* テストの面：範囲・形式・重要度をチェックで選び、下の「テスト開始」でそのまま始める。 */
+/* テストの面：範囲・形式・重要度を札で付け外しして選び、下の「テスト開始」でそのまま始める。
+   スクロールしなくても1画面に収まるよう、札は小さく詰めて並べる。 */
 body.home-test-mode .main-content {
-  padding-bottom: calc(104px + var(--safe-bottom));
+  padding-bottom: calc(92px + var(--safe-bottom));
 }
 
 .test-home {
   display: grid;
-  gap: 22px;
+  gap: 14px;
 }
 
 .test-group-title {
-  margin: 0 0 8px 2px;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0 0 6px 2px;
   color: var(--secondary);
   font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.02em;
 }
 
-.test-home .multi-select-card {
-  min-height: 56px;
-  transition: background-color 160ms ease, color 160ms ease, transform 120ms var(--ease-out);
+.test-group-title small {
+  color: var(--tertiary);
+  font-size: 11px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
 }
 
-.test-home .multi-select-card:disabled {
+.test-chips {
+  display: grid;
+  gap: 6px;
+}
+
+/* 範囲は数が少なければ横いっぱいに広げ、名前を切らずに見せる。 */
+.test-chips--ranges {
+  grid-template-columns: repeat(auto-fit, minmax(108px, 1fr));
+}
+
+.test-chips--formats {
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+}
+
+.test-chips--importance {
+  grid-template-columns: repeat(auto-fit, minmax(52px, 1fr));
+}
+
+.test-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 46px;
+  padding: 6px 8px;
+  color: var(--text);
+  text-align: left;
+  background: var(--tile);
+  border: 0;
+  border-radius: 12px;
+  transition: background-color 160ms ease, color 160ms ease, scale 120ms var(--ease-out);
+}
+
+.test-chip:active:not(:disabled) {
+  scale: 0.96;
+}
+
+.test-chip:disabled {
   cursor: default;
-  opacity: 0.4;
+  opacity: 0.38;
 }
 
-.test-home .multi-select-card .multi-check {
-  transition: background-color 160ms ease, color 160ms ease;
+.test-chip.is-selected {
+  color: var(--on-accent);
+  background: var(--accent);
 }
 
-.test-home .multi-select-card.is-pulsing .multi-check {
+/* 印は小さな角丸の四角。選ぶと塗られて、中にチェックが付く。 */
+.test-chip-check {
+  position: relative;
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1.5px var(--line-strong);
+  transition: background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.test-chip.is-selected .test-chip-check {
+  background: var(--on-accent);
+  box-shadow: none;
+}
+
+.test-chip.is-selected .test-chip-check::after {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 7px;
+  height: 4px;
+  border-bottom: 2px solid var(--accent);
+  border-left: 2px solid var(--accent);
+  content: "";
+  transform: rotate(-45deg);
+}
+
+.test-chip.is-pulsing .test-chip-check {
   animation: check-pop 420ms var(--spring);
 }
 
-/* 重要度は短いので3列に詰める。 */
-.test-home .test-importance-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+.test-chip-text {
+  display: grid;
+  min-width: 0;
+  line-height: 1.2;
 }
 
-.test-importance-grid .multi-select-card {
-  grid-template-columns: 24px minmax(0, 1fr);
-  gap: 8px;
-  padding: 8px 10px;
+.test-chip-label {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.test-importance-grid .multi-check {
-  width: 24px;
-  height: 24px;
-  border-radius: 8px;
-}
-
-.test-importance-grid .select-all-card {
-  grid-column: auto;
-}
-
-.test-home-note {
-  margin: -6px 2px 0;
+.test-chip small {
   color: var(--secondary);
-  font-size: 12px;
-  font-weight: 650;
-  line-height: 1.6;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.test-chip.is-selected small {
+  color: inherit;
+  opacity: 0.7;
+}
+
+/* 重要度は短いので、印と文字を縦に積んで横に5つ並べる。 */
+.test-chips--importance .test-chip {
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  padding: 6px 4px;
+  text-align: center;
+}
+
+.test-chips--importance .test-chip-text {
+  justify-items: center;
+}
+
+.test-chips--importance .test-chip-check {
+  display: none;
+}
+
+/* 幅の狭い端末では、文字と印を少しだけ小さくして名前を切らない。 */
+@media (max-width: 400px) {
+  .test-chip {
+    gap: 5px;
+    padding: 6px 7px;
+  }
+
+  .test-chip-label {
+    font-size: 12px;
+  }
+
+  .test-chip-check {
+    width: 12px;
+    height: 12px;
+  }
+
+  .test-chip.is-selected .test-chip-check::after {
+    top: 2px;
+    left: 2px;
+    width: 6px;
+    height: 3px;
+  }
+}
+
+/* さらに狭い端末では印を省き（選んだ札は塗りで分かる）、形式を3列に保つ。 */
+@media (max-width: 360px) {
+  .test-chips--formats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .test-chip-check {
+    display: none;
+  }
 }
 
 @keyframes check-pop {
@@ -1833,7 +1917,7 @@ body.home-test-mode .main-content {
   100% { scale: 1; }
 }
 
-.home-pane.is-entering-right .multi-select-card {
+.home-pane.is-entering-right .test-chip {
   animation: home-chip-in 520ms var(--spring) both;
   animation-delay: calc(var(--i, 0) * 22ms + 60ms);
 }
@@ -2144,7 +2228,7 @@ body.home-test-mode .main-content {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mode-switch-thumb,
+  .segment-thumb,
   .home-pane,
   .home-pane *,
   .is-pulsing,
@@ -2157,91 +2241,14 @@ body.home-test-mode .main-content {
     animation: none !important;
   }
 
-  .mode-switch-thumb {
+  .segment-thumb {
     transition-duration: 1ms;
   }
 }
 
 /* --------------------------------------------------------------------------
-   7. 範囲の複数選択（テスト）・入口・初回
+   7. 入口・初回
    -------------------------------------------------------------------------- */
-
-.compact-range-view {
-  padding-bottom: calc(120px + var(--safe-bottom));
-}
-
-.multi-select-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.select-all-card {
-  grid-column: 1 / -1;
-}
-
-.multi-select-card {
-  display: grid;
-  grid-template-columns: 30px minmax(0, 1fr);
-  align-items: center;
-  gap: 10px;
-  min-height: 60px;
-  padding: 10px 12px;
-  color: var(--text);
-  text-align: left;
-  background: var(--tile);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-}
-
-.multi-select-card strong,
-.multi-select-card small {
-  display: block;
-}
-
-.multi-select-card strong {
-  overflow-wrap: anywhere;
-  font-size: 14px;
-  font-weight: 750;
-}
-
-.multi-select-card small {
-  color: var(--secondary);
-  font-size: 12px;
-}
-
-.multi-select-card .in-progress-badge {
-  margin-top: 4px;
-}
-
-.multi-check {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  color: #ffffff;
-  background: var(--surface-solid);
-  border-radius: 9px;
-  font-size: 14px;
-  font-weight: 850;
-}
-
-.multi-select-card.selected,
-.multi-select-card[aria-pressed="true"] {
-  color: var(--on-accent);
-  background: var(--accent);
-  border-color: var(--accent);
-}
-
-.multi-select-card.selected small {
-  color: inherit;
-  opacity: 0.72;
-}
-
-.multi-select-card.selected .multi-check {
-  color: var(--accent);
-  background: var(--on-accent);
-}
 
 /* 回と教科の入口 */
 .entry-view {
@@ -6064,7 +6071,6 @@ body.fx-lite.max-mode.fx-fever .fx-backdrop.is-on {
 :root[data-theme="dark"] .ai-link-token code,
 :root[data-theme="dark"] .ai-link-guide pre,
 :root[data-theme="dark"] .public-list-answer,
-:root[data-theme="dark"] .multi-check,
 :root[data-theme="dark"] .choice-button > span,
 :root[data-theme="dark"] .subject-icon,
 :root[data-theme="dark"] .item-tag,
@@ -6072,11 +6078,6 @@ body.fx-lite.max-mode.fx-fever .fx-backdrop.is-on {
 :root[data-theme="dark"] .word-form-kind,
 :root[data-theme="dark"] .choice-gesture-directions i {
   background: rgba(255, 255, 255, 0.07);
-}
-
-:root[data-theme="dark"] .multi-select-card.selected .multi-check {
-  color: var(--accent);
-  background: var(--on-accent);
 }
 
 :root[data-theme="dark"] .segmented-options button.selected {
@@ -6188,7 +6189,7 @@ body.fx-lite.max-mode.fx-fever .fx-backdrop.is-on {
 @media (hover: hover) and (pointer: fine) {
   .range-choice:hover,
   .mode-progress-card:hover:not(:disabled),
-  .multi-select-card:hover:not(.selected):not(:disabled),
+  .test-chip:hover:not(.is-selected):not(:disabled),
   .setup-chip:hover:not(.is-selected):not(:disabled),
   .choice-button:hover:not(:disabled),
   .secondary-button:hover:not(:disabled),
@@ -6249,8 +6250,8 @@ body.fx-lite.max-mode.fx-fever .fx-backdrop.is-on {
 }
 
 @media (max-width: 360px) {
-  .subject-tab {
-    font-size: 28px;
+  .segment-switch {
+    --switch-font: 26px;
   }
 
   .setup-chips {
@@ -6279,12 +6280,11 @@ body.fx-lite.max-mode.fx-fever .fx-backdrop.is-on {
     font-size: 34px;
   }
 
-  .subject-tab {
-    font-size: 36px;
+  .segment-switch {
+    --switch-font: 36px;
   }
 
-  .range-choice-list.has-many,
-  .multi-select-grid {
+  .range-choice-list.has-many {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
@@ -6507,13 +6507,16 @@ body.fx-lite.max-mode.fx-fever .fx-backdrop.is-on {
     padding: 6px 0 12px;
   }
 
-  .subject-tabs {
+  .home-tabs-row {
     margin-top: 0;
   }
 
-  .subject-tab {
-    min-height: 44px;
-    font-size: 28px;
+  .segment-switch {
+    --switch-font: 28px;
+  }
+
+  .segment-switch button {
+    min-height: 46px;
   }
 
   .home-summary {
@@ -6576,5 +6579,34 @@ body.fx-lite.max-mode.fx-fever .fx-backdrop.is-on {
 
   .sticky-action .primary-button {
     min-height: 52px;
+  }
+}
+
+/* （低い画面向けの指定より後に置く）低い端末では、切り替え・札・余白を詰めて、テストの面をスクロールなしで収める。 */
+@media (max-height: 620px) {
+  body.home-test-mode .home-summary {
+    display: none;
+  }
+
+  body.home-test-mode .home-tabs-row {
+    margin-bottom: 10px;
+  }
+
+  .segment-switch button {
+    min-height: 44px;
+  }
+
+  .test-home {
+    gap: 10px;
+  }
+
+  .test-group-title {
+    margin-bottom: 4px;
+  }
+
+  .test-chip {
+    min-height: 44px;
+    padding-top: 4px;
+    padding-bottom: 4px;
   }
 }

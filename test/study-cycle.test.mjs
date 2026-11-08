@@ -323,8 +323,6 @@ test("「すべて」から1つを押すとそれだけ、選んでいる中で�
   assert.deepEqual(toggleSetupValue(["phrase"], "phrase", all), [], "全部外したらすべてに戻る");
   assert.deepEqual(toggleSetupValue(["word", "phrase"], "structure", all), [], "全部を選んだらすべてと同じ");
   assert.deepEqual(toggleSetupValue(["word"], "all", all), [], "「すべて」はいつでも全部");
-  // テストの範囲・形式・重要度は、この決まりで選ぶ。
-  assert.match(appSource, /state\.testDraft\[field\] = toggleSetupValue\(state\.testDraft\[field\], target\.dataset\[key\], all\(\)\);/);
 });
 
 test("並び替えは主要4種を札で、その他は端末の選択肢で選ぶ", () => {

@@ -31,35 +31,47 @@ function englishItem(id, { range = "Plastic", importance = "A" } = {}) {
   return { ...englishItems[index], id, range, importance };
 }
 
-test("ホームの教科タブの右に「演習｜テスト」の切り替えを置く", () => {
-  assert.match(indexSource, /class="home-tabs-row">\s*\n\s*<nav class="subject-tabs" id="subject-tabs"[^>]*><\/nav>\s*\n\s*<div class="mode-switch" id="mode-switch" role="radiogroup"/);
+test("教科と「演習｜テスト」は同じ形の切り替え（スライダー）で並べる", () => {
+  assert.match(indexSource, /class="home-tabs-row">\s*\n\s*<nav class="subject-tabs" id="subject-tabs"[^>]*><\/nav>\s*\n\s*<div class="segment-switch mode-switch" id="mode-switch" role="radiogroup"/);
   assert.match(indexSource, /data-home-mode="practice">演習<\/button>/);
   assert.match(indexSource, /data-home-mode="test">テスト<\/button>/);
-  assert.match(indexSource, /<span class="mode-switch-thumb" aria-hidden="true"><\/span>/);
+  assert.match(indexSource, /id="mode-switch"[^>]*>\s*\n\s*<span class="segment-thumb" aria-hidden="true"><\/span>/);
   assert.match(indexSource, /class="home-pane" id="home-pane"/);
   assert.match(indexSource, /class="home-pane test-home" id="test-home" hidden/);
+  // 教科も同じ切り替え。同じ並びなら描き直さず、つまみだけを動かす。
+  const tabs = functionSource("renderSubjectTabs", "moveSegmentSwitch");
+  assert.match(tabs, /class="segment-switch subject-switch" role="radiogroup" aria-label="教科"/);
+  assert.match(tabs, /if \(current && current\.dataset\.subjects === key\) \{\s*\n\s*moveSegmentSwitch\(current, index\);/);
+  assert.match(functionSource("syncHomeMode", "pulseChip"), /moveSegmentSwitch\(elements\.modeSwitch, state\.homeMode === "test" \? 1 : 0\);/);
   // 切り替えは端末に覚えておき、次に開いたときも同じ側から始まる。
   assert.match(functionSource("setHomeMode", "normalizedTestRanges"), /setMeta\("homeMode", next\)/);
   assert.match(appSource, /getMeta\("homeMode", "practice"\)/);
   assert.match(appSource, /if \(target\.dataset\.homeMode\) setHomeMode\(target\.dataset\.homeMode\);/);
-  // つまみはばねのように滑り、面は押した側から入れ替わる。
-  assert.match(stylesSource, /\.mode-switch\[data-mode="test"\] \.mode-switch-thumb \{[^}]*translate: 100% 0/);
-  assert.match(stylesSource, /\.mode-switch-thumb \{[^}]*transition: translate 520ms var\(--spring\)/);
+  // 形：角を少しだけ落とした長方形。文字は教科名の大きさ（32px）。つまみはばねのように滑る。
+  assert.match(stylesSource, /\.segment-switch \{[^}]*--switch-font: 32px;[^}]*border-radius: 12px;/);
+  assert.match(stylesSource, /\.segment-switch button \{[^}]*font-size: var\(--switch-font\);/);
+  assert.match(stylesSource, /\.segment-thumb \{[^}]*translate: calc\(var\(--index, 0\) \* 100%\) 0;[^}]*transition: translate 520ms var\(--spring\)/);
   assert.match(stylesSource, /\.home-pane\.is-entering-right \{[^}]*animation: home-pane-in-right/);
-  assert.match(stylesSource, /@media \(prefers-reduced-motion: reduce\) \{\s*\n\s*\.mode-switch-thumb,/);
+  assert.match(stylesSource, /@media \(prefers-reduced-motion: reduce\) \{\s*\n\s*\.segment-thumb,/);
+  assert.doesNotMatch(appSource, /class="subject-tab/);
 });
 
-test("テストは1画面で、範囲・形式・重要度をチェックで選んで（全選択・複数）、全部を1回ずつ出す", () => {
+test("テストは1画面で、範囲・形式・重要度を札で付け外しして選び、全部を1回ずつ出す", () => {
   const home = functionSource("renderTestHome", "startTest");
-  assert.match(home, /data-test-range="all"', title: "全選択"/);
   assert.match(home, /data-test-range="\$\{escapeHtml\(range\)\}"/);
-  assert.match(home, /data-test-format="all"', title: "全選択"/);
   assert.match(home, /data-test-format="\$\{escapeHtml\(option\.key\)\}"/);
-  assert.match(home, /data-test-importance="all"', title: "すべて"/);
-  assert.match(home, /class="multi-select-card/);
+  assert.match(home, /data-test-importance="\$\{value\}"/);
   assert.match(home, /data-test-start/);
-  // 演習とちがい、範囲を選んで形式へ…と画面を進めない。
+  // 「全選択」の札は置かない。何も選んでいない欄があれば、開始ボタンでそれを知らせる。
+  assert.doesNotMatch(appSource, /data-test-(range|format|importance)="all"/);
+  assert.doesNotMatch(home, /全選択/);
+  assert.match(home, /`\$\{missing\}を選んでください`/);
+  // 初めは範囲・重要度がすべて、形式は先頭の1つ。押すたびに付け外しする。
+  assert.match(functionSource("testDraftValues", "selectedTestFormats"), /field === "formats" \? all\.slice\(0, 1\) : \[\.\.\.all\]/);
+  assert.match(appSource, /state\.testDraft\[field\] = current\.includes\(value\)\s*\n\s*\? current\.filter\(\(entry\) => entry !== value\)\s*\n\s*: \[\.\.\.current, value\];/);
+  // 演習とちがい、範囲を選んで形式へ…と画面を進めない。スクロールしなくても1画面に収める。
   assert.match(functionSource("renderDashboard", "setRingColor"), /if \(test\) \{\s*\n\s*renderTestHome\(\);/);
+  assert.match(stylesSource, /\.test-chip \{[^}]*min-height: 46px;/);
   // 形式を2つ以上選んだら、形式ごとに1回ずつ出して全体を混ぜる。
   assert.match(functionSource("testEntriesFor", "testFormatsLabel"), /return formats\.length > 1 \? shuffle\(entries\) : entries;/);
 

@@ -1,5 +1,5 @@
-import { createHaptics } from "./haptics.js?v=2026.11.17";
-import { createKobunController } from "./kobun.js?v=2026.11.17";
+import { createHaptics } from "./haptics.js?v=2026.11.18";
+import { createKobunController } from "./kobun.js?v=2026.11.18";
 import {
   ALL_MODES,
   ALPHABET_KEYBOARD_ROWS,
@@ -74,8 +74,8 @@ import {
   summarizeSession,
   summarizeCycleMeter,
   toggleSetupValue,
-} from "./logic.js?v=2026.11.17";
-import { createMaxAudioEngine } from "./audio.js?v=2026.11.17";
+} from "./logic.js?v=2026.11.18";
+import { createMaxAudioEngine } from "./audio.js?v=2026.11.18";
 import {
   CORRECT_VARIANTS,
   LANDING_VARIANTS,
@@ -83,7 +83,7 @@ import {
   SFX_VOLUME_OPTIONS,
   createSfxEngine,
   normalizeSfxVolume,
-} from "./sfx.js?v=2026.11.17";
+} from "./sfx.js?v=2026.11.18";
 import {
   MAX_FEVER_GOAL,
   MAX_TIMELINE_PHASES,
@@ -98,7 +98,7 @@ import {
   resolveMaxCue,
   scaledVisualPlan,
   shouldPlayMaxSound,
-} from "./max-cues.js?v=2026.11.17";
+} from "./max-cues.js?v=2026.11.18";
 import {
   clearAllData,
   getMeta,
@@ -110,7 +110,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.11.17";
+} from "./storage.js?v=2026.11.18";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -118,7 +118,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.11.17";
+} from "./quiz-gestures.js?v=2026.11.18";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
@@ -127,7 +127,7 @@ import {
   normalizeSpeechRate,
   normalizeSpeechVoiceURI,
   voiceKey,
-} from "./speech.js?v=2026.11.17";
+} from "./speech.js?v=2026.11.18";
 import {
   AI_LINK_JOURNAL_KEY,
   AI_LINK_META_KEY,
@@ -143,7 +143,7 @@ import {
   isAiLinkConfigured,
   mcpUrlFor,
   normalizeAiLinkConfig,
-} from "./ai-link.js?v=2026.11.17";
+} from "./ai-link.js?v=2026.11.18";
 import {
   DEFAULT_DEVICE_SYNC,
   DEVICE_SYNC_META_KEY,
@@ -160,13 +160,13 @@ import {
   syncStateLabel,
   transferFileName,
   unsentEntries,
-} from "./sync.js?v=2026.11.17";
+} from "./sync.js?v=2026.11.18";
 import {
   applyThemePreference,
   normalizeThemePreference,
   readStoredThemePreference,
   watchSystemTheme,
-} from "./theme.js?v=2026.11.17";
+} from "./theme.js?v=2026.11.18";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -5740,7 +5740,7 @@ function bindEvents() {
       saveSettings();
       renderSettings();
       // 選んだ大きさをその場で確かめられるように、正解の音を一度だけ鳴らす。
-      sfx.play("correct", { variant: "marimba" });
+      sfx.play("correct", { variant: "drops" });
     }
     if (target.dataset.soundIntensity) {
       state.settings.soundIntensity = target.dataset.soundIntensity === "full" ? "full" : "gentle";
@@ -6032,7 +6032,7 @@ async function boot() {
       fetch(ENGLISH_DATA_URL),
       fetch("./data/public-items.json?v=2026.09.01"),
       fetch("./data/health-items.json?v=2026.09.01"),
-      fetch("./data/kobun-vocabulary.json?v=2026.11.17"),
+      fetch("./data/kobun-vocabulary.json?v=2026.11.18"),
       loadHistory(),
       getMeta("selectedMode"),
       getMetaObject("settings", DEFAULT_SETTINGS),
@@ -6115,7 +6115,7 @@ async function boot() {
         .catch((error) => console.warn("AI連携の同期に失敗しました", error));
     }
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.11.17").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.11.18").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

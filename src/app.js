@@ -1,5 +1,5 @@
-import { createHaptics } from "./haptics.js?v=2026.11.17";
-import { createKobunController } from "./kobun.js?v=2026.11.17";
+import { createHaptics } from "./haptics.js?v=2026.11.19";
+import { createKobunController } from "./kobun.js?v=2026.11.19";
 import {
   ALL_MODES,
   ALPHABET_KEYBOARD_ROWS,
@@ -74,8 +74,16 @@ import {
   unmasterStudyItems,
   gaugeColorIndex,
   hasAnsweredMode,
-  } from "./logic.js?v=2026.11.17";
-import { createMaxAudioEngine } from "./audio.js?v=2026.11.17";
+} from "./logic.js?v=2026.11.19";
+import { createMaxAudioEngine } from "./audio.js?v=2026.11.19";
+import {
+  CORRECT_VARIANTS,
+  LANDING_VARIANTS,
+  SFX_RARITIES,
+  SFX_VOLUME_OPTIONS,
+  createSfxEngine,
+  normalizeSfxVolume,
+} from "./sfx.js?v=2026.11.19";
 import {
   MAX_FEVER_GOAL,
   MAX_TIMELINE_PHASES,
@@ -90,7 +98,7 @@ import {
   resolveMaxCue,
   scaledVisualPlan,
   shouldPlayMaxSound,
-} from "./max-cues.js?v=2026.11.17";
+} from "./max-cues.js?v=2026.11.19";
 import {
   clearAllData,
   getMeta,
@@ -102,7 +110,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.11.17";
+} from "./storage.js?v=2026.11.19";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -110,7 +118,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.11.17";
+} from "./quiz-gestures.js?v=2026.11.19";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
@@ -119,7 +127,7 @@ import {
   normalizeSpeechRate,
   normalizeSpeechVoiceURI,
   voiceKey,
-} from "./speech.js?v=2026.11.17";
+} from "./speech.js?v=2026.11.19";
 import {
   AI_LINK_JOURNAL_KEY,
   AI_LINK_META_KEY,
@@ -135,7 +143,7 @@ import {
   isAiLinkConfigured,
   mcpUrlFor,
   normalizeAiLinkConfig,
-} from "./ai-link.js?v=2026.11.17";
+} from "./ai-link.js?v=2026.11.19";
 import {
   DEFAULT_DEVICE_SYNC,
   DEVICE_SYNC_META_KEY,
@@ -152,21 +160,25 @@ import {
   syncStateLabel,
   transferFileName,
   unsentEntries,
-} from "./sync.js?v=2026.11.17";
+} from "./sync.js?v=2026.11.19";
 import {
   applyThemePreference,
   normalizeThemePreference,
   readStoredThemePreference,
   watchSystemTheme,
-} from "./theme.js?v=2026.11.17";
+} from "./theme.js?v=2026.11.19";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
   // 画面の明るさ。"system"（端末に合わせる）・"light"・"dark"。
   // null は未設定。起動前に控えた値（localStorage）を引き継ぐ。
   theme: null,
+  // MAX のコンボ・大当たりなどの派手な音。初期設定はオフ。
   sound: false,
   soundIntensity: "gentle",
+  // カードをめくる・答える・ボタンを押すときの効果音（SIMPLE・MAX 共通、src/sfx.js）。
+  uiSound: true,
+  uiSoundVolume: "normal",
   vibration: true,
   particles: true,
   shake: true,
@@ -310,9 +322,17 @@ const elements = Object.fromEntries(
 );
 
 const haptics = createHaptics({ isEnabled: () => state.settings.vibration });
+// カードをめくる・答える・ボタンを押すときの効果音。音の設計は docs/sound-design.md。
+const sfx = createSfxEngine({
+  isEnabled: () => Boolean(state.settings.uiSound),
+  getVolume: () => state.settings.uiSoundVolume,
+});
 
 const kobun = createKobunController({
-  onAnswer: (correct) => haptics.trigger(correct ? "correct" : "wrong"),
+  onAnswer: (correct) => {
+    haptics.trigger(correct ? "correct" : "wrong");
+    sfx.play(correct ? "correct" : "wrong");
+  },
   root: document.getElementById("view-kobun"),
   getHistory: () => state.history,
   onQuizChange: (active) => {
@@ -2378,6 +2398,10 @@ function aiLinkCard() {
     </section>`;
 }
 
+function sfxVolume() {
+  return normalizeSfxVolume(state.settings.uiSoundVolume);
+}
+
 function renderSettings() {
   const toggle = (key, title, detail) => `
     <label class="settings-row">
@@ -2420,6 +2444,20 @@ function renderSettings() {
       ${toggle("showSources", "出典を表示", "回答後に教材と範囲を表示")}
       ${toggle("useSystemKeyboard", "端末のキーボードを使う", "オフにすると、キーボード入力でアプリ内の小文字英字キーボードを表示します")}
       ${toggle("vibration", "振動", haptics.supported ? "カード・正誤・起動後の最初の操作で振動" : "このブラウザは振動に非対応です（iPhoneなど）")}
+      ${toggle("uiSound", "効果音", "カードをめくる・答える・ボタンを押したときの音")}
+      <div class="settings-row sound-intensity-row sfx-volume-row">
+        <span><strong>効果音の大きさ</strong><small>押すとその大きさで試せます</small></span>
+        <div class="segmented-options compact-segments" role="radiogroup" aria-label="効果音の大きさ">
+          ${SFX_VOLUME_OPTIONS.map(({ value, label }) => `
+            <button
+              type="button"
+              role="radio"
+              aria-checked="${sfxVolume() === value}"
+              data-sfx-volume="${value}"
+              class="${sfxVolume() === value ? "selected" : ""}"
+            >${label}</button>`).join("")}
+        </div>
+      </div>
     </section>
     <section class="settings-card">
       <h2>演出モード</h2><p>問題と正答判定はどちらのモードでも同じです。</p>
@@ -2431,10 +2469,10 @@ function renderSettings() {
       <h3 class="settings-subheading">MAX MODE</h3>
       ${toggle("particles", "パーティクル", "正解時にCanvasの光を表示")}
       ${toggle("shake", "画面シェイク", "コンボ時に画面を短く揺らす")}
-      ${toggle("sound", "効果音", "初期設定はオフ")}
+      ${toggle("sound", "MAXの演出音", "コンボ・大当たり・確変の派手な音（初期設定はオフ）")}
       <div class="settings-row sound-intensity-row">
-        <span><strong>効果音の強さ</strong><small>音量ではなくレイヤーと余韻を調整</small></span>
-        <div class="segmented-options compact-segments" role="radiogroup" aria-label="効果音の強さ">
+        <span><strong>演出音の強さ</strong><small>音量ではなくレイヤーと余韻を調整</small></span>
+        <div class="segmented-options compact-segments" role="radiogroup" aria-label="演出音の強さ">
           <button type="button" data-sound-intensity="gentle" class="${state.settings.soundIntensity === "full" ? "" : "selected"}">控えめ</button>
           <button type="button" data-sound-intensity="full" class="${state.settings.soundIntensity === "full" ? "selected" : ""}">フル</button>
         </div>
@@ -3281,7 +3319,7 @@ function applyCueFanfare(plan, visual) {
   ], { duration: Math.min(920, plan.duration), easing: "ease-out" });
 }
 
-function runMaxCue(event, { combo = 0, power = undefined, label = "", detail = "", variation = null } = {}) {
+function runMaxCue(event, { combo = 0, power = undefined, label = "", detail = "", variation = null, answerSound = false } = {}) {
   if (!isMaxMode()) return null;
   const plan = resolveMaxCue(event, { combo, power, variation });
   const visual = scaledVisualPlan(plan.visual, {
@@ -3293,7 +3331,11 @@ function runMaxCue(event, { combo = 0, power = undefined, label = "", detail = "
   fx.cueClass = `fx-cue-${plan.event}`;
   document.body.classList.add(fx.cueClass);
   document.body.dataset.maxCue = plan.event;
-  playMaxSound(plan.event, { combo: plan.combo, power: plan.power, variation: plan.pitch.variation });
+  // 正誤そのものの音を効果音（sfx.js）が鳴らしたときは、MAXのふつうの正解・不正解の音は重ねない。
+  // コンボ・新記録などの節目の音は、その上に重ねる。
+  if (!(answerSound && (plan.event === "correct" || plan.event === "wrong"))) {
+    playMaxSound(plan.event, { combo: plan.combo, power: plan.power, variation: plan.pitch.variation });
+  }
 
   const handlers = {
     anticipationAt: () => applyCueAnticipation(plan, visual),
@@ -3310,6 +3352,77 @@ function runMaxCue(event, { combo = 0, power = undefined, label = "", detail = "
   };
   for (const phase of MAX_TIMELINE_PHASES) cueTimeout(handlers[phase], plan.timeline[phase]);
   return plan;
+}
+
+// 自分で答えを送るボタン（古文の「回答する」）は、保存のあとに正誤の音が鳴るので、ボタンの音を重ねない。
+const BUTTON_SOUND_SKIP = '[data-kb-action="submit"]';
+
+/**
+ * ボタンを押したときの「コッ」。押したことで、めくる・すべる・正解などの音が
+ * 同じ操作の中で鳴ったときは、そちらだけにする（2つの音を重ねない）。
+ */
+function queueButtonSound(button) {
+  if (button.matches(BUTTON_SOUND_SKIP)) return;
+  const mark = sfx.playCount;
+  queueMicrotask(() => {
+    if (sfx.playCount === mark) sfx.play("tap");
+  });
+}
+
+/**
+ * ?sfx-lab を付けて開いたときだけ出る、効果音の試聴パネル。
+ * レア度つきの音を1つずつ聞き比べられる（ふだんの画面には出さない）。
+ */
+function installSfxLab() {
+  if (!new URLSearchParams(location.search).has("sfx-lab")) return;
+  // ラボでは、設定に関係なく音を出す（保存はしない）。
+  state.settings.uiSound = true;
+  const percent = (weight) => `${(weight * 100).toFixed(weight < 0.1 ? 1 : 0)}%`;
+  const button = (event, label, detail = "", variant = "") => `
+    <button type="button" data-sfx-lab-event="${event}" ${variant ? `data-sfx-lab-variant="${variant}"` : ""}>
+      ${escapeHtml(label)}${detail ? `<small>${escapeHtml(detail)}</small>` : ""}
+    </button>`;
+  const variantButtons = (event, variants) => variants
+    .map((entry) => button(event, entry.name, `${SFX_RARITIES[entry.rarity].label} ${percent(entry.weight)}`, entry.id))
+    .join("");
+  // 画面を覆わないよう、閉じた状態（下の細いバー）で出す。押すと開く。
+  const panel = document.createElement("details");
+  panel.className = "sfx-lab";
+  panel.innerHTML = `
+    <summary>効果音ラボ <span data-sfx-lab-status>押すと鳴ります</span></summary>
+    <div class="sfx-lab-body">
+      <p class="sfx-lab-heading">抽選して鳴らす</p>
+      <div class="sfx-lab-buttons">
+        ${button("flip", "めくる")}${button("correct", "正解")}${button("wrong", "不正解")}
+        ${button("unflip", "問題面へ戻す")}${button("slide", "すべらせる")}${button("tap", "ボタン")}
+        ${button("toggle-on", "スイッチを入れる")}${button("toggle-off", "スイッチを切る")}${button("key", "キー")}
+      </div>
+      <p class="sfx-lab-heading">めくった音（10種）</p>
+      <div class="sfx-lab-buttons">${variantButtons("flip", LANDING_VARIANTS)}</div>
+      <p class="sfx-lab-heading">正解の音（10種）</p>
+      <div class="sfx-lab-buttons">${variantButtons("correct", CORRECT_VARIANTS)}</div>
+    </div>`;
+  const status = panel.querySelector("[data-sfx-lab-status]");
+  panel.addEventListener("click", (event) => {
+    const target = event.target.closest("[data-sfx-lab-event]");
+    if (!target) return;
+    // パネルのボタンの「コッ」は重ねない。
+    event.stopPropagation();
+    const plan = sfx.play(target.dataset.sfxLabEvent, {
+      variant: target.dataset.sfxLabVariant || null,
+      direction: "right",
+    });
+    const entry = plan?.variant
+      ? [...LANDING_VARIANTS, ...CORRECT_VARIANTS].find((item) => item.id === plan.variant
+        && (plan.event === "correct" ? CORRECT_VARIANTS : LANDING_VARIANTS).includes(item))
+      : null;
+    status.textContent = !plan
+      ? "鳴らせませんでした"
+      : entry
+        ? `${entry.name}（${SFX_RARITIES[entry.rarity].label}）`
+        : "鳴らしました";
+  });
+  document.body.append(panel);
 }
 
 function installMaxEffectsLab() {
@@ -3603,7 +3716,7 @@ function exitFever() {
   document.body.classList.remove("fx-fever");
 }
 
-function correctEffect(special = "", { durationMs = null, fever = null } = {}) {
+function correctEffect(special = "", { durationMs = null, fever = null, answerSound = false } = {}) {
   if (!isMaxMode()) return;
   syncMaxHeat();
   const event = maxCueForAnswer({ correct: true, combo: state.combo, special });
@@ -3617,7 +3730,7 @@ function correctEffect(special = "", { durationMs = null, fever = null } = {}) {
     "new-record": ["新記録!!", `${state.combo}連`],
     "weakness-destroyed": ["苦手撃破!!", "BREAK THROUGH"],
   }[event] ?? ["", ""];
-  const plan = runMaxCue(event, { combo: state.combo, label: copy[0], detail: copy[1] });
+  const plan = runMaxCue(event, { combo: state.combo, label: copy[0], detail: copy[1], answerSound });
   const origin = impactOrigin();
   const feverOn = Boolean(fever?.active);
   bounceCorrectTarget();
@@ -3636,10 +3749,10 @@ function correctEffect(special = "", { durationMs = null, fever = null } = {}) {
   }
 }
 
-function wrongEffect({ fever = null } = {}) {
+function wrongEffect({ fever = null, answerSound = false } = {}) {
   if (!isMaxMode()) return;
   syncMaxHeat();
-  runMaxCue(maxCueForAnswer({ correct: false }), { label: "", combo: 0 });
+  runMaxCue(maxCueForAnswer({ correct: false }), { label: "", combo: 0, answerSound });
   if (fever?.ended) exitFever();
   updateMaxHud({ crack: true });
 }
@@ -4742,6 +4855,8 @@ function toggleRecallFace() {
     if (!currentQuizGesturePolicy().tapEnabled) return;
     session.choiceQuestionVisible = !session.choiceQuestionVisible;
     haptics.trigger("flip");
+    // 答え合わせ済みのカードを裏返すだけなので、紙の音だけ（ごほうびの抽選はしない）。
+    sfx.play("swish", { up: !session.choiceQuestionVisible });
     renderQuiz();
     return;
   }
@@ -4749,6 +4864,9 @@ function toggleRecallFace() {
   if (!currentQuizGesturePolicy().tapEnabled) return;
   session.revealed = !session.revealed;
   haptics.trigger("flip");
+  // 答え面へめくるときは、紙が擦れる「サッ」のあとに、カードが落ち着く音（10種からレア度つきの抽選）。
+  // 問題面へ戻すときは、紙の音だけ。描画より先に鳴らし、指の動きから遅れないようにする。
+  sfx.play(session.revealed ? "flip" : "unflip");
   renderQuiz();
   // 答え面を開いたときに、その答えの英語を読み上げる（日本語→英語のカード）。
   if (session.revealed) speakQuestionEnglish(session.currentQuestion, "answer");
@@ -4774,6 +4892,8 @@ async function handleRecallSwipe({ surface, direction }) {
     await animateSwipeCancel({ surface });
     return;
   }
+  // 払った方向へ、カードが紙の上をすべっていく音。
+  sfx.play("slide", { direction });
   // ここから先は次の問題へ進むことが確定したスワイプ。いま読み上げ中の英語を
   // すぐ止め、次の問題の読み上げ（prepareQuestion）へ引き継ぐ。
   englishSpeech.stop();
@@ -4800,7 +4920,8 @@ async function handleChoiceNextSwipe({ surface, direction }) {
     await animateSwipeCancel({ surface });
     return;
   }
-  // 次の問題へ進むことが確定したスワイプだけが、ここへ来る。
+  // 次の問題へ進むことが確定したスワイプだけが、ここへ来る。払った方向へカードがすべる音を鳴らす。
+  sfx.play("slide", { direction });
   englishSpeech.stop();
   session.isTransitioning = true;
   try {
@@ -5138,6 +5259,9 @@ async function submitAnswer(
   session.currentCorrect = correct;
   session.answered = true;
   haptics.trigger(correct ? "correct" : "wrong");
+  // 4択・入力の正誤は音でも知らせる（正解は10種からレア度つきの抽選）。保存を待たずに鳴らす。
+  // フラッシュカードの自己採点は、払ったカードがすべる音だけにする（正誤の音は重ねない）。
+  const answerSound = !isRecallMode(question.mode) && Boolean(sfx.play(correct ? "correct" : "wrong"));
   // 英語が答えになる形式は、解答して答えが出たここで読み上げる。履歴の保存を
   // 待たずに呼ぶので、タップ・キー操作から途切れずにつながる。
   // フラッシュカード・一問一答は答え面を開いた時点で読むため、ここでは読まない。
@@ -5223,9 +5347,9 @@ async function submitAnswer(
   // 現在カードを残したまま演出を始め、その後カード退場へつなぐ。
   if (pendingCorrectEffect !== null) {
     const special = pendingCorrectEffect;
-    requestAnimationFrame(() => correctEffect(special, { durationMs, fever: feverChange }));
+    requestAnimationFrame(() => correctEffect(special, { durationMs, fever: feverChange, answerSound }));
   } else if (isMaxMode()) {
-    requestAnimationFrame(() => wrongEffect({ fever: feverChange }));
+    requestAnimationFrame(() => wrongEffect({ fever: feverChange, answerSound }));
   }
   return { correct, scheduledDelay };
 }
@@ -5796,6 +5920,7 @@ function bindEvents() {
     if (document.hidden) {
       resetMaxEffects({ keepAmbience: true });
       maxAudio.stopAll({ suspend: true });
+      sfx.stopAll({ suspend: true });
       stashStudyProgress();
       // 送れなかったぶんは端末に残り、次の起動時にまとめて送られる。
       if (isAiLinkActive(state.aiLink) || isSyncConnected(state.deviceSync)) {
@@ -5806,9 +5931,16 @@ function bindEvents() {
   // タブを閉じる・別ページへ移る直前にも、学習の進み具合を控えへ逃がす。
   addEventListener("pagehide", stashStudyProgress);
 
+  // 最初の操作で音の準備をしておく（最初の音が遅れないように）。iPhone などは、
+  // 指で触れた操作の中でしか音を出し始められないので、いくつかの操作で試す。
+  for (const type of ["pointerdown", "pointerup", "touchend", "keydown"]) {
+    document.addEventListener(type, () => sfx.warm(), { capture: true, passive: true });
+  }
+
   document.addEventListener("click", (event) => {
     const target = event.target.closest("button");
     if (!target) return;
+    queueButtonSound(target);
     if (target.dataset.viewTarget) {
       // 学習中に左上のマークなどで画面を移るときも、学習の終了処理を通す。
       if (state.view === "quiz" && !leaveQuiz()) return;
@@ -5899,6 +6031,13 @@ function bindEvents() {
       // 選んだ速さをその場で確かめられるように、タップの中で一度だけ読み上げる。
       englishSpeech.speak(SPEECH_RATE_SAMPLE, speechOptions((questionSpeechToken += 1)));
     }
+    if (target.dataset.sfxVolume) {
+      state.settings.uiSoundVolume = normalizeSfxVolume(target.dataset.sfxVolume);
+      saveSettings();
+      renderSettings();
+      // 選んだ大きさをその場で確かめられるように、正解の音を一度だけ鳴らす。
+      sfx.play("correct", { variant: "drops" });
+    }
     if (target.dataset.soundIntensity) {
       state.settings.soundIntensity = target.dataset.soundIntensity === "full" ? "full" : "gentle";
       saveSettings();
@@ -5969,9 +6108,13 @@ function bindEvents() {
       saveSettings();
       updateCharacterCountDisplay();
     }
-    if (target.dataset.alphabetKey !== undefined) applyAlphabetKey(target.dataset.alphabetKey);
+    if (target.dataset.alphabetKey !== undefined) {
+      if (!state.session?.answered) sfx.play("key");
+      applyAlphabetKey(target.dataset.alphabetKey);
+    }
     if (target.dataset.alphabetAction) {
       const action = target.dataset.alphabetAction;
+      if (action !== "submit" && !state.session?.answered) sfx.play(action === "delete" ? "key-delete" : "key");
       if (action === "delete") deleteAlphabetCharacter();
       if (action === "previous") moveActiveInputSlot(-1);
       if (action === "next") moveActiveInputSlot(1);
@@ -6070,6 +6213,9 @@ function bindEvents() {
     const setting = event.target.dataset?.setting;
     if (!setting || !(setting in state.settings)) return;
     state.settings[setting] = event.target.checked;
+    if (setting === "uiSound" && !state.settings.uiSound) sfx.stopAll();
+    // スイッチの音。入れたときは上がり、切ったときは下がる（効果音を切ったときは鳴らない）。
+    sfx.play(event.target.checked ? "toggle-on" : "toggle-off");
     if (setting === "sound" && state.settings.sound && isMaxMode()) unlockMaxAudio();
     if (setting === "sound" && !state.settings.sound) maxAudio.stopAll();
     if (setting === "vibration") {
@@ -6173,7 +6319,7 @@ async function boot() {
       fetch(ENGLISH_DATA_URL),
       fetch("./data/public-items.json?v=2026.09.01"),
       fetch("./data/health-items.json?v=2026.09.01"),
-      fetch("./data/kobun-vocabulary.json?v=2026.11.17"),
+      fetch("./data/kobun-vocabulary.json?v=2026.11.19"),
       loadHistory(),
       getMeta("selectedMode"),
       getMetaObject("settings", DEFAULT_SETTINGS),
@@ -6207,12 +6353,15 @@ async function boot() {
     state.selectedMode = ALL_MODES.includes(selectedMode) ? selectedMode : null;
     state.settings = settings;
     state.settings.soundIntensity = state.settings.soundIntensity === "full" ? "full" : "gentle";
+    state.settings.uiSound = state.settings.uiSound !== false;
+    state.settings.uiSoundVolume = normalizeSfxVolume(state.settings.uiSoundVolume);
     // 明るさは、保存済みの設定が無ければ起動前に控えていた値を引き継ぐ。
     state.settings.theme = normalizeThemePreference(
       settings.theme ?? readStoredThemePreference(),
     );
     applyTheme();
     installMaxEffectsLab();
+    installSfxLab();
     // 声一覧は取得までに時間がかかるブラウザがあるので、起動時に頼んでおく。
     // 届くのを待たないため、出題やスワイプが遅くなることはない。
     englishSpeech.prime();
@@ -6259,7 +6408,7 @@ async function boot() {
         .catch((error) => console.warn("AI連携の同期に失敗しました", error));
     }
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.11.17").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.11.19").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

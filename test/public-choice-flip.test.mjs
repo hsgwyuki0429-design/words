@@ -19,7 +19,8 @@ test("公共の回答済みカードはタップとスワイプを区別し、�
 test("表裏を何度切り替えても回答・採点・進捗を変えない", () => {
   const session = { currentQuestion: { mode: "public_choice" }, answered: true, currentAnswer: "選択B", results: [{ correct: false }], cursor: 3 };
   let renders = 0;
-  const context = vm.createContext({ haptics: { trigger() {} }, state: { session }, currentQuizGesturePolicy: () => quizGesturePolicy({ mode: "public_choice", answered: true }), renderQuiz: () => renders++ });
+  const sounds = [];
+  const context = vm.createContext({ haptics: { trigger() {} }, sfx: { play: (event) => sounds.push(event) }, state: { session }, currentQuizGesturePolicy: () => quizGesturePolicy({ mode: "public_choice", answered: true }), renderQuiz: () => renders++ });
   vm.runInContext(functionSource("toggleRecallFace"), context);
   for (let i = 0; i < 6; i++) {
     vm.runInContext("toggleRecallFace()", context);
@@ -29,6 +30,8 @@ test("表裏を何度切り替えても回答・採点・進捗を変えない",
     assert.equal(session.cursor, 3);
   }
   assert.equal(renders, 6);
+  // 裏返すたびに紙の音だけを鳴らす（答え合わせは済んでいるので、ごほうびの抽選はしない）
+  assert.deepEqual(sounds, Array(6).fill("swish"));
 });
 
 test("公共の答え面は正誤・模範回答・解説を表示し、問題面は選択した回答を明示する", () => {

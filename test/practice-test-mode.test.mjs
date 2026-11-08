@@ -33,7 +33,7 @@ function englishItem(id, { range = "Plastic", importance = "A" } = {}) {
 
 test("教科と「演習｜テスト」は同じ形の切り替え（スライダー）で並べる", () => {
   assert.match(indexSource, /class="home-tabs-row">\s*\n\s*<nav class="subject-tabs" id="subject-tabs"[^>]*><\/nav>\s*\n\s*<div class="segment-switch mode-switch" id="mode-switch" role="radiogroup"/);
-  assert.match(indexSource, /data-home-mode="practice">演習<\/button>/);
+  assert.match(indexSource, /data-home-mode="practice">習得<\/button>/);
   assert.match(indexSource, /data-home-mode="test">テスト<\/button>/);
   assert.match(indexSource, /id="mode-switch"[^>]*>\s*\n\s*<span class="segment-thumb" aria-hidden="true"><\/span>/);
   assert.match(indexSource, /class="home-pane" id="home-pane"/);
@@ -68,9 +68,12 @@ test("テストは1画面で、範囲・形式・重要度を札で付け外し�
   assert.doesNotMatch(appSource, /data-test-(range|format|importance)="all"/);
   assert.doesNotMatch(home, /全選択/);
   assert.match(home, /`\$\{missing\}を選んでください`/);
-  // 初めは範囲・重要度がすべて、形式は先頭の1つ。押すたびに付け外しする。
-  assert.match(functionSource("testDraftValues", "selectedTestFormats"), /field === "formats" \? all\.slice\(0, 1\) : \[\.\.\.all\]/);
-  assert.match(appSource, /state\.testDraft\[field\] = current\.includes\(value\)\s*\n\s*\? current\.filter\(\(entry\) => entry !== value\)\s*\n\s*: \[\.\.\.current, value\];/);
+  // 初めは何も選んでいない（テストを開くたびに空に戻す）。範囲・重要度は付け外し、形式は1つだけ。
+  assert.match(functionSource("testDraftValues", "selectedTestFormats"), /state\.testDraft\[field\] = \[\];/);
+  assert.match(functionSource("setHomeMode", "normalizedTestRanges"), /if \(next === "test"\) state\.testDraft = \{ ranges: null, formats: null, importance: null \};/);
+  assert.match(appSource, /state\.testDraft\[field\] = current\.includes\(value\)\s*\n\s*\? current\.filter\(\(entry\) => entry !== value\)\s*\n\s*: field === "formats" \? \[value\] : \[\.\.\.current, value\];/);
+  // 指で滑らせて切り替えても、押したときと同じ音が鳴る。
+  assert.match(functionSource("activateSegment", "bindEvents"), /sfx\.play\("tap"\);/);
   // 演習とちがい、範囲を選んで形式へ…と画面を進めない。スクロールしなくても1画面に収める。
   assert.match(functionSource("renderDashboard", "setRingColor"), /if \(test\) \{\s*\n\s*renderTestHome\(\);/);
   assert.match(stylesSource, /\.test-chip \{[^}]*min-height: 46px;/);

@@ -3358,7 +3358,7 @@ function runMaxCue(event, { combo = 0, power = undefined, label = "", detail = "
 const BUTTON_SOUND_SKIP = '[data-kb-action="submit"]';
 
 /**
- * ボタンを押したときの「コッ」。押したことで、めくる・すべる・正解などの音が
+ * ボタンを押したときの「カチッ」。押したことで、めくる・すべる・正解などの音が
  * 同じ操作の中で鳴ったときは、そちらだけにする（2つの音を重ねない）。
  */
 function queueButtonSound(button) {
@@ -3406,7 +3406,7 @@ function installSfxLab() {
   panel.addEventListener("click", (event) => {
     const target = event.target.closest("[data-sfx-lab-event]");
     if (!target) return;
-    // パネルのボタンの「コッ」は重ねない。
+    // パネルのボタンの「カチッ」は重ねない。
     event.stopPropagation();
     const plan = sfx.play(target.dataset.sfxLabEvent, {
       variant: target.dataset.sfxLabVariant || null,

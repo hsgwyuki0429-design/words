@@ -193,18 +193,18 @@ test("抽選は重みどおりに出て、端の値でも必ずどれかを返�
 
 test("出来事ごとに鳴らす音の計画：めくると「紙の音→落ち着く音」、正解は抽選、払うと方向つき", () => {
   const flip = planSfxEvent("flip", { random: () => 0 });
-  assert.deepEqual(flip.sounds.map((sound) => sound.id), ["swish-up", "land-drop"]);
+  assert.deepEqual(flip.sounds.map((sound) => sound.id), ["swish-up", "land-wood"]);
   assert.equal(flip.sounds[0].offset, 0);
   assert.ok(flip.sounds[1].offset > 0.04 && flip.sounds[1].offset < 0.12, "紙の音の山のすぐあと");
-  assert.equal(planSfxEvent("flip", { variant: "suikinkutsu" }).rarity, "legendary");
+  assert.equal(planSfxEvent("flip", { variant: "bowl" }).rarity, "legendary");
   assert.deepEqual(planSfxEvent("unflip").sounds.map((sound) => sound.id), ["swish-down"]);
   assert.deepEqual(planSfxEvent("swish", { up: false }).sounds.map((sound) => sound.id), ["swish-down"]);
   for (const direction of ["left", "right", "up", "down"]) {
     assert.deepEqual(planSfxEvent("slide", { direction }).sounds.map((sound) => sound.id), [`slide-${direction}`]);
   }
-  assert.equal(planSfxEvent("correct", { random: () => 0.9999 }).variant, "suikinkutsu");
-  assert.equal(planSfxEvent("correct", { variant: "cup" }).sounds[0].id, "correct-cup");
-  assert.equal(planSfxEvent("correct", { variant: "存在しない", random: () => 0 }).variant, "drops");
+  assert.equal(planSfxEvent("correct", { random: () => 0.9999 }).variant, "harp");
+  assert.equal(planSfxEvent("correct", { variant: "glass" }).sounds[0].id, "correct-glass");
+  assert.equal(planSfxEvent("correct", { variant: "存在しない", random: () => 0 }).variant, "marimba");
   assert.deepEqual(planSfxEvent("wrong").sounds.map((sound) => sound.id), ["wrong"]);
   assert.equal(planSfxEvent("unknown"), null);
   for (const event of SFX_EVENTS) assert.ok(planSfxEvent(event, { random: seeded(3) }), event);
@@ -337,18 +337,18 @@ test("上限に達したときは、鳴り終わった音から外し、まだ�
     setTimer: timers.setTimer,
     clearTimer: timers.clearTimer,
   });
-  // 伝説の水琴窟（約2秒）を鳴らしてから、短い音を上限を超えるまで鳴らす。
-  assert.equal(engine.play("flip", { variant: "suikinkutsu" }).variant, "suikinkutsu");
+  // 伝説のクリスタルボウル（約2.7秒）を鳴らしてから、短い音を上限を超えるまで鳴らす。
+  assert.equal(engine.play("flip", { variant: "bowl" }).variant, "bowl");
   const bowl = context.nodes.filter((node) => node.kind === "oscillator");
   // 鳴らした時点で決まっている、自然に止まる時刻を控える。
   const planned = bowl.map((node) => node.stopped);
-  assert.ok(Math.max(...planned) > 1.8, "水琴窟は長く響く");
+  assert.ok(Math.max(...planned) > 2.5, "ボウルは長く響く");
   for (let index = 0; index < SFX_MAX_VOICES + 6; index += 1) {
     context.currentTime += 0.08;
     engine.play("key");
   }
   assert.ok(engine.debugState().activeVoices <= SFX_MAX_VOICES);
-  assert.deepEqual(bowl.map((node) => node.stopped), planned, "水琴窟の響きは途中で切られない");
+  assert.deepEqual(bowl.map((node) => node.stopped), planned, "ボウルの響きは途中で切られない");
 });
 
 test("鳴り終わったら後片付けし、しばらく使わなければ電池のために止め、画面を離れたら止める", () => {

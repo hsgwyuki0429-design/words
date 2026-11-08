@@ -38,37 +38,37 @@ export const SFX_RARITIES = Object.freeze({
 const variant = (id, name, family, rarity, weight) => Object.freeze({ id, name, family, rarity, weight });
 
 /**
- * フラッシュカードをめくったときの音（めくり終えて、カードが落ち着く音）。すべて水の音。
+ * フラッシュカードをめくったときの音（めくり終えて、カードが落ち着く音）。
  * 上ほどよく出る。下へ行くほど響きが豊かで気持ちいい音にし、出にくくしてある。
  */
 export const LANDING_VARIANTS = Object.freeze([
-  variant("drop", "水滴の「ピチョン」", "雫", "common", 0.22),
-  variant("plip", "小さな雫の「ポチッ」", "小さな雫", "common", 0.2),
-  variant("bubble", "泡がはじける「ポコッ」", "泡", "common", 0.16),
-  variant("ripple", "水面を指でつつく「チャプ」", "水面", "uncommon", 0.12),
-  variant("bottle", "小瓶に落ちる雫「コポッ」", "小瓶", "uncommon", 0.1),
-  variant("rain", "雨だれ2滴「ポツ、ポツン」", "雨だれ", "uncommon", 0.08),
-  variant("cup", "グラスの水に落ちる雫「チャポン」", "グラスの水", "rare", 0.055),
-  variant("cave", "洞窟に響く雫", "洞窟", "rare", 0.035),
-  variant("rise", "泡の列が立ちのぼる「コポコポ…」", "泡の列", "epic", 0.02),
-  variant("suikinkutsu", "水琴窟の響き", "水琴窟", "legendary", 0.01),
+  variant("wood", "木の机に置く「トン」", "木", "common", 0.22),
+  variant("felt", "紙の束に置く「ポフ」", "紙・布", "common", 0.2),
+  variant("bamboo", "竹の「コン」", "竹", "common", 0.16),
+  variant("go", "碁石を打つ「パチッ」", "石", "uncommon", 0.12),
+  variant("ceramic", "陶器のカップを置く「コトッ」", "陶器", "uncommon", 0.1),
+  variant("drop", "水滴の「ピチョン」", "水", "uncommon", 0.08),
+  variant("glass", "ガラスのコップを置く「コトン…チン」", "ガラス", "rare", 0.055),
+  variant("kalimba", "カリンバの「ポーン」", "金属の舌", "rare", 0.035),
+  variant("ice", "氷とグラスの「カラン」", "氷とガラス", "epic", 0.02),
+  variant("bowl", "クリスタルボウルの長い響き", "水晶", "legendary", 0.01),
 ]);
 
 /**
- * 4択・入力の問題で正解したときの音。すべて水の音で、明るく協和する音程へ上がっていく。
- * 下へ行くほど豪華で、出にくい。
+ * 4択・入力の問題で正解したときの音。すべて明るく、協和する音程で上がる（「ピンポン」だけは
+ * 日本で正解の合図として定着した下がり方）。下へ行くほど豪華で、出にくい。
  */
 export const CORRECT_VARIANTS = Object.freeze([
-  variant("drops", "雫が2つ「ピチョ・ピチョン」", "雫", "common", 0.22),
-  variant("bubbles", "泡が2つ「ポコ・ポコン」", "泡", "common", 0.2),
-  variant("drip", "雫が3つ「ポ・ポ・ポン」", "小さな雫", "common", 0.16),
-  variant("pour", "水を注ぐ「トクトクトン」", "注ぐ水", "uncommon", 0.12),
-  variant("leaf", "葉から落ちる雫「ポロン」", "葉の雫", "uncommon", 0.1),
-  variant("bottle", "小瓶の「コポコポン」", "小瓶", "uncommon", 0.08),
-  variant("cup", "グラスの水「チャポ・チャポン」", "グラスの水", "rare", 0.055),
-  variant("rain", "雨だれの和音「ポツポツポロン」", "雨だれ", "rare", 0.035),
-  variant("cascade", "泡があふれる「コポポポポン」", "泡の列", "epic", 0.02),
-  variant("suikinkutsu", "水琴窟の旋律", "水琴窟", "legendary", 0.01),
+  variant("marimba", "マリンバ「ポロン」", "木", "common", 0.22),
+  variant("piano", "フェルトピアノ「ポ・ポーン」", "弦とフェルト", "common", 0.2),
+  variant("pinpon", "鉄琴の「ピンポン」", "金属の棒", "common", 0.16),
+  variant("bamboo", "竹のチャイム「カラコロン」", "竹", "uncommon", 0.12),
+  variant("bubble", "水の泡「ポコ・ポコン」", "水", "uncommon", 0.1),
+  variant("kalimba", "カリンバ「ポロロン」", "金属の舌", "uncommon", 0.08),
+  variant("glass", "グラスで乾杯「チン・チーン」", "ガラス", "rare", 0.055),
+  variant("handpan", "ハンドパン「ポワーン」", "鋼", "rare", 0.035),
+  variant("musicbox", "オルゴール「キラリラン」", "オルゴール", "epic", 0.02),
+  variant("harp", "クリスタルハープ「キラキラ…」", "水晶", "legendary", 0.01),
 ]);
 
 export const SFX_EVENTS = Object.freeze([
@@ -229,79 +229,72 @@ function paperSlide(s, v, at, x, direction) {
   }
 }
 
-// 水の音の素。水滴が水面に落ちると、小さな泡が一瞬で縮んで共鳴の高さが急に上がる。
-// これが「ピチョン」「ポコッ」の正体（泡の共鳴が上がっていく音）。耳元で聞く ASMR のように、
-// 小さく・近く・柔らかく鳴らす。
-//   glide … 終わりの高さの倍率（大きいほど「ピチョン」、小さいほど「ポコ」）
-function droplet(s, v, at, frequency, { amp = 1, glide = 1.9, glideTime = 0.045, decay = 0.13, click = 0.1, pan = 0, body = 0.07 } = {}) {
-  if (click > 0) s.noise(v, { at, dur: 0.004, type: "lowpass", freq: 2600, q: 0.5, amp: click * amp, attack: 0.0004, pan });
-  s.mode(v, { at: at + 0.002, freq: frequency, glide, glideTime, amp, decay, attack: 0.002, pan });
-  if (body > 0) s.mode(v, { at: at + 0.002, freq: frequency * 2, glide, glideTime, amp: amp * body, decay: decay * 0.4, attack: 0.002, pan });
-}
-
-// 水面が揺れる「チャプ」。やわらかい雑音をごく短く。
-function splash(s, v, at, { amp = 1, freq = 1400, dur = 0.06, pan = 0 } = {}) {
-  s.noise(v, { at, dur, type: "bandpass", freq, endFreq: freq * 0.55, q: 0.9, amp, attack: 0.004, pan, lowpass: 5000 });
-}
-
-// 水琴窟：地中の甕（かめ）に落ちた雫が、甕の中で鐘のように響く。
-function kinkutsu(s, v, at, frequency, { amp = 1, pan = 0 } = {}) {
-  droplet(s, v, at, frequency * 0.5, { amp: amp * 0.35, glide: 2, decay: 0.08, click: 0.05, pan });
-  for (const [ratio, rel, decay] of [[1, 1, 1.6], [2.01, 0.32, 0.9], [2.98, 0.12, 0.5]]) {
-    s.mode(v, { at: at + 0.012, freq: frequency * ratio, amp: amp * rel * 0.6, decay, attack: 0.006, pan });
-  }
-  s.mode(v, { at: at + 0.012, freq: frequency * 1.0016, amp: amp * 0.22, decay: 1.4, attack: 0.008, pan: -pan });
+function woodBead(s, v, at, frequency, { amp = 1, decay = 0.055 } = {}) {
+  // 小さな木の玉を指で押したような「コッ」。高い倍音はすぐ消し、角を丸くする。
+  s.noise(v, { at, dur: 0.006, type: "lowpass", freq: 2200, q: 0.5, amp: 0.22 * amp, attack: 0.0004 });
+  s.mode(v, { at, freq: frequency, amp: 0.55 * amp, decay, attack: 0.0007 });
+  s.mode(v, { at, freq: frequency * 2, amp: 0.2 * amp, decay: decay * 0.6, attack: 0.0007 });
+  s.mode(v, { at, freq: frequency * 2.76, amp: 0.08 * amp, decay: decay * 0.4, attack: 0.0007 });
+  s.mode(v, { at, freq: frequency / 4, amp: 0.28 * amp, decay: decay * 0.75, attack: 0.002 });
 }
 
 const SOUNDS = {
-  // --- ボタン・スイッチ・キー（ごく小さな雫） -------------------------------
+  // --- ボタン・スイッチ・キー ------------------------------------------------
   tap: {
-    send: 0.08,
+    send: 0.03,
     build(s, v, at, x) {
-      droplet(s, v, at, hz("G5") * x.k * (1 + (x.r() - 0.5) * 0.03), { amp: 0.8, glide: 1.45, glideTime: 0.028, decay: 0.06, click: 0.12 });
+      // ふつうのボタンは、よく効いたスイッチのような「カチッ」というクリック音。
+      // ごく短い接点の音（押す）と、わずかに遅れた戻りの音（離す）の2つで、角を立てすぎない。
+      const brightness = 1 + (x.r() - 0.5) * 0.1;
+      s.noise(v, { at, dur: 0.006, type: "bandpass", freq: 2600 * brightness, q: 1.2, amp: 0.9, attack: 0.0003, lowpass: 6000 });
+      s.mode(v, { at, freq: hz("C7") * x.k, amp: 0.12, decay: 0.018, attack: 0.0004 });
+      s.mode(v, { at, freq: hz("C6") * x.k, amp: 0.18, decay: 0.025, attack: 0.0004 });
+      const release = at + 0.028 + x.r() * 0.004;
+      s.noise(v, { at: release, dur: 0.004, type: "bandpass", freq: 3400 * brightness, q: 1.2, amp: 0.35, attack: 0.0003, lowpass: 6000 });
     },
   },
   "toggle-on": {
-    send: 0.12,
+    send: 0.08,
     build(s, v, at, x) {
-      droplet(s, v, at, hz("E5") * x.k, { amp: 0.6, glide: 1.4, glideTime: 0.028, decay: 0.06 });
-      droplet(s, v, at + 0.065, hz("C6") * x.k, { amp: 0.7, glide: 1.5, glideTime: 0.03, decay: 0.09 });
+      woodBead(s, v, at, hz("G5") * x.k, { amp: 0.8 });
+      s.mode(v, { at: at + 0.06, freq: hz("C6") * x.k, amp: 0.3, decay: 0.16, attack: 0.002 });
+      s.mode(v, { at: at + 0.06, freq: hz("C6") * x.k * 2, amp: 0.04, decay: 0.06, attack: 0.002 });
     },
   },
   "toggle-off": {
-    send: 0.1,
+    send: 0.06,
     build(s, v, at, x) {
-      droplet(s, v, at, hz("C6") * x.k, { amp: 0.6, glide: 1.3, glideTime: 0.028, decay: 0.06 });
-      droplet(s, v, at + 0.065, hz("E5") * x.k, { amp: 0.6, glide: 1.25, glideTime: 0.03, decay: 0.08 });
+      woodBead(s, v, at, hz("C6") * x.k, { amp: 0.7 });
+      s.mode(v, { at: at + 0.06, freq: hz("G5") * x.k, amp: 0.24, decay: 0.11, attack: 0.002 });
     },
   },
   key: {
-    send: 0.06,
+    send: 0.03,
     build(s, v, at, x) {
-      // 打つたびに近い音が選ばれ、雨粒のように少しずつ違って聞こえる。
+      // 打つたびに近い音が選ばれ、くり返しても機械的にならない。
       const notes = ["E5", "G5", "A5", "C6"];
       const note = notes[Math.floor(x.r() * notes.length) % notes.length];
-      droplet(s, v, at, hz(note) * x.k, { amp: 0.7, glide: 1.4, glideTime: 0.022, decay: 0.045, click: 0.1 });
+      woodBead(s, v, at, hz(note) * x.k, { amp: 0.75, decay: 0.04 });
     },
   },
   "key-delete": {
-    send: 0.06,
+    send: 0.03,
     build(s, v, at, x) {
-      droplet(s, v, at, hz("C5") * x.k, { amp: 0.75, glide: 1.25, glideTime: 0.025, decay: 0.055 });
+      woodBead(s, v, at, hz("C5") * x.k, { amp: 0.75, decay: 0.045 });
     },
   },
 
-  // --- 紙の音（めくる・すべらせる）。耳元で紙をめくるように、柔らかく近く -------
+  // --- 紙の音（めくる・すべらせる） ---------------------------------------
   "swish-up": {
-    send: 0.05,
+    send: 0.06,
     build(s, v, at, x) {
-      paperSwish(s, v, at, x, { from: 1150, to: 2300, duration: 0.17, flapAt: 0.5, airAmp: 0.2, attackRatio: 0.42 });
+      paperSwish(s, v, at, x, { from: 1250, to: 2500, duration: 0.15, flapAt: 0.5 });
     },
   },
   "swish-down": {
-    send: 0.05,
+    send: 0.06,
     build(s, v, at, x) {
-      paperSwish(s, v, at, x, { from: 2100, to: 1100, duration: 0.15, flapAt: 0.42, airAmp: 0.2, attackRatio: 0.42 });
+      paperSwish(s, v, at, x, { from: 2300, to: 1200, duration: 0.14, flapAt: 0.42 });
     },
   },
   "slide-left": { send: 0.05, build: (s, v, at, x) => paperSlide(s, v, at, x, "left") },
@@ -309,208 +302,320 @@ const SOUNDS = {
   "slide-up": { send: 0.05, build: (s, v, at, x) => paperSlide(s, v, at, x, "up") },
   "slide-down": { send: 0.05, build: (s, v, at, x) => paperSlide(s, v, at, x, "down") },
 
-  // --- めくった音（10種・すべて水） ------------------------------------------
+  // --- めくった音（10種） ----------------------------------------------------
+  "land-wood": {
+    send: 0.08,
+    build(s, v, at, x) {
+      // 木は内部の損失が大きく、すぐ減衰する。低い胴鳴りと、短い中域。
+      s.noise(v, { at, dur: 0.012, type: "bandpass", freq: 1100, q: 0.7, amp: 0.7, attack: 0.0005 });
+      strike(s, v, at, hz("G4") * x.k, [[1, 0.75, 0.14], [2, 0.5, 0.09], [2.31, 0.55, 0.065], [4.12, 0.2, 0.035]]);
+      s.mode(v, { at, freq: hz("G3") * x.k, amp: 0.3, decay: 0.08, attack: 0.002 });
+    },
+  },
+  "land-felt": {
+    send: 0.06,
+    build(s, v, at, x) {
+      // 紙の束やフェルトに置いたときの、ふんわりした「ポフ」。高い音を含まない。
+      s.noise(v, { at, dur: 0.11, type: "lowpass", freq: 1300, endFreq: 450, q: 0.5, amp: 0.7, attack: 0.012, highpass: 320 });
+      s.noise(v, { at, dur: 0.065, type: "bandpass", freq: 900, q: 0.8, amp: 0.55, attack: 0.009 });
+      s.mode(v, { at, freq: hz("C4") * x.k, amp: 0.14, decay: 0.09, attack: 0.006 });
+      s.mode(v, { at, freq: hz("G4") * x.k, amp: 0.16, decay: 0.06, attack: 0.003 });
+      s.mode(v, { at, freq: hz("C5") * x.k, amp: 0.1, decay: 0.045, attack: 0.003 });
+    },
+  },
+  "land-bamboo": {
+    send: 0.1,
+    build(s, v, at, x) {
+      // 竹の筒の中の空気が鳴る、うつろな「コン」。
+      const frequency = hz("E5") * x.k;
+      s.noise(v, { at, dur: 0.006, type: "highpass", freq: 1600, q: 0.6, amp: 0.2, attack: 0.0005 });
+      s.noise(v, { at, dur: 0.06, type: "bandpass", freq: frequency, q: 16, amp: 1.6, attack: 0.0008 });
+      strike(s, v, at, frequency, [[1, 0.75, 0.17], [2.76, 0.14, 0.05], [5.4, 0.05, 0.025]]);
+    },
+  },
+  "land-go": {
+    send: 0.1,
+    build(s, v, at, x) {
+      // 硬い石が盤に当たる鋭い一瞬と、榧（かや）の碁盤の木の響き。石はわずかに跳ねる。
+      const bounce = at + 0.016 + x.r() * 0.004;
+      s.noise(v, { at, dur: 0.005, type: "bandpass", freq: 3000, q: 0.7, amp: 0.7, attack: 0.0003 });
+      s.mode(v, { at, freq: hz("C7") * x.k, amp: 0.2, decay: 0.035, attack: 0.0004, restrikes: [{ at: bounce, amp: 0.06 }] });
+      s.mode(v, { at, freq: hz("G5") * x.k, amp: 0.4, decay: 0.07, attack: 0.0006, restrikes: [{ at: bounce, amp: 0.09 }] });
+      s.mode(v, { at, freq: hz("C5") * x.k, amp: 0.45, decay: 0.11, attack: 0.001 });
+      s.mode(v, { at, freq: hz("C4") * x.k, amp: 0.3, decay: 0.06, attack: 0.0015 });
+      s.noise(v, { at: bounce, dur: 0.004, type: "bandpass", freq: 3300, q: 0.8, amp: 0.22, attack: 0.0003 });
+    },
+  },
+  "land-ceramic": {
+    send: 0.14,
+    build(s, v, at, x) {
+      // 陶器は木より長く、ガラスより短く鳴る。カップが落ち着くまでの2回の接触「コト」。
+      const frequency = hz("A5") * x.k;
+      const settle = at + 0.028 + x.r() * 0.004;
+      s.noise(v, { at, dur: 0.008, type: "bandpass", freq: 2200, q: 1.1, amp: 0.4, attack: 0.0005 });
+      strike(s, v, at, frequency, [[1, 0.55, 0.26], [2.39, 0.2, 0.13], [4.4, 0.07, 0.06], [6.9, 0.025, 0.03]], {
+        restrikes: [{ at: settle, rel: 0.35 }],
+      });
+      s.mode(v, { at, freq: hz("E4") * x.k, amp: 0.35, decay: 0.06, attack: 0.0015 });
+      s.noise(v, { at: settle, dur: 0.006, type: "bandpass", freq: 1800, q: 1, amp: 0.18, attack: 0.0005 });
+    },
+  },
   "land-drop": {
     send: 0.3,
     build(s, v, at, x) {
-      droplet(s, v, at, hz("E5") * x.k, { amp: 0.9, glide: 2, glideTime: 0.05, decay: 0.13, click: 0.12 });
-      droplet(s, v, at + 0.07 + x.r() * 0.015, hz("C6") * x.k, { amp: 0.17, glide: 1.5, glideTime: 0.03, decay: 0.07, click: 0 });
+      // 水滴が水面に落ちると、小さな泡の共鳴が一瞬で高くなる（「ピチョン」の正体）。
+      const frequency = hz("E5") * x.k;
+      s.noise(v, { at, dur: 0.005, type: "lowpass", freq: 2600, q: 0.5, amp: 0.12, attack: 0.0005 });
+      s.mode(v, { at: at + 0.003, freq: frequency, glide: 2, glideTime: 0.05, amp: 0.9, decay: 0.13, attack: 0.002 });
+      s.mode(v, { at: at + 0.003, freq: frequency * 2, glide: 2, glideTime: 0.05, amp: 0.07, decay: 0.05, attack: 0.002 });
+      // あとから落ちる、小さなしずく
+      s.mode(v, { at: at + 0.07 + x.r() * 0.015, freq: hz("C6") * x.k, glide: 1.5, glideTime: 0.03, amp: 0.17, decay: 0.07, attack: 0.002 });
     },
   },
-  "land-plip": {
-    send: 0.24,
+  "land-glass": {
+    send: 0.28,
     build(s, v, at, x) {
-      droplet(s, v, at, hz("A5") * x.k, { amp: 0.85, glide: 1.6, glideTime: 0.03, decay: 0.08, click: 0.14 });
+      // 底がテーブルに当たる鈍い音のあと、ガラスが澄んで長く鳴る。置いたあと一度だけ揺れる。
+      const frequency = hz("A5") * x.k;
+      const rock = at + 0.042 + x.r() * 0.006;
+      s.noise(v, { at, dur: 0.016, type: "lowpass", freq: 1500, q: 0.6, amp: 0.5, attack: 0.001 });
+      s.mode(v, { at, freq: hz("G3") * x.k, amp: 0.38, decay: 0.08, attack: 0.002 });
+      strike(s, v, at + 0.002, frequency, [[1, 0.5, 1.3], [2.71, 0.15, 0.5], [5.12, 0.05, 0.2], [8.3, 0.015, 0.08]], {
+        restrikes: [{ at: rock, rel: 0.3 }],
+      });
+      s.noise(v, { at: rock, dur: 0.008, type: "lowpass", freq: 1800, q: 0.6, amp: 0.16, attack: 0.0008 });
     },
   },
-  "land-bubble": {
+  "land-kalimba": {
     send: 0.22,
     build(s, v, at, x) {
-      // 水の中から浮いてきた泡が、水面ではじける。低めで丸い「ポコッ」。
-      droplet(s, v, at, hz("C5") * x.k, { amp: 0.95, glide: 1.5, glideTime: 0.06, decay: 0.12, click: 0.05, body: 0.12 });
+      // カリンバの金属の舌は、基音が澄んで長く、上の振動（6.27倍）はすぐ消える。木箱も少し鳴る。
+      const frequency = hz("E5") * x.k;
+      s.noise(v, { at, dur: 0.008, type: "bandpass", freq: 1200, q: 0.9, amp: 0.16, attack: 0.0006 });
+      s.mode(v, { at, freq: frequency, amp: 0.85, decay: 1.0, attack: 0.002 });
+      s.mode(v, { at, freq: frequency * 2, amp: 0.07, decay: 0.3, attack: 0.002 });
+      s.mode(v, { at, freq: frequency * 6.27, amp: 0.06, decay: 0.07, attack: 0.001 });
+      s.mode(v, { at, freq: hz("C4") * x.k, amp: 0.18, decay: 0.12, attack: 0.002 });
     },
   },
-  "land-ripple": {
-    send: 0.26,
-    build(s, v, at, x) {
-      splash(s, v, at, { amp: 0.45, freq: 1500 });
-      droplet(s, v, at + 0.012, hz("D5") * x.k, { amp: 0.6, glide: 1.7, decay: 0.1, click: 0, pan: -0.15 });
-      droplet(s, v, at + 0.045 + x.r() * 0.01, hz("A5") * x.k, { amp: 0.32, glide: 1.6, decay: 0.08, click: 0, pan: 0.2 });
-    },
-  },
-  "land-bottle": {
-    send: 0.26,
-    build(s, v, at, x) {
-      // 細い瓶の中で泡がこもって鳴る「コポッ」。瓶の空洞が少し響く。
-      const frequency = hz("G4") * x.k;
-      droplet(s, v, at, frequency, { amp: 0.9, glide: 1.6, glideTime: 0.07, decay: 0.16, click: 0.04, body: 0.18 });
-      s.noise(v, { at: at + 0.004, dur: 0.07, type: "bandpass", freq: frequency * 2, q: 12, amp: 1.6, attack: 0.004 });
-      s.mode(v, { at: at + 0.002, freq: frequency * 3, glide: 1.6, glideTime: 0.07, amp: 0.3, decay: 0.08, attack: 0.003 });
-    },
-  },
-  "land-rain": {
+  "land-ice": {
     send: 0.32,
     build(s, v, at, x) {
-      droplet(s, v, at, hz("G5") * x.k, { amp: 0.65, glide: 1.8, decay: 0.09, pan: -0.25 });
-      droplet(s, v, at + 0.11 + x.r() * 0.02, hz("C6") * x.k, { amp: 0.8, glide: 1.9, decay: 0.12, pan: 0.25 });
+      // 氷がグラスの内側に当たる「カ」、もう一度ふれて鳴る「ラン」、最後に小さく一回。
+      const clink = (time, frequency, amp, ring, pan) => {
+        s.noise(v, { at: time, dur: 0.0035, type: "highpass", freq: 2400, q: 0.6, amp: 0.2 * amp, attack: 0.0003, pan });
+        strike(s, v, time, frequency, [[1, amp * 0.5, ring], [2.42, amp * 0.12, ring * 0.38], [4.4, amp * 0.035, ring * 0.16]], { pan });
+      };
+      clink(at, hz("G6") * x.k, 1, 0.75, -0.18);
+      // 氷どうしがこすれる、小さな音
+      s.noise(v, { at: at + 0.018, dur: 0.03, type: "bandpass", freq: 1300, q: 2, amp: 0.12, attack: 0.002 });
+      clink(at + 0.072 + x.r() * 0.01, hz("E6") * x.k, 0.62, 0.95, 0.2);
+      clink(at + 0.122 + x.r() * 0.012, hz("C7") * x.k, 0.22, 0.55, 0.05);
     },
   },
-  "land-cup": {
-    send: 0.34,
+  "land-bowl": {
+    send: 0.45,
     build(s, v, at, x) {
-      // グラスの水に落ちる雫。水の音のあとに、グラスがかすかに澄んで鳴る。
-      droplet(s, v, at, hz("D5") * x.k, { amp: 0.85, glide: 2, decay: 0.12, click: 0.1 });
-      s.mode(v, { at: at + 0.006, freq: hz("A6") * x.k, amp: 0.09, decay: 1.1, attack: 0.003 });
-      s.mode(v, { at: at + 0.006, freq: hz("A6") * x.k * 2.71, amp: 0.015, decay: 0.35, attack: 0.003 });
-      droplet(s, v, at + 0.085, hz("A5") * x.k, { amp: 0.22, glide: 1.6, decay: 0.07, click: 0 });
-    },
-  },
-  "land-cave": {
-    send: 0.62,
-    build(s, v, at, x) {
-      // 洞窟の天井から落ちる雫。深い残響の中へ、遅れて響きが返ってくる。
-      droplet(s, v, at, hz("E5") * x.k, { amp: 0.85, glide: 2.1, glideTime: 0.055, decay: 0.16, click: 0.08 });
-      droplet(s, v, at + 0.19, hz("E5") * x.k, { amp: 0.18, glide: 2.1, glideTime: 0.055, decay: 0.14, click: 0, pan: 0.4 });
-      droplet(s, v, at + 0.37, hz("E5") * x.k, { amp: 0.07, glide: 2.1, glideTime: 0.055, decay: 0.12, click: 0, pan: -0.4 });
-    },
-  },
-  "land-rise": {
-    send: 0.36,
-    build(s, v, at, x) {
-      // 小さな泡が次々に水面へのぼってはじける。だんだん高く、小さく。
-      ["C5", "E5", "G5", "C6", "E6"].forEach((note, index) => {
-        droplet(s, v, at + index * (0.055 + x.r() * 0.012), hz(note) * x.k, {
-          amp: 0.8 - index * 0.1,
-          glide: 1.55,
-          glideTime: 0.04,
-          decay: 0.09,
-          click: 0.03,
-          pan: (index % 2 ? 0.3 : -0.3) * (index / 4),
-        });
-      });
-    },
-  },
-  "land-suikinkutsu": {
-    send: 0.5,
-    build(s, v, at, x) {
-      // 伝説：水琴窟。甕の中で雫が鐘のように響き、余韻が遅れてもう一度返ってくる。
-      kinkutsu(s, v, at, hz("E6") * x.k, { amp: 0.9, pan: -0.15 });
-      kinkutsu(s, v, at + 0.42 + x.r() * 0.05, hz("A5") * x.k, { amp: 0.5, pan: 0.2 });
+      // クリスタルボウル。各振動が2つにわずかに分かれていて、毎秒1〜4回ほどゆっくり揺れる
+      // （濁りを生む速い揺れの帯域よりずっと遅い）。左右に分けて置き、揺れが空間で回る。
+      const frequency = hz("C5") * x.k;
+      s.noise(v, { at, dur: 0.03, type: "lowpass", freq: 520, q: 0.6, amp: 0.3, attack: 0.003 });
+      for (const [ratio, amp, decay] of [[1, 0.6, 2.8], [2.71, 0.3, 1.6], [5.05, 0.08, 0.8], [7.9, 0.02, 0.35]]) {
+        s.mode(v, { at, freq: frequency * ratio, amp, decay, attack: 0.004, pan: -0.25 });
+        s.mode(v, { at, freq: frequency * ratio + 0.9 + ratio * 0.4, amp: amp * 0.55, decay: decay * 0.9, attack: 0.004, pan: 0.25 });
+      }
+      // 光が差すような、ごく小さなきらめき
+      for (const [delay, note, pan] of [[0.16, "G6", -0.5], [0.3, "C7", 0.45], [0.47, "E7", -0.2]]) {
+        s.mode(v, { at: at + delay, freq: hz(note) * x.k, amp: 0.04, decay: 0.9, attack: 0.006, pan });
+      }
     },
   },
 
-  // --- 正解の音（10種・すべて水。明るく上がる） --------------------------------
-  "correct-drops": {
-    send: 0.28,
+  // --- 正解の音（10種） ------------------------------------------------------
+  "correct-marimba": {
+    send: 0.18,
     build(s, v, at, x) {
-      droplet(s, v, at, hz("G5") * x.k, { amp: 0.75, glide: 1.8, decay: 0.11, pan: -0.1 });
-      droplet(s, v, at + 0.1, hz("C6") * x.k, { amp: 1, glide: 1.9, decay: 0.16, pan: 0.1 });
+      // ソ→ド。属音から主音へ上がって「着地」する、いちばん安定した終わり方。
+      const bar = (time, note, amp, decay) => {
+        const frequency = hz(note) * x.k;
+        s.noise(v, { at: time, dur: 0.007, type: "lowpass", freq: 1800, q: 0.6, amp: 0.14 * amp, attack: 0.0006 });
+        strike(s, v, time, frequency, [[1, amp, decay], [3.93, amp * 0.2, decay * 0.28], [9.2, amp * 0.035, decay * 0.1]]);
+      };
+      bar(at, "G5", 0.75, 0.45);
+      bar(at + 0.09, "C6", 1, 0.6);
     },
   },
-  "correct-bubbles": {
-    send: 0.26,
+  "correct-piano": {
+    send: 0.2,
     build(s, v, at, x) {
-      droplet(s, v, at, hz("C5") * x.k, { amp: 0.75, glide: 1.5, glideTime: 0.045, decay: 0.12, click: 0.04 });
-      droplet(s, v, at + 0.1, hz("G5") * x.k, { amp: 0.95, glide: 4 / 3, glideTime: 0.045, decay: 0.17, click: 0.04 });
-      droplet(s, v, at + 0.19 + x.r() * 0.02, hz("E6") * x.k, { amp: 0.15, glide: 1.25, decay: 0.07, click: 0 });
+      // フェルトを挟んだピアノのやわらかい音。2本の弦がわずかにずれ、ゆっくり揺れて温かくなる。
+      const key = (time, note, amp, decay, pan) => {
+        const frequency = hz(note) * x.k;
+        s.noise(v, { at: time, dur: 0.02, type: "lowpass", freq: 700, q: 0.6, amp: 0.12 * amp, attack: 0.002, pan });
+        for (const [harmonic, rel, decayRel] of [[1, 1, 1], [2, 0.42, 0.6], [3, 0.14, 0.4], [4, 0.05, 0.28]]) {
+          const stretch = Math.sqrt(1 + 0.0004 * harmonic * harmonic);
+          s.mode(v, { at: time, freq: frequency * harmonic * stretch, amp: amp * rel, decay: decay * decayRel, attack: 0.004, pan });
+        }
+        s.mode(v, { at: time, freq: frequency * 1.0012, amp: amp * 0.32, decay: decay * 0.9, attack: 0.004, pan: -pan });
+      };
+      key(at, "C5", 0.62, 0.9, -0.15);
+      key(at + 0.1, "G5", 0.8, 1.1, 0.12);
+      key(at + 0.1, "C6", 0.32, 0.9, 0.2);
     },
   },
-  "correct-drip": {
-    send: 0.26,
+  "correct-pinpon": {
+    send: 0.2,
     build(s, v, at, x) {
-      droplet(s, v, at, hz("E5") * x.k, { amp: 0.6, glide: 1.6, decay: 0.08, pan: -0.2 });
-      droplet(s, v, at + 0.075, hz("G5") * x.k, { amp: 0.7, glide: 1.6, decay: 0.09 });
-      droplet(s, v, at + 0.15, hz("C6") * x.k, { amp: 0.95, glide: 1.8, decay: 0.15, pan: 0.2 });
+      // 日本のクイズで「正解」の合図として耳になじんだ「ピンポン」（ミ→ド）。鉄琴の澄んだ音で。
+      const bar = (time, note, amp, decay) => {
+        const frequency = hz(note) * x.k;
+        s.noise(v, { at: time, dur: 0.005, type: "bandpass", freq: 2500, q: 0.8, amp: 0.08 * amp, attack: 0.0004 });
+        strike(s, v, time, frequency, [[1, amp, decay], [4, amp * 0.06, decay * 0.3]]);
+      };
+      bar(at, "E6", 0.7, 0.55);
+      bar(at + 0.19, "C6", 0.85, 0.95);
     },
   },
-  "correct-pour": {
+  "correct-bamboo": {
+    send: 0.16,
+    build(s, v, at, x) {
+      // 竹の筒を3本、低い方から順に鳴らす「カラコロン」。
+      const tube = (time, note, amp, decay, pan) => {
+        const frequency = hz(note) * x.k;
+        s.noise(v, { at: time, dur: 0.045, type: "bandpass", freq: frequency, q: 14, amp: 1.3 * amp, attack: 0.0008, pan });
+        strike(s, v, time, frequency, [[1, amp * 0.7, decay], [2.76, amp * 0.12, decay * 0.3], [5.4, amp * 0.035, decay * 0.15]], { pan });
+      };
+      tube(at, "E5", 0.7, 0.2, -0.3);
+      tube(at + 0.06, "G5", 0.8, 0.22, 0);
+      tube(at + 0.12, "C6", 1, 0.3, 0.3);
+    },
+  },
+  "correct-bubble": {
+    send: 0.25,
+    build(s, v, at, x) {
+      // 泡が2つ、ド→ソ、ソ→ドへと音程を上げながらはじける。
+      const bubble = (time, note, glide, amp, decay) => {
+        const frequency = hz(note) * x.k;
+        s.mode(v, { at: time, freq: frequency, glide, glideTime: 0.045, amp, decay, attack: 0.002 });
+        s.mode(v, { at: time, freq: frequency * 2, glide, glideTime: 0.045, amp: amp * 0.06, decay: decay * 0.4, attack: 0.002 });
+      };
+      bubble(at, "C5", 1.5, 0.7, 0.12);
+      bubble(at + 0.1, "G5", 4 / 3, 0.95, 0.17);
+      bubble(at + 0.19 + x.r() * 0.02, "E6", 1.25, 0.14, 0.07);
+    },
+  },
+  "correct-kalimba": {
     send: 0.24,
     build(s, v, at, x) {
-      // 瓶から水を注ぐ「トクトクトン」。空気が入るたびに、こもった泡が上がっていく。
-      ["C5", "D5", "E5", "G5"].forEach((note, index) => {
-        const time = at + index * 0.07;
-        droplet(s, v, time, hz(note) * x.k, { amp: index === 3 ? 0.95 : 0.6, glide: 1.45, glideTime: 0.05, decay: index === 3 ? 0.16 : 0.08, click: 0.03, body: 0.15 });
-        splash(s, v, time, { amp: 0.12, freq: 900, dur: 0.05 });
-      });
-    },
-  },
-  "correct-leaf": {
-    send: 0.3,
-    build(s, v, at, x) {
-      // 葉の先にたまった雫が、ふるえてから落ちる。最後は澄んで長めに。
-      droplet(s, v, at, hz("A5") * x.k, { amp: 0.4, glide: 1.3, glideTime: 0.02, decay: 0.05, click: 0.04 });
-      droplet(s, v, at + 0.09, hz("E5") * x.k, { amp: 0.6, glide: 1.6, decay: 0.09 });
-      droplet(s, v, at + 0.19, hz("A5") * x.k, { amp: 1, glide: 2, decay: 0.2 });
-    },
-  },
-  "correct-bottle": {
-    send: 0.3,
-    build(s, v, at, x) {
-      ["G4", "C5", "E5", "G5"].forEach((note, index) => {
+      // ド・ミ・ソ・ド。カリンバの和音を指で順にはじく。
+      const tine = (time, note, amp, decay) => {
         const frequency = hz(note) * x.k;
-        const time = at + index * 0.06;
-        droplet(s, v, time, frequency, { amp: 0.55 + index * 0.13, glide: 1.6, glideTime: 0.06, decay: 0.13, click: 0.03, body: 0.18, pan: -0.3 + index * 0.2 });
-        s.noise(v, { at: time + 0.004, dur: 0.06, type: "bandpass", freq: frequency * 2, q: 12, amp: 0.5, attack: 0.004 });
-      });
+        s.noise(v, { at: time, dur: 0.007, type: "bandpass", freq: 1300, q: 0.9, amp: 0.12 * amp, attack: 0.0006 });
+        s.mode(v, { at: time, freq: frequency, amp, decay, attack: 0.002 });
+        s.mode(v, { at: time, freq: frequency * 2, amp: amp * 0.07, decay: decay * 0.3, attack: 0.002 });
+        s.mode(v, { at: time, freq: frequency * 6.27, amp: amp * 0.05, decay: 0.06, attack: 0.001 });
+      };
+      tine(at, "C5", 0.5, 0.8);
+      tine(at + 0.07, "E5", 0.55, 0.85);
+      tine(at + 0.14, "G5", 0.62, 0.9);
+      tine(at + 0.21, "C6", 0.82, 1.1);
+      s.mode(v, { at, freq: hz("C4") * x.k, amp: 0.14, decay: 0.15, attack: 0.002 });
     },
   },
-  "correct-cup": {
+  "correct-glass": {
+    send: 0.3,
+    build(s, v, at, x) {
+      // 乾杯。2つのグラスはわずかに音程がちがい、ゆっくり揺れながら響く（毎秒2〜3回）。
+      const clink = (time, note, amp, ring, pan) => {
+        const frequency = hz(note) * x.k;
+        s.noise(v, { at: time, dur: 0.004, type: "highpass", freq: 2200, q: 0.6, amp: 0.22 * amp, attack: 0.0003, pan });
+        strike(s, v, time, frequency, [[1, amp * 0.55, ring], [2.66, amp * 0.15, ring * 0.42], [4.9, amp * 0.04, ring * 0.18]], { pan });
+        s.mode(v, { at: time, freq: frequency * 1.0025, amp: amp * 0.3, decay: ring * 0.9, attack: 0.0015, pan: -pan });
+      };
+      clink(at, "A5", 0.55, 0.6, -0.2);
+      clink(at + 0.15, "E6", 1, 1.4, 0.2);
+    },
+  },
+  "correct-handpan": {
     send: 0.36,
     build(s, v, at, x) {
-      droplet(s, v, at, hz("A5") * x.k, { amp: 0.7, glide: 1.9, decay: 0.1, pan: -0.2 });
-      s.mode(v, { at: at + 0.005, freq: hz("A6") * x.k, amp: 0.07, decay: 0.8, attack: 0.003, pan: -0.2 });
-      droplet(s, v, at + 0.14, hz("E6") * x.k, { amp: 0.9, glide: 1.8, decay: 0.14, pan: 0.2 });
-      s.mode(v, { at: at + 0.145, freq: hz("E7") * x.k, amp: 0.06, decay: 1.2, attack: 0.003, pan: 0.2 });
-      s.mode(v, { at: at + 0.145, freq: hz("E6") * x.k, amp: 0.1, decay: 1.4, attack: 0.004, pan: 0.2 });
+      // ハンドパンは基音・オクターブ・その上の5度（3倍）がそろうように調律される。
+      // レ→ラの完全5度で、開放的に、長く響かせる。
+      const note = (time, name, amp, decay, pan) => {
+        const frequency = hz(name) * x.k;
+        s.noise(v, { at: time, dur: 0.018, type: "lowpass", freq: 900, q: 0.7, amp: 0.15 * amp, attack: 0.002, pan });
+        s.mode(v, { at: time, freq: frequency, amp, decay, attack: 0.006, pan });
+        s.mode(v, { at: time, freq: frequency * 2, amp: amp * 0.42, decay: decay * 0.75, attack: 0.008, pan });
+        s.mode(v, { at: time, freq: frequency * 3, amp: amp * 0.15, decay: decay * 0.5, attack: 0.01, pan });
+        s.mode(v, { at: time, freq: frequency * 1.0018, amp: amp * 0.25, decay, attack: 0.006, pan: -pan });
+      };
+      note(at, "D5", 0.72, 1.3, -0.2);
+      note(at + 0.13, "A5", 0.9, 1.6, 0.2);
     },
   },
-  "correct-rain": {
-    send: 0.38,
+  "correct-musicbox": {
+    send: 0.32,
     build(s, v, at, x) {
-      // 雨だれが和音（ド・ミ・ソ・ド）を描き、最後の1滴が長く残る。
-      [["C5", -0.4], ["G5", 0.3], ["E5", -0.1], ["C6", 0.4], ["G6", 0]].forEach(([note, pan], index) => {
-        droplet(s, v, at + index * (0.065 + x.r() * 0.01), hz(note) * x.k, { amp: 0.55 + index * 0.08, glide: 1.8, decay: index === 4 ? 0.22 : 0.1, pan });
-      });
+      // オルゴールの櫛歯をはじく。ソ・ド・ミ・ソと駆け上がり、最後に低いドが支える。
+      const pluck = (time, name, amp, pan) => {
+        const frequency = hz(name) * x.k;
+        s.noise(v, { at: time, dur: 0.004, type: "highpass", freq: 3000, q: 0.6, amp: 0.06 * amp, attack: 0.0003, pan });
+        s.mode(v, { at: time, freq: frequency, amp, decay: 1.2, attack: 0.0015, pan });
+        s.mode(v, { at: time, freq: frequency * 2, amp: amp * 0.05, decay: 0.4, attack: 0.0015, pan });
+        s.mode(v, { at: time, freq: frequency * 6.27, amp: amp * 0.035, decay: 0.08, attack: 0.001, pan });
+      };
+      pluck(at, "G5", 0.55, -0.3);
+      pluck(at + 0.085, "C6", 0.6, -0.1);
+      pluck(at + 0.17, "E6", 0.66, 0.1);
+      pluck(at + 0.255, "G6", 0.78, 0.3);
+      pluck(at + 0.255, "C5", 0.32, 0);
     },
   },
-  "correct-cascade": {
+  "correct-harp": {
     send: 0.42,
     build(s, v, at, x) {
-      // 泡が次々にあふれ、最後に大きな泡がひとつ「ポン」とはじける。
-      const notes = ["C5", "D5", "E5", "G5", "A5", "C6", "D6", "E6"];
-      notes.forEach((note, index) => {
-        droplet(s, v, at + index * 0.038, hz(note) * x.k, { amp: 0.38 + index * 0.03, glide: 1.5, glideTime: 0.035, decay: 0.08, click: 0.02, pan: -0.6 + (1.2 * index) / (notes.length - 1) });
+      // 7つの音が左から右へ駆け上がり、最後に和音がふわっと広がって、光の粒が散る。
+      const notes = ["C5", "E5", "G5", "A5", "C6", "E6", "G6"];
+      notes.forEach((name, index) => {
+        const time = at + index * 0.048;
+        const frequency = hz(name) * x.k;
+        const pan = -0.6 + (1.2 * index) / (notes.length - 1);
+        const amp = 0.4 + index * 0.045;
+        s.noise(v, { at: time, dur: 0.003, type: "highpass", freq: 2500, q: 0.6, amp: 0.05, attack: 0.0003, pan });
+        s.mode(v, { at: time, freq: frequency, amp, decay: 1.5, attack: 0.002, pan });
+        s.mode(v, { at: time, freq: frequency * 2, amp: amp * 0.16, decay: 0.7, attack: 0.002, pan });
+        s.mode(v, { at: time, freq: frequency * 3, amp: amp * 0.04, decay: 0.3, attack: 0.002, pan });
       });
-      droplet(s, v, at + notes.length * 0.038 + 0.06, hz("G6") * x.k, { amp: 0.9, glide: 2, decay: 0.24, click: 0.06 });
-    },
-  },
-  "correct-suikinkutsu": {
-    send: 0.55,
-    build(s, v, at, x) {
-      // 伝説：水琴窟の旋律。雫が甕の中で鐘のように響き、ミ→ソ→ド と上がって長く残る。
-      kinkutsu(s, v, at, hz("E5") * x.k, { amp: 0.6, pan: -0.3 });
-      kinkutsu(s, v, at + 0.2, hz("G5") * x.k, { amp: 0.7, pan: 0.25 });
-      kinkutsu(s, v, at + 0.42, hz("C6") * x.k, { amp: 0.9, pan: 0 });
-      for (const [delay, note, pan] of [[0.7, "E6", -0.4], [0.9, "G6", 0.4]]) {
-        droplet(s, v, at + delay, hz(note) * x.k, { amp: 0.14, glide: 1.6, decay: 0.08, click: 0, pan });
+      const bloom = at + notes.length * 0.048 + 0.02;
+      for (const [name, pan] of [["C5", -0.35], ["G5", 0.35], ["C6", 0.2], ["E6", -0.15]]) {
+        const frequency = hz(name) * x.k;
+        s.mode(v, { at: bloom, freq: frequency, amp: 0.12, decay: 1.6, attack: 0.18, pan });
+        s.mode(v, { at: bloom, freq: frequency * 1.002, amp: 0.07, decay: 1.5, attack: 0.22, pan: -pan });
       }
+      [["G6", 0.36], ["C7", 0.5], ["E7", 0.66], ["G7", 0.8]].forEach(([name, delay], index) => {
+        s.mode(v, { at: at + delay, freq: hz(name) * x.k, amp: 0.045, decay: 0.7, attack: 0.004, pan: index % 2 ? 0.55 : -0.55 });
+      });
     },
   },
 
   // --- 不正解の音（1種） ------------------------------------------------------
   wrong: {
-    send: 0.16,
+    send: 0.08,
     build(s, v, at, x) {
-      // 正解と同じ水の世界のまま、低い泡が2つ、こもって下がる「ポコ…ポコ↓」。
-      // 泡の音は本来上がるが、ここだけ下がらせて「ちがったね」と知らせる。罰する音にはしない。
-      // スマホのスピーカーでも聞こえるよう、2倍の倍音を強めに持たせる（ミッシング・ファンダメンタル）。
-      const sink = (time, note, amp, glide, glideTime, decay) => {
+      // 正解と同じ「木」の世界のまま、低く・こもらせ・下がる2音（ド→ソ）。2音目は少しだけ
+      // 音程が沈む。ブザーのような濁った音は使わない（罰ではなく、気づかせるだけにする）。
+      const thud = (time, note, amp, droop) => {
         const frequency = hz(note) * x.k;
-        droplet(s, v, time, frequency, { amp: amp * 0.6, glide, glideTime, decay, click: 0.03, body: 1 });
-        s.mode(v, { at: time + 0.002, freq: frequency * 3, glide, glideTime, amp: amp * 0.3, decay: decay * 0.6, attack: 0.004 });
+        // スマホの小さなスピーカーは低い基音をほとんど鳴らせない。2〜4倍の倍音を持たせると、
+        // 基音が出なくても耳は元の低い音程を補って聞く（ミッシング・ファンダメンタル）。
+        s.noise(v, { at: time, dur: 0.035, type: "bandpass", freq: 900, q: 0.7, amp: 0.3 * amp, attack: 0.002 });
+        s.mode(v, { at: time, freq: frequency, glide: droop, glideTime: 0.18, amp: amp * 0.7, decay: 0.26, attack: 0.008 });
+        s.mode(v, { at: time, freq: frequency * 2, glide: droop, glideTime: 0.18, amp: amp * 0.62, decay: 0.18, attack: 0.008 });
+        s.mode(v, { at: time, freq: frequency * 3, glide: droop, glideTime: 0.18, amp: amp * 0.3, decay: 0.11, attack: 0.008 });
+        s.mode(v, { at: time, freq: frequency * 4, glide: droop, glideTime: 0.18, amp: amp * 0.11, decay: 0.06, attack: 0.006 });
       };
-      sink(at, "C5", 0.75, 0.82, 0.08, 0.14);
-      sink(at + 0.14, "G4", 0.95, 0.78, 0.12, 0.2);
+      thud(at, "C5", 0.75, 0);
+      thud(at + 0.13, "G4", 1, 0.955);
     },
   },
 };
@@ -523,38 +628,38 @@ export const SFX_SOUND_IDS = Object.freeze(Object.keys(SOUNDS));
  * レアな音ほど大きくする、はしない（目標は docs/sound-design.md）。
  */
 export const SFX_LEVELS = Object.freeze({
-  tap: 0.827,
-  "toggle-on": 0.299,
-  "toggle-off": 0.39,
-  key: 0.836,
-  "key-delete": 0.905,
-  "swish-up": 1.35,
-  "swish-down": 1.44,
+  tap: 4.84,
+  "toggle-on": 0.568,
+  "toggle-off": 0.8,
+  key: 1.66,
+  "key-delete": 1.94,
+  "swish-up": 1.54,
+  "swish-down": 1.55,
   "slide-left": 1.61,
   "slide-right": 1.61,
   "slide-up": 1.7,
   "slide-down": 1.64,
-  "land-drop": 0.816,
-  "land-plip": 1.19,
-  "land-bubble": 0.969,
-  "land-ripple": 0.958,
-  "land-bottle": 0.976,
-  "land-rain": 0.384,
-  "land-cup": 0.809,
-  "land-cave": 0.473,
-  "land-rise": 0.464,
-  "land-suikinkutsu": 0.163,
-  "correct-drops": 0.419,
-  "correct-bubbles": 0.492,
-  "correct-drip": 0.405,
-  "correct-pour": 0.485,
-  "correct-leaf": 0.39,
-  "correct-bottle": 0.443,
-  "correct-cup": 0.451,
-  "correct-rain": 0.275,
-  "correct-cascade": 0.283,
-  "correct-suikinkutsu": 0.166,
-  wrong: 0.479,
+  "land-wood": 1.41,
+  "land-felt": 3.82,
+  "land-bamboo": 1.06,
+  "land-go": 2.47,
+  "land-ceramic": 0.583,
+  "land-drop": 0.796,
+  "land-glass": 0.263,
+  "land-kalimba": 0.276,
+  "land-ice": 0.301,
+  "land-bowl": 0.17,
+  "correct-marimba": 0.25,
+  "correct-piano": 0.187,
+  "correct-pinpon": 0.256,
+  "correct-bamboo": 0.394,
+  "correct-bubble": 0.493,
+  "correct-kalimba": 0.233,
+  "correct-glass": 0.21,
+  "correct-handpan": 0.149,
+  "correct-musicbox": 0.188,
+  "correct-harp": 0.145,
+  wrong: 0.319,
 });
 
 /** 全体の出口の大きさ。音ごとの大きさは SFX_LEVELS でそろえてあるので、ここは基準の1。 */

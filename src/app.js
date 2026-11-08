@@ -1,12 +1,10 @@
-import { createHaptics } from "./haptics.js?v=2026.11.18";
-import { createKobunController } from "./kobun.js?v=2026.11.18";
+import { createHaptics } from "./haptics.js?v=2026.11.19";
+import { createKobunController } from "./kobun.js?v=2026.11.19";
 import {
   ALL_MODES,
   ALPHABET_KEYBOARD_ROWS,
-  CHOICE_RECALL_SUBJECTS,
   DEFAULT_MASTERY_CRITERION,
   ENGLISH_CONTENT_TYPES,
-  ENGLISH_STUDY_MODES,
   MASTERY_CRITERIA,
   MASTERY_CRITERION_LABELS,
   IMPORTANCE_ORDER,
@@ -16,7 +14,6 @@ import {
   isRecallSubjectId,
   rangeOrderForSubject,
   itemMatchesRange,
-  recallContentMetaFor,
   TYPE_LABELS,
   UNKNOWN_CHOICE,
   WRONG_REVIEW_DELAY_MS,
@@ -42,7 +39,6 @@ import {
   getHistory,
   historyForModes,
   isCycleComplete,
-  masteredIdsForMode,
   moveKeyboardSlot,
   inputPlanForQuestion,
   isAnswerCorrect,
@@ -55,9 +51,7 @@ import {
   normalizeStudySelection,
   normalizeRecentStudyConfig,
   releaseDeferredReviews,
-  studyConfigForTarget,
   studyModeForItem,
-  inProgressStudyEntries,
   studyEntriesByRecency,
   isStudyInProgress,
   hasStudyContinuation,
@@ -65,17 +59,23 @@ import {
   studyProgressEntriesForMode,
   studyProgressKey,
   studyProgressSummary,
-  studyPerformanceModes,
   studyTargetsForDashboard,
   summarizeHistory,
-  summarizeProgressGauge,
-  summarizeRangeModeProgress,
   summarizeReviewItems,
   summarizeSession,
   summarizeCycleMeter,
+  parseStudyProgressKey,
+  shuffle,
+  summarizeMasteryLevels,
+  summarizeSetRing,
   toggleSetupValue,
-} from "./logic.js?v=2026.11.18";
-import { createMaxAudioEngine } from "./audio.js?v=2026.11.18";
+  summarizeTestResult,
+  buildTestQueue,
+  unmasterStudyItems,
+  gaugeColorIndex,
+  hasAnsweredMode,
+} from "./logic.js?v=2026.11.19";
+import { createMaxAudioEngine } from "./audio.js?v=2026.11.19";
 import {
   CORRECT_VARIANTS,
   LANDING_VARIANTS,
@@ -83,7 +83,7 @@ import {
   SFX_VOLUME_OPTIONS,
   createSfxEngine,
   normalizeSfxVolume,
-} from "./sfx.js?v=2026.11.18";
+} from "./sfx.js?v=2026.11.19";
 import {
   MAX_FEVER_GOAL,
   MAX_TIMELINE_PHASES,
@@ -98,7 +98,7 @@ import {
   resolveMaxCue,
   scaledVisualPlan,
   shouldPlayMaxSound,
-} from "./max-cues.js?v=2026.11.18";
+} from "./max-cues.js?v=2026.11.19";
 import {
   clearAllData,
   getMeta,
@@ -110,7 +110,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.11.18";
+} from "./storage.js?v=2026.11.19";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -118,7 +118,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.11.18";
+} from "./quiz-gestures.js?v=2026.11.19";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
@@ -127,7 +127,7 @@ import {
   normalizeSpeechRate,
   normalizeSpeechVoiceURI,
   voiceKey,
-} from "./speech.js?v=2026.11.18";
+} from "./speech.js?v=2026.11.19";
 import {
   AI_LINK_JOURNAL_KEY,
   AI_LINK_META_KEY,
@@ -143,7 +143,7 @@ import {
   isAiLinkConfigured,
   mcpUrlFor,
   normalizeAiLinkConfig,
-} from "./ai-link.js?v=2026.11.18";
+} from "./ai-link.js?v=2026.11.19";
 import {
   DEFAULT_DEVICE_SYNC,
   DEVICE_SYNC_META_KEY,
@@ -160,13 +160,13 @@ import {
   syncStateLabel,
   transferFileName,
   unsentEntries,
-} from "./sync.js?v=2026.11.18";
+} from "./sync.js?v=2026.11.19";
 import {
   applyThemePreference,
   normalizeThemePreference,
   readStoredThemePreference,
   watchSystemTheme,
-} from "./theme.js?v=2026.11.18";
+} from "./theme.js?v=2026.11.19";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -236,6 +236,16 @@ const state = {
   contentSelectionMode: null,
   // 学習の準備の見出し（形式カードの名前）。
   setupTitle: null,
+  // ホームの「演習｜テスト」。端末に覚えておく。
+  homeMode: "practice",
+  // テストの条件（範囲・形式・重要度。範囲と重要度は空なら「すべて」）。
+  // テストの条件。範囲・重要度は空なら「すべて」、形式は空なら「全形式」（初めは先頭の形式だけ）。
+  testDraft: { ranges: [], formats: null, importance: [] },
+  // テストの記録（新しい順）。
+  testHistory: [],
+  // 結果画面で開いているテストの記録と、履歴から開いたか。
+  resultTestId: null,
+  resultFromHistory: false,
   studyProgress: {},
   // AI連携（MCP）。既定は無効で、有効にするまでネットワークへは出ない。
   aiLink: { ...DEFAULT_AI_LINK },
@@ -266,10 +276,13 @@ const elements = Object.fromEntries(
     "subject-period-label",
     "home-summary",
     "home-continue",
+    "mode-switch",
+    "home-pane",
+    "test-home",
+    "history-list",
     "dashboard-title",
     "dashboard-copy",
     "dashboard-range-list",
-    "dashboard-multi-range",
     "range-detail-title",
     "range-detail-copy",
     "range-detail-groups",
@@ -278,9 +291,6 @@ const elements = Object.fromEntries(
     "setup-progress",
     "setup-groups",
     "setup-start",
-    "study-range-options",
-    "confirm-study-ranges",
-    "study-range-action-copy",
     "list-search",
     "list-count",
     "list-eyebrow",
@@ -492,11 +502,6 @@ function isRecallSubject() {
   return isRecallSubjectId(state.subject);
 }
 
-// 一問一答の教科でも、教材に選択肢がそろっていれば4択も選べる。
-function supportsChoiceRecall() {
-  return isRecallSubject() && CHOICE_RECALL_SUBJECTS.includes(state.subject);
-}
-
 // 公共・保健は「問」、古典の重要語句と英語は「語句」で数える。
 function recallUnit() {
   return isRecallSubject() && !isKobunVocabSubject() ? "問" : "語句";
@@ -586,6 +591,7 @@ function resetStudyFlow() {
   };
   state.sortKey = "importance-desc";
   state.filters = emptyFilters();
+  state.testDraft = { ranges: [], formats: null, importance: [] };
   state.filters.ranges = ranges;
   state.importanceFilterMode = null;
   state.rangeSelectionMode = "all";
@@ -639,13 +645,6 @@ function selectSubject(subject) {
   if (!state.settings.effectsMode) elements.onboarding.hidden = false;
 }
 
-function selectionIsComplete(selection = state.studySelection) {
-  const normalized = normalizeStudySelection(selection);
-  return Boolean(
-    normalized.method && (normalized.subject === "english" ? normalized.contents.length : normalized.content),
-  );
-}
-
 function studyContentLabel(selection = state.studySelection) {
   const normalized = normalizeStudySelection(selection);
   if (normalized.subject === "kobun-vocab") return "重要語句";
@@ -656,16 +655,6 @@ function studyContentLabel(selection = state.studySelection) {
   }
   if (normalized.contents.length === ENGLISH_CONTENT_TYPES.length) return STUDY_CONTENT_LABELS.all;
   return normalized.contents.map((content) => STUDY_CONTENT_LABELS[content]).join("＋") || "教材";
-}
-
-// 学習条件から範囲の見出しを作る（続きのカードで使う）。
-// 「全範囲」かどうかは、いまの回で出題できる範囲と比べて決める。
-function configRangeLabel(config) {
-  const ranges = config.filters?.ranges ?? [];
-  const allRanges = config.subject === state.subject ? dashboardRanges() : rangeOrderForSubject(config.subject);
-  if (!ranges.length || allRanges.every((range) => ranges.includes(range))) return "全範囲";
-  if (ranges.length <= 2) return ranges.join("・");
-  return `${ranges.slice(0, 2).join("・")}＋ほか${ranges.length - 2}`;
 }
 
 // 形式の短い呼び名。ホームの「続きから」や学習の準備の見出しに使う。
@@ -689,25 +678,13 @@ function importanceLabel(importance = []) {
   return importance?.length ? importance.join("・") : "全重要度";
 }
 
-// 学習内容の件数は、範囲だけで絞った母数を使う（重要度は同じ画面で別に選ぶ）
-function studyContentBaseItems() {
-  return applyFilters(state.items, state.history, {
-    ...state.filters,
-    importance: [],
-    performance: "all",
-    minimumWrong: 0,
-    search: "",
-    modes: [],
-  });
-}
-
 // ---------------------------------------------------------------------------
-// 学習の準備
+// 演習の準備
 //
-// 形式カードを押したあとは、この1画面だけで内容・重要度・並び順を選ぶ。
-// 初めは前回その範囲・形式で学習した条件を入れておくので、そのまま
-// 「スタート」を押せば同じ周回の続きになる。選ぶ状態は state.studySelection /
-// state.filters / state.sortKey をそのまま使い、startSession() へ渡す。
+// 演習は「範囲1つ × 形式1つ × 重要度1つ」の組ごとに周回と習得を持つ。内容は
+// 単語・熟語・構文をいつもまとめて出す。範囲と形式は前の画面で決まっているので、
+// ここでは重要度を1つ選び、並び順を選んで始める。重要度の行ごとに、その組だけの
+// 円（習得）と横棒（今の周回）を出す。初めは前回その範囲・形式で学習した重要度を選んでおく。
 // ---------------------------------------------------------------------------
 
 // 押してすぐ選べる並び順。ほかの並び順は「その他」（端末の選択肢）から選ぶ。
@@ -735,37 +712,48 @@ function setupGroup(title, chips) {
     </section>`;
 }
 
-function setStudyContents(contents) {
-  const list = contents.length ? contents : [...ENGLISH_CONTENT_TYPES];
-  state.contentSelectionMode = list.length === ENGLISH_CONTENT_TYPES.length ? "all" : "custom";
-  state.studySelection = {
-    ...state.studySelection,
-    subject: "english",
-    content: list.length === ENGLISH_CONTENT_TYPES.length ? "all" : list.length === 1 ? list[0] : null,
-    contents: list,
+// 演習の条件（範囲1つ・重要度1つ・内容はすべて）。重要度が無いときは、その範囲・形式の全部。
+function practiceConfig({ range, importance = null, selection = state.studySelection, sortKey = state.sortKey } = {}) {
+  return {
+    subject: state.subject,
+    filters: { ...emptyFilters(), ranges: [range], importance: importance ? [importance] : [] },
+    selection: normalizeStudySelection(selection),
+    sortKey,
+    count: "all",
+    itemIds: null,
   };
 }
 
 function currentSetupConfig() {
+  return practiceConfig({ range: state.filters.ranges[0], importance: state.filters.importance[0] });
+}
+
+// その組の円・周回の材料。
+function practiceStatus(config) {
+  const pool = studyPoolItems(config);
+  const poolIds = pool.map((item) => item.id);
+  const key = studyProgressKey(config);
+  const stored = key ? storedStudyProgress(key, { itemIds: poolIds }) : null;
+  const mode = exactStudyMode(config.selection);
+  const answeredIds = pool
+    .filter((item) => hasAnsweredMode(getHistory(state.history, item.id), mode))
+    .map((item) => item.id);
   return {
-    subject: state.subject,
-    filters: { ...state.filters, search: "" },
-    selection: normalizeStudySelection(state.studySelection),
-    sortKey: state.sortKey,
-    count: "all",
-    itemIds: null,
+    pool,
+    key,
+    stored,
+    mode,
+    summary: studyProgressSummary(stored),
+    ring: summarizeSetRing({ progress: stored, poolIds, answeredIds }),
   };
 }
 
 // いまの条件で始めると、何問から・何周目から始まるか。
 function setupPlan() {
   const config = currentSetupConfig();
-  const pool = studyPoolItems(config);
-  const key = studyProgressKey(config);
-  const stored = key ? storedStudyProgress(key, { itemIds: pool.map((item) => item.id) }) : null;
+  const { pool, key, stored, summary, ring } = practiceStatus(config);
   const unit = recallUnit();
-  const summary = studyProgressSummary(stored);
-  const plan = { config, pool, key, stored, summary, label: "スタート", detail: `${pool.length}${unit}` };
+  const plan = { config, pool, key, stored, summary, ring, label: "スタート", detail: `${pool.length}${unit}` };
   if (!stored || !summary) return plan;
   if (summary.remainingCount > 0) {
     if (isStudyInProgress(stored)) plan.label = "続きから";
@@ -779,14 +767,17 @@ function setupPlan() {
   return plan;
 }
 
+function setupStartMarkup(label, detail) {
+  return `<span class="setup-start-label">${escapeHtml(label)}</span><small>${escapeHtml(detail)}</small><span aria-hidden="true">→</span>`;
+}
+
+// 上の面：選んでいる重要度の組の円（何%を習得したか）と、今の周回。
 function renderSetupProgress() {
   const plan = setupPlan();
-  const progress = selectionProgress({ types: studyContentTypes(), importance: state.filters.importance });
   const isLatest = Boolean(plan.stored) && plan.key === latestStudyEntry()?.key;
-  const roundNumber = plan.summary?.masteryRound ?? 1;
   elements.setupProgress.innerHTML = `
     <div class="setup-progress-card meter-card${isLatest ? " is-in-progress" : ""}">
-      ${progress ? progressRingMarkup(progress, roundNumber) : ""}
+      ${setRingMarkup(plan.ring)}
       <span class="meter-body">
         <span class="setup-progress-head">
           <span class="setup-progress-label">出題する問題</span>
@@ -795,65 +786,19 @@ function renderSetupProgress() {
         </span>
         ${cycleBarMarkup(plan.summary, { total: plan.pool.length })}
       </span>
-      ${progress ? progressBreakdownMarkup(progress, roundNumber) : ""}
+      ${ringLegendMarkup(plan.ring)}
     </div>`;
   elements.setupStart.disabled = !plan.pool.length;
   elements.setupStart.innerHTML = plan.pool.length
-    ? `<span class="setup-start-label">${escapeHtml(plan.label)}</span><small>${escapeHtml(plan.detail)}</small><span aria-hidden="true">→</span>`
+    ? setupStartMarkup(plan.label, plan.detail)
     : '<span class="setup-start-label">この条件に合う問題がありません</span>';
 }
 
-function renderStudySetup() {
-  const mode = exactStudyMode(state.studySelection);
-  if (!mode || !state.filters.ranges.length) {
-    setView("dashboard");
-    return;
-  }
-  elements.setupTitle.textContent = state.setupTitle ?? modeShortLabel(mode);
-  elements.setupNote.textContent = rangeDetailLabel();
-  const groups = [];
-  if (!isRecallSubject()) {
-    const baseItems = studyContentBaseItems();
-    const selected = state.studySelection.contents ?? [];
-    const allSelected = selected.length === ENGLISH_CONTENT_TYPES.length;
-    groups.push(setupGroup("内容", [
-      setupChip({ label: "すべて", count: baseItems.length, selected: allSelected, attribute: 'data-setup-content="all"' }),
-      ...ENGLISH_CONTENT_TYPES.map((content) => {
-        const count = baseItems.filter((item) => item.type === content).length;
-        return setupChip({
-          label: STUDY_CONTENT_META[content].title,
-          count,
-          selected: !allSelected && selected.includes(content),
-          attribute: `data-setup-content="${content}"`,
-          disabled: !count,
-        });
-      }),
-    ]));
-  }
-  const countFor = (importance) => learningItems({
-    ...state.filters,
-    importance: importance ? [importance] : [],
-    performance: "all",
-    minimumWrong: 0,
-  }).length;
-  const chosen = state.filters.importance ?? [];
-  groups.push(setupGroup("重要度", [
-    setupChip({ label: "すべて", count: countFor(null), selected: !chosen.length, attribute: 'data-setup-importance="all"' }),
-    ...currentImportanceOrder().map((importance) => {
-      const count = countFor(importance);
-      return setupChip({
-        label: importance,
-        count,
-        selected: chosen.includes(importance),
-        attribute: `data-setup-importance="${importance}"`,
-        disabled: !count,
-      });
-    }),
-  ]));
+function sortGroupMarkup() {
   const primary = primarySortOptions();
   const isOther = !primary.some((option) => option.key === state.sortKey);
   const others = OTHER_SORT_OPTIONS.filter(([key]) => !primary.some((option) => option.key === key));
-  groups.push(setupGroup("並び順", [
+  return setupGroup("並び順", [
     ...primary.map((option) => setupChip({
       label: option.title,
       selected: state.sortKey === option.key,
@@ -867,38 +812,36 @@ function renderStudySetup() {
           ${others.map(([key, label]) => `<option value="${key}"${state.sortKey === key ? " selected" : ""}>${escapeHtml(label)}</option>`).join("")}
         </select>
       </label>`,
-  ]));
-  elements.setupGroups.innerHTML = groups.join("");
-  renderSetupProgress();
+  ]);
 }
 
-function renderStudyRangeSelect() {
-  // 出題できる範囲だけを並べる。「全範囲」ボタンと同じ集合にそろえておくと、
-  // どちらから入っても同じ周回のつづきになる。
-  const ranges = dashboardRanges();
-  const allSelected = state.rangeSelectionMode === "all";
-  const allResumable = allRangesInProgress();
-  const allCard = `<button class="multi-select-card select-all-card${allSelected ? " selected" : ""}${allResumable ? " is-in-progress" : ""}" type="button" data-study-range-all aria-pressed="${allSelected}">
-    <span class="multi-check" aria-hidden="true">${allSelected ? "✓" : ""}</span>
-    <span><strong>全選択</strong><small>すべての範囲（${state.items.length}${recallUnit()}）</small>${allResumable ? studyBadgeMarkup() : ""}</span>
-  </button>`;
-  const rangeCards = ranges.map((range) => {
-    const selected = !allSelected && state.filters.ranges.includes(range);
-    const count = state.items.filter((item) => itemMatchesRange(item, range)).length;
-    return `<button class="multi-select-card${selected ? " selected" : ""}" type="button" data-study-range="${escapeHtml(range)}" aria-pressed="${selected}">
-      <span class="multi-check" aria-hidden="true">${selected ? "✓" : ""}</span>
-      <span><strong>${escapeHtml(range)}</strong><small>${count}${recallUnit()}</small></span>
-    </button>`;
-  }).join("");
-  elements.studyRangeOptions.innerHTML = allCard + rangeCards;
-  const ready = state.filters.ranges.length > 0;
-  elements.confirmStudyRanges.disabled = !ready;
-  elements.confirmStudyRanges.classList.toggle("ready-to-continue", ready);
-  elements.confirmStudyRanges.innerHTML = `${allSelected ? "全範囲で次へ" : "選択した範囲で次へ"} <span aria-hidden="true">→</span>`;
-  elements.studyRangeActionCopy.hidden = !ready;
-  elements.studyRangeActionCopy.textContent = allSelected
-    ? "全範囲を選択しました。次へ進めます"
-    : `${state.filters.ranges.length}範囲を選択中。次へ進めます`;
+// 学習の準備（演習）。重要度を1つと並び順を選ぶ。
+function renderStudySetup() {
+  const mode = exactStudyMode(state.studySelection);
+  const range = state.filters.ranges[0];
+  if (!mode || state.filters.ranges.length !== 1) {
+    setView("dashboard");
+    return;
+  }
+  const counts = currentImportanceOrder()
+    .map((importance) => [importance, studyPoolItems(practiceConfig({ range, importance })).length]);
+  const available = counts.filter(([, count]) => count);
+  if (available.length && !available.some(([importance]) => importance === state.filters.importance[0])) {
+    state.filters.importance = [available[0][0]];
+  }
+  elements.setupTitle.textContent = state.setupTitle ?? modeShortLabel(mode);
+  elements.setupNote.textContent = range;
+  elements.setupGroups.innerHTML = [
+    setupGroup("重要度", counts.map(([importance, count]) => setupChip({
+      label: importance,
+      count,
+      selected: importance === state.filters.importance[0],
+      attribute: `data-setup-importance="${importance}"`,
+      disabled: !count,
+    }))),
+    sortGroupMarkup(),
+  ].join("");
+  renderSetupProgress();
 }
 
 function dashboardTargetGroups() {
@@ -921,20 +864,19 @@ function dashboardRanges() {
   return currentRangeOrder().filter((range) => state.items.some((item) => item.range === range));
 }
 
-// いまの教科・いまの習得条件の周回を、最後に学習した順で返す。
+// 演習の周回か（範囲1つ・重要度1つ・内容はすべて）。以前の作りで残った、
+// 全範囲や複数の重要度の周回は、続きの入口には使わない。
+function isPracticeMeta(meta) {
+  if (!meta || (meta.ranges ?? []).length !== 1 || (meta.importance ?? []).length !== 1) return false;
+  return meta.subject !== "english" || meta.contents === studyContentsKey(ENGLISH_CONTENT_TYPES);
+}
+
+// いまの教科・いまの習得条件の演習の周回を、最後に学習した順で返す。
 function recentStudyEntries() {
   return studyEntriesByRecency(state.studyProgress, {
     subject: state.subject ?? "english",
     criterion: masteryCriterion(),
-  });
-}
-
-// 学習途中の周回だけを、最後に学習した順で返す。
-function inProgressEntries() {
-  return inProgressStudyEntries(state.studyProgress, {
-    subject: state.subject ?? "english",
-    criterion: masteryCriterion(),
-  });
+  }).filter(({ meta }) => isPracticeMeta(meta));
 }
 
 // ハイライトの基準になるセット。いちばん最近学習した条件を採用するが、
@@ -945,22 +887,8 @@ function latestStudyEntry() {
 }
 
 // 範囲ボタンのハイライトは、いちばん最近学習したセットひとつだけを指す。
-// 途中の周回をほかに抱えていても、入口は迷わずひとつになる。
-function latestStudyRanges() {
-  return latestStudyEntry()?.meta.ranges ?? [];
-}
-
-// その範囲だけを対象にした周回なら、その範囲ボタンから続きへ入れる。
 function rangesInProgress() {
-  const list = latestStudyRanges();
-  return new Set(list.length === 1 ? list : []);
-}
-
-// 全範囲を対象にした周回なら、「全範囲」「全選択」ボタンの担当になる。
-function allRangesInProgress() {
-  const total = dashboardRanges().length;
-  if (!total) return false;
-  return latestStudyRanges().length >= total;
+  return new Set(latestStudyEntry()?.meta.ranges ?? []);
 }
 
 // ハイライトのラベル。周回の途中なら残りがあることを、終えていれば
@@ -971,10 +899,9 @@ function studyBadgeMarkup() {
 }
 
 function rangeDetailLabel(ranges = state.filters.ranges) {
-  if (!ranges.length) return "範囲";
-  if (ranges.length === 1) return ranges[0];
-  if (ranges.length >= dashboardRanges().length) return "全範囲";
-  return `${ranges.length}範囲`;
+  if (!ranges.length || ranges.length >= dashboardRanges().length) return "全範囲";
+  if (ranges.length <= 2) return ranges.join("・");
+  return `${ranges.slice(0, 2).join("・")}＋ほか${ranges.length - 2}`;
 }
 
 // ホームの上に並べる教科のタブ。いまの回で学習する教科だけを出す。
@@ -1008,7 +935,16 @@ function renderDashboard() {
     : isKobunVocabSubject()
       ? "作品を選ぶ"
       : "範囲を選ぶ";
-  elements.dashboardMultiRange.hidden = !periodHasData();
+  syncHomeMode();
+  const test = isTestFlow() && periodHasData();
+  elements.homePane.hidden = test;
+  elements.testHome.hidden = !test;
+  document.body.classList.toggle("home-test-mode", test);
+  if (test) {
+    renderTestHome();
+    renderHeader();
+    return;
+  }
   if (!periodHasData()) {
     elements.homeContinue.innerHTML = "";
     elements.dashboardCopy.textContent = "";
@@ -1019,82 +955,71 @@ function renderDashboard() {
   const resume = resumableStudy();
   elements.homeContinue.innerHTML = resume ? resumeStudyMarkup(resume) : "";
   const ranges = dashboardRanges();
-  const unit = recallUnit();
   elements.dashboardCopy.textContent = `${ranges.length}${isPublicSubject() ? "題名" : "範囲"}`;
   // 学習途中の範囲は印で示し、続きから進められることを伝える。
   const resumableRanges = rangesInProgress();
-  const allResumable = allRangesInProgress();
-  elements.dashboardRangeList.innerHTML = [
-    `<button class="range-choice range-choice--all${allResumable ? " is-in-progress" : ""}" type="button" data-dashboard-all-ranges>
-      <span class="range-choice-name">全範囲</span>
-      ${allResumable ? studyBadgeMarkup() : ""}
-      <span class="range-choice-detail">${state.items.length}${unit}</span>
-      <span class="card-arrow" aria-hidden="true">›</span>
-    </button>`,
-    ...ranges.map((range) => `
-    <button class="range-choice${resumableRanges.has(range) ? " is-in-progress" : ""}" type="button" data-dashboard-range="${escapeHtml(range)}">
+  elements.dashboardRangeList.innerHTML = ranges.map((range, index) => `
+    <button class="range-choice${resumableRanges.has(range) ? " is-in-progress" : ""}" type="button" data-dashboard-range="${escapeHtml(range)}" style="--i:${Math.min(index, 16)}">
       <span class="range-choice-name">${escapeHtml(range)}</span>
       ${resumableRanges.has(range) ? studyBadgeMarkup() : ""}
       <span class="card-arrow" aria-hidden="true">›</span>
-    </button>`),
-  ].join("");
+    </button>`).join("");
   renderHeader();
 }
 
-function contentLabelFromProgressKey(meta, subject = state.subject) {
-  const contents = String(meta?.contents ?? "").split("+").filter(Boolean);
-  if (!contents.length) return "";
-  if (contents.length >= ENGLISH_CONTENT_TYPES.length) return "全内容";
-  return contents
-    .map((content) => STUDY_CONTENT_META[content]?.title
-      ?? (isRecallSubjectId(subject) ? recallContentMetaFor(subject, content)?.title : null)
-      ?? STUDY_CONTENT_LABELS[content] ?? content)
-    .join("＋");
+// 円：区間ごとに色を変えて塗る。
+//   学習の準備・続きから（1つの組）… 今のセットの習得（今のセットの色）→ 1セット目なら練習中（薄い青）、
+//     2セット目からは前のセットで習得した分（前のセットの色）→ 色なし。中央は「習得」「習得2」。
+//   形式カード（その範囲・形式の全部）… 習得2（赤）→ 習得（青）→ 色なし。
+function setRingColor(round) {
+  return `var(--set-color-${gaugeColorIndex(round)})`;
 }
 
-// 表示中の範囲・形式に一致する周回のうち、最後に学習したものを見せる。
-// 重要度などの絞り込みは問わず、その範囲・形式でいちばん最近の周回を出す。
-function cardStudyProgress(card) {
-  return studyProgressEntriesForMode(state.studyProgress, {
-    mode: card.mode,
-    ranges: state.filters.ranges.length ? state.filters.ranges : dashboardRanges(),
-    criterion: masteryCriterion(),
-  }).find(({ meta }) => !isRecallSubject() || meta.contents === card.selection?.content) ?? null;
+function ringSegmentColor(segment) {
+  if (segment.kind === "practicing") return "var(--set-soft-1)";
+  if (segment.kind === "untouched") return null;
+  return setRingColor(segment.round);
 }
 
-// 形式カード・学習内容・重要度で共通の進捗ゲージ。
-// 1本のトラックに「未回答（背景）」「解答済み（薄い塗り）」「習得（濃い塗り）」を重ね、
-// セット（習得ラウンド）が変わったときにだけ新しいバーを下へ足す（終えたセットの
-// バーは満了のまま残す）。周回が2周目・3周目と進むのは同じセットの中の絞り込みなので、
-// バーは増やさず1本のまま伸ばす。
-// バーの本数と幅は summarizeProgressGauge がそろえる。セットを重ねてもバーは
-// 上限までしか増えず、保存データが壊れていても幅が不正な値にならない。
-// 進み具合は2つの目標を形で分けて見せる。
-//   円（遠い目標）… この範囲・形式で、全体のうち何%を習得したか
-//   横棒（近い目標）… 今の周回が、あと何問で終わるか
-// 円の中は習得率だけ。下に「習得・練習中・未回答」の内訳（足すと全体の数）を添える。
-function progressRingMarkup(progress, roundNumber = 1) {
-  const gauge = summarizeProgressGauge(progress, roundNumber);
+// 区間の割合を足し上げて、円の塗り（conic-gradient）を作る。端数は件数から直接出すのでずれない。
+function ringFill(ring) {
+  let done = 0;
+  const stops = [];
+  ring.segments.forEach((segment) => {
+    const color = ringSegmentColor(segment);
+    if (!color || !segment.count || !ring.total) return;
+    const from = Math.round((done / ring.total) * 1000) / 10;
+    done += segment.count;
+    const to = Math.round((done / ring.total) * 1000) / 10;
+    stops.push(`${color} ${from}% ${to}%`);
+  });
+  const end = ring.total ? Math.round((done / ring.total) * 1000) / 10 : 0;
+  stops.push(`var(--gauge-track) ${end}% 100%`);
+  return `conic-gradient(${stops.join(", ")})`;
+}
+
+function setRingMarkup(ring) {
   const unit = recallUnit();
-  const label = `${gauge.roundNumber > 1 ? `${gauge.roundNumber}セット目、` : ""}全${gauge.totalItems}${unit}のうち${gauge.masteredCount}${unit}を習得（${gauge.masteredPercent}パーセント）`;
+  const label = `全${ring.total}${unit}のうち、${ring.segments
+    .filter((segment) => segment.count)
+    .map((segment) => `${segment.label}${segment.count}${unit}（${segment.percent}パーセント）`)
+    .join("、")}`;
   return `
-      <span class="meter-ring" data-cycle="${gauge.colorIndex}" style="--mastered:${gauge.masteredWidth}%;--answered:${gauge.answeredWidth}%" role="img" aria-label="${escapeHtml(label)}">
-        <span class="meter-ring-value">${gauge.masteredPercent}<small>%</small></span>
-        <span class="meter-ring-label">${gauge.roundNumber > 1 ? `${gauge.roundNumber}セット目` : "習得"}</span>
+      <span class="meter-ring" style="--ring-fill:${ringFill(ring)}" role="img" aria-label="${escapeHtml(label)}">
+        <span class="meter-ring-value">${ring.masteredPercent}<small>%</small></span>
+        <span class="meter-ring-label">${escapeHtml(ring.label)}</span>
       </span>`;
 }
 
-function progressBreakdownMarkup(progress, roundNumber = 1) {
-  const gauge = summarizeProgressGauge(progress, roundNumber);
+function ringLegendMarkup(ring) {
   return `
-      <span class="meter-breakdown" data-cycle="${gauge.colorIndex}">
-        <span class="meter-key is-mastered">習得 <b>${gauge.masteredCount}</b></span>
-        <span class="meter-key is-answered">練習中 <b>${gauge.practicingCount}</b></span>
-        <span class="meter-key is-untouched">未回答 <b>${gauge.untouchedCount}</b></span>
+      <span class="meter-breakdown">
+        ${ring.segments.map((segment) => `<span class="meter-key${segment.kind === "untouched" ? " is-untouched" : ""}" style="--key-color:${ringSegmentColor(segment) ?? "transparent"}">${escapeHtml(segment.label)} <b>${segment.count}</b></span>`).join("")}
       </span>`;
 }
 
 // 今の周回の横棒。まだ始めていなければ、その旨だけを出す。
+// 「◯セット目」は書かない（何セット目の習得かは円の色と「習得2」で分かる）。
 function cycleBarMarkup(cycle, { prefix = "", total = 0 } = {}) {
   const meter = summarizeCycleMeter(cycle);
   const unit = recallUnit();
@@ -1104,8 +1029,7 @@ function cycleBarMarkup(cycle, { prefix = "", total = 0 } = {}) {
         <span class="meter-cycle-head"><strong>まだ始めていません</strong><span>${total}${unit}</span></span>
       </span>`;
   }
-  const round = meter.masteryRound > 1 ? `${meter.masteryRound}セット目・` : "";
-  const title = `${prefix ? `${prefix} · ` : ""}${round}${meter.cycleNumber}周目`;
+  const title = `${prefix ? `${prefix} · ` : ""}${meter.cycleNumber}周目`;
   const note = meter.complete ? "この周は完了" : `あと<b>${meter.remainingCount}</b>${unit}`;
   return `
       <span class="meter-cycle${meter.complete ? " is-complete" : ""}">
@@ -1114,81 +1038,455 @@ function cycleBarMarkup(cycle, { prefix = "", total = 0 } = {}) {
       </span>`;
 }
 
-// 現在選んでいる形式で、指定した内容・重要度に絞った進捗を出す。
-function recallTypesForContent(content) {
-  if (!isRecallSubject()) return [];
-  return content === "all"
-    ? [`${state.subject}-term`, `${state.subject}-short`]
-    : [`${state.subject}-${content}`];
-}
-
-// いま選んでいる学習内容が対象にしている項目種別
-function studyContentTypes() {
-  if (isRecallSubject()) return recallTypesForContent(state.studySelection.content ?? "all");
-  const contents = state.studySelection.contents ?? [];
-  return contents.length ? [...contents] : [...ENGLISH_CONTENT_TYPES];
-}
-
-function selectionProgress({ types = [], importance = [] } = {}) {
-  const mode = exactStudyMode(state.studySelection);
-  if (!mode) return null;
-  return summarizeRangeModeProgress({
-    items: state.items,
-    history: state.history,
-    ranges: state.filters.ranges,
-    types,
-    importance,
-    mode,
-    masteredIds: masteredIdsForMode(state.studyProgress, mode, { criterion: masteryCriterion() }),
-  });
-}
-
-function modeProgressCard(card) {
-  const entry = cardStudyProgress(card);
-  const cycle = studyProgressSummary(entry?.progress ?? null);
-  const progress = summarizeRangeModeProgress({
-    items: state.items,
-    history: state.history,
-    ranges: state.filters.ranges,
-    types: card.types,
+// その範囲・形式の演習の組（重要度ごと）を、最後に学習した順で。
+function practiceEntriesForCard(card, range) {
+  return studyProgressEntriesForMode(state.studyProgress, {
     mode: card.mode,
-    masteredIds: masteredIdsForMode(state.studyProgress, card.mode, { criterion: masteryCriterion() }),
+    ranges: [range],
+    criterion: masteryCriterion(),
+  }).filter(({ meta }) => isPracticeMeta(meta)
+    && (!isRecallSubject() || meta.contents === card.selection?.content));
+}
+
+// 形式カード。円はその範囲・形式の全問題を、何セット目まで習得したか（習得2は赤・習得は青・
+// 未習得は色なし）で塗り分ける。重要度ごとの周回をまとめて見るので、全体のどこまで来たかが分かる。
+// 横棒は、その範囲・形式でいちばん最近学習した重要度の今の周回。
+function modeProgressCard(card) {
+  const range = state.filters.ranges[0];
+  const pool = studyPoolItems(practiceConfig({ range, selection: card.selection }));
+  const entries = practiceEntriesForCard(card, range);
+  const ring = summarizeMasteryLevels({
+    poolIds: pool.map((item) => item.id),
+    progresses: entries.map((entry) => entry.progress),
   });
-  // 表示中の範囲・条件に一致する周回が、いちばん最近学習したセットのときだけ
-  // この形式をハイライトする。
-  const resumable = Boolean(entry) && entry.key === latestStudyEntry()?.key;
-  // 周回の横棒には、その周回がどの内容を対象にしているかを添える（全内容なら省く）。
-  const contentLabel = entry && !isRecallSubject() ? contentLabelFromProgressKey(entry.meta) : "";
-  const prefix = contentLabel && contentLabel !== "全内容" ? contentLabel : "";
-  const roundNumber = cycle?.masteryRound ?? 1;
+  const latest = entries[0] ?? null;
+  const importance = latest?.meta.importance?.[0] ?? null;
+  const cycle = studyProgressSummary(latest?.progress ?? null);
+  const resumable = Boolean(latest) && latest.key === latestStudyEntry()?.key;
   return `
-    <button class="mode-progress-card meter-card${resumable ? " is-in-progress" : ""}" type="button" data-study-target="${escapeHtml(card.key)}"${progress.totalItems ? "" : ' disabled aria-disabled="true"'}>
-      ${progressRingMarkup(progress, roundNumber)}
+    <button class="mode-progress-card meter-card${resumable ? " is-in-progress" : ""}" type="button" data-study-target="${escapeHtml(card.key)}"${pool.length ? "" : ' disabled aria-disabled="true"'}>
+      ${setRingMarkup(ring)}
       <span class="meter-body">
         <span class="mode-progress-head">
           <strong>${escapeHtml(card.title)}</strong>
-          ${progress.totalItems ? "" : '<span class="mode-progress-cycle">出題できません</span>'}
+          ${pool.length ? "" : '<span class="mode-progress-cycle">出題できません</span>'}
           ${resumable ? studyBadgeMarkup() : ""}
           <span class="card-arrow" aria-hidden="true">›</span>
         </span>
-        ${cycleBarMarkup(cycle, { prefix, total: progress.totalItems })}
+        ${cycleBarMarkup(cycle, { prefix: importance ? `重要度${importance}` : "", total: pool.length })}
       </span>
+      ${ring.masteredCount ? ringLegendMarkup(ring) : ""}
     </button>`;
 }
 
 function renderRangeDetail() {
   const ranges = state.filters.ranges;
-  if (!ranges.length) {
+  // 演習は範囲を1つずつ。
+  if (ranges.length !== 1) {
     setView("dashboard");
     return;
   }
-  elements.rangeDetailTitle.textContent = rangeDetailLabel(ranges);
-  elements.rangeDetailCopy.textContent = ranges.length > 1 ? `${ranges.length}範囲` : "";
+  elements.rangeDetailTitle.textContent = ranges[0];
+  elements.rangeDetailCopy.textContent = "";
   elements.rangeDetailGroups.innerHTML = dashboardTargetGroups().map((group) => `
     <section class="mode-group" aria-label="${escapeHtml(group.label)}">
       <h2 class="mode-group-title">${escapeHtml(group.label)}</h2>
       <div class="mode-card-list">${group.cards.map((card) => modeProgressCard(card)).join("")}</div>
     </section>`).join("");
+}
+
+// ---------------------------------------------------------------------------
+// テスト
+//
+// 演習（1範囲・1形式・1重要度ごとに周回と習得を重ねる）とは別に、好きな範囲・形式・
+// 重要度をまとめて、全部を1回ずつ解く。間違えても同じテストの中では出し直さない。
+// 終わったら正答率を出し、間違えた問題だけをもう一度解ける。演習で「習得」になって
+// いた問題を間違えたときは、演習の習得から外して、また演習で確かめられるようにする。
+// ---------------------------------------------------------------------------
+
+const TEST_HISTORY_META_KEY = "testHistory";
+const TEST_HISTORY_LIMIT = 60;
+
+// ホームが演習側かテスト側か。
+function isTestFlow() {
+  return state.homeMode === "test";
+}
+
+function syncHomeMode() {
+  elements.modeSwitch.dataset.mode = state.homeMode;
+  elements.modeSwitch.querySelectorAll("[data-home-mode]").forEach((button) => {
+    button.setAttribute("aria-checked", String(button.dataset.homeMode === state.homeMode));
+  });
+  elements.modeSwitch.hidden = !periodHasData();
+}
+
+// 押した札だけを弾ませる（描き直したあとの同じ札を探して印を付ける）。
+function pulseChip(container, attribute, value) {
+  const chip = [...container.querySelectorAll(`[${attribute}]`)]
+    .find((element) => element.getAttribute(attribute) === value);
+  chip?.classList.add("is-pulsing");
+}
+
+function setHomeMode(mode) {
+  const next = mode === "test" ? "test" : "practice";
+  if (next === state.homeMode) return;
+  state.homeMode = next;
+  setMeta("homeMode", next).catch(console.warn);
+  haptics.trigger("flip");
+  renderDashboard();
+  // 押した側から、新しい面が滑り込む。
+  const pane = next === "test" ? elements.testHome : elements.homePane;
+  pane.classList.remove("is-entering-left", "is-entering-right");
+  void pane.offsetWidth;
+  pane.classList.add(next === "test" ? "is-entering-right" : "is-entering-left");
+  clearTimeout(setHomeMode.timer);
+  setHomeMode.timer = setTimeout(() => pane.classList.remove("is-entering-left", "is-entering-right"), 900);
+}
+
+// テストの範囲は、全範囲なら空にそろえる（あとで範囲が増えても「全範囲」のまま）。
+function normalizedTestRanges(ranges = []) {
+  const all = dashboardRanges();
+  return !ranges.length || all.every((range) => ranges.includes(range)) ? [] : all.filter((range) => ranges.includes(range));
+}
+
+function testQueueFor({ ranges = [], importance = [], mode, content = null } = {}) {
+  const queue = buildTestQueue({ items: state.items, ranges: normalizedTestRanges(ranges), importance, mode });
+  // 一問一答の教科は、形式カードの内容（語句回答・短文回答）でそろえる。
+  return isRecallSubject() && content && content !== "all"
+    ? queue.filter(({ item }) => !item.answerFormat || item.answerFormat === content)
+    : queue;
+}
+
+function rangesLabel(ranges = []) {
+  return rangeDetailLabel(ranges.length ? ranges : dashboardRanges());
+}
+
+function scoreTone(percent) {
+  return percent >= 90 ? "great" : percent >= 70 ? "good" : percent >= 50 ? "fair" : "low";
+}
+
+// テストで選べる形式（演習の形式カードと同じ並び）。
+function testFormatOptions() {
+  return dashboardTargetGroups().flatMap((group) => group.cards).map((card) => ({
+    key: card.key,
+    mode: card.mode,
+    content: card.selection?.content ?? null,
+    label: isRecallSubject() ? card.title : modeShortLabel(card.mode),
+  }));
+}
+
+// 選んだ形式（空なら全形式）。まだ選んでいなければ、先頭の形式だけにしておく。
+function testDraftFormats() {
+  if (!state.testDraft.formats) state.testDraft.formats = testFormatOptions().slice(0, 1).map((option) => option.key);
+  return state.testDraft.formats;
+}
+
+function selectedTestFormats(keys = testDraftFormats()) {
+  const options = testFormatOptions();
+  return keys.length ? options.filter((option) => keys.includes(option.key)) : options;
+}
+
+// 範囲・形式・重要度に合う問題。形式を2つ以上選んだら、形式ごとに1回ずつ出して全体を混ぜる。
+function testEntriesFor({ ranges = [], formats = [], importance = [] } = {}) {
+  const entries = formats.flatMap((format) => testQueueFor({ ranges, importance, mode: format.mode, content: format.content }));
+  return formats.length > 1 ? shuffle(entries) : entries;
+}
+
+function testFormatsLabel(formats = []) {
+  const all = testFormatOptions();
+  if (formats.length > 1 && formats.length >= all.length) return "全形式";
+  return formats.map((format) => format.label ?? modeShortLabel(format.mode)).join("・");
+}
+
+// テストの面。範囲・形式・重要度をチェックで選び、この1画面でそのまま始める。
+function renderTestHome() {
+  const options = testFormatOptions();
+  const draft = state.testDraft;
+  const unit = recallUnit();
+  const ranges = dashboardRanges();
+  const formats = selectedTestFormats();
+  const count = (patch) => testEntriesFor({ ranges: draft.ranges, formats, importance: draft.importance, ...patch }).length;
+  const total = count({});
+  const check = ({ attribute, title, detail, selected, disabled = false, all = false, index = 0 }) => `
+        <button class="multi-select-card${all ? " select-all-card" : ""}${selected ? " selected" : ""}" type="button" ${attribute} aria-pressed="${selected}" style="--i:${index}"${disabled ? ' disabled aria-disabled="true"' : ""}>
+          <span class="multi-check" aria-hidden="true">${selected ? "✓" : ""}</span>
+          <span><strong>${escapeHtml(title)}</strong><small>${escapeHtml(detail)}</small></span>
+        </button>`;
+  const allRanges = !draft.ranges.length;
+  const allFormats = !testDraftFormats().length;
+  const allImportance = !draft.importance.length;
+  const formatCount = (option) => testEntriesFor({ ranges: draft.ranges, formats: [option], importance: draft.importance }).length;
+  elements.testHome.innerHTML = `
+    <section class="test-group" aria-label="範囲">
+      <h2 class="test-group-title">範囲</h2>
+      <div class="multi-select-grid">
+        ${check({ attribute: 'data-test-range="all"', title: "全選択", detail: `すべての範囲（${count({ ranges: [] })}${unit}）`, selected: allRanges, all: true })}
+        ${ranges.map((range, index) => {
+          const value = count({ ranges: [range] });
+          return check({ attribute: `data-test-range="${escapeHtml(range)}"`, title: range, detail: `${value}${unit}`, selected: !allRanges && draft.ranges.includes(range), disabled: !value, index: index + 1 });
+        }).join("")}
+      </div>
+    </section>
+    <section class="test-group" aria-label="形式">
+      <h2 class="test-group-title">形式</h2>
+      <div class="multi-select-grid">
+        ${options.length > 1 ? check({ attribute: 'data-test-format="all"', title: "全選択", detail: "すべての形式", selected: allFormats, all: true }) : ""}
+        ${options.map((option, index) => {
+          const value = formatCount(option);
+          return check({ attribute: `data-test-format="${escapeHtml(option.key)}"`, title: option.label, detail: `${value}${unit}`, selected: options.length === 1 || (!allFormats && draft.formats.includes(option.key)), disabled: !value, index: index + 1 });
+        }).join("")}
+      </div>
+    </section>
+    <section class="test-group" aria-label="重要度">
+      <h2 class="test-group-title">重要度</h2>
+      <div class="multi-select-grid test-importance-grid">
+        ${check({ attribute: 'data-test-importance="all"', title: "すべて", detail: `${count({ importance: [] })}${unit}`, selected: allImportance, all: true })}
+        ${currentImportanceOrder().map((importance, index) => {
+          const value = count({ importance: [importance] });
+          return check({ attribute: `data-test-importance="${importance}"`, title: importance, detail: `${value}${unit}`, selected: !allImportance && draft.importance.includes(importance), disabled: !value, index: index + 1 });
+        }).join("")}
+      </div>
+    </section>
+    <p class="test-home-note">間違えても出し直さず、終わったら正答率を出します。演習の周回には入りません。</p>
+    <div class="sticky-action test-start-bar">
+      <button class="primary-button setup-start" type="button" data-test-start${total ? "" : " disabled"}>
+        ${total ? setupStartMarkup("テスト開始", `${total}${unit}`) : '<span class="setup-start-label">この条件に合う問題がありません</span>'}
+      </button>
+    </div>`;
+}
+
+function startTest(entries, { formats = [], ranges = [], importance = [], retryOf = null } = {}) {
+  if (!entries.length) {
+    showToast("この条件に合う問題がありません");
+    return;
+  }
+  state.resultTestId = null;
+  state.resultFromHistory = false;
+  beginSession(entries, {
+    test: { formats: formats.map((format) => ({ ...format })), ranges: [...ranges], importance: [...importance], retryOf },
+  });
+}
+
+function startTestFromDraft() {
+  const formats = selectedTestFormats();
+  if (!formats.length) return;
+  const ranges = normalizedTestRanges(state.testDraft.ranges);
+  const importance = [...state.testDraft.importance];
+  const plain = formats.map(({ mode, content, label }) => ({ mode, content, label }));
+  startTest(testEntriesFor({ ranges, formats, importance }), { formats: plain, ranges, importance });
+}
+
+function saveTestHistory() {
+  setMeta(TEST_HISTORY_META_KEY, state.testHistory).catch(console.warn);
+}
+
+// 1回のテストを、結果画面と履歴で使う形にして残す。
+function recordTestResult(session) {
+  const summary = summarizeTestResult(session.results);
+  const test = session.test;
+  const record = {
+    id: `test-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    subject: state.subject,
+    finishedAt: Date.now(),
+    formats: test.formats,
+    modeLabel: testFormatsLabel(test.formats),
+    ranges: test.ranges,
+    rangesLabel: rangesLabel(test.ranges),
+    importance: test.importance,
+    importanceLabel: importanceLabel(test.importance),
+    retryOf: test.retryOf,
+    ...summary,
+    results: session.results.map((result) => ({
+      itemId: result.itemId,
+      mode: result.mode,
+      correct: result.correct,
+      answer: result.answer,
+      prompt: result.prompt,
+      correctAnswer: result.correctAnswer,
+      range: result.item?.range ?? "",
+      durationMs: result.durationMs,
+    })),
+    unmasteredCount: 0,
+  };
+  state.testHistory = [record, ...state.testHistory].slice(0, TEST_HISTORY_LIMIT);
+  saveTestHistory();
+  return record;
+}
+
+function testRecordById(id) {
+  return state.testHistory.find((record) => record.id === id) ?? null;
+}
+
+// テストで間違えた問題のうち、演習で「習得」になっているもの（演習の組ごと）。
+function masteredWrongTargets(record) {
+  const wrongByMode = new Map();
+  record.results.filter((result) => !result.correct).forEach((result) => {
+    if (!wrongByMode.has(result.mode)) wrongByMode.set(result.mode, new Set());
+    wrongByMode.get(result.mode).add(result.itemId);
+  });
+  const targets = [];
+  Object.entries(state.studyProgress).forEach(([key, progress]) => {
+    const meta = parseStudyProgressKey(key);
+    if (!meta || meta.subject !== record.subject || !wrongByMode.has(meta.mode)) return;
+    const wrong = wrongByMode.get(meta.mode);
+    const itemIds = (progress?.masteredIds ?? []).filter((id) => wrong.has(id));
+    if (itemIds.length) targets.push({ key, itemIds });
+  });
+  return targets;
+}
+
+function unmasterFromTest(record) {
+  const targets = masteredWrongTargets(record);
+  const count = new Set(targets.flatMap((target) => target.itemIds)).size;
+  if (!count) return;
+  const unit = record.subject === "english" ? "語句" : "問";
+  if (!window.confirm(`演習で「習得」になっていた${count}${unit}を、未習得に戻します。\n次に演習で最初に正解すると、また習得になります。`)) return;
+  targets.forEach(({ key, itemIds }) => {
+    const { progress } = unmasterStudyItems(normalizeStudyProgress(state.studyProgress[key]), itemIds);
+    if (progress) persistStudyProgress(key, progress);
+  });
+  record.unmasteredCount = count;
+  saveTestHistory();
+  haptics.trigger("wrong");
+  showToast(`${count}${unit}を未習得に戻しました`);
+  renderResult();
+}
+
+function testResultMarkup(record) {
+  const unit = record.subject === "english" ? "語句" : "問";
+  const fromHistory = state.resultFromHistory;
+  const sameSubject = record.subject === (state.subject ?? "english");
+  const wrong = record.results.filter((result) => !result.correct);
+  const targets = sameSubject ? masteredWrongTargets(record) : [];
+  const unmasterCount = new Set(targets.flatMap((target) => target.itemIds)).size;
+  const context = [
+    ["教科", SUBJECT_LABELS[record.subject] ?? "英語"],
+    ["範囲", record.rangesLabel],
+    ["形式", record.modeLabel],
+    ["重要度", record.importanceLabel],
+  ];
+  const tone = scoreTone(record.percent);
+  const review = wrong.slice(0, 50).map((result) => `
+    <article class="result-review-item">
+      <div class="result-review-heading"><span class="result-review-range">${escapeHtml(result.range)}</span></div>
+      <h3>${escapeHtml(result.prompt ?? "")}</h3>
+      <dl>
+        <div><dt>正しい回答</dt><dd>${escapeHtml(result.correctAnswer ?? "—")}</dd></div>
+        <div><dt>あなたの回答</dt><dd>${escapeHtml(isRecallMode(result.mode) ? "わからなかった" : result.answer || "（未入力）")}</dd></div>
+      </dl>
+    </article>`).join("");
+  const date = new Date(record.finishedAt);
+  return `
+    <section class="result-panel test-result" aria-labelledby="test-result-title">
+      <header class="result-complete-header">
+        <p class="eyebrow">${fromHistory ? `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}` : "TEST RESULT"}</p>
+        <h1 id="test-result-title">${record.retryOf ? "やり直しの結果" : "テスト結果"}</h1>
+        <ul class="result-context-list" aria-label="テストの条件">
+          ${context.map(([label, value]) => `<li><span>${label}</span><strong>${escapeHtml(value)}</strong></li>`).join("")}
+        </ul>
+      </header>
+      <div class="test-score" data-tone="${tone}">
+        <span class="test-score-ring" style="--score:${record.percent}%" role="img" aria-label="正答率 ${record.percent}パーセント">
+          <strong>${record.percent}<small>%</small></strong>
+          <span>正答率</span>
+        </span>
+        <div class="test-score-figures">
+          <div><span>正解</span><strong>${record.correct}</strong></div>
+          <div><span>不正解</span><strong>${record.wrong}</strong></div>
+          <div><span>時間</span><strong>${formatSeconds(record.durationMs)}</strong></div>
+        </div>
+      </div>
+      ${sameSubject ? `
+      <section class="result-next-card">
+        <div>
+          <p class="eyebrow">NEXT STEP</p>
+          <h2>${wrong.length ? "間違えた問題を解き直そう" : "全問正解！"}</h2>
+          <p>${wrong.length ? `間違えた${wrong.length}${unit}だけを、もう一度テストします` : "同じ条件で、もう一度確かめることもできます"}</p>
+        </div>
+        <button class="primary-button result-primary-action" type="button" ${wrong.length ? `data-test-retry="${record.id}"` : `data-test-again="${record.id}"`}>${wrong.length ? `間違えた${wrong.length}${unit}をもう一度` : "同じ条件でもう一度"}<span aria-hidden="true">→</span></button>
+      </section>` : `<p class="settings-note">${escapeHtml(SUBJECT_LABELS[record.subject] ?? "")}に切り替えると、ここから解き直せます。</p>`}
+      ${unmasterCount ? `
+      <section class="test-unmaster" aria-label="演習の習得を見直す">
+        <div>
+          <h2>演習で「習得」だった${unmasterCount}${unit}を間違えました</h2>
+          <p>未習得に戻すと、演習でもう一度出てきます。次に最初の回答で正解すれば、また習得になります。</p>
+        </div>
+        <button class="secondary-button" type="button" data-test-unmaster="${record.id}">未習得に戻す</button>
+      </section>` : record.unmasteredCount ? `<p class="test-unmaster-done">演習の習得から${record.unmasteredCount}${unit}を外しました</p>` : ""}
+      ${wrong.length ? `<section class="result-review-section">
+        <div class="result-section-title"><div><p class="eyebrow">CHECK</p><h2>間違えた問題</h2></div><span>${wrong.length}${unit}</span></div>
+        <div class="result-review-list">${review}</div>
+      </section>` : ""}
+      <div class="result-other-actions">
+        ${sameSubject && wrong.length ? `<button class="secondary-button" type="button" data-test-again="${record.id}">同じ条件でもう一度（${record.total}${unit}）</button>` : ""}
+        <div class="result-text-actions">
+          <button class="text-button" type="button" data-dismiss-result>${fromHistory ? "履歴へ戻る" : "結果を閉じる"}</button>
+        </div>
+      </div>
+    </section>`;
+}
+
+function renderHistory() {
+  const records = state.testHistory;
+  if (!records.length) {
+    elements.historyList.innerHTML = `
+      <div class="history-empty">
+        <span class="history-empty-mark" aria-hidden="true">✓</span>
+        <h2>まだテストの記録がありません</h2>
+        <p>ホームの「テスト」から、好きな範囲で覚え具合を確かめられます。</p>
+        <button class="primary-button" type="button" data-open-test>テストを始める</button>
+      </div>`;
+    return;
+  }
+  elements.historyList.innerHTML = records.map((record, index) => {
+    const date = new Date(record.finishedAt);
+    const tone = scoreTone(record.percent);
+    return `
+      <button class="history-item" type="button" data-history-open="${record.id}" style="--i:${Math.min(index, 12)}">
+        <span class="history-score" data-tone="${tone}" style="--score:${record.percent}%"><strong>${record.percent}</strong><small>%</small></span>
+        <span class="history-body">
+          <strong>${escapeHtml(SUBJECT_LABELS[record.subject] ?? "")} · ${escapeHtml(record.modeLabel)}${record.retryOf ? '<em class="history-retry">やり直し</em>' : ""}</strong>
+          <small>${escapeHtml(record.rangesLabel)} · 重要度 ${escapeHtml(record.importanceLabel)}</small>
+          <small>${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")} · ${record.correct}/${record.total}問</small>
+        </span>
+        <span class="card-arrow" aria-hidden="true">›</span>
+      </button>`;
+  }).join("");
+}
+
+function openTestRecord(id, { fromHistory = false } = {}) {
+  const record = testRecordById(id);
+  if (!record) return;
+  state.resultTestId = id;
+  state.resultFromHistory = fromHistory;
+  if (state.session?.complete) state.session = null;
+  setView("result");
+}
+
+// 古い記録（形式が1つだけの頃）にも対応する。
+function recordFormats(record) {
+  return record.formats ?? (record.mode ? [{ mode: record.mode, content: record.content ?? null }] : []);
+}
+
+function retryTestRecord(id, { onlyWrong = true } = {}) {
+  const record = testRecordById(id);
+  if (!record) return;
+  if (record.subject !== state.subject) selectSubject(record.subject);
+  const formats = recordFormats(record);
+  if (onlyWrong) {
+    const pool = itemsByIdForCurrentSubject();
+    const entries = record.results
+      .filter((result) => !result.correct)
+      .map((result) => ({ item: pool.get(result.itemId), mode: result.mode }))
+      .filter((entry) => entry.item);
+    startTest(entries, { formats, ranges: record.ranges, importance: record.importance, retryOf: record.id });
+    return;
+  }
+  startTest(testEntriesFor({ ranges: record.ranges, formats, importance: record.importance }), {
+    formats,
+    ranges: record.ranges,
+    importance: record.importance,
+  });
 }
 
 // その範囲・形式で前回学習したときの条件。学習の準備の初期値に使う。
@@ -1198,7 +1496,8 @@ function lastConfigForTarget(target, ranges) {
     mode: target.mode,
     ranges,
     criterion: masteryCriterion(),
-  }).find(({ key, meta }) => state.studyConfigs[key] && (!wantedContent || meta.contents === wantedContent));
+  }).find(({ key, meta }) => state.studyConfigs[key] && isPracticeMeta(meta)
+    && (!wantedContent || meta.contents === wantedContent));
   return entry ? state.studyConfigs[entry.key] : null;
 }
 
@@ -1206,22 +1505,13 @@ function lastConfigForTarget(target, ranges) {
 // 範囲・出題方向・形式はこの先で聞き直さない。
 function startStudyFromTarget(key) {
   const target = dashboardTargetByKey(key);
-  if (!target) return;
-  const ranges = state.filters.ranges.length ? state.filters.ranges : dashboardRanges();
-  const previous = lastConfigForTarget(target, ranges);
-  const config = studyConfigForTarget({
-    target,
-    ranges,
-    filters: previous?.filters ?? { importance: [] },
-    sortKey: previous?.sortKey ?? "importance-desc",
-  });
-  state.filters = { ...state.filters, ...config.filters };
-  state.rangeSelectionMode = "custom";
-  state.studySelection = config.selection;
-  if (!isRecallSubject()) setStudyContents(previous?.selection?.contents ?? [...ENGLISH_CONTENT_TYPES]);
-  state.importanceFilterMode = state.filters.importance.length ? "custom" : "all";
-  state.sortKey = config.sortKey;
+  if (!target || state.filters.ranges.length !== 1) return;
+  state.studySelection = normalizeStudySelection(target.selection);
   state.setupTitle = isRecallSubject() ? target.title : modeShortLabel(target.mode);
+  const range = state.filters.ranges[0];
+  const previous = lastConfigForTarget(target, [range]);
+  state.filters = { ...emptyFilters(), ranges: [range], importance: previous?.filters?.importance?.slice(0, 1) ?? [] };
+  state.sortKey = previous?.sortKey ?? "importance-desc";
   setView("study-setup");
 }
 
@@ -1241,7 +1531,7 @@ function stashStudyProgress() {
 function leaveQuiz() {
   const session = state.session;
   if (!session) return true;
-  if (session.results.length && !window.confirm("この学習を終了しますか？")) return false;
+  if (session.results.length && !window.confirm(session.test ? "テストを中断しますか？\nここまでの結果は記録に残りません。" : "この学習を終了しますか？")) return false;
   if (session.reviewTimer) clearTimeout(session.reviewTimer);
   englishSpeech.stop();
   stashStudyProgress();
@@ -3480,13 +3770,14 @@ function setView(view) {
   if (view === "home") view = "dashboard";
   // 学習の記録は、いったん画面から外している。
   if (view === "analysis") view = "dashboard";
-  if (view === "range-detail" && !state.filters.ranges.length) view = "dashboard";
+  // 演習の範囲は1つずつ。
+  if (view === "range-detail" && state.filters.ranges.length !== 1) view = "dashboard";
   // 学習の準備は、範囲と形式が決まっているときだけ開ける。
   if (view === "study-setup" && (!state.filters.ranges.length || !exactStudyMode(state.studySelection))) {
     view = state.filters.ranges.length ? "range-detail" : "dashboard";
   }
   // 結果画面は、学習を終えた直後だけ開く。ホームから開く入口は置かない。
-  if (view === "result" && !resultSession()) view = "dashboard";
+  if (view === "result" && !resultSession() && !(state.resultTestId && testRecordById(state.resultTestId))) view = "dashboard";
   // データの無い回では、まとめノートの代わりに「データはまだありません」を出す（list画面）。
   if (view === "list" && isHealthSubject() && periodHasData()) view = "health-notes";
   if (view === "list" && isPublicSubject() && periodHasData()) view = "public-notes";
@@ -3519,9 +3810,13 @@ function setView(view) {
   if (view === "dashboard") renderDashboard();
   if (view === "range-detail") renderRangeDetail();
   if (view === "study-setup") renderStudySetup();
-  if (view === "study-range-select") renderStudyRangeSelect();
+  if (view === "history") renderHistory();
   if (view === "list") renderList(true);
   if (view === "result") renderResult();
+  if (view !== "result") {
+    state.resultTestId = null;
+    state.resultFromHistory = false;
+  }
   // 設定画面を離れたら、表示していた接続トークンは残さない。
   if (view !== "settings") state.aiLinkIssuedToken = null;
   if (view === "settings") renderSettings();
@@ -3568,16 +3863,6 @@ function renderHeader() {
 function filteredItems(filters = state.filters) {
   const { modes: _ignoredModes, ...withoutModes } = filters;
   return applyFilters(state.items, state.history, withoutModes);
-}
-
-function learningItems(filters = state.filters, selection = state.studySelection) {
-  if (!selectionIsComplete(selection)) return [];
-  return applyFilters(state.items, state.history, {
-    ...filters,
-    modes: [],
-    performanceModes: studyPerformanceModes(selection),
-  })
-    .filter((item) => studyModeForItem(item, selection));
 }
 
 // 単語帳は検索だけで絞り、並びは重要度順に固定する。
@@ -3801,6 +4086,7 @@ function beginSession(queue, {
   progressKey = null,
   poolItemIds = null,
   deferredReviews = [],
+  test = null,
 } = {}) {
   if (state.session?.reviewTimer) clearTimeout(state.session.reviewTimer);
   const copyQueue = () => queue.map((entry) => ({ ...entry }));
@@ -3833,6 +4119,8 @@ function beginSession(queue, {
     startProgressSummary: studyProgressSummary(progress),
     cycleAdvanced: false,
     undo: null,
+    // テストのとき：条件（形式・範囲・重要度）。テストは出し直しも周回もしない。
+    test,
     // 新記録の演出に使う、始めた時点の自己ベスト。
     recordAtStart: state.bestCombo,
     recordAnnounced: false,
@@ -4325,6 +4613,15 @@ function renderNextButton(swipePrimary = false) {
 }
 
 function renderRecallSwipeHints() {
+  // テストは周回の予約をしないので、左右どちらも「わからなかった」、上が「わかった」。
+  if (state.session?.test) {
+    return `
+    <div class="recall-gesture-guide is-test" aria-hidden="true">
+      <span class="gesture-guide-item gesture-guide-left" data-swipe-direction="left"><i>←</i><strong>✕</strong></span>
+      <span class="gesture-guide-item gesture-guide-up" data-swipe-direction="up"><i>↑</i><strong>○</strong></span>
+      <span class="gesture-guide-item gesture-guide-right" data-swipe-direction="right"><strong>✕</strong><i>→</i></span>
+    </div>`;
+  }
   return `
     <div class="recall-gesture-guide" aria-hidden="true">
       <span class="gesture-guide-item gesture-guide-left" data-swipe-direction="left"><i>←</i><strong>3分</strong></span>
@@ -4347,6 +4644,13 @@ function renderChoiceSwipeHints() {
 }
 
 function renderRecallGradeFallback() {
+  if (state.session?.test) {
+    return `
+    <div class="recall-grade-fallback" aria-label="自己採点">
+      <button type="button" data-recall-grade="left" aria-label="わからなかった">✕</button>
+      <button type="button" data-recall-grade="up" aria-label="わかった">○</button>
+    </div>`;
+  }
   return `
     <div class="recall-grade-fallback" aria-label="自己採点">
       <button type="button" data-recall-grade="left" aria-label="3分後にもう一度">3m</button>
@@ -4775,7 +5079,7 @@ function renderRecallQuiz() {
           role="button"
           tabindex="0"
           aria-pressed="${revealed}"
-          aria-label="${revealed ? "答え面。タップで問題面。左は3分後、右は1時間後、上は習得" : "問題面。タップで答えを表示"}"
+          aria-label="${revealed ? state.session.test ? "答え面。タップで問題面。上はわかった、左右はわからなかった" : "答え面。タップで問題面。左は3分後、右は1時間後、上は習得" : "問題面。タップで答えを表示"}"
         >
           <div class="public-recall-meta">
             <span class="importance-badge importance-${question.item.importance.toLowerCase()}">${question.item.importance}</span>
@@ -4924,7 +5228,8 @@ async function submitAnswer(
       ? normalizeAnswer(answer) === normalizeAnswer(question.correctChoice)
       : isAnswerCorrect(answer, question.acceptedAnswers);
   const durationMs = Math.round(performance.now() - session.questionStartedAt);
-  const scheduledDelay = reviewDelayForAnswer(question.mode, correct, reviewDelayMs);
+  // テストでは間違えても出し直さない（全部を1回ずつ解いて、覚え具合を測る）。
+  const scheduledDelay = session.test ? null : reviewDelayForAnswer(question.mode, correct, reviewDelayMs);
   const correctAnswer = isChoice
     ? question.correctChoice
     : question.answer ?? answersForMode(question.item, question.mode)[0];
@@ -5213,7 +5518,13 @@ function completeSession(session) {
     session.cycleAdvanced = true;
     persistStudyProgress(session.progressKey, session.progress);
   }
-  persistSessionResult(session);
+  if (session.test) {
+    const record = recordTestResult(session);
+    state.resultTestId = record.id;
+    state.resultFromHistory = false;
+  } else {
+    persistSessionResult(session);
+  }
   renderSessionComplete();
 }
 
@@ -5311,57 +5622,33 @@ function resumableStudy() {
   return config ? { entry, config } : null;
 }
 
-function typesForSelection(selection) {
-  const normalized = normalizeStudySelection(selection);
-  if (normalized.subject === "english") return normalized.contents.length ? normalized.contents : [...ENGLISH_CONTENT_TYPES];
-  return normalized.content === "all"
-    ? [`${normalized.subject}-term`, `${normalized.subject}-short`]
-    : [`${normalized.subject}-${normalized.content}`];
-}
-
-// 学習条件のうち、初めの状態（すべての内容・すべての重要度）から変えたものだけを短く示す。
-// 並び順は周回に関係しないので出さない。
-function conditionLabel(config) {
-  const selection = normalizeStudySelection(config.selection);
-  const parts = [];
-  if (selection.subject === "english" && selection.contents.length < ENGLISH_CONTENT_TYPES.length) {
-    parts.push(selection.contents.map((content) => STUDY_CONTENT_META[content]?.title ?? content).join("・"));
-  }
-  if (config.filters?.importance?.length) parts.push(`重要度 ${config.filters.importance.join("・")}`);
-  return parts.join(" · ");
-}
-
 // ホームの「続きから」。押すと、前回と同じ条件のまま周回の続きを始める。
 function resumeStudyMarkup({ entry, config }) {
   const cycle = studyProgressSummary(entry.progress);
   const inProgress = isStudyInProgress(entry.progress);
   const mode = exactStudyMode(config.selection);
   const unit = recallUnit();
-  const progress = summarizeRangeModeProgress({
-    items: state.items,
-    history: state.history,
-    ranges: config.filters.ranges,
-    types: typesForSelection(config.selection),
-    importance: config.filters.importance,
-    mode,
-    masteredIds: masteredIdsForMode(state.studyProgress, mode, { criterion: masteryCriterion() }),
-  });
-  const detail = conditionLabel(config);
-  const title = `${configRangeLabel(config)} · ${modeShortLabel(mode)}`;
+  const status = practiceStatus(practiceConfig({
+    range: config.filters.ranges[0],
+    importance: config.filters.importance[0],
+    selection: config.selection,
+  }));
+  const detail = `重要度 ${config.filters.importance[0]}`;
+  const title = `${config.filters.ranges[0]} · ${modeShortLabel(mode)}`;
   const meter = summarizeCycleMeter(cycle);
-  const status = meter.complete ? `${meter.cycleNumber}周目まで完了` : `${meter.cycleNumber}周目、あと${meter.remainingCount}${unit}`;
+  const statusText = meter.complete ? `${meter.cycleNumber}周目まで完了` : `${meter.cycleNumber}周目、あと${meter.remainingCount}${unit}`;
   return `
-    <button class="continue-card" type="button" data-resume-study aria-label="${escapeHtml(`${inProgress ? "続きから" : "次の周回へ"}：${title}${detail ? `（${detail}）` : ""}、${status}`)}">
+    <button class="continue-card" type="button" data-resume-study aria-label="${escapeHtml(`${inProgress ? "続きから" : "次の周回へ"}：${title}（${detail}）、${statusText}`)}">
       <span class="continue-top meter-card">
-        ${progressRingMarkup(progress, cycle.masteryRound)}
+        ${setRingMarkup(status.ring)}
         <span class="meter-body">
           <span class="continue-eyebrow">${inProgress ? "続きから" : "次の周回へ"}</span>
           <span class="continue-title">${escapeHtml(title)}</span>
-          ${detail ? `<span class="continue-detail">${escapeHtml(detail)}</span>` : ""}
+          <span class="continue-detail">${escapeHtml(detail)}</span>
         </span>
       </span>
       <span class="continue-foot">
-        ${cycleBarMarkup(cycle, { total: progress.totalItems })}
+        ${cycleBarMarkup(cycle)}
         <span class="continue-action">${inProgress ? "続ける" : "始める"}<span aria-hidden="true">→</span></span>
       </span>
     </button>`;
@@ -5524,6 +5811,12 @@ function renderSessionComplete() {
 
 // 学習を終えた直後の結果画面。
 function renderResult() {
+  const record = state.resultTestId ? testRecordById(state.resultTestId) : null;
+  if (record) {
+    elements.resultContent.innerHTML = testResultMarkup(record);
+    renderHeader();
+    return;
+  }
   const completed = resultSession();
   if (!completed) return;
   elements.resultContent.innerHTML = sessionResultMarkup(completed);
@@ -5601,9 +5894,12 @@ function bindEvents() {
   document.addEventListener("kobun-vocabulary", (event) => {
     selectSubject("kobun-vocab");
     const range = event.detail?.range;
-    if (range && !dashboardRanges().includes(range)) return;
-    state.filters.ranges = range ? [range] : dashboardRanges();
-    state.rangeSelectionMode = range ? "custom" : "all";
+    if (!range || !dashboardRanges().includes(range)) {
+      setView("dashboard");
+      return;
+    }
+    state.filters.ranges = [range];
+    state.rangeSelectionMode = "custom";
     setView("range-detail");
   });
   addEventListener("resize", markFxResize, { passive: true });
@@ -5755,64 +6051,52 @@ function bindEvents() {
         .then(() => location.reload())
         .catch(() => showToast("データを削除できませんでした"));
     }
-    if (target.hasAttribute("data-dashboard-all-ranges")) {
-      state.filters.ranges = dashboardRanges();
-      state.rangeSelectionMode = "all";
-      setView("range-detail");
-    }
+    if (target.dataset.homeMode) setHomeMode(target.dataset.homeMode);
     if (target.dataset.dashboardRange) {
       state.filters.ranges = [target.dataset.dashboardRange];
       state.rangeSelectionMode = "custom";
       setView("range-detail");
     }
-    if (target.hasAttribute("data-dashboard-multi-range")) {
-      state.rangeSelectionMode = "all";
-      state.filters.ranges = dashboardRanges();
-      setView("study-range-select");
-    }
     if (target.dataset.studyTarget) startStudyFromTarget(target.dataset.studyTarget);
-    if (target.dataset.setupContent) {
-      const current = state.studySelection.contents ?? [];
-      setStudyContents(toggleSetupValue(
-        current.length === ENGLISH_CONTENT_TYPES.length ? [] : current,
-        target.dataset.setupContent,
-        ENGLISH_CONTENT_TYPES,
-      ));
-      renderStudySetup();
-    }
     if (target.dataset.setupImportance) {
-      state.filters.importance = toggleSetupValue(
-        state.filters.importance ?? [],
-        target.dataset.setupImportance,
-        currentImportanceOrder(),
-      );
-      state.importanceFilterMode = state.filters.importance.length ? "custom" : "all";
+      // 演習の重要度は1つだけ。
+      state.filters.importance = [target.dataset.setupImportance];
+      state.importanceFilterMode = "custom";
+      haptics.trigger("flip");
       renderStudySetup();
+      pulseChip(elements.setupGroups, "data-setup-importance", target.dataset.setupImportance);
     }
     if (target.dataset.setupSort) {
       state.sortKey = target.dataset.setupSort;
       renderStudySetup();
     }
     if (target.hasAttribute("data-setup-start")) startSession();
-    if (target.hasAttribute("data-study-range-all")) {
-      state.rangeSelectionMode = "all";
-      state.filters.ranges = dashboardRanges();
-      renderStudyRangeSelect();
+    // テストの条件。範囲・形式・重要度はどれも「全選択」か、いくつでも。
+    const testPick = [
+      ["testRange", "data-test-range", "ranges", () => dashboardRanges()],
+      ["testFormat", "data-test-format", "formats", () => testFormatOptions().map((option) => option.key)],
+      ["testImportance", "data-test-importance", "importance", () => currentImportanceOrder()],
+    ].find(([key]) => target.dataset[key]);
+    if (testPick) {
+      const [key, attribute, field, all] = testPick;
+      testDraftFormats();
+      state.testDraft[field] = toggleSetupValue(state.testDraft[field], target.dataset[key], all());
+      haptics.trigger("flip");
+      renderTestHome();
+      pulseChip(elements.testHome, attribute, target.dataset[key]);
     }
-    if (target.dataset.studyRange) {
-      const range = target.dataset.studyRange;
-      const wasAllSelected = state.rangeSelectionMode === "all";
-      state.rangeSelectionMode = "custom";
-      state.filters.ranges = wasAllSelected
-        ? [range]
-        : state.filters.ranges.includes(range)
-          ? state.filters.ranges.filter((value) => value !== range)
-          : [...state.filters.ranges, range];
-      if (!state.filters.ranges.length) state.rangeSelectionMode = null;
-      renderStudyRangeSelect();
+    if (target.hasAttribute("data-test-start")) startTestFromDraft();
+    if (target.dataset.testRetry) retryTestRecord(target.dataset.testRetry);
+    if (target.dataset.testAgain) retryTestRecord(target.dataset.testAgain, { onlyWrong: false });
+    if (target.dataset.testUnmaster) {
+      const record = testRecordById(target.dataset.testUnmaster);
+      if (record) unmasterFromTest(record);
     }
-    if (target.id === "confirm-study-ranges" && state.filters.ranges.length) {
-      setView("range-detail");
+    if (target.dataset.historyOpen) openTestRecord(target.dataset.historyOpen, { fromHistory: true });
+    if (target.hasAttribute("data-open-test")) {
+      state.homeMode = "test";
+      setMeta("homeMode", "test").catch(console.warn);
+      setView("dashboard");
     }
     if (target.id === "load-more") {
       state.listLimit += 60;
@@ -5886,9 +6170,12 @@ function bindEvents() {
       setView(kept.length ? "range-detail" : "dashboard");
     }
     if (target.hasAttribute("data-dismiss-result")) {
+      const backToHistory = state.resultFromHistory;
       state.session = null;
+      state.resultTestId = null;
+      state.resultFromHistory = false;
       clearSessionResult();
-      setView("dashboard");
+      setView(backToHistory ? "history" : "dashboard");
     }
   });
 
@@ -6027,12 +6314,12 @@ async function boot() {
     if (themePreference() === "system") applyTheme();
   });
   try {
-    const [response, publicResponse, healthResponse, vocabResponse, history, selectedMode, settings, bestCombo, selectedPeriod, studyConfigs, legacyRecentStudies, studyProgress, lastSessionResult, aiLink, aiLinkJournal, deviceSync, lastSubject] = await Promise.all([
+    const [response, publicResponse, healthResponse, vocabResponse, history, selectedMode, settings, bestCombo, selectedPeriod, studyConfigs, legacyRecentStudies, studyProgress, lastSessionResult, aiLink, aiLinkJournal, deviceSync, lastSubject, homeMode, testHistory] = await Promise.all([
       // 英語は3定（2026.3）の範囲。2定の英語は data/items.json に残している。
       fetch(ENGLISH_DATA_URL),
       fetch("./data/public-items.json?v=2026.09.01"),
       fetch("./data/health-items.json?v=2026.09.01"),
-      fetch("./data/kobun-vocabulary.json?v=2026.11.18"),
+      fetch("./data/kobun-vocabulary.json?v=2026.11.19"),
       loadHistory(),
       getMeta("selectedMode"),
       getMetaObject("settings", DEFAULT_SETTINGS),
@@ -6046,6 +6333,8 @@ async function boot() {
       getMeta(AI_LINK_JOURNAL_KEY, []),
       getMetaObject(DEVICE_SYNC_META_KEY, DEFAULT_DEVICE_SYNC),
       getMeta("lastSubject", null),
+      getMeta("homeMode", "practice"),
+      getMeta(TEST_HISTORY_META_KEY, []),
     ]);
     if (!response.ok) throw new Error(`教材データを読み込めませんでした (${response.status})`);
     if (!publicResponse.ok) throw new Error(`公共データを読み込めませんでした (${publicResponse.status})`);
@@ -6057,6 +6346,10 @@ async function boot() {
     state.kobunVocabItems = (await vocabResponse.json()).items;
     state.items = state.englishItems;
     state.history = history;
+    state.homeMode = homeMode === "test" ? "test" : "practice";
+    state.testHistory = Array.isArray(testHistory)
+      ? testHistory.filter((record) => record?.id && Array.isArray(record.results))
+      : [];
     state.selectedMode = ALL_MODES.includes(selectedMode) ? selectedMode : null;
     state.settings = settings;
     state.settings.soundIntensity = state.settings.soundIntensity === "full" ? "full" : "gentle";
@@ -6115,7 +6408,7 @@ async function boot() {
         .catch((error) => console.warn("AI連携の同期に失敗しました", error));
     }
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.11.18").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.11.19").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

@@ -69,28 +69,22 @@ test("進捗キーは範囲と形式の組み合わせごとに分かれる", ()
 });
 
 test("押した先で実際に続けられるボタンだけをハイライトする", () => {
-  // 範囲ボタンは、その範囲だけを対象にした周回が途中のときだけ光る。
+  // 範囲ボタンは、いちばん最近学習した演習の組の範囲だけが光る（演習は1範囲ずつ）。
   assert.match(appSource, /const resumableRanges = rangesInProgress\(\);/);
   assert.match(appSource, /class="range-choice\$\{resumableRanges\.has\(range\) \? " is-in-progress" : ""\}/);
   assert.match(
-    functionSource("rangesInProgress", "allRangesInProgress"),
-    /const list = latestStudyRanges\(\);[\s\S]*?list\.length === 1 \? list : \[\]/,
+    functionSource("rangesInProgress", "studyBadgeMarkup"),
+    /return new Set\(latestStudyEntry\(\)\?\.meta\.ranges \?\? \[\]\);/,
   );
-  // 途中の周回がほかにあっても、基準はいちばん最近学習したセット。
-  assert.match(
-    functionSource("latestStudyRanges", "rangesInProgress"),
-    /latestStudyEntry\(\)\?\.meta\.ranges/,
-  );
-  assert.match(
-    functionSource("latestStudyEntry", "sessionResultSnapshot"),
-    /recentStudyEntries\(\)\[0\]/,
-  );
-  // 形式カードは、いま選んでいる範囲・条件に一致する周回のときだけ光る。
-  assert.match(appSource, /const resumable = Boolean\(entry\) && entry\.key === latestStudyEntry\(\)\?\.key;/);
-  assert.match(appSource, /class="mode-progress-card meter-card\$\{resumable \? " is-in-progress" : ""\}/);
+  // 基準はいちばん最近学習した演習の組。以前の作りの複数範囲・複数重要度の周回は除く。
+  assert.match(functionSource("latestStudyEntry", "rangesInProgress"), /recentStudyEntries\(\)\[0\]/);
+  assert.match(functionSource("recentStudyEntries", "latestStudyEntry"), /\.filter\(\(\{ meta \}\) => isPracticeMeta\(meta\)\)/);
+  assert.match(functionSource("isPracticeMeta", "recentStudyEntries"), /\(meta\.ranges \?\? \[\]\)\.length !== 1 \|\| \(meta\.importance \?\? \[\]\)\.length !== 1/);
+  // 形式カードは、いま選んでいる範囲・形式が最後の組のときだけ光る。
+  const cardSource = functionSource("modeProgressCard", "renderRangeDetail");
+  assert.match(cardSource, /const resumable = Boolean\(latest\) && latest\.key === latestStudyEntry\(\)\?\.key;/);
+  assert.match(cardSource, /class="mode-progress-card meter-card\$\{resumable \? " is-in-progress" : ""\}"/);
   assert.match(stylesSource, /\.mode-progress-card\.is-in-progress[,\s][^{]*\{[^}]*border-color: var\(--red\)/);
-  // 複数範囲選択は選び終わるまで条件が決まらないので、個別の範囲カードは光らせない。
-  assert.doesNotMatch(appSource, /data-study-range="\$\{escapeHtml\(range\)\}"[\s\S]{0,200}?is-in-progress/);
 });
 
 test("全範囲の周回は「全範囲」ボタンだけを光らせ、個別の範囲には広げない", () => {
@@ -108,7 +102,7 @@ test("全範囲の周回は「全範囲」ボタンだけを光らせ、個別�
 });
 
 test("学習の準備でも、いま選んでいる条件が最後のセットならハイライトする", () => {
-  const source = functionSource("renderSetupProgress", "renderStudySetup");
+  const source = functionSource("renderSetupProgress", "sortGroupMarkup");
   // 進捗キーまで一致する（＝そのまま押せば続きになる）ときだけ光らせる。
   assert.match(source, /const isLatest = Boolean\(plan\.stored\) && plan\.key === latestStudyEntry\(\)\?\.key;/);
   assert.match(source, /setup-progress-card meter-card\$\{isLatest \? " is-in-progress" : ""\}/);

@@ -129,10 +129,10 @@ test("keyboard input is the official Japanese-to-English format for every Englis
   // 形式カードは「日本語 → 英語」の組にキーボード入力を持つ。
   assert.match(logicSource, /ja_to_en_input: \{ title: "キーボード入力", detail: "日本語を見て、英語を入力する" \}/);
   assert.match(logicSource, /\["ja_to_en", \["ja_to_en_choice", "ja_to_en_flashcard", "ja_to_en_input"\]\]/);
-  // 学習の準備では、どの形式でも単語・熟語・構文をそのまま選べる（形式で内容を絞らない）。
-  const setup = functionSource("renderStudySetup", "renderStudyRangeSelect");
-  assert.match(setup, /ENGLISH_CONTENT_TYPES\.map\(\(content\) =>/);
-  assert.doesNotMatch(setup, /ja_to_en_input/);
+  // 演習では内容（単語・熟語・構文）を選ばせず、どの形式でも全部を出題する。
+  const setup = functionSource("renderStudySetup", "dashboardTargetGroups");
+  assert.doesNotMatch(setup, /data-setup-content|ja_to_en_input/);
+  assert.match(logicSource, /contents: \[\.\.\.ENGLISH_CONTENT_TYPES\]/);
   assert.match(appSource, /word: \{[\s\S]*?phrase: \{[\s\S]*?structure: \{/);
 });
 

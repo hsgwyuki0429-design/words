@@ -8,7 +8,8 @@
    4. ホーム（教科タブ・続きから・範囲）
    5. 形式カード・進捗ゲージ
    6. 学習の準備
-   7. 範囲の複数選択・入口・初回
+   6-2. 演習とテストの切り替え・テスト・履歴
+   7. 範囲の複数選択（テスト）・入口・初回
    8. 学習画面（カード・4択・入力・キーボード・スワイプ）
    9. 結果・単語帳・設定・まとめノート
   10. MAX演出
@@ -72,6 +73,14 @@
   --tint-purple: #f3ecff;
 
   --gauge-track: #ececef;
+  /* セットの色。1セット目は差し色の青、2セット目は赤…と変わり、5セットで一巡する。 */
+  --set-color-1: #2b50ff;
+  --set-color-2: #d92d20;
+  --set-color-3: #7c3aed;
+  --set-color-4: #0f7b46;
+  --set-color-5: #b45309;
+  --set-soft-1: rgba(43, 80, 255, 0.26);
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   /* 影は「ふちの影」と「遠くの影」を重ね、紙が少し浮いた程度にとどめる。 */
   --shadow-card: 0 0 0 1px rgba(17, 17, 19, 0.045), 0 2px 6px rgba(17, 17, 19, 0.055), 0 18px 40px rgba(17, 17, 19, 0.085);
   --shadow-raised: 0 0 0 1px rgba(17, 17, 19, 0.05), 0 12px 32px rgba(17, 17, 19, 0.18);
@@ -706,10 +715,18 @@ textarea:focus-visible,
   gap: 3px;
 }
 
+/* 黒い面の上では、セットの色を一段明るくして沈ませない。 */
+.continue-card {
+  --set-color-1: #8fa6ff;
+  --set-color-2: #ff7a70;
+  --set-color-3: #b79bff;
+  --set-color-4: #4fd18a;
+  --set-color-5: #f7b955;
+  --set-soft-1: rgba(143, 166, 255, 0.4);
+}
+
 .continue-card .meter-ring,
 .continue-card .meter-breakdown {
-  --gauge-strong: #8fa6ff;
-  --gauge-soft: rgba(143, 166, 255, 0.4);
   --gauge-track: rgba(255, 255, 255, 0.16);
 }
 
@@ -871,7 +888,6 @@ textarea:focus-visible,
 
 /* 学習途中の選択肢は赤の縁取りと小さなラベルで示し、続きへ導く。 */
 .range-choice.is-in-progress,
-.multi-select-card.is-in-progress,
 .mode-progress-card.is-in-progress,
 .setup-progress-card.is-in-progress {
   border-color: var(--red);
@@ -1096,45 +1112,34 @@ textarea:focus-visible,
   opacity: 0.7;
 }
 
-/* バーの基調色はセットで変える。1セット目は差し色の青、2セット目は赤、
-   3セット目以降も変わり、5セットまで一巡したら最初の色へ戻る。 */
+/* 古文の形式カードのバー。基調色はセットで変え、5セットで一巡する。 */
 .progress-gauge,
-.progress-legend,
-.meter-ring,
-.meter-breakdown {
-  --gauge-strong: var(--pop);
-  --gauge-soft: rgba(43, 80, 255, 0.24);
+.progress-legend {
+  --gauge-strong: var(--set-color-1);
+  --gauge-soft: var(--set-soft-1);
 }
 
 .progress-gauge[data-cycle="2"],
-.progress-legend[data-cycle="2"],
-.meter-ring[data-cycle="2"],
-.meter-breakdown[data-cycle="2"] {
-  --gauge-strong: var(--red);
+.progress-legend[data-cycle="2"] {
+  --gauge-strong: var(--set-color-2);
   --gauge-soft: rgba(217, 45, 32, 0.24);
 }
 
 .progress-gauge[data-cycle="3"],
-.progress-legend[data-cycle="3"],
-.meter-ring[data-cycle="3"],
-.meter-breakdown[data-cycle="3"] {
-  --gauge-strong: #7c3aed;
+.progress-legend[data-cycle="3"] {
+  --gauge-strong: var(--set-color-3);
   --gauge-soft: rgba(124, 58, 237, 0.24);
 }
 
 .progress-gauge[data-cycle="4"],
-.progress-legend[data-cycle="4"],
-.meter-ring[data-cycle="4"],
-.meter-breakdown[data-cycle="4"] {
-  --gauge-strong: #0f7b46;
+.progress-legend[data-cycle="4"] {
+  --gauge-strong: var(--set-color-4);
   --gauge-soft: rgba(15, 123, 70, 0.24);
 }
 
 .progress-gauge[data-cycle="5"],
-.progress-legend[data-cycle="5"],
-.meter-ring[data-cycle="5"],
-.meter-breakdown[data-cycle="5"] {
-  --gauge-strong: #b45309;
+.progress-legend[data-cycle="5"] {
+  --gauge-strong: var(--set-color-5);
   --gauge-soft: rgba(180, 83, 9, 0.24);
 }
 
@@ -1256,16 +1261,13 @@ textarea:focus-visible,
   line-height: 1;
 }
 
-/* 円そのもの。習得（濃い塗り）→ 練習中（薄い塗り）→ 未回答（空）の順に回る。 */
+/* 円そのもの。区間の塗り（--ring-fill）は app.js が件数から作る。
+   何%が何セット目の習得かが色で分かる（習得＝青、習得2＝赤、…、未習得は色なし）。 */
 .meter-ring::before {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: conic-gradient(
-    var(--gauge-strong) 0 var(--mastered, 0%),
-    var(--gauge-soft) var(--mastered, 0%) var(--answered, 0%),
-    var(--gauge-track) var(--answered, 0%) 100%
-  );
+  background: var(--ring-fill, var(--gauge-track));
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--ring-thickness)), #000 calc(100% - var(--ring-thickness) + 1px));
   mask: radial-gradient(farthest-side, transparent calc(100% - var(--ring-thickness)), #000 calc(100% - var(--ring-thickness) + 1px));
   content: "";
@@ -1393,8 +1395,7 @@ textarea:focus-visible,
   content: "";
 }
 
-.meter-key.is-mastered::before { background: var(--gauge-strong); }
-.meter-key.is-answered::before { background: var(--gauge-soft); }
+.meter-key::before { background: var(--key-color, var(--set-color-1)); }
 .meter-key.is-untouched::before {
   background: transparent;
   box-shadow: inset 0 0 0 1.5px rgba(128, 128, 136, 0.55);
@@ -1574,7 +1575,7 @@ textarea:focus-visible,
   box-shadow: var(--focus-ring);
 }
 
-/* 画面の下に貼りつく主ボタン（学習の準備・範囲の複数選択） */
+/* 画面の下に貼りつく主ボタン（学習の準備・テスト） */
 .sticky-action {
   position: fixed;
   right: 0;
@@ -1620,7 +1621,549 @@ textarea:focus-visible,
 }
 
 /* --------------------------------------------------------------------------
-   7. 範囲の複数選択・入口・初回
+   6-2. 演習とテストの切り替え・重要度の行・テスト・履歴
+   教科タブの右に「演習｜テスト」のスライダーを置き、押した側へつまみが弾んで滑る。
+   演習は範囲 → 形式 → 重要度（1つ）で周回を重ね、テストは好きな条件で全部を1回ずつ解く。
+   -------------------------------------------------------------------------- */
+
+.home-tabs-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.home-tabs-row .subject-tabs {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.mode-switch {
+  position: relative;
+  display: grid;
+  flex: 0 0 auto;
+  grid-template-columns: 1fr 1fr;
+  width: 136px;
+  height: 42px;
+  padding: 4px;
+  background: var(--tile);
+  border-radius: 999px;
+  isolation: isolate;
+}
+
+.mode-switch[hidden] {
+  display: none;
+}
+
+.mode-switch button {
+  position: relative;
+  z-index: 1;
+  padding: 0;
+  color: var(--secondary);
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 850;
+  letter-spacing: 0.02em;
+  transition: color 280ms ease;
+}
+
+.mode-switch button[aria-checked="true"] {
+  color: var(--on-accent);
+}
+
+.mode-switch[data-mode="test"] button[aria-checked="true"] {
+  color: #ffffff;
+}
+
+/* つまみはばねのように行き過ぎて戻り、動き出しに横へ伸びる。 */
+.mode-switch-thumb {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  z-index: 0;
+  width: calc(50% - 4px);
+  background: var(--accent);
+  border-radius: 999px;
+  box-shadow: 0 2px 6px rgba(17, 17, 19, 0.16), 0 6px 16px rgba(17, 17, 19, 0.14);
+  transition: translate 520ms var(--spring), background-color 320ms ease, box-shadow 320ms ease;
+  animation: mode-thumb-stretch-back 520ms var(--ease-out);
+}
+
+.mode-switch[data-mode="test"] .mode-switch-thumb {
+  translate: 100% 0;
+  background: var(--pop);
+  box-shadow: 0 2px 6px rgba(43, 80, 255, 0.28), 0 8px 20px rgba(43, 80, 255, 0.3);
+  animation-name: mode-thumb-stretch;
+}
+
+@keyframes mode-thumb-stretch {
+  0% { scale: 1 1; }
+  30% { scale: 1.28 0.86; }
+  65% { scale: 0.94 1.06; }
+  100% { scale: 1 1; }
+}
+
+@keyframes mode-thumb-stretch-back {
+  0% { scale: 1 1; }
+  30% { scale: 1.28 0.86; }
+  65% { scale: 0.94 1.06; }
+  100% { scale: 1 1; }
+}
+
+.mode-switch button:active {
+  scale: 0.94;
+  transition: scale 120ms var(--ease-out);
+}
+
+/* 面の入れ替え：押した側から滑り込み、中の札が少しずつ遅れて弾む。 */
+.home-pane.is-entering-right {
+  animation: home-pane-in-right 460ms var(--ease-out) both;
+}
+
+.home-pane.is-entering-left {
+  animation: home-pane-in-left 460ms var(--ease-out) both;
+}
+
+@keyframes home-pane-in-right {
+  from { opacity: 0; translate: 36px 0; }
+}
+
+@keyframes home-pane-in-left {
+  from { opacity: 0; translate: -36px 0; }
+}
+
+.home-pane.is-entering-left .range-choice,
+.home-pane.is-entering-right .range-choice,
+.home-pane.is-entering-left .continue-card,
+.home-pane.is-entering-right .range-multi-entry {
+  animation: home-chip-in 520ms var(--spring) both;
+  animation-delay: calc(var(--i, 0) * 24ms + 60ms);
+}
+
+@keyframes home-chip-in {
+  from { opacity: 0; scale: 0.86; translate: 0 10px; }
+}
+
+@keyframes home-group-in {
+  from { opacity: 0; translate: 0 12px; }
+}
+
+/* 押した札だけが弾む。 */
+.is-pulsing {
+  animation: chip-pulse 420ms var(--spring);
+}
+
+@keyframes chip-pulse {
+  0% { scale: 0.9; }
+  55% { scale: 1.05; }
+  100% { scale: 1; }
+}
+
+/* テストの面：範囲・形式・重要度をチェックで選び、下の「テスト開始」でそのまま始める。 */
+body.home-test-mode .main-content {
+  padding-bottom: calc(104px + var(--safe-bottom));
+}
+
+.test-home {
+  display: grid;
+  gap: 22px;
+}
+
+.test-group-title {
+  margin: 0 0 8px 2px;
+  color: var(--secondary);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.test-home .multi-select-card {
+  min-height: 56px;
+  transition: background-color 160ms ease, color 160ms ease, transform 120ms var(--ease-out);
+}
+
+.test-home .multi-select-card:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+
+.test-home .multi-select-card .multi-check {
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.test-home .multi-select-card.is-pulsing .multi-check {
+  animation: check-pop 420ms var(--spring);
+}
+
+/* 重要度は短いので3列に詰める。 */
+.test-home .test-importance-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.test-importance-grid .multi-select-card {
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 8px;
+  padding: 8px 10px;
+}
+
+.test-importance-grid .multi-check {
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+}
+
+.test-importance-grid .select-all-card {
+  grid-column: auto;
+}
+
+.test-home-note {
+  margin: -6px 2px 0;
+  color: var(--secondary);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.6;
+}
+
+@keyframes check-pop {
+  0% { scale: 0.5; }
+  60% { scale: 1.18; }
+  100% { scale: 1; }
+}
+
+.home-pane.is-entering-right .multi-select-card {
+  animation: home-chip-in 520ms var(--spring) both;
+  animation-delay: calc(var(--i, 0) * 22ms + 60ms);
+}
+
+.home-pane.is-entering-right .test-start-bar {
+  animation: test-bar-in 560ms var(--spring) 120ms both;
+}
+
+@keyframes test-bar-in {
+  from { opacity: 0; translate: 0 40px; }
+}
+
+/* テストの結果：正答率の円は0から満ちていく。 */
+@property --score {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 0%;
+}
+
+.test-score {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 20px;
+  margin: 22px 0 18px;
+  padding: 20px;
+  background: var(--tile);
+  border-radius: var(--radius-lg);
+}
+
+.test-score[data-tone="great"] { --tone: var(--green); }
+.test-score[data-tone="good"] { --tone: var(--pop); }
+.test-score[data-tone="fair"] { --tone: var(--set-color-5); }
+.test-score[data-tone="low"] { --tone: var(--red); }
+
+.test-score-ring {
+  position: relative;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  width: 124px;
+  height: 124px;
+  animation: score-fill 1200ms var(--ease-out) 120ms both;
+}
+
+.test-score-ring::before {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(var(--tone, var(--pop)) 0 var(--score), var(--gauge-track) var(--score) 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 12px), #000 calc(100% - 11px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 12px), #000 calc(100% - 11px));
+  content: "";
+}
+
+@keyframes score-fill {
+  from { --score: 0%; }
+}
+
+.test-score-ring strong {
+  position: relative;
+  color: var(--tone, var(--text));
+  font-size: 36px;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  animation: score-pop 620ms var(--spring) 700ms both;
+}
+
+.test-score-ring strong small {
+  margin-left: 1px;
+  font-size: 15px;
+  font-weight: 850;
+}
+
+.test-score-ring > span {
+  position: relative;
+  margin-top: 4px;
+  color: var(--secondary);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+@keyframes score-pop {
+  from { opacity: 0; scale: 0.6; }
+}
+
+.test-score-figures {
+  display: grid;
+  gap: 10px;
+}
+
+.test-score-figures > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line-strong);
+  animation: home-group-in 420ms var(--ease-out) both;
+}
+
+.test-score-figures > div:nth-child(2) { animation-delay: 80ms; }
+.test-score-figures > div:nth-child(3) { animation-delay: 160ms; border-bottom: 0; padding-bottom: 0; }
+
+.test-score-figures span {
+  color: var(--secondary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.test-score-figures strong {
+  font-size: 20px;
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+}
+
+.test-unmaster {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 16px;
+  background: var(--tint-red);
+  border-radius: var(--radius-lg);
+}
+
+.test-unmaster h2 {
+  margin: 0 0 4px;
+  color: var(--ink-red);
+  font-size: 16px;
+  font-weight: 850;
+}
+
+.test-unmaster p {
+  margin: 0;
+  color: var(--secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.test-unmaster-done {
+  margin: 0;
+  color: var(--secondary);
+  font-size: 13px;
+  font-weight: 650;
+  text-align: center;
+}
+
+/* テストの履歴 */
+.history-list {
+  display: grid;
+  gap: 10px;
+}
+
+.history-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 12px 14px;
+  color: var(--text);
+  text-align: left;
+  background: var(--tile);
+  border: 0;
+  border-radius: var(--radius-md);
+  transition: background-color 120ms ease, transform 120ms var(--ease-out);
+  animation: history-in 480ms var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 40ms);
+}
+
+.history-item:active {
+  background: var(--tile-pressed);
+  transform: scale(0.985);
+}
+
+@keyframes history-in {
+  from { opacity: 0; translate: 0 14px; }
+}
+
+.history-score {
+  position: relative;
+  display: grid;
+  place-content: center;
+  width: 54px;
+  height: 54px;
+  font-variant-numeric: tabular-nums;
+  animation: score-fill 900ms var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 40ms + 120ms);
+}
+
+.history-score[data-tone="great"] { --tone: var(--green); }
+.history-score[data-tone="good"] { --tone: var(--pop); }
+.history-score[data-tone="fair"] { --tone: var(--set-color-5); }
+.history-score[data-tone="low"] { --tone: var(--red); }
+
+.history-score::before {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(var(--tone) 0 var(--score), var(--gauge-track) var(--score) 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 5px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 5px));
+  content: "";
+}
+
+.history-score strong {
+  position: relative;
+  font-size: 16px;
+  font-weight: 850;
+  letter-spacing: -0.03em;
+}
+
+.history-score small {
+  position: absolute;
+  right: 0;
+  bottom: 9px;
+  left: 0;
+  color: var(--secondary);
+  font-size: 9px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.history-score strong {
+  translate: 0 -3px;
+}
+
+.history-body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.history-body strong {
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-body small {
+  overflow: hidden;
+  color: var(--secondary);
+  font-size: 12px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-retry {
+  margin-left: 6px;
+  padding: 1px 7px;
+  color: var(--pop);
+  background: var(--pop-soft);
+  border-radius: 999px;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+  vertical-align: 2px;
+}
+
+.history-empty {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 36px 16px;
+  text-align: center;
+  animation: history-in 480ms var(--ease-out) both;
+}
+
+.history-empty h2 {
+  margin: 4px 0 0;
+  font-size: 18px;
+  font-weight: 850;
+}
+
+.history-empty p {
+  margin: 0 0 8px;
+  color: var(--secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.history-empty-mark {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  color: var(--pop);
+  background: var(--pop-soft);
+  border-radius: 50%;
+  font-size: 26px;
+  font-weight: 900;
+}
+
+/* 自己採点（テスト）は、上が○、左右が✕。 */
+.recall-gesture-guide.is-test .gesture-guide-up strong {
+  color: var(--green);
+}
+
+.recall-gesture-guide.is-test .gesture-guide-left strong,
+.recall-gesture-guide.is-test .gesture-guide-right strong {
+  color: var(--red);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mode-switch-thumb,
+  .home-pane,
+  .home-pane *,
+  .is-pulsing,
+  .test-score-ring,
+  .test-score-ring strong,
+  .test-score-figures > div,
+  .history-item,
+  .history-score,
+  .history-empty {
+    animation: none !important;
+  }
+
+  .mode-switch-thumb {
+    transition-duration: 1ms;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   7. 範囲の複数選択（テスト）・入口・初回
    -------------------------------------------------------------------------- */
 
 .compact-range-view {
@@ -5491,6 +6034,12 @@ body.fx-lite.max-mode.fx-fever .fx-backdrop.is-on {
   --ink-purple: #c4a5ff;
   --tint-purple: rgba(167, 139, 250, 0.15);
   --gauge-track: rgba(255, 255, 255, 0.1);
+  --set-color-1: #6683ff;
+  --set-color-2: #f0524a;
+  --set-color-3: #a78bfa;
+  --set-color-4: #34c46b;
+  --set-color-5: #f59e0b;
+  --set-soft-1: rgba(102, 131, 255, 0.34);
   /* 黒い地の上の影は、ふちのごく淡い光と深い影でつくる。 */
   --shadow-card: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 18px 44px rgba(0, 0, 0, 0.65);
   --shadow-raised: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 14px 36px rgba(0, 0, 0, 0.7);
@@ -5523,6 +6072,11 @@ body.fx-lite.max-mode.fx-fever .fx-backdrop.is-on {
 :root[data-theme="dark"] .word-form-kind,
 :root[data-theme="dark"] .choice-gesture-directions i {
   background: rgba(255, 255, 255, 0.07);
+}
+
+:root[data-theme="dark"] .multi-select-card.selected .multi-check {
+  color: var(--accent);
+  background: var(--on-accent);
 }
 
 :root[data-theme="dark"] .segmented-options button.selected {
@@ -5569,10 +6123,18 @@ body.fx-lite.max-mode.fx-fever .fx-backdrop.is-on {
   color: rgba(11, 11, 13, 0.6);
 }
 
+:root[data-theme="dark"] .continue-card {
+  /* 暗いテーマの「続きから」は明るい面なので、セットの色はライトと同じ濃さに戻す。 */
+  --set-color-1: #2b50ff;
+  --set-color-2: #d92d20;
+  --set-color-3: #7c3aed;
+  --set-color-4: #0f7b46;
+  --set-color-5: #b45309;
+  --set-soft-1: rgba(43, 80, 255, 0.3);
+}
+
 :root[data-theme="dark"] .continue-card .meter-ring,
 :root[data-theme="dark"] .continue-card .meter-breakdown {
-  --gauge-strong: #2b50ff;
-  --gauge-soft: rgba(43, 80, 255, 0.3);
   --gauge-track: rgba(0, 0, 0, 0.1);
 }
 
@@ -5618,31 +6180,6 @@ body.fx-lite.max-mode.fx-fever .fx-backdrop.is-on {
 :root[data-theme="dark"] .importance-c { color: #c4c4cc; background: rgba(255, 255, 255, 0.1); }
 :root[data-theme="dark"] .importance-d { color: #a1a1aa; background: transparent; border-color: rgba(255, 255, 255, 0.16); }
 
-/* 進捗バーの3〜5セット目は、暗い地でも沈まない明るさにする。 */
-:root[data-theme="dark"] .progress-gauge[data-cycle="3"],
-:root[data-theme="dark"] :root[data-theme="dark"] .meter-ring[data-cycle="3"],
-:root[data-theme="dark"] .meter-breakdown[data-cycle="3"],
-:root[data-theme="dark"] .progress-legend[data-cycle="3"] {
-  --gauge-strong: #a78bfa;
-  --gauge-soft: rgba(167, 139, 250, 0.28);
-}
-
-:root[data-theme="dark"] .progress-gauge[data-cycle="4"],
-:root[data-theme="dark"] :root[data-theme="dark"] .meter-ring[data-cycle="4"],
-:root[data-theme="dark"] .meter-breakdown[data-cycle="4"],
-:root[data-theme="dark"] .progress-legend[data-cycle="4"] {
-  --gauge-strong: #34c46b;
-  --gauge-soft: rgba(52, 196, 107, 0.26);
-}
-
-:root[data-theme="dark"] .progress-gauge[data-cycle="5"],
-:root[data-theme="dark"] :root[data-theme="dark"] .meter-ring[data-cycle="5"],
-:root[data-theme="dark"] .meter-breakdown[data-cycle="5"],
-:root[data-theme="dark"] .progress-legend[data-cycle="5"] {
-  --gauge-strong: #f5a524;
-  --gauge-soft: rgba(245, 165, 36, 0.28);
-}
-
 /* --------------------------------------------------------------------------
    12. 画面の大きさごとの調整
    -------------------------------------------------------------------------- */
@@ -5651,7 +6188,7 @@ body.fx-lite.max-mode.fx-fever .fx-backdrop.is-on {
 @media (hover: hover) and (pointer: fine) {
   .range-choice:hover,
   .mode-progress-card:hover:not(:disabled),
-  .multi-select-card:hover,
+  .multi-select-card:hover:not(.selected):not(:disabled),
   .setup-chip:hover:not(.is-selected):not(:disabled),
   .choice-button:hover:not(:disabled),
   .secondary-button:hover:not(:disabled),

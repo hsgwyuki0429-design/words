@@ -288,25 +288,26 @@ test("mode-level streaks are recorded per format and never taken from the global
   assert.equal(record.modeStats.ja_to_en_choice.currentCorrectStreak, 1);
 });
 
-// テスト13・14・15・16：学習の準備（内容・重要度・並び順を1画面で選ぶ）
-test("形式カードの次は学習の準備1画面で、内容・重要度・並び順をまとめて選ぶ", () => {
-  const setupSource = functionSource("renderStudySetup", "renderStudyRangeSelect");
-  assert.match(setupSource, /setupGroup\("内容"/);
-  assert.match(setupSource, /setupGroup\("重要度"/);
-  assert.match(setupSource, /setupGroup\("並び順"/);
-  assert.match(setupSource, /data-setup-content="all"/);
-  assert.match(setupSource, /data-setup-content="\$\{content\}"/);
-  assert.match(setupSource, /data-setup-importance="all"/);
+// 学習の準備：重要度を1つ選び、並び順を決めてスタート。内容は選ばない。
+test("形式カードの次は学習の準備1画面で、重要度（1つ）と並び順を選ぶ", () => {
+  const setupSource = functionSource("renderStudySetup", "dashboardTargetGroups");
+  assert.match(setupSource, /setupGroup\("重要度", counts\.map\(/);
+  assert.match(setupSource, /selected: importance === state\.filters\.importance\[0\]/);
   assert.match(setupSource, /data-setup-importance="\$\{importance\}"/);
-  assert.match(setupSource, /data-setup-sort="\$\{option\.key\}"/);
-  assert.match(setupSource, /data-setup-sort-other/);
-  // 一問一答の教科は形式カードで内容が決まるので、内容の札は出さない。
-  assert.match(setupSource, /if \(!isRecallSubject\(\)\) \{[\s\S]*?setupGroup\("内容"/);
+  assert.match(setupSource, /sortGroupMarkup\(\)/);
+  const sortSource = functionSource("sortGroupMarkup", "renderStudySetup");
+  assert.match(sortSource, /setupGroup\("並び順"/);
+  assert.match(sortSource, /data-setup-sort="\$\{option\.key\}"/);
+  assert.match(sortSource, /data-setup-sort-other/);
+  // 内容（単語・熟語・構文）と重要度の「すべて」は演習では選ばない。
+  assert.doesNotMatch(appSource, /data-setup-content|data-setup-importance="all"/);
+  // 重要度は押した1つだけを選ぶ。
+  assert.match(appSource, /state\.filters\.importance = \[target\.dataset\.setupImportance\];/);
   // スタートは画面の下に貼りつき、押すとそのまま学習が始まる。
   assert.match(indexSource, /id="view-study-setup" data-view="study-setup"[\s\S]*?class="sticky-action setup-start-bar"[\s\S]*?data-setup-start/);
   assert.match(appSource, /if \(target\.hasAttribute\("data-setup-start"\)\) startSession\(\);/);
-  // 1つずつ選んでいた段階式の画面は残さない。
-  for (const view of ["study-content", "study-content-multi", "study-method", "study-scope", "study-importance", "study-importance-select", "study-sort-kind", "study-sort-other"]) {
+  // 1つずつ選んでいた段階式の画面・範囲の複数選択は残さない。
+  for (const view of ["study-content", "study-content-multi", "study-method", "study-scope", "study-importance", "study-importance-select", "study-sort-kind", "study-sort-other", "study-range-select"]) {
     assert.doesNotMatch(indexSource, new RegExp(`data-view="${view}"`), `${view} の画面は無い`);
   }
   // 単語・熟語・構文の表記
@@ -322,9 +323,8 @@ test("「すべて」から1つを押すとそれだけ、選んでいる中で�
   assert.deepEqual(toggleSetupValue(["phrase"], "phrase", all), [], "全部外したらすべてに戻る");
   assert.deepEqual(toggleSetupValue(["word", "phrase"], "structure", all), [], "全部を選んだらすべてと同じ");
   assert.deepEqual(toggleSetupValue(["word"], "all", all), [], "「すべて」はいつでも全部");
-  // 内容と重要度のどちらも、この決まりで選ぶ。
-  assert.match(appSource, /setStudyContents\(toggleSetupValue\(/);
-  assert.match(appSource, /state\.filters\.importance = toggleSetupValue\(/);
+  // テストの範囲・形式・重要度は、この決まりで選ぶ。
+  assert.match(appSource, /state\.testDraft\[field\] = toggleSetupValue\(state\.testDraft\[field\], target\.dataset\[key\], all\(\)\);/);
 });
 
 test("並び替えは主要4種を札で、その他は端末の選択肢で選ぶ", () => {
@@ -486,21 +486,21 @@ test("単語帳など既定の呼び出しでは並びが変わらない", () =>
 test("学習の準備は前回の条件を初期値にし、そのまま押せば同じ周回の続きになる", () => {
   const lastSource = functionSource("lastConfigForTarget", "startStudyFromTarget");
   assert.match(lastSource, /studyProgressEntriesForMode\(state\.studyProgress, \{/);
-  assert.match(lastSource, /state\.studyConfigs\[key\]/);
+  assert.match(lastSource, /state\.studyConfigs\[key\] && isPracticeMeta\(meta\)/);
   const startSource = functionSource("startStudyFromTarget", "stashStudyProgress");
-  assert.match(startSource, /const previous = lastConfigForTarget\(target, ranges\);/);
-  assert.match(startSource, /filters: previous\?\.filters \?\? \{ importance: \[\] \}/);
-  assert.match(startSource, /sortKey: previous\?\.sortKey \?\? "importance-desc"/);
-  assert.match(startSource, /setStudyContents\(previous\?\.selection\?\.contents \?\? \[\.\.\.ENGLISH_CONTENT_TYPES\]\)/);
+  assert.match(startSource, /const previous = lastConfigForTarget\(target, \[range\]\);/);
+  assert.match(startSource, /importance: previous\?\.filters\?\.importance\?\.slice\(0, 1\) \?\? \[\]/);
+  assert.match(startSource, /state\.sortKey = previous\?\.sortKey \?\? "importance-desc";/);
 });
 
 test("スタートのボタンは、何問から・何周目から始まるかを示す", () => {
-  const planSource = functionSource("setupPlan", "renderSetupProgress");
-  assert.match(planSource, /const key = studyProgressKey\(config\);/);
+  const planSource = functionSource("setupPlan", "setupStartMarkup");
+  assert.match(planSource, /const \{ pool, key, stored, summary, ring \} = practiceStatus\(config\);/);
   assert.match(planSource, /plan\.label = "続きから"/);
   assert.match(planSource, /`残り\$\{summary\.remainingCount\}\$\{unit\}`/);
   assert.match(planSource, /advanceStudyProgress\(stored, \{ roundItemIds: pool\.map\(\(item\) => item\.id\) \}\)/);
   assert.match(planSource, /newRound \? "次のセットを始める" : `\$\{next\.cycleNumber\}周目を始める`/);
+  assert.match(functionSource("practiceStatus", "setupPlan"), /const key = studyProgressKey\(config\);/);
   // 出題できる問題が無ければ押せない。
-  assert.match(functionSource("renderSetupProgress", "renderStudySetup"), /elements\.setupStart\.disabled = !plan\.pool\.length;/);
+  assert.match(functionSource("renderSetupProgress", "sortGroupMarkup"), /elements\.setupStart\.disabled = !plan\.pool\.length;/);
 });

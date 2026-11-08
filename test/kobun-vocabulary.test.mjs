@@ -139,7 +139,8 @@ test("古文の「古文単語」から学習画面へ進む", () => {
   assert.match(kobunSource, /detail: \{ range: target\.dataset\.kbRange \?\? null \}/);
   assert.match(appSource, /"kobun-vocabulary", \(event\) => \{/);
   assert.match(appSource, /selectSubject\("kobun-vocab"\);/);
-  assert.match(appSource, /state\.filters\.ranges = range \? \[range\] : dashboardRanges\(\);/);
+  // 演習は1範囲ずつなので、作品を選んで来たときだけその作品の形式選びへ進む。
+  assert.match(appSource, /state\.filters\.ranges = \[range\];\n    state\.rangeSelectionMode = "custom";\n    setView\("range-detail"\);/);
   assert.match(appSource, /fetch\("\.\/data\/kobun-vocabulary\.json/);
   assert.match(appSource, /state\.kobunVocabItems = \(await vocabResponse\.json\(\)\)\.items;/);
 });

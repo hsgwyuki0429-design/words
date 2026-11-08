@@ -37,8 +37,8 @@
         }
       })();
     </script>
-    <link rel="stylesheet" href="./styles.css?v=2026.11.23" />
-    <link rel="stylesheet" href="./kobun.css?v=2026.11.23" />
+    <link rel="stylesheet" href="./styles.css?v=2026.11.24" />
+    <link rel="stylesheet" href="./kobun.css?v=2026.11.24" />
   </head>
   <body>
     <div class="fx-backdrop" id="fx-backdrop" aria-hidden="true">
@@ -129,18 +129,18 @@
 
         <section class="view kobun-view" id="view-kobun" data-view="kobun" aria-label="古文学習" hidden></section>
 
-        <!-- ホーム。教科と「演習｜テスト」の切り替え → 続きから（演習のみ） → 範囲、の順に上から並べる。 -->
+        <!-- ホーム。教科と「習得｜テスト」の切り替え → 続きから（習得のみ） → 範囲、の順に上から並べる。 -->
         <section class="view home-view" id="view-dashboard" data-view="dashboard" hidden>
           <div class="home-tabs-row">
             <nav class="subject-tabs" id="subject-tabs" aria-label="教科"></nav>
-            <div class="segment-switch mode-switch" id="mode-switch" role="radiogroup" aria-label="演習とテストの切り替え" data-mode="practice" style="--count:2;--index:0">
+            <div class="segment-switch mode-switch" id="mode-switch" role="radiogroup" aria-label="習得とテストの切り替え" data-mode="practice" style="--count:2;--index:0">
               <span class="segment-thumb" aria-hidden="true"></span>
-              <button type="button" role="radio" aria-checked="true" data-home-mode="practice">演習</button>
+              <button type="button" role="radio" aria-checked="true" data-home-mode="practice">習得</button>
               <button type="button" role="radio" aria-checked="false" data-home-mode="test">テスト</button>
             </div>
           </div>
           <p class="home-summary" id="home-summary"></p>
-          <!-- 演習：続きから → 範囲（1つ）→ 形式 → 学習の準備。 -->
+          <!-- 習得：続きから → 範囲（1つ）→ 形式 → 学習の準備。 -->
           <div class="home-pane" id="home-pane">
             <div class="home-continue" id="home-continue"></div>
             <div class="section-head">
@@ -166,7 +166,7 @@
           <div id="range-detail-groups"></div>
         </section>
 
-        <!-- 学習の準備（演習）。重要度（1つ）と並び順を選び、下のボタンで始める。 -->
+        <!-- 学習の準備（習得）。重要度（1つ）と並び順を選び、下のボタンで始める。 -->
         <section class="view setup-view compact-step-view" id="view-study-setup" data-view="study-setup" hidden>
           <div class="page-heading compact-step-heading">
             <div class="step-heading-row">
@@ -278,6 +278,6 @@
     </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-    <script type="module" src="./src/app.js?v=2026.11.23"></script>
+    <script type="module" src="./src/app.js?v=2026.11.24"></script>
   </body>
 </html>

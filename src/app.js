@@ -1,5 +1,5 @@
-import { createHaptics } from "./haptics.js?v=2026.11.23";
-import { createKobunController } from "./kobun.js?v=2026.11.23";
+import { createHaptics } from "./haptics.js?v=2026.11.24";
+import { createKobunController } from "./kobun.js?v=2026.11.24";
 import {
   ALL_MODES,
   ALPHABET_KEYBOARD_ROWS,
@@ -73,8 +73,8 @@ import {
   unmasterStudyItems,
   gaugeColorIndex,
   hasAnsweredMode,
-} from "./logic.js?v=2026.11.23";
-import { createMaxAudioEngine } from "./audio.js?v=2026.11.23";
+} from "./logic.js?v=2026.11.24";
+import { createMaxAudioEngine } from "./audio.js?v=2026.11.24";
 import {
   CORRECT_VARIANTS,
   LANDING_VARIANTS,
@@ -82,7 +82,7 @@ import {
   SFX_VOLUME_OPTIONS,
   createSfxEngine,
   normalizeSfxVolume,
-} from "./sfx.js?v=2026.11.23";
+} from "./sfx.js?v=2026.11.24";
 import {
   MAX_FEVER_GOAL,
   MAX_TIMELINE_PHASES,
@@ -97,7 +97,7 @@ import {
   resolveMaxCue,
   scaledVisualPlan,
   shouldPlayMaxSound,
-} from "./max-cues.js?v=2026.11.23";
+} from "./max-cues.js?v=2026.11.24";
 import {
   clearAllData,
   getMeta,
@@ -109,7 +109,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.11.23";
+} from "./storage.js?v=2026.11.24";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -117,7 +117,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.11.23";
+} from "./quiz-gestures.js?v=2026.11.24";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
@@ -126,7 +126,7 @@ import {
   normalizeSpeechRate,
   normalizeSpeechVoiceURI,
   voiceKey,
-} from "./speech.js?v=2026.11.23";
+} from "./speech.js?v=2026.11.24";
 import {
   AI_LINK_JOURNAL_KEY,
   AI_LINK_META_KEY,
@@ -142,7 +142,7 @@ import {
   isAiLinkConfigured,
   mcpUrlFor,
   normalizeAiLinkConfig,
-} from "./ai-link.js?v=2026.11.23";
+} from "./ai-link.js?v=2026.11.24";
 import {
   DEFAULT_DEVICE_SYNC,
   DEVICE_SYNC_META_KEY,
@@ -159,13 +159,13 @@ import {
   syncStateLabel,
   transferFileName,
   unsentEntries,
-} from "./sync.js?v=2026.11.23";
+} from "./sync.js?v=2026.11.24";
 import {
   applyThemePreference,
   normalizeThemePreference,
   readStoredThemePreference,
   watchSystemTheme,
-} from "./theme.js?v=2026.11.23";
+} from "./theme.js?v=2026.11.24";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -1158,6 +1158,8 @@ function setHomeMode(mode) {
   const next = mode === "test" ? "test" : "practice";
   if (next === state.homeMode) return;
   state.homeMode = next;
+  // テストを開くときは、何も選んでいない状態から始める。
+  if (next === "test") state.testDraft = { ranges: null, formats: null, importance: null };
   setMeta("homeMode", next).catch(console.warn);
   haptics.trigger("flip");
   renderDashboard();
@@ -1210,11 +1212,11 @@ function testChoiceValues(field) {
   return currentImportanceOrder();
 }
 
-// いま選んでいる値（選べる値の並び順）。まだ選んでいなければ、範囲・重要度はすべて、形式は先頭の1つ。
+// いま選んでいる値（選べる値の並び順）。初めは何も選んでいない。
 function testDraftValues(field) {
   const all = testChoiceValues(field);
   if (!Array.isArray(state.testDraft[field])) {
-    state.testDraft[field] = field === "formats" ? all.slice(0, 1) : [...all];
+    state.testDraft[field] = [];
   }
   return all.filter((value) => state.testDraft[field].includes(value));
 }
@@ -1388,7 +1390,7 @@ function unmasterFromTest(record) {
   const count = new Set(targets.flatMap((target) => target.itemIds)).size;
   if (!count) return;
   const unit = record.subject === "english" ? "語句" : "問";
-  if (!window.confirm(`演習で「習得」になっていた${count}${unit}を、未習得に戻します。\n次に演習で最初に正解すると、また習得になります。`)) return;
+  if (!window.confirm(`習得モードで「習得」になっていた${count}${unit}を、未習得に戻します。\n次に習得モードで最初に正解すると、また習得になります。`)) return;
   targets.forEach(({ key, itemIds }) => {
     const { progress } = unmasterStudyItems(normalizeStudyProgress(state.studyProgress[key]), itemIds);
     if (progress) persistStudyProgress(key, progress);
@@ -1454,13 +1456,13 @@ function testResultMarkup(record) {
         <button class="primary-button result-primary-action" type="button" ${wrong.length ? `data-test-retry="${record.id}"` : `data-test-again="${record.id}"`}>${wrong.length ? `間違えた${wrong.length}${unit}をもう一度` : "同じ条件でもう一度"}<span aria-hidden="true">→</span></button>
       </section>` : `<p class="settings-note">${escapeHtml(SUBJECT_LABELS[record.subject] ?? "")}に切り替えると、ここから解き直せます。</p>`}
       ${unmasterCount ? `
-      <section class="test-unmaster" aria-label="演習の習得を見直す">
+      <section class="test-unmaster" aria-label="習得モードの習得を見直す">
         <div>
-          <h2>演習で「習得」だった${unmasterCount}${unit}を間違えました</h2>
-          <p>未習得に戻すと、演習でもう一度出てきます。次に最初の回答で正解すれば、また習得になります。</p>
+          <h2>習得モードで「習得」だった${unmasterCount}${unit}を間違えました</h2>
+          <p>未習得に戻すと、習得モードでもう一度出てきます。次に最初の回答で正解すれば、また習得になります。</p>
         </div>
         <button class="secondary-button" type="button" data-test-unmaster="${record.id}">未習得に戻す</button>
-      </section>` : record.unmasteredCount ? `<p class="test-unmaster-done">演習の習得から${record.unmasteredCount}${unit}を外しました</p>` : ""}
+      </section>` : record.unmasteredCount ? `<p class="test-unmaster-done">習得モードの習得から${record.unmasteredCount}${unit}を外しました</p>` : ""}
       ${wrong.length ? `<section class="result-review-section">
         <div class="result-section-title"><div><p class="eyebrow">CHECK</p><h2>間違えた問題</h2></div><span>${wrong.length}${unit}</span></div>
         <div class="result-review-list">${review}</div>
@@ -6008,6 +6010,8 @@ function bindSegmentSwitchDrag() {
 // 切り替えの区画を選んだときの動き（押したときと同じ）。
 function activateSegment(button) {
   if (!button) return;
+  // 指で滑らせて選んだときも、押したときと同じ音を鳴らす。
+  sfx.play("tap");
   if (button.dataset.homeMode) setHomeMode(button.dataset.homeMode);
   else if (button.dataset.subject) selectSubject(button.dataset.subject);
 }
@@ -6207,9 +6211,10 @@ function bindEvents() {
       const [key, attribute, field] = testPick;
       const value = target.dataset[key];
       const current = testDraftValues(field);
+      // 形式は1つだけ（押した形式に切り替わる）。範囲・重要度はいくつでも付け外しできる。
       state.testDraft[field] = current.includes(value)
         ? current.filter((entry) => entry !== value)
-        : [...current, value];
+        : field === "formats" ? [value] : [...current, value];
       haptics.trigger("flip");
       renderTestHome();
       pulseChip(elements.testHome, attribute, value);
@@ -6448,7 +6453,7 @@ async function boot() {
       fetch(ENGLISH_DATA_URL),
       fetch("./data/public-items.json?v=2026.09.01"),
       fetch("./data/health-items.json?v=2026.09.01"),
-      fetch("./data/kobun-vocabulary.json?v=2026.11.23"),
+      fetch("./data/kobun-vocabulary.json?v=2026.11.24"),
       loadHistory(),
       getMeta("selectedMode"),
       getMetaObject("settings", DEFAULT_SETTINGS),
@@ -6537,7 +6542,7 @@ async function boot() {
         .catch((error) => console.warn("AI連携の同期に失敗しました", error));
     }
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.11.23").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.11.24").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

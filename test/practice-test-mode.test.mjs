@@ -47,9 +47,11 @@ test("教科と「演習｜テスト」は同じ形の切り替え（スライ�
   assert.match(functionSource("setHomeMode", "normalizedTestRanges"), /setMeta\("homeMode", next\)/);
   assert.match(appSource, /getMeta\("homeMode", "practice"\)/);
   assert.match(appSource, /if \(target\.dataset\.homeMode\) setHomeMode\(target\.dataset\.homeMode\);/);
-  // 形：角を少しだけ落とした長方形。文字は教科名の大きさ（32px）。つまみはばねのように滑る。
-  assert.match(stylesSource, /\.segment-switch \{[^}]*--switch-font: 32px;[^}]*border-radius: 12px;/);
-  assert.match(stylesSource, /\.segment-switch button \{[^}]*font-size: var\(--switch-font\);/);
+  // 形：丸い溝と丸いつまみの小さな切り替え（14px）。教科と「演習｜テスト」を1行に並べる。つまみはばねのように滑る。
+  assert.match(stylesSource, /\.home-tabs-row \{[^}]*justify-content: space-between;/);
+  assert.match(stylesSource, /\.segment-switch \{[^}]*grid-template-columns: repeat\(var\(--count, 2\), 64px\);[^}]*height: 42px;[^}]*border-radius: 999px;/);
+  assert.match(stylesSource, /\.segment-switch button \{[^}]*font-size: 14px;/);
+  assert.match(stylesSource, /\.segment-thumb \{[^}]*border-radius: 999px;/);
   assert.match(stylesSource, /\.segment-thumb \{[^}]*translate: calc\(var\(--index, 0\) \* 100%\) 0;[^}]*transition: translate 520ms var\(--spring\)/);
   assert.match(stylesSource, /\.home-pane\.is-entering-right \{[^}]*animation: home-pane-in-right/);
   assert.match(stylesSource, /@media \(prefers-reduced-motion: reduce\) \{\s*\n\s*\.segment-thumb,/);

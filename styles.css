@@ -634,7 +634,7 @@ textarea:focus-visible,
   padding-top: 4px;
 }
 
-/* 教科と「演習｜テスト」は同じ切り替え（.segment-switch）で並べる。 */
+/* 教科と「演習｜テスト」は同じ切り替え（.segment-switch）で1行に並べる。 */
 .subject-tabs {
   display: contents;
 }
@@ -1587,31 +1587,33 @@ textarea:focus-visible,
 }
 
 /* --------------------------------------------------------------------------
-   6-2. 演習とテストの切り替え・重要度の行・テスト・履歴
-   教科と「演習｜テスト」は同じ形の切り替えで並べ、押した側へつまみが弾んで滑る。
+   6-2. 演習とテストの切り替え・テスト・履歴
+   教科と「演習｜テスト」は同じ形の切り替えを1行に並べ、押した側へつまみが弾んで滑る。
    演習は範囲 → 形式 → 重要度（1つ）で周回を重ね、テストは好きな条件で全部を1回ずつ解く。
    -------------------------------------------------------------------------- */
 
+/* 1行に、左へ教科、右へ「演習｜テスト」の切り替えを置く（教科が増えて入りきらないときだけ折り返す）。 */
 .home-tabs-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
   margin: 4px 0 2px;
 }
 
-/* 切り替えの共通形：角を少しだけ落とした長方形の区画を並べ、選んだ区画へつまみが弾んで滑る。
-   文字は教科名の大きさ（--switch-font）にそろえる。区画の数は --count、選んでいる位置は --index。 */
+/* 切り替えの共通形：丸い溝の中に区画を並べ、選んだ区画へ丸いつまみが弾んで滑る。
+   区画の数は --count、選んでいる位置は --index。 */
 .segment-switch {
-  --switch-font: 32px;
   --switch-pad: 4px;
   position: relative;
   display: grid;
-  flex: 1 1 auto;
-  grid-template-columns: repeat(var(--count, 2), minmax(0, 1fr));
-  min-width: 0;
+  flex: 0 0 auto;
+  grid-template-columns: repeat(var(--count, 2), 64px);
+  height: 42px;
   padding: var(--switch-pad);
   background: var(--tile);
-  border-radius: 12px;
+  border-radius: 999px;
   isolation: isolate;
 }
 
@@ -1623,16 +1625,14 @@ textarea:focus-visible,
   position: relative;
   z-index: 1;
   min-width: 0;
-  min-height: 52px;
-  padding: 0 14px;
-  color: var(--tertiary);
+  padding: 0;
+  color: var(--secondary);
   background: transparent;
   border: 0;
-  border-radius: 9px;
-  font-size: var(--switch-font);
+  border-radius: 999px;
+  font-size: 14px;
   font-weight: 850;
-  letter-spacing: -0.045em;
-  line-height: 1.1;
+  letter-spacing: 0.02em;
   white-space: nowrap;
   transition: color 280ms ease, scale 120ms var(--ease-out);
 }
@@ -1642,7 +1642,7 @@ textarea:focus-visible,
 }
 
 .segment-switch button:active {
-  scale: 0.95;
+  scale: 0.94;
 }
 
 /* つまみはばねのように行き過ぎて戻り、動き出しに横へ伸びる。 */
@@ -1654,7 +1654,7 @@ textarea:focus-visible,
   z-index: 0;
   width: calc((100% - var(--switch-pad) * 2) / var(--count, 2));
   background: var(--accent);
-  border-radius: 9px;
+  border-radius: 999px;
   box-shadow: 0 2px 6px rgba(17, 17, 19, 0.16), 0 6px 16px rgba(17, 17, 19, 0.14);
   translate: calc(var(--index, 0) * 100%) 0;
   transition: translate 520ms var(--spring), background-color 320ms ease, box-shadow 320ms ease;
@@ -1666,8 +1666,8 @@ textarea:focus-visible,
 
 @keyframes switch-thumb-stretch {
   0% { scale: 1 1; }
-  30% { scale: 1.16 0.88; }
-  65% { scale: 0.97 1.04; }
+  30% { scale: 1.28 0.86; }
+  65% { scale: 0.94 1.06; }
   100% { scale: 1 1; }
 }
 
@@ -6250,10 +6250,6 @@ body.fx-lite.max-mode.fx-fever .fx-backdrop.is-on {
 }
 
 @media (max-width: 360px) {
-  .segment-switch {
-    --switch-font: 26px;
-  }
-
   .setup-chips {
     grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
     gap: 5px;
@@ -6278,10 +6274,6 @@ body.fx-lite.max-mode.fx-fever .fx-backdrop.is-on {
 @media (min-width: 640px) {
   .page-heading h1 {
     font-size: 34px;
-  }
-
-  .segment-switch {
-    --switch-font: 36px;
   }
 
   .range-choice-list.has-many {
@@ -6511,14 +6503,6 @@ body.fx-lite.max-mode.fx-fever .fx-backdrop.is-on {
     margin-top: 0;
   }
 
-  .segment-switch {
-    --switch-font: 28px;
-  }
-
-  .segment-switch button {
-    min-height: 46px;
-  }
-
   .home-summary {
     margin-bottom: 12px;
   }
@@ -6590,10 +6574,6 @@ body.fx-lite.max-mode.fx-fever .fx-backdrop.is-on {
 
   body.home-test-mode .home-tabs-row {
     margin-bottom: 10px;
-  }
-
-  .segment-switch button {
-    min-height: 44px;
   }
 
   .test-home {

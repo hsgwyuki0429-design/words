@@ -1,5 +1,5 @@
-import { createHaptics } from "./haptics.js?v=2026.11.22";
-import { createKobunController } from "./kobun.js?v=2026.11.22";
+import { createHaptics } from "./haptics.js?v=2026.11.23";
+import { createKobunController } from "./kobun.js?v=2026.11.23";
 import {
   ALL_MODES,
   ALPHABET_KEYBOARD_ROWS,
@@ -73,8 +73,8 @@ import {
   unmasterStudyItems,
   gaugeColorIndex,
   hasAnsweredMode,
-} from "./logic.js?v=2026.11.22";
-import { createMaxAudioEngine } from "./audio.js?v=2026.11.22";
+} from "./logic.js?v=2026.11.23";
+import { createMaxAudioEngine } from "./audio.js?v=2026.11.23";
 import {
   CORRECT_VARIANTS,
   LANDING_VARIANTS,
@@ -82,7 +82,7 @@ import {
   SFX_VOLUME_OPTIONS,
   createSfxEngine,
   normalizeSfxVolume,
-} from "./sfx.js?v=2026.11.22";
+} from "./sfx.js?v=2026.11.23";
 import {
   MAX_FEVER_GOAL,
   MAX_TIMELINE_PHASES,
@@ -97,7 +97,7 @@ import {
   resolveMaxCue,
   scaledVisualPlan,
   shouldPlayMaxSound,
-} from "./max-cues.js?v=2026.11.22";
+} from "./max-cues.js?v=2026.11.23";
 import {
   clearAllData,
   getMeta,
@@ -109,7 +109,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.11.22";
+} from "./storage.js?v=2026.11.23";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -117,7 +117,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.11.22";
+} from "./quiz-gestures.js?v=2026.11.23";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
@@ -126,7 +126,7 @@ import {
   normalizeSpeechRate,
   normalizeSpeechVoiceURI,
   voiceKey,
-} from "./speech.js?v=2026.11.22";
+} from "./speech.js?v=2026.11.23";
 import {
   AI_LINK_JOURNAL_KEY,
   AI_LINK_META_KEY,
@@ -142,7 +142,7 @@ import {
   isAiLinkConfigured,
   mcpUrlFor,
   normalizeAiLinkConfig,
-} from "./ai-link.js?v=2026.11.22";
+} from "./ai-link.js?v=2026.11.23";
 import {
   DEFAULT_DEVICE_SYNC,
   DEVICE_SYNC_META_KEY,
@@ -159,13 +159,13 @@ import {
   syncStateLabel,
   transferFileName,
   unsentEntries,
-} from "./sync.js?v=2026.11.22";
+} from "./sync.js?v=2026.11.23";
 import {
   applyThemePreference,
   normalizeThemePreference,
   readStoredThemePreference,
   watchSystemTheme,
-} from "./theme.js?v=2026.11.22";
+} from "./theme.js?v=2026.11.23";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -279,6 +279,7 @@ const elements = Object.fromEntries(
     "mode-switch",
     "home-pane",
     "test-home",
+    "test-start-bar",
     "history-list",
     "dashboard-title",
     "dashboard-copy",
@@ -963,6 +964,7 @@ function renderDashboard() {
   const test = isTestFlow() && periodHasData();
   elements.homePane.hidden = test;
   elements.testHome.hidden = !test;
+  elements.testStartBar.hidden = !test;
   document.body.classList.toggle("home-test-mode", test);
   if (test) {
     renderTestHome();
@@ -1246,6 +1248,7 @@ function renderTestHome() {
   const ranges = testDraftValues("ranges");
   const importance = testDraftValues("importance");
   const formats = selectedTestFormats();
+  const formatKeys = formats.map((format) => format.key);
   const options = testFormatOptions();
   // 札の問題数は、ほかの2つをいまの選び方（何も選んでいなければすべて）にして数える。
   const pick = (values, field) => (values.length ? values : testChoiceValues(field));
@@ -1278,7 +1281,8 @@ function renderTestHome() {
       attribute: `data-test-format="${escapeHtml(option.key)}"`,
       label: option.label,
       value: countFor({ f: [option] }),
-      selected: formats.includes(option),
+      // 形式は呼ぶたびに作り直した別の物になるので、キーで比べる。
+      selected: formatKeys.includes(option.key),
       index,
     })).join(""))}
     ${group("重要度", importance.length, allImportance.length, "test-chips--importance", allImportance.map((value, index) => chip({
@@ -1287,14 +1291,14 @@ function renderTestHome() {
       value: countFor({ i: [value] }),
       selected: importance.includes(value),
       index,
-    })).join(""))}
-    <div class="sticky-action test-start-bar">
+    })).join(""))}`;
+  // 開始ボタンは滑り込む面の外に置く（動いている面の中だと、画面の下に貼りつかず途中に出てしまう）。
+  elements.testStartBar.innerHTML = `
       <button class="primary-button setup-start" type="button" data-test-start${total ? "" : " disabled"}>
         ${total
           ? setupStartMarkup("テスト開始", `${total}${unit}`)
           : `<span class="setup-start-label">${missing ? `${missing}を選んでください` : "この条件に合う問題がありません"}</span>`}
-      </button>
-    </div>`;
+      </button>`;
 }
 
 function startTest(entries, { formats = [], ranges = [], importance = [], retryOf = null } = {}) {
@@ -5931,7 +5935,85 @@ function distributeSlotText(startInput, text) {
   inputs[nextIndex]?.focus();
 }
 
+// 切り替え（教科・演習｜テスト）は、押すだけでなく、つまみを指で横へ滑らせても選べる。
+// 指に合わせてつまみが動き、離したところにいちばん近い区画を選ぶ。
+const SWITCH_DRAG_THRESHOLD_PX = 6;
+
+function bindSegmentSwitchDrag() {
+  let drag = null;
+  let suppressClickUntil = 0;
+  const finish = (event, cancelled = false) => {
+    if (!drag || event.pointerId !== drag.pointerId) return;
+    const { element, thumb, buttons, startIndex, segment, moved } = drag;
+    const offset = drag.offset;
+    drag = null;
+    element.classList.remove("is-dragging");
+    delete element.dataset.preview;
+    buttons.forEach((button) => button.classList.remove("is-under"));
+    thumb.style.translate = "";
+    if (!moved || cancelled) return;
+    // 指を離したあとに続けて届く click は、押した扱いにしない（離した位置で選ぶ）。
+    suppressClickUntil = performance.now() + 400;
+    const index = Math.round(offset / segment);
+    if (index === startIndex) return;
+    activateSegment(buttons[index]);
+  };
+  document.addEventListener("pointerdown", (event) => {
+    const element = event.target.closest(".segment-switch");
+    if (!element || element.hidden || (event.pointerType === "mouse" && event.button !== 0)) return;
+    const buttons = [...element.querySelectorAll("button")];
+    const thumb = element.querySelector(".segment-thumb");
+    if (buttons.length < 2 || !thumb) return;
+    const startIndex = Math.max(0, buttons.findIndex((button) => button.getAttribute("aria-checked") === "true"));
+    const segment = buttons[0].getBoundingClientRect().width;
+    drag = {
+      element,
+      thumb,
+      buttons,
+      startIndex,
+      segment,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      offset: startIndex * segment,
+      moved: false,
+    };
+  });
+  document.addEventListener("pointermove", (event) => {
+    if (!drag || event.pointerId !== drag.pointerId) return;
+    const dx = event.clientX - drag.startX;
+    if (!drag.moved) {
+      if (Math.abs(dx) < SWITCH_DRAG_THRESHOLD_PX) return;
+      drag.moved = true;
+      drag.element.classList.add("is-dragging");
+      drag.element.setPointerCapture?.(event.pointerId);
+    }
+    const max = (drag.buttons.length - 1) * drag.segment;
+    drag.offset = Math.max(0, Math.min(max, drag.startIndex * drag.segment + dx));
+    drag.thumb.style.translate = `${drag.offset}px 0`;
+    // つまみがいちばん近い区画の文字・色を、選んだときの見た目に先回りして変える。
+    const near = Math.round(drag.offset / drag.segment);
+    drag.buttons.forEach((button, index) => button.classList.toggle("is-under", index === near));
+    const preview = drag.buttons[near]?.dataset.homeMode;
+    if (preview) drag.element.dataset.preview = preview;
+  });
+  document.addEventListener("pointerup", (event) => finish(event));
+  document.addEventListener("pointercancel", (event) => finish(event, true));
+  document.addEventListener("click", (event) => {
+    if (performance.now() > suppressClickUntil || !event.target.closest(".segment-switch")) return;
+    event.preventDefault();
+    event.stopPropagation();
+  }, true);
+}
+
+// 切り替えの区画を選んだときの動き（押したときと同じ）。
+function activateSegment(button) {
+  if (!button) return;
+  if (button.dataset.homeMode) setHomeMode(button.dataset.homeMode);
+  else if (button.dataset.subject) selectSubject(button.dataset.subject);
+}
+
 function bindEvents() {
+  bindSegmentSwitchDrag();
   document.addEventListener("kobun-subject", () => setView("subject"));
   // 古文の「古文単語」からは、他教科と共通の学習画面へ切り替える。
   // 作品を選んで来たときは、その作品を範囲に入れて形式選びへ直行する。
@@ -6366,7 +6448,7 @@ async function boot() {
       fetch(ENGLISH_DATA_URL),
       fetch("./data/public-items.json?v=2026.09.01"),
       fetch("./data/health-items.json?v=2026.09.01"),
-      fetch("./data/kobun-vocabulary.json?v=2026.11.22"),
+      fetch("./data/kobun-vocabulary.json?v=2026.11.23"),
       loadHistory(),
       getMeta("selectedMode"),
       getMetaObject("settings", DEFAULT_SETTINGS),
@@ -6455,7 +6537,7 @@ async function boot() {
         .catch((error) => console.warn("AI連携の同期に失敗しました", error));
     }
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.11.22").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.11.23").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

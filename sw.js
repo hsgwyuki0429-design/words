@@ -1,4 +1,4 @@
-const APP_VERSION = "2026.11.16";
+const APP_VERSION = "2026.11.17";
 const CACHE_NAME = `words-${APP_VERSION}`;
 const APP_SHELL = [
   "./",
@@ -14,6 +14,7 @@ const APP_SHELL = [
   `./src/sync.js?v=${APP_VERSION}`,
   `./src/haptics.js?v=${APP_VERSION}`,
   `./src/audio.js?v=${APP_VERSION}`,
+  `./src/sfx.js?v=${APP_VERSION}`,
   `./src/max-cues.js?v=${APP_VERSION}`,
   `./src/logic.js?v=${APP_VERSION}`,
   "./src/logic.js",

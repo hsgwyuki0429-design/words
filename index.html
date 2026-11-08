@@ -37,8 +37,8 @@
         }
       })();
     </script>
-    <link rel="stylesheet" href="./styles.css?v=2026.11.20" />
-    <link rel="stylesheet" href="./kobun.css?v=2026.11.20" />
+    <link rel="stylesheet" href="./styles.css?v=2026.11.21" />
+    <link rel="stylesheet" href="./kobun.css?v=2026.11.21" />
   </head>
   <body>
     <div class="fx-backdrop" id="fx-backdrop" aria-hidden="true">
@@ -129,12 +129,12 @@
 
         <section class="view kobun-view" id="view-kobun" data-view="kobun" aria-label="古文学習" hidden></section>
 
-        <!-- ホーム。教科タブと「演習｜テスト」の切り替え → 続きから（演習のみ） → 範囲、の順に上から並べる。 -->
+        <!-- ホーム。教科と「演習｜テスト」の切り替え → 続きから（演習のみ） → 範囲、の順に上から並べる。 -->
         <section class="view home-view" id="view-dashboard" data-view="dashboard" hidden>
           <div class="home-tabs-row">
             <nav class="subject-tabs" id="subject-tabs" aria-label="教科"></nav>
-            <div class="mode-switch" id="mode-switch" role="radiogroup" aria-label="演習とテストの切り替え" data-mode="practice">
-              <span class="mode-switch-thumb" aria-hidden="true"></span>
+            <div class="segment-switch mode-switch" id="mode-switch" role="radiogroup" aria-label="演習とテストの切り替え" data-mode="practice" style="--count:2;--index:0">
+              <span class="segment-thumb" aria-hidden="true"></span>
               <button type="button" role="radio" aria-checked="true" data-home-mode="practice">演習</button>
               <button type="button" role="radio" aria-checked="false" data-home-mode="test">テスト</button>
             </div>
@@ -277,6 +277,6 @@
     </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-    <script type="module" src="./src/app.js?v=2026.11.20"></script>
+    <script type="module" src="./src/app.js?v=2026.11.21"></script>
   </body>
 </html>

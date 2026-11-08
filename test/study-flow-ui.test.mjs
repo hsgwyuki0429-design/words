@@ -54,10 +54,10 @@ test("range and English content selections start with all items selected", () =>
 
 test("an individual selection replaces the initial select-all state", () => {
   assert.doesNotMatch(appSource, /disabled-by-all/);
-  // テストの範囲・形式・重要度：「全選択」の状態から押したものだけに切り替える（toggleSetupValue）。
-  assert.match(appSource, /\["testRange", "data-test-range", "ranges", \(\) => dashboardRanges\(\)\]/);
-  assert.match(appSource, /\["testImportance", "data-test-importance", "importance", \(\) => currentImportanceOrder\(\)\]/);
-  assert.match(appSource, /state\.testDraft\[field\] = toggleSetupValue\(/);
+  // テストの範囲・形式・重要度は、押した札だけを付け外しする（「全選択」の札は置かない）。
+  assert.match(appSource, /\["testRange", "data-test-range", "ranges"\]/);
+  assert.match(appSource, /\["testFormat", "data-test-format", "formats"\]/);
+  assert.match(appSource, /\["testImportance", "data-test-importance", "importance"\]/);
 });
 
 test("study sorting exposes workbook difficulty order", () => {
@@ -228,16 +228,16 @@ test("学習する回は3定だけを選べ、2定は隠れている", () => {
   assert.doesNotMatch(appSource, /· 2026\.2"/);
 });
 
-test("前回開いた教科のホームから始まり、教科はホーム上部のタブで切り替える", () => {
+test("前回開いた教科のホームから始まり、教科はホーム上部の切り替えで選ぶ", () => {
   assert.match(appSource, /const PERIOD_SUBJECTS = \{ "2026\.3": \["english", "public"\]/);
   assert.match(appSource, /function startingSubject\(lastSubject\) \{\s*\n\s*const subjects = periodSubjects\(\);\s*\n\s*return subjects\.includes\(lastSubject\) \? lastSubject : subjects\[0\];/);
   assert.match(appSource, /getMeta\("lastSubject", null\)/);
   assert.match(appSource, /if \(state\.selectedPeriod\) selectSubject\(startingSubject\(lastSubject\)\);/);
   assert.match(functionSource("rememberSubject", "selectSubject"), /setMeta\("lastSubject", subject\)/);
-  // タブはいまの回の教科だけ。押すと既存の教科切り替え（data-subject）を通る。
-  const tabs = functionSource("renderSubjectTabs", "homeSummaryText");
+  // 教科の切り替えはいまの回の教科だけ。押すと既存の教科切り替え（data-subject）を通る。
+  const tabs = functionSource("renderSubjectTabs", "moveSegmentSwitch");
   assert.match(tabs, /\.\.\.periodSubjects\(\)/);
-  assert.match(tabs, /class="subject-tab\$\{active \? " is-active" : ""\}" type="button" data-subject="\$\{subject\}"/);
+  assert.match(tabs, /<button type="button" role="radio" data-subject="\$\{subject\}" aria-checked="\$\{subject === state\.subject\}">/);
   assert.match(indexSource, /<nav class="subject-tabs" id="subject-tabs" aria-label="教科"><\/nav>/);
 });
 

@@ -1,5 +1,5 @@
-import { createHaptics } from "./haptics.js?v=2026.11.20";
-import { createKobunController } from "./kobun.js?v=2026.11.20";
+import { createHaptics } from "./haptics.js?v=2026.11.21";
+import { createKobunController } from "./kobun.js?v=2026.11.21";
 import {
   ALL_MODES,
   ALPHABET_KEYBOARD_ROWS,
@@ -68,14 +68,13 @@ import {
   shuffle,
   summarizeMasteryLevels,
   summarizeSetRing,
-  toggleSetupValue,
   summarizeTestResult,
   buildTestQueue,
   unmasterStudyItems,
   gaugeColorIndex,
   hasAnsweredMode,
-} from "./logic.js?v=2026.11.20";
-import { createMaxAudioEngine } from "./audio.js?v=2026.11.20";
+} from "./logic.js?v=2026.11.21";
+import { createMaxAudioEngine } from "./audio.js?v=2026.11.21";
 import {
   CORRECT_VARIANTS,
   LANDING_VARIANTS,
@@ -83,7 +82,7 @@ import {
   SFX_VOLUME_OPTIONS,
   createSfxEngine,
   normalizeSfxVolume,
-} from "./sfx.js?v=2026.11.20";
+} from "./sfx.js?v=2026.11.21";
 import {
   MAX_FEVER_GOAL,
   MAX_TIMELINE_PHASES,
@@ -98,7 +97,7 @@ import {
   resolveMaxCue,
   scaledVisualPlan,
   shouldPlayMaxSound,
-} from "./max-cues.js?v=2026.11.20";
+} from "./max-cues.js?v=2026.11.21";
 import {
   clearAllData,
   getMeta,
@@ -110,7 +109,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.11.20";
+} from "./storage.js?v=2026.11.21";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -118,7 +117,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.11.20";
+} from "./quiz-gestures.js?v=2026.11.21";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
@@ -127,7 +126,7 @@ import {
   normalizeSpeechRate,
   normalizeSpeechVoiceURI,
   voiceKey,
-} from "./speech.js?v=2026.11.20";
+} from "./speech.js?v=2026.11.21";
 import {
   AI_LINK_JOURNAL_KEY,
   AI_LINK_META_KEY,
@@ -143,7 +142,7 @@ import {
   isAiLinkConfigured,
   mcpUrlFor,
   normalizeAiLinkConfig,
-} from "./ai-link.js?v=2026.11.20";
+} from "./ai-link.js?v=2026.11.21";
 import {
   DEFAULT_DEVICE_SYNC,
   DEVICE_SYNC_META_KEY,
@@ -160,13 +159,13 @@ import {
   syncStateLabel,
   transferFileName,
   unsentEntries,
-} from "./sync.js?v=2026.11.20";
+} from "./sync.js?v=2026.11.21";
 import {
   applyThemePreference,
   normalizeThemePreference,
   readStoredThemePreference,
   watchSystemTheme,
-} from "./theme.js?v=2026.11.20";
+} from "./theme.js?v=2026.11.21";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -239,8 +238,9 @@ const state = {
   // ホームの「演習｜テスト」。端末に覚えておく。
   homeMode: "practice",
   // テストの条件（範囲・形式・重要度。範囲と重要度は空なら「すべて」）。
-  // テストの条件。範囲・重要度は空なら「すべて」、形式は空なら「全形式」（初めは先頭の形式だけ）。
-  testDraft: { ranges: [], formats: null, importance: [] },
+  // テストの条件（押すたびに付け外し）。null はまだ選んでいない＝初めの状態
+  // （範囲・重要度はすべて、形式は先頭の1つ）。
+  testDraft: { ranges: null, formats: null, importance: null },
   // テストの記録（新しい順）。
   testHistory: [],
   // 結果画面で開いているテストの記録と、履歴から開いたか。
@@ -591,7 +591,7 @@ function resetStudyFlow() {
   };
   state.sortKey = "importance-desc";
   state.filters = emptyFilters();
-  state.testDraft = { ranges: [], formats: null, importance: [] };
+  state.testDraft = { ranges: null, formats: null, importance: null };
   state.filters.ranges = ranges;
   state.importanceFilterMode = null;
   state.rangeSelectionMode = "all";
@@ -910,10 +910,34 @@ function renderSubjectTabs() {
     ...periodSubjects(),
     ...(state.subject && state.subject !== "kobun" ? [state.subject] : []),
   ])];
-  elements.subjectTabs.innerHTML = subjects.map((subject) => {
-    const active = subject === state.subject;
-    return `<button class="subject-tab${active ? " is-active" : ""}" type="button" data-subject="${subject}" aria-current="${active ? "page" : "false"}">${escapeHtml(SUBJECT_LABELS[subject] ?? subject)}</button>`;
-  }).join("");
+  const index = Math.max(0, subjects.indexOf(state.subject));
+  const key = subjects.join(",");
+  const current = elements.subjectTabs.querySelector(".subject-switch");
+  // 同じ教科の並びなら描き直さず、つまみだけを動かす（押した教科へ滑っていく）。
+  if (current && current.dataset.subjects === key) {
+    moveSegmentSwitch(current, index);
+    current.querySelectorAll("[data-subject]").forEach((button) => {
+      button.setAttribute("aria-checked", String(button.dataset.subject === state.subject));
+    });
+    return;
+  }
+  elements.subjectTabs.innerHTML = `
+    <div class="segment-switch subject-switch" role="radiogroup" aria-label="教科" data-subjects="${escapeHtml(key)}" style="--count:${subjects.length};--index:${index}">
+      <span class="segment-thumb" aria-hidden="true"></span>
+      ${subjects.map((subject) => `<button type="button" role="radio" data-subject="${subject}" aria-checked="${subject === state.subject}">${escapeHtml(SUBJECT_LABELS[subject] ?? subject)}</button>`).join("")}
+    </div>`;
+}
+
+// 切り替えのつまみを、選んだ区画へ動かす。動くときだけ横に伸びる動きを付ける。
+function moveSegmentSwitch(element, index) {
+  const previous = Number(element.style.getPropertyValue("--index") || 0);
+  element.style.setProperty("--index", String(index));
+  if (previous === index) return;
+  element.classList.remove("is-moving");
+  void element.offsetWidth;
+  element.classList.add("is-moving");
+  clearTimeout(element.movingTimer);
+  element.movingTimer = setTimeout(() => element.classList.remove("is-moving"), 560);
 }
 
 function homeSummaryText() {
@@ -1114,6 +1138,7 @@ function isTestFlow() {
 
 function syncHomeMode() {
   elements.modeSwitch.dataset.mode = state.homeMode;
+  moveSegmentSwitch(elements.modeSwitch, state.homeMode === "test" ? 1 : 0);
   elements.modeSwitch.querySelectorAll("[data-home-mode]").forEach((button) => {
     button.setAttribute("aria-checked", String(button.dataset.homeMode === state.homeMode));
   });
@@ -1171,22 +1196,39 @@ function testFormatOptions() {
     key: card.key,
     mode: card.mode,
     content: card.selection?.content ?? null,
-    label: isRecallSubject() ? card.title : modeShortLabel(card.mode),
+    // 札に収まるよう、英語の形式は空白を詰めて短く書く（英→日カード）。
+    label: isRecallSubject() ? card.title : modeShortLabel(card.mode).replace(" ", ""),
   }));
 }
 
-// 選んだ形式（空なら全形式）。まだ選んでいなければ、先頭の形式だけにしておく。
-function testDraftFormats() {
-  if (!state.testDraft.formats) state.testDraft.formats = testFormatOptions().slice(0, 1).map((option) => option.key);
-  return state.testDraft.formats;
+// テストの条件の選べる値。
+function testChoiceValues(field) {
+  if (field === "ranges") return dashboardRanges();
+  if (field === "formats") return testFormatOptions().map((option) => option.key);
+  return currentImportanceOrder();
 }
 
-function selectedTestFormats(keys = testDraftFormats()) {
-  const options = testFormatOptions();
-  return keys.length ? options.filter((option) => keys.includes(option.key)) : options;
+// いま選んでいる値（選べる値の並び順）。まだ選んでいなければ、範囲・重要度はすべて、形式は先頭の1つ。
+function testDraftValues(field) {
+  const all = testChoiceValues(field);
+  if (!Array.isArray(state.testDraft[field])) {
+    state.testDraft[field] = field === "formats" ? all.slice(0, 1) : [...all];
+  }
+  return all.filter((value) => state.testDraft[field].includes(value));
 }
 
-// 範囲・形式・重要度に合う問題。形式を2つ以上選んだら、形式ごとに1回ずつ出して全体を混ぜる。
+function selectedTestFormats() {
+  const keys = testDraftValues("formats");
+  return testFormatOptions().filter((option) => keys.includes(option.key));
+}
+
+// 記録に残す形。全部を選んでいれば空（＝すべて）にそろえる。
+function compactSelection(values, all) {
+  return all.every((value) => values.includes(value)) ? [] : [...values];
+}
+
+// 範囲・形式・重要度に合う問題（範囲・重要度は空なら「すべて」）。
+// 形式を2つ以上選んだら、形式ごとに1回ずつ出して全体を混ぜる。
 function testEntriesFor({ ranges = [], formats = [], importance = [] } = {}) {
   const entries = formats.flatMap((format) => testQueueFor({ ranges, importance, mode: format.mode, content: format.content }));
   return formats.length > 1 ? shuffle(entries) : entries;
@@ -1195,62 +1237,62 @@ function testEntriesFor({ ranges = [], formats = [], importance = [] } = {}) {
 function testFormatsLabel(formats = []) {
   const all = testFormatOptions();
   if (formats.length > 1 && formats.length >= all.length) return "全形式";
-  return formats.map((format) => format.label ?? modeShortLabel(format.mode)).join("・");
+  return formats.map((format) => (isRecallSubject() ? format.label : null) ?? modeShortLabel(format.mode)).join("・");
 }
 
-// テストの面。範囲・形式・重要度をチェックで選び、この1画面でそのまま始める。
+// テストの面。範囲・形式・重要度を札で付け外しして選び、この1画面（スクロールなし）でそのまま始める。
 function renderTestHome() {
-  const options = testFormatOptions();
-  const draft = state.testDraft;
   const unit = recallUnit();
-  const ranges = dashboardRanges();
+  const ranges = testDraftValues("ranges");
+  const importance = testDraftValues("importance");
   const formats = selectedTestFormats();
-  const count = (patch) => testEntriesFor({ ranges: draft.ranges, formats, importance: draft.importance, ...patch }).length;
-  const total = count({});
-  const check = ({ attribute, title, detail, selected, disabled = false, all = false, index = 0 }) => `
-        <button class="multi-select-card${all ? " select-all-card" : ""}${selected ? " selected" : ""}" type="button" ${attribute} aria-pressed="${selected}" style="--i:${index}"${disabled ? ' disabled aria-disabled="true"' : ""}>
-          <span class="multi-check" aria-hidden="true">${selected ? "✓" : ""}</span>
-          <span><strong>${escapeHtml(title)}</strong><small>${escapeHtml(detail)}</small></span>
+  const options = testFormatOptions();
+  // 札の問題数は、ほかの2つをいまの選び方（何も選んでいなければすべて）にして数える。
+  const pick = (values, field) => (values.length ? values : testChoiceValues(field));
+  const pickFormats = formats.length ? formats : options;
+  const countFor = ({ r = pick(ranges, "ranges"), f = pickFormats, i = pick(importance, "importance") } = {}) =>
+    testEntriesFor({ ranges: r, formats: f, importance: i }).length;
+  const missing = !ranges.length ? "範囲" : !formats.length ? "形式" : !importance.length ? "重要度" : null;
+  const total = missing ? 0 : countFor({ r: ranges, f: formats, i: importance });
+  const chip = ({ attribute, label, value, selected, index }) => `
+        <button class="test-chip${selected ? " is-selected" : ""}" type="button" ${attribute} aria-pressed="${selected}" style="--i:${index}"${value || selected ? "" : ' disabled aria-disabled="true"'}>
+          <span class="test-chip-check" aria-hidden="true"></span>
+          <span class="test-chip-text"><span class="test-chip-label">${escapeHtml(label)}</span><small>${value}${unit}</small></span>
         </button>`;
-  const allRanges = !draft.ranges.length;
-  const allFormats = !testDraftFormats().length;
-  const allImportance = !draft.importance.length;
-  const formatCount = (option) => testEntriesFor({ ranges: draft.ranges, formats: [option], importance: draft.importance }).length;
+  const group = (title, chosen, all, className, chips) => `
+    <section class="test-group" aria-label="${title}">
+      <h2 class="test-group-title">${title}<small>${chosen}/${all}</small></h2>
+      <div class="test-chips ${className}">${chips}</div>
+    </section>`;
+  const allRanges = testChoiceValues("ranges");
+  const allImportance = testChoiceValues("importance");
   elements.testHome.innerHTML = `
-    <section class="test-group" aria-label="範囲">
-      <h2 class="test-group-title">範囲</h2>
-      <div class="multi-select-grid">
-        ${check({ attribute: 'data-test-range="all"', title: "全選択", detail: `すべての範囲（${count({ ranges: [] })}${unit}）`, selected: allRanges, all: true })}
-        ${ranges.map((range, index) => {
-          const value = count({ ranges: [range] });
-          return check({ attribute: `data-test-range="${escapeHtml(range)}"`, title: range, detail: `${value}${unit}`, selected: !allRanges && draft.ranges.includes(range), disabled: !value, index: index + 1 });
-        }).join("")}
-      </div>
-    </section>
-    <section class="test-group" aria-label="形式">
-      <h2 class="test-group-title">形式</h2>
-      <div class="multi-select-grid">
-        ${options.length > 1 ? check({ attribute: 'data-test-format="all"', title: "全選択", detail: "すべての形式", selected: allFormats, all: true }) : ""}
-        ${options.map((option, index) => {
-          const value = formatCount(option);
-          return check({ attribute: `data-test-format="${escapeHtml(option.key)}"`, title: option.label, detail: `${value}${unit}`, selected: options.length === 1 || (!allFormats && draft.formats.includes(option.key)), disabled: !value, index: index + 1 });
-        }).join("")}
-      </div>
-    </section>
-    <section class="test-group" aria-label="重要度">
-      <h2 class="test-group-title">重要度</h2>
-      <div class="multi-select-grid test-importance-grid">
-        ${check({ attribute: 'data-test-importance="all"', title: "すべて", detail: `${count({ importance: [] })}${unit}`, selected: allImportance, all: true })}
-        ${currentImportanceOrder().map((importance, index) => {
-          const value = count({ importance: [importance] });
-          return check({ attribute: `data-test-importance="${importance}"`, title: importance, detail: `${value}${unit}`, selected: !allImportance && draft.importance.includes(importance), disabled: !value, index: index + 1 });
-        }).join("")}
-      </div>
-    </section>
-    <p class="test-home-note">間違えても出し直さず、終わったら正答率を出します。演習の周回には入りません。</p>
+    ${group("範囲", ranges.length, allRanges.length, "test-chips--ranges", allRanges.map((range, index) => chip({
+      attribute: `data-test-range="${escapeHtml(range)}"`,
+      label: range,
+      value: countFor({ r: [range] }),
+      selected: ranges.includes(range),
+      index,
+    })).join(""))}
+    ${group("形式", formats.length, options.length, "test-chips--formats", options.map((option, index) => chip({
+      attribute: `data-test-format="${escapeHtml(option.key)}"`,
+      label: option.label,
+      value: countFor({ f: [option] }),
+      selected: formats.includes(option),
+      index,
+    })).join(""))}
+    ${group("重要度", importance.length, allImportance.length, "test-chips--importance", allImportance.map((value, index) => chip({
+      attribute: `data-test-importance="${value}"`,
+      label: value,
+      value: countFor({ i: [value] }),
+      selected: importance.includes(value),
+      index,
+    })).join(""))}
     <div class="sticky-action test-start-bar">
       <button class="primary-button setup-start" type="button" data-test-start${total ? "" : " disabled"}>
-        ${total ? setupStartMarkup("テスト開始", `${total}${unit}`) : '<span class="setup-start-label">この条件に合う問題がありません</span>'}
+        ${total
+          ? setupStartMarkup("テスト開始", `${total}${unit}`)
+          : `<span class="setup-start-label">${missing ? `${missing}を選んでください` : "この条件に合う問題がありません"}</span>`}
       </button>
     </div>`;
 }
@@ -1269,9 +1311,11 @@ function startTest(entries, { formats = [], ranges = [], importance = [], retryO
 
 function startTestFromDraft() {
   const formats = selectedTestFormats();
-  if (!formats.length) return;
-  const ranges = normalizedTestRanges(state.testDraft.ranges);
-  const importance = [...state.testDraft.importance];
+  const selectedRanges = testDraftValues("ranges");
+  const selectedImportance = testDraftValues("importance");
+  if (!formats.length || !selectedRanges.length || !selectedImportance.length) return;
+  const ranges = normalizedTestRanges(selectedRanges);
+  const importance = compactSelection(selectedImportance, testChoiceValues("importance"));
   const plain = formats.map(({ mode, content, label }) => ({ mode, content, label }));
   startTest(testEntriesFor({ ranges, formats, importance }), { formats: plain, ranges, importance });
 }
@@ -6071,19 +6115,22 @@ function bindEvents() {
       renderStudySetup();
     }
     if (target.hasAttribute("data-setup-start")) startSession();
-    // テストの条件。範囲・形式・重要度はどれも「全選択」か、いくつでも。
+    // テストの条件。範囲・形式・重要度はどれも、押すたびに付け外しする（いくつでも選べる）。
     const testPick = [
-      ["testRange", "data-test-range", "ranges", () => dashboardRanges()],
-      ["testFormat", "data-test-format", "formats", () => testFormatOptions().map((option) => option.key)],
-      ["testImportance", "data-test-importance", "importance", () => currentImportanceOrder()],
+      ["testRange", "data-test-range", "ranges"],
+      ["testFormat", "data-test-format", "formats"],
+      ["testImportance", "data-test-importance", "importance"],
     ].find(([key]) => target.dataset[key]);
     if (testPick) {
-      const [key, attribute, field, all] = testPick;
-      testDraftFormats();
-      state.testDraft[field] = toggleSetupValue(state.testDraft[field], target.dataset[key], all());
+      const [key, attribute, field] = testPick;
+      const value = target.dataset[key];
+      const current = testDraftValues(field);
+      state.testDraft[field] = current.includes(value)
+        ? current.filter((entry) => entry !== value)
+        : [...current, value];
       haptics.trigger("flip");
       renderTestHome();
-      pulseChip(elements.testHome, attribute, target.dataset[key]);
+      pulseChip(elements.testHome, attribute, value);
     }
     if (target.hasAttribute("data-test-start")) startTestFromDraft();
     if (target.dataset.testRetry) retryTestRecord(target.dataset.testRetry);
@@ -6319,7 +6366,7 @@ async function boot() {
       fetch(ENGLISH_DATA_URL),
       fetch("./data/public-items.json?v=2026.09.01"),
       fetch("./data/health-items.json?v=2026.09.01"),
-      fetch("./data/kobun-vocabulary.json?v=2026.11.20"),
+      fetch("./data/kobun-vocabulary.json?v=2026.11.21"),
       loadHistory(),
       getMeta("selectedMode"),
       getMetaObject("settings", DEFAULT_SETTINGS),
@@ -6408,7 +6455,7 @@ async function boot() {
         .catch((error) => console.warn("AI連携の同期に失敗しました", error));
     }
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.11.20").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.11.21").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

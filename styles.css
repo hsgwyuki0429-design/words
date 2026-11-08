@@ -1774,6 +1774,16 @@ body.home-test-mode .main-content {
   gap: 14px;
 }
 
+/* 画面の下の空白に、灰色の小さな説明を置く。 */
+.test-home-note {
+  margin: 4px 2px 0;
+  color: var(--tertiary);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.6;
+  text-align: center;
+}
+
 .test-group-title {
   display: flex;
   align-items: baseline;

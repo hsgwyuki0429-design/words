@@ -1,5 +1,5 @@
-import { createHaptics } from "./haptics.js?v=2026.11.24";
-import { createKobunController } from "./kobun.js?v=2026.11.24";
+import { createHaptics } from "./haptics.js?v=2026.11.25";
+import { createKobunController } from "./kobun.js?v=2026.11.25";
 import {
   ALL_MODES,
   ALPHABET_KEYBOARD_ROWS,
@@ -73,8 +73,8 @@ import {
   unmasterStudyItems,
   gaugeColorIndex,
   hasAnsweredMode,
-} from "./logic.js?v=2026.11.24";
-import { createMaxAudioEngine } from "./audio.js?v=2026.11.24";
+} from "./logic.js?v=2026.11.25";
+import { createMaxAudioEngine } from "./audio.js?v=2026.11.25";
 import {
   CORRECT_VARIANTS,
   LANDING_VARIANTS,
@@ -82,7 +82,7 @@ import {
   SFX_VOLUME_OPTIONS,
   createSfxEngine,
   normalizeSfxVolume,
-} from "./sfx.js?v=2026.11.24";
+} from "./sfx.js?v=2026.11.25";
 import {
   MAX_FEVER_GOAL,
   MAX_TIMELINE_PHASES,
@@ -97,7 +97,7 @@ import {
   resolveMaxCue,
   scaledVisualPlan,
   shouldPlayMaxSound,
-} from "./max-cues.js?v=2026.11.24";
+} from "./max-cues.js?v=2026.11.25";
 import {
   clearAllData,
   getMeta,
@@ -109,7 +109,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.11.24";
+} from "./storage.js?v=2026.11.25";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -117,7 +117,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.11.24";
+} from "./quiz-gestures.js?v=2026.11.25";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
@@ -126,7 +126,7 @@ import {
   normalizeSpeechRate,
   normalizeSpeechVoiceURI,
   voiceKey,
-} from "./speech.js?v=2026.11.24";
+} from "./speech.js?v=2026.11.25";
 import {
   AI_LINK_JOURNAL_KEY,
   AI_LINK_META_KEY,
@@ -142,7 +142,7 @@ import {
   isAiLinkConfigured,
   mcpUrlFor,
   normalizeAiLinkConfig,
-} from "./ai-link.js?v=2026.11.24";
+} from "./ai-link.js?v=2026.11.25";
 import {
   DEFAULT_DEVICE_SYNC,
   DEVICE_SYNC_META_KEY,
@@ -159,13 +159,13 @@ import {
   syncStateLabel,
   transferFileName,
   unsentEntries,
-} from "./sync.js?v=2026.11.24";
+} from "./sync.js?v=2026.11.25";
 import {
   applyThemePreference,
   normalizeThemePreference,
   readStoredThemePreference,
   watchSystemTheme,
-} from "./theme.js?v=2026.11.24";
+} from "./theme.js?v=2026.11.25";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -1293,7 +1293,8 @@ function renderTestHome() {
       value: countFor({ i: [value] }),
       selected: importance.includes(value),
       index,
-    })).join(""))}`;
+    })).join(""))}
+    <p class="test-home-note">テストは、習得モードでどのくらいの割合の単語を覚えたかを確認するためのモードです。</p>`;
   // 開始ボタンは滑り込む面の外に置く（動いている面の中だと、画面の下に貼りつかず途中に出てしまう）。
   elements.testStartBar.innerHTML = `
       <button class="primary-button setup-start" type="button" data-test-start${total ? "" : " disabled"}>
@@ -6453,7 +6454,7 @@ async function boot() {
       fetch(ENGLISH_DATA_URL),
       fetch("./data/public-items.json?v=2026.09.01"),
       fetch("./data/health-items.json?v=2026.09.01"),
-      fetch("./data/kobun-vocabulary.json?v=2026.11.24"),
+      fetch("./data/kobun-vocabulary.json?v=2026.11.25"),
       loadHistory(),
       getMeta("selectedMode"),
       getMetaObject("settings", DEFAULT_SETTINGS),
@@ -6542,7 +6543,7 @@ async function boot() {
         .catch((error) => console.warn("AI連携の同期に失敗しました", error));
     }
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.11.24").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.11.25").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

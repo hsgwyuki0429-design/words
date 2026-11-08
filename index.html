@@ -37,8 +37,8 @@
         }
       })();
     </script>
-    <link rel="stylesheet" href="./styles.css?v=2026.11.16" />
-    <link rel="stylesheet" href="./kobun.css?v=2026.11.16" />
+    <link rel="stylesheet" href="./styles.css?v=2026.11.17" />
+    <link rel="stylesheet" href="./kobun.css?v=2026.11.17" />
   </head>
   <body>
     <div class="fx-backdrop" id="fx-backdrop" aria-hidden="true">
@@ -62,6 +62,11 @@
             <svg class="header-icon-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.5C10.4 5.3 8.2 4.8 3.5 5v13c4.7-.2 6.9.3 8.5 1.5 1.6-1.2 3.8-1.7 8.5-1.5V5c-4.7-.2-6.9.3-8.5 1.5z" /><path d="M12 6.5v13" /></svg>
             <svg class="header-icon-close" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" /></svg>
             <span class="sr-only" id="nav-list-label">単語帳</span>
+          </button>
+          <button class="header-round-button" type="button" data-view-target="history" data-header-toggle>
+            <svg class="header-icon-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6" /><path d="M3.5 4.5V9H8" /><path d="M12 7.5V12l3 2" /></svg>
+            <svg class="header-icon-close" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" /></svg>
+            <span class="sr-only">テストの履歴</span>
           </button>
           <button class="header-round-button" type="button" data-view-target="settings" data-header-toggle>
             <svg class="header-icon-open" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
@@ -124,21 +129,28 @@
 
         <section class="view kobun-view" id="view-kobun" data-view="kobun" aria-label="古文学習" hidden></section>
 
-        <!-- ホーム。教科タブ → 続きから → 範囲、の順に上から並べる。 -->
+        <!-- ホーム。教科タブと「演習｜テスト」の切り替え → 続きから（演習のみ） → 範囲、の順に上から並べる。 -->
         <section class="view home-view" id="view-dashboard" data-view="dashboard" hidden>
-          <nav class="subject-tabs" id="subject-tabs" aria-label="教科"></nav>
-          <p class="home-summary" id="home-summary"></p>
-          <div class="home-continue" id="home-continue"></div>
-          <div class="section-head">
-            <h2 id="dashboard-title">範囲を選ぶ</h2>
-            <span class="section-note" id="dashboard-copy"></span>
+          <div class="home-tabs-row">
+            <nav class="subject-tabs" id="subject-tabs" aria-label="教科"></nav>
+            <div class="mode-switch" id="mode-switch" role="radiogroup" aria-label="演習とテストの切り替え" data-mode="practice">
+              <span class="mode-switch-thumb" aria-hidden="true"></span>
+              <button type="button" role="radio" aria-checked="true" data-home-mode="practice">演習</button>
+              <button type="button" role="radio" aria-checked="false" data-home-mode="test">テスト</button>
+            </div>
           </div>
-          <div class="range-choice-list" id="dashboard-range-list"></div>
-          <button class="range-multi-entry" id="dashboard-multi-range" type="button" data-dashboard-multi-range>
-            <span class="range-multi-icon" aria-hidden="true">＋</span>
-            <span><strong>複数の範囲を選ぶ</strong><small>いくつかの範囲をまとめて学習する</small></span>
-            <span class="card-arrow" aria-hidden="true">›</span>
-          </button>
+          <p class="home-summary" id="home-summary"></p>
+          <!-- 演習：続きから → 範囲（1つ）→ 形式 → 学習の準備。 -->
+          <div class="home-pane" id="home-pane">
+            <div class="home-continue" id="home-continue"></div>
+            <div class="section-head">
+              <h2 id="dashboard-title">範囲を選ぶ</h2>
+              <span class="section-note" id="dashboard-copy"></span>
+            </div>
+            <div class="range-choice-list" id="dashboard-range-list"></div>
+          </div>
+          <!-- テスト：範囲・形式・重要度をこの1画面でチェックして、そのまま始める。 -->
+          <div class="home-pane test-home" id="test-home" hidden></div>
         </section>
 
         <!-- 範囲を選んだあとの、出題形式ごとの現在地。 -->
@@ -153,7 +165,7 @@
           <div id="range-detail-groups"></div>
         </section>
 
-        <!-- 学習の準備。内容・重要度・並び順を1画面で選び、下のボタンで始める。 -->
+        <!-- 学習の準備（演習）。重要度（1つ）と並び順を選び、下のボタンで始める。 -->
         <section class="view setup-view compact-step-view" id="view-study-setup" data-view="study-setup" hidden>
           <div class="page-heading compact-step-heading">
             <div class="step-heading-row">
@@ -166,21 +178,6 @@
           <div class="setup-groups" id="setup-groups"></div>
           <div class="sticky-action setup-start-bar">
             <button class="primary-button setup-start" id="setup-start" type="button" data-setup-start>スタート</button>
-          </div>
-        </section>
-
-        <section class="view compact-range-view" id="view-study-range-select" data-view="study-range-select" hidden>
-          <div class="page-heading compact-step-heading">
-            <div class="step-heading-row">
-              <button class="icon-button step-back" type="button" data-view-target="dashboard" aria-label="ホームへ戻る">←</button>
-              <h1>範囲を選ぶ</h1>
-              <span class="step-heading-note">複数選択</span>
-            </div>
-          </div>
-          <div class="multi-select-grid range-select-grid" id="study-range-options"></div>
-          <div class="sticky-action selection-next-action">
-            <p class="selection-ready-copy" id="study-range-action-copy" hidden></p>
-            <button class="primary-button" id="confirm-study-ranges" type="button">次へ <span aria-hidden="true">→</span></button>
           </div>
         </section>
 
@@ -223,6 +220,15 @@
         <!-- 学習を終えた直後の結果。ホームから開く入口は置かない。 -->
         <section class="view result-view" id="view-result" data-view="result" hidden>
           <div id="result-content"></div>
+        </section>
+
+        <!-- テストの履歴。押すとその回の結果（間違えた問題・やり直し）を開く。 -->
+        <section class="view history-view" id="view-history" data-view="history" hidden>
+          <div class="page-heading">
+            <p class="eyebrow">HISTORY</p>
+            <h1>テストの履歴</h1>
+          </div>
+          <div class="history-list" id="history-list"></div>
         </section>
 
         <section class="view settings-view" id="view-settings" data-view="settings" hidden>
@@ -271,6 +277,6 @@
     </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-    <script type="module" src="./src/app.js?v=2026.11.16"></script>
+    <script type="module" src="./src/app.js?v=2026.11.17"></script>
   </body>
 </html>

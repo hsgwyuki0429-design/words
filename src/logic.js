@@ -1902,3 +1902,113 @@ export function masteredIdsForMode(progressMap = {}, mode, { criterion = null } 
   });
   return [...ids];
 }
+
+// ---------------------------------------------------------------------------
+// 演習の円（1つの範囲・形式・重要度ごと）
+//
+// 円は「今のセットで習得した分」を今のセットの色で、残りを
+//   1セット目 … 解いたがまだ習得していない（練習中）分を薄い色、未回答を空
+//   2セット目〜 … 前のセットで習得した分として、前のセットの色
+// で塗る。何セット目かは文字では出さず、中央の「習得2」のような呼び名と色で示す。
+// ---------------------------------------------------------------------------
+
+export function summarizeSetRing({ progress = null, poolIds = [], answeredIds = [] } = {}) {
+  const pool = uniqueIds(poolIds);
+  const total = pool.length;
+  const round = normalizeRoundNumber(progress?.masteryRound ?? 1);
+  const inPool = new Set(pool);
+  const mastered = uniqueIds(progress?.masteredIds).filter((id) => inPool.has(id)).length;
+  const percent = (count) => percentOf(count, total);
+  if (round > 1) {
+    const previous = Math.max(0, total - mastered);
+    return {
+      round,
+      total,
+      label: `習得${round}`,
+      masteredCount: mastered,
+      masteredPercent: percent(mastered),
+      segments: [
+        { kind: "mastered", round, label: `習得${round}`, count: mastered, percent: percent(mastered) },
+        { kind: "previous", round: round - 1, label: `習得${round - 1}`, count: previous, percent: percent(previous) },
+      ],
+    };
+  }
+  const answered = Math.max(mastered, uniqueIds(answeredIds).filter((id) => inPool.has(id)).length);
+  const practicing = Math.max(0, answered - mastered);
+  const untouched = Math.max(0, total - answered);
+  return {
+    round: 1,
+    total,
+    label: "習得",
+    masteredCount: mastered,
+    masteredPercent: percent(mastered),
+    segments: [
+      { kind: "mastered", round: 1, label: "習得", count: mastered, percent: percent(mastered) },
+      { kind: "practicing", round: 1, label: "練習中", count: practicing, percent: percent(practicing) },
+      { kind: "untouched", round: 1, label: "未回答", count: untouched, percent: percent(untouched) },
+    ],
+  };
+}
+
+/**
+ * テストで間違えた問題を、演習の「習得」から外す。
+ * 習得から外すだけでなく、今の周回の対象にも戻す（次の周回は今の周回の対象から
+ * 作るので、戻さないと二度と出てこなくなる）。次に最初の回答で正解すれば、また習得になる。
+ */
+export function unmasterStudyItems(progress, itemIds = [], { now = Date.now() } = {}) {
+  const next = cloneStudyProgress(progress);
+  if (!next) return { progress: next, changed: [] };
+  const round = new Set(next.roundItemIds);
+  const changed = uniqueIds(itemIds).filter((id) => round.has(id) && next.masteredIds.includes(id));
+  if (!changed.length) return { progress: next, changed };
+  const drop = new Set(changed);
+  next.masteredIds = next.masteredIds.filter((id) => !drop.has(id));
+  next.cycleCorrectIds = next.cycleCorrectIds.filter((id) => !drop.has(id));
+  changed.forEach((id) => {
+    delete next.consecutiveCorrect[id];
+    delete next.firstAttemptResults[id];
+    if (!next.cycleTargetIds.includes(id)) next.cycleTargetIds.push(id);
+  });
+  next.lastUpdatedAt = now;
+  return { progress: next, changed };
+}
+
+// ---------------------------------------------------------------------------
+// テスト：好きな範囲・形式・重要度で、全部を1回ずつ解いて、どれだけ覚えているかを測る。
+// 間違えても同じテストの中で出し直さない。
+// ---------------------------------------------------------------------------
+
+/** テストに出す問題。範囲・重要度は空なら「すべて」。並びは毎回ばらばら。 */
+export function buildTestQueue({ items = [], ranges = [], importance = [], mode, rng = Math.random } = {}) {
+  if (!mode) return [];
+  const wantedRanges = new Set(ranges ?? []);
+  const wantedImportance = new Set(importance ?? []);
+  const subjectOfMode = (value) => (String(value).includes("_") && RECALL_SUBJECTS.some((subject) => value.startsWith(`${subject}_`))
+    ? RECALL_SUBJECTS.find((subject) => value.startsWith(`${subject}_`))
+    : "english");
+  const subject = subjectOfMode(mode);
+  const picked = items.filter((item) => {
+    if (wantedRanges.size && ![...wantedRanges].some((range) => itemMatchesRange(item, range))) return false;
+    if (wantedImportance.size && !wantedImportance.has(item.importance)) return false;
+    if (subject === "english") {
+      if (item.subject && item.subject !== "english") return false;
+      if (!ENGLISH_CONTENT_TYPES.includes(item.type)) return false;
+      return itemSupportsMode(item, mode);
+    }
+    return item.subject === subject && (item.questionModes ?? []).includes(mode);
+  });
+  return shuffle(picked, rng).map((item) => ({ item, mode }));
+}
+
+export function summarizeTestResult(results = []) {
+  const total = results.length;
+  const correct = results.filter((result) => result.correct).length;
+  const durationMs = results.reduce((sum, result) => sum + Math.max(0, Number(result.durationMs) || 0), 0);
+  return {
+    total,
+    correct,
+    wrong: total - correct,
+    percent: total ? Math.round((correct / total) * 100) : 0,
+    durationMs,
+  };
+}

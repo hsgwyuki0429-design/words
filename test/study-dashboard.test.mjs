@@ -16,6 +16,7 @@ import {
   studyTargetsForDashboard,
   summarizeProgressGauge,
   summarizeRangeModeProgress,
+  summarizeSetRing,
   summarizeRangeModes,
   summarizeCycleMeter,
 } from "../src/logic.js";
@@ -167,7 +168,7 @@ test("the retired spelling_input format is not revived in the new flow", () => {
 });
 
 test("the range list shows range names only, with no rates or scores", () => {
-  const dashboardSource = functionSource("renderDashboard", "cardStudyProgress");
+  const dashboardSource = functionSource("renderDashboard", "setRingColor").split("// 円：")[0];
   assert.match(dashboardSource, /data-dashboard-range="\$\{escapeHtml\(range\)\}"/);
   assert.match(dashboardSource, /range-choice-name">\$\{escapeHtml\(range\)\}/);
   assert.doesNotMatch(dashboardSource, /formatPercent|answeredRate|masteredRate|accuracy|mastery/);
@@ -176,27 +177,20 @@ test("the range list shows range names only, with no rates or scores", () => {
 });
 
 test("進み具合は、習得を円・今の周回を横棒で、形を分けて見せる", () => {
-  // 円：全体のうち何%を習得したか（遠い目標）。
-  const ringSource = functionSource("progressRingMarkup", "progressBreakdownMarkup");
-  assert.match(ringSource, /class="meter-ring" data-cycle="\$\{gauge\.colorIndex\}" style="--mastered:\$\{gauge\.masteredWidth\}%;--answered:\$\{gauge\.answeredWidth\}%"/);
-  assert.match(ringSource, /<span class="meter-ring-value">\$\{gauge\.masteredPercent\}<small>%<\/small><\/span>/);
-  // 内訳は重ならない3つ（習得・練習中・未回答）で、足すと全体の数になる。
-  const breakdownSource = functionSource("progressBreakdownMarkup", "cycleBarMarkup");
-  assert.match(breakdownSource, /習得 <b>\$\{gauge\.masteredCount\}<\/b>/);
-  assert.match(breakdownSource, /練習中 <b>\$\{gauge\.practicingCount\}<\/b>/);
-  assert.match(breakdownSource, /未回答 <b>\$\{gauge\.untouchedCount\}<\/b>/);
-  for (const [answeredItems, masteredItems] of [[0, 0], [12, 8], [10, 10], [3, 7], [188, 0]]) {
-    const gauge = summarizeProgressGauge({ totalItems: 188, answeredItems, masteredItems }, 1);
-    assert.equal(gauge.masteredCount + gauge.practicingCount + gauge.untouchedCount, 188, "内訳を足すと全体になる");
-    assert.ok(gauge.practicingCount >= 0 && gauge.untouchedCount >= 0);
-  }
-  // 横棒：今の周回があと何問か（近い目標）。
-  const barSource = functionSource("cycleBarMarkup", "recallTypesForContent");
+  // 円：その組（範囲・形式・重要度）の全体のうち何%を習得したか。
+  const ringSource = functionSource("setRingMarkup", "ringLegendMarkup");
+  assert.match(ringSource, /class="meter-ring" style="--ring-a:\$\{a\}%;--ring-b:\$\{b\}%;--ring-main:\$\{setRingColor\(ring\.round\)\};--ring-second:\$\{secondColor\}"/);
+  assert.match(ringSource, /<span class="meter-ring-value">\$\{ring\.masteredPercent\}<small>%<\/small><\/span>/);
+  assert.match(ringSource, /<span class="meter-ring-label">\$\{escapeHtml\(ring\.label\)\}<\/span>/);
+  // 内訳の色は円と同じ。
+  assert.match(functionSource("ringLegendMarkup", "cycleBarMarkup"), /style="--key-color:\$\{color\}"/);
+  // 横棒：今の周回があと何問か（近い目標）。「◯セット目」は書かない。
+  const barSource = functionSource("cycleBarMarkup", "modeProgressCard");
   assert.match(barSource, /const meter = summarizeCycleMeter\(cycle\);/);
   assert.match(barSource, /`あと<b>\$\{meter\.remainingCount\}<\/b>\$\{unit\}`/);
   assert.match(barSource, /まだ始めていません/);
-  assert.match(barSource, /\$\{meter\.cycleNumber\}周目/);
-  assert.match(barSource, /\$\{meter\.masteryRound\}セット目・/);
+  assert.match(barSource, /const title = `\$\{prefix \? `\$\{prefix\} · ` : ""\}\$\{meter\.cycleNumber\}周目`;/);
+  assert.doesNotMatch(appSource, /セット目・/);
   const meter = summarizeCycleMeter({ cycleNumber: 2, masteryRound: 1, targetCount: 40, remainingCount: 10 });
   assert.deepEqual(
     [meter.started, meter.doneCount, meter.remainingCount, meter.percent, meter.complete],
@@ -205,32 +199,29 @@ test("進み具合は、習得を円・今の周回を横棒で、形を分け�
   assert.equal(summarizeCycleMeter({ cycleNumber: 1, targetCount: 5, remainingCount: 0 }).complete, true);
   assert.equal(summarizeCycleMeter(null).started, false);
   assert.equal(summarizeCycleMeter({ targetCount: 5, remainingCount: 99 }).percent, 0, "壊れた値でも0〜100%");
-  // 形式カードは、その形式で最後に学習した周回を横棒に出す
+  // 形式カードは、その範囲・形式でいちばん最近学習した重要度の組だけを円と横棒で見せる（重要度をまたいでまとめない）。
   const cardSource = functionSource("modeProgressCard", "renderRangeDetail");
-  assert.match(cardSource, /cycleBarMarkup\(cycle, \{ prefix, total: progress\.totalItems \}\)/);
-  // 集計そのものは logic.js の純粋関数に任せる
-  assert.match(cardSource, /summarizeRangeModeProgress\(\{/);
+  assert.match(cardSource, /const entry = latestPracticeEntryForCard\(card, range\);/);
+  assert.match(cardSource, /setRingMarkup\(status\.ring\)/);
+  assert.match(cardSource, /cycleBarMarkup\(status\.summary, \{ prefix: importance \? `重要度\$\{importance\}` : "", total: status\.pool\.length \}\)/);
   assert.doesNotMatch(cardSource, /modeStats/);
 });
 
-test("学習の準備・続きからにも形式カードと同じ円と横棒を出し、選んだ内容・重要度で絞り込む", () => {
-  const cardSource = functionSource("modeProgressCard", "renderRangeDetail");
-  assert.match(cardSource, /const roundNumber = cycle\?\.masteryRound \?\? 1;/);
-  assert.match(cardSource, /progressRingMarkup\(progress, roundNumber\)/);
-  const setupSource = functionSource("renderSetupProgress", "renderStudySetup");
-  // 学習の準備は「その形式 × 選んだ内容 × 選んだ重要度」で集計する
-  assert.match(setupSource, /selectionProgress\(\{ types: studyContentTypes\(\), importance: state\.filters\.importance \}\)/);
-  assert.match(setupSource, /const roundNumber = plan\.summary\?\.masteryRound \?\? 1;/);
-  assert.match(setupSource, /progressRingMarkup\(progress, roundNumber\)/);
+test("学習の準備・続きからにも形式カードと同じ円と横棒を出し、選んだ重要度の組だけを見せる", () => {
+  // 学習の準備は上の面に、選んでいる重要度の組の円と周回を1つだけ出す（重要度ごとには付けない）。
+  const setupSource = functionSource("renderSetupProgress", "sortGroupMarkup");
+  assert.match(setupSource, /setup-progress-card meter-card/);
+  assert.match(setupSource, /setRingMarkup\(plan\.ring\)/);
   assert.match(setupSource, /cycleBarMarkup\(plan\.summary, \{ total: plan\.pool\.length \}\)/);
+  assert.match(setupSource, /ringLegendMarkup\(plan\.ring\)/);
+  // 1つの組（範囲1つ・形式・重要度1つ）ごとに、周回と習得の材料を作る。
+  const statusSource = functionSource("practiceStatus", "setupPlan");
+  assert.match(statusSource, /summarizeSetRing\(\{ progress: stored, poolIds, answeredIds \}\)/);
+  assert.match(functionSource("practiceConfig", "currentSetupConfig"), /ranges: \[range\], importance: importance \? \[importance\] : \[\]/);
   const resumeSource = functionSource("resumeStudyMarkup", "resultSession");
-  assert.match(resumeSource, /progressRingMarkup\(progress, cycle\.masteryRound\)/);
-  assert.match(resumeSource, /cycleBarMarkup\(cycle, \{ total: progress\.totalItems \}\)/);
-  // 仕組みは形式カードと同じ（同じ集計関数・同じ習得ラウンド）
-  const selectionSource = functionSource("selectionProgress", "modeProgressCard");
-  assert.match(selectionSource, /summarizeRangeModeProgress\(\{/);
-  assert.match(selectionSource, /masteredIdsForMode\(state\.studyProgress, mode, \{ criterion: masteryCriterion\(\) \}\)/);
-  assert.match(selectionSource, /exactStudyMode\(state\.studySelection\)/);
+  assert.match(resumeSource, /practiceStatus\(/);
+  assert.match(resumeSource, /setRingMarkup\(/);
+  assert.match(resumeSource, /cycleBarMarkup\(/);
   // 選ぶ札も 44px 以上
   assert.match(stylesSource, /\.setup-chip \{[^}]*min-height: 54px/);
 });
@@ -251,28 +242,20 @@ test("tapping a format card settles range and format in one step", () => {
   assert.deepEqual(config.selection.contents, ["word", "phrase", "structure"]);
   assert.equal(config.count, "all");
 
-  const startSource = functionSource("startStudyFromTarget", "showToast");
-  assert.match(startSource, /studyConfigForTarget\(\{/);
-  assert.match(startSource, /state\.studySelection = config\.selection/);
+  const startSource = functionSource("startStudyFromTarget", "stashStudyProgress");
+  assert.match(startSource, /state\.studySelection = normalizeStudySelection\(target\.selection\);/);
   // 次は学習の準備。範囲・出題方向・形式は聞き直さない。
   assert.match(startSource, /setView\("study-setup"\)/);
   assert.doesNotMatch(startSource, /setView\("study-(range-select|method|scope)"\)/);
   assert.match(appSource, /if \(target\.dataset\.studyTarget\) startStudyFromTarget\(target\.dataset\.studyTarget\)/);
 });
 
-test("a dedicated multi-range entry reuses the existing multi-select flow", () => {
-  assert.match(indexSource, /data-dashboard-multi-range/);
-  assert.match(indexSource, /複数の範囲を選ぶ/);
-  assert.match(appSource, /data-dashboard-multi-range"\)\) \{[\s\S]*?setView\("study-range-select"\)/);
-  assert.match(
-    appSource,
-    /target\.id === "confirm-study-ranges" && state\.filters\.ranges\.length\) \{\s*\n\s*setView\("range-detail"\)/,
-  );
-  // 既存の複数選択ロジックを壊していないこと
-  assert.match(indexSource, /id="study-range-options"/);
-  assert.match(appSource, /data-study-range-all/);
-  assert.match(appSource, /target\.dataset\.studyRange/);
-  assert.match(appSource, /state\.filters\.ranges = wasAllSelected/);
+test("演習では範囲を1つずつ選び、全範囲・複数の範囲は選ばない", () => {
+  assert.doesNotMatch(indexSource, /data-dashboard-multi-range|複数の範囲を選ぶ|study-range-options|confirm-study-ranges/);
+  assert.doesNotMatch(appSource, /data-dashboard-all-ranges|data-study-range|renderStudyRangeSelect/);
+  // 範囲詳細は範囲が1つのときだけ開く。
+  assert.match(appSource, /if \(view === "range-detail" && state\.filters\.ranges\.length !== 1\) view = "dashboard";/);
+  assert.match(appSource, /if \(target\.dataset\.dashboardRange\) \{\s*\n\s*state\.filters\.ranges = \[target\.dataset\.dashboardRange\];/);
 });
 
 test("the mastery gauge is fed by the current mastery round, not by long-term history", () => {
@@ -303,7 +286,8 @@ test("the mastery gauge is fed by the current mastery round, not by long-term hi
   assert.equal(withRound.masteredItems, 1);
   assert.equal(withRound.masteredRate, 0.5);
 
-  assert.match(appSource, /masteredIds: masteredIdsForMode\(state\.studyProgress, card\.mode, \{ criterion: masteryCriterion\(\) \}\)/);
+  // 円の習得は、その組の周回の masteredIds（いまのセット）から数える。
+  assert.match(logicSource, /export function summarizeSetRing\(/);
   assert.match(stylesSource, /\.progress-gauge-mastered \{[\s\S]*?background: var\(--gauge-strong\)/);
   // 習得条件をダッシュボードの描画へ直接書かない
   assert.doesNotMatch(
@@ -313,9 +297,9 @@ test("the mastery gauge is fed by the current mastery round, not by long-term hi
 });
 
 test("重要度と並び替えは学習の準備で毎回見直せる", () => {
-  const setupSource = functionSource("renderStudySetup", "renderStudyRangeSelect");
-  assert.match(setupSource, /currentImportanceOrder\(\)\.map\(\(importance\) =>/);
-  assert.match(setupSource, /primarySortOptions\(\)/);
+  const setupSource = functionSource("renderStudySetup", "dashboardTargetGroups");
+  assert.match(setupSource, /currentImportanceOrder\(\)\s*\n?\s*\.map\(\(importance\) =>/);
+  assert.match(functionSource("sortGroupMarkup", "renderStudySetup"), /primarySortOptions\(\)/);
   // 並び替えの選択肢（重要度・苦手順・ランダム・その他）は削っていない
   assert.match(appSource, /\["random", "ランダム"\]/);
   assert.match(appSource, /difficulty: "苦手順"/);
@@ -373,7 +357,7 @@ test("ダッシュボードが入口であり、学習終了後の戻り先で�
   assert.match(appSource, /if \(view === "home"\) view = "dashboard"/);
   assert.match(appSource, /if \(view === "dashboard"\) renderDashboard\(\)/);
   assert.match(appSource, /if \(view === "range-detail"\) renderRangeDetail\(\)/);
-  assert.match(functionSource("selectSubject", "selectionIsComplete"), /setView\("dashboard"\)/);
+  assert.match(functionSource("selectSubject", "studyContentLabel"), /setView\("dashboard"\)/);
   // 44px 以上のタップ領域を保つ
   assert.match(stylesSource, /\.range-choice \{[^}]*min-height: 56px/);
   assert.match(stylesSource, /\.mode-progress-card \{[^}]*min-height: 44px/);
@@ -400,37 +384,17 @@ test("範囲一覧と形式カードは1画面に収まる高さで組む", () =
 test("選択画面の見出しは戻るボタンとタイトルを1行にまとめる", () => {
   // safe-area のある実機でも縦を使い切らないよう、見出しは1行
   const headings = [...indexSource.matchAll(/class="[^"]*compact-step-heading"/g)];
-  assert.equal(headings.length, 3, "範囲詳細・学習の準備・範囲の複数選択の3画面");
-  assert.equal((indexSource.match(/class="step-heading-row"/g) ?? []).length, 3);
+  assert.equal(headings.length, 2, "範囲詳細・学習の準備の2画面");
+  assert.equal((indexSource.match(/class="step-heading-row"/g) ?? []).length, 2);
   assert.match(stylesSource, /\.step-heading-row \{[\s\S]*?display: flex/);
   // 縦積みの戻るリンクは残さず、丸い戻るボタンだけにする
   [...indexSource.matchAll(/compact-step-heading">([\s\S]*?)<\/div>\s*\n\s*<\/div>/g)].forEach((match) => {
     assert.doesNotMatch(match[1], /class="text-button back-link"/);
     assert.match(match[1], /class="icon-button step-back"/);
   });
-  assert.match(functionSource("renderRangeDetail", "lastConfigForTarget"), /rangeDetailCopy\.textContent = ranges\.length > 1 \? `\$\{ranges\.length\}範囲` : ""/);
+  assert.match(functionSource("renderRangeDetail", "syncHomeMode"), /rangeDetailCopy\.textContent = "";/);
   // 低い画面向けの調整を用意する
   assert.match(stylesSource, /@media \(max-height: 720px\)/);
-});
-
-test("範囲一覧の先頭に、2個分の幅を持つ全範囲ボタンを置く", () => {
-  const dashboardSource = functionSource("renderDashboard", "cardStudyProgress");
-  // 先頭にあること
-  const allIndex = dashboardSource.indexOf("data-dashboard-all-ranges");
-  const eachIndex = dashboardSource.indexOf("data-dashboard-range=");
-  assert.ok(allIndex > 0 && allIndex < eachIndex, "全範囲ボタンが個別の範囲より前にある");
-  assert.match(dashboardSource, /range-choice range-choice--all/);
-  assert.match(dashboardSource, /range-choice-name">全範囲/);
-  // 高さは他と同じまま、横幅だけ2カラム分にする
-  assert.match(stylesSource, /\.range-choice--all \{\s*\n\s*grid-column: 1 \/ -1;\s*\n\}/);
-  assert.doesNotMatch(stylesSource, /\.range-choice--all \{[^}]*min-height/);
-  // 押すと全範囲を選んで範囲詳細へ進む
-  assert.match(
-    appSource,
-    /data-dashboard-all-ranges"\)\) \{\s*\n\s*state\.filters\.ranges = dashboardRanges\(\);[\s\S]*?setView\("range-detail"\)/,
-  );
-  // 範囲一覧には割合や成績を出さない方針は保つ
-  assert.doesNotMatch(dashboardSource, /正答率|習得率|回答率|%/);
 });
 
 test("ゲージは重要度と学習内容でも絞り込める", () => {
@@ -484,43 +448,54 @@ test("ゲージは重要度と学習内容でも絞り込める", () => {
   assert.equal(summarizeRangeModeProgress(base).totalItems, 35);
 });
 
-test("セットごとに新しいバーを積み、基調色を変える", () => {
-  const gaugeSource = functionSource("progressRingMarkup", "progressBreakdownMarkup");
-  // 円の色はセットで変え、2セット目以降は円の中に「◯セット目」を出す。
-  assert.match(gaugeSource, /class="meter-ring" data-cycle="\$\{gauge\.colorIndex\}"/);
-  assert.match(gaugeSource, /gauge\.roundNumber > 1 \? `\$\{gauge\.roundNumber\}セット目` : "習得"/);
-  // 2セット目は赤。色は5セットで一巡する。
-  assert.match(stylesSource, /\.meter-ring\[data-cycle="2"\][\s\S]*?--gauge-strong: var\(--red\)/);
-  assert.match(stylesSource, /\.meter-ring\[data-cycle="3"\][\s\S]*?--gauge-strong: #7c3aed/);
+test("円はセットごとの色で塗り分け、何%が何セット目の習得かが分かる", () => {
+  const ringSource = functionSource("setRingMarkup", "ringLegendMarkup");
+  // 2セット目からは、前のセットで習得した分を前のセットの色で塗る。
+  assert.match(ringSource, /const secondColor = ring\.round > 1 \? setRingColor\(ring\.round - 1\) : "var\(--set-soft-1\)";/);
+  assert.match(functionSource("setRingColor", "setRingMarkup"), /`var\(--set-color-\$\{gaugeColorIndex\(round\)\}\)`/);
+  assert.match(stylesSource, /--set-color-1: #2b50ff;/);
+  assert.match(stylesSource, /--set-color-2: #d92d20;/);
+  assert.match(stylesSource, /\.meter-ring::before \{[\s\S]*?var\(--ring-main, var\(--set-color-1\)\) 0 var\(--ring-a, 0%\)/);
   assert.equal(GAUGE_COLOR_COUNT, 5);
   assert.equal(gaugeColorIndex(1), 1);
   assert.equal(gaugeColorIndex(2), 2);
   assert.equal(gaugeColorIndex(GAUGE_COLOR_COUNT + 1), 1, "色は5セットで一巡する");
-  // 集計そのものは logic.js の純粋関数に任せる
-  assert.match(gaugeSource, /summarizeProgressGauge\(progress, roundNumber\)/);
 
-  const gauge = summarizeProgressGauge(
-    { totalItems: 10, answeredItems: 6, masteredItems: 3 },
-    2,
-  );
-  assert.equal(gauge.roundNumber, 2);
-  assert.equal(gauge.colorIndex, 2, "2セット目は赤");
-  assert.deepEqual(gauge.finishedBars.map((bar) => bar.roundNumber), [1], "1セット目のバーが残る");
-  assert.equal(gauge.answeredPercent, 60);
-  assert.equal(gauge.masteredPercent, 30);
+  // 1セット目：習得・練習中・未回答。中央は「習得」。
+  const first = summarizeSetRing({
+    progress: { masteryRound: 1, masteredIds: ["a", "b"] },
+    poolIds: ["a", "b", "c", "d", "e"],
+    answeredIds: ["a", "b", "c"],
+  });
+  assert.equal(first.label, "習得");
+  assert.deepEqual(first.segments.map((segment) => [segment.kind, segment.count, segment.percent]), [
+    ["mastered", 2, 40],
+    ["practicing", 1, 20],
+    ["untouched", 2, 40],
+  ]);
+  // 2セット目：今のセットの習得（赤）と、前のセットの習得（青）。中央は「習得2」で「2セット目」とは書かない。
+  const second = summarizeSetRing({
+    progress: { masteryRound: 2, masteredIds: ["a"] },
+    poolIds: ["a", "b", "c", "d"],
+  });
+  assert.equal(second.label, "習得2");
+  assert.equal(second.masteredPercent, 25);
+  assert.deepEqual(second.segments.map((segment) => [segment.label, segment.count, segment.percent]), [
+    ["習得2", 1, 25],
+    ["習得1", 3, 75],
+  ]);
+  assert.doesNotMatch(appSource, /セット目`/);
+  // 範囲外のIDや重複は数えない。
+  const messy = summarizeSetRing({ progress: { masteredIds: ["x", "a", "a"] }, poolIds: ["a", "b"], answeredIds: ["a", "zz"] });
+  assert.equal(messy.masteredCount, 1);
+  assert.equal(messy.segments.reduce((sum, segment) => sum + segment.count, 0), 2);
 });
 
 test("周回が進んでもバーは増えず、セットが変わったときだけ積む", () => {
   // 「1周終えただけ」で2本目のバーが出ると、全問題を習得したように見えてしまう。
   // バーを積む単位は周回（未習得の絞り込み）ではなく、全問題を習得しきって
   // 始まる次のセット（習得ラウンド）。
-  const cardSource = functionSource("modeProgressCard", "renderRangeDetail");
-  assert.match(cardSource, /const roundNumber = cycle\?\.masteryRound \?\? 1;/);
-  assert.doesNotMatch(cardSource, /progressRingMarkup\(progress, cycle\?\.cycleNumber/);
-  const setupSource = functionSource("renderSetupProgress", "renderStudySetup");
-  assert.match(setupSource, /plan\.summary\?\.masteryRound \?\? 1/);
-  assert.doesNotMatch(setupSource, /progressRingMarkup\(progress, [^)]*cycleNumber/);
-
+  // （古文の形式カードのバー）
   // 1セット目のうちは、何周目でもバーは1本のまま伸びる
   const firstRound = summarizeProgressGauge({ totalItems: 10, answeredItems: 10, masteredItems: 9 }, 1);
   assert.equal(firstRound.finishedBars.length, 0, "満了したバーはまだ出ない");
@@ -549,9 +524,6 @@ test("セットをいくら重ねてもバーは増え続けない", () => {
   assert.equal(many.collapsedRounds, 398);
   assert.deepEqual(many.finishedBars.map((bar) => bar.roundNumber), [399]);
   assert.equal(many.finishedBars[0].label, "1〜399セット目は完了", "畳んだぶんも読み上げで分かる");
-  // 円の中にセット番号がそのまま出るので、何セット重ねても何セット目かは分かる
-  const gaugeSource = functionSource("progressRingMarkup", "progressBreakdownMarkup");
-  assert.match(gaugeSource, /\$\{gauge\.roundNumber\}セット目/);
 });
 
 test("壊れた保存データでもゲージの幅は0〜100%に収まる", () => {
@@ -603,6 +575,6 @@ test("低い画面でも、学習の準備をスタートまで1画面に収め�
 test("続きからのカードも、同じ条件の周回と同じセットを指す", () => {
   const resumeSource = functionSource("resumeStudyMarkup", "resultSession");
   assert.match(resumeSource, /const cycle = studyProgressSummary\(entry\.progress\);/);
-  assert.match(resumeSource, /importance: config\.filters\.importance/);
-  assert.match(resumeSource, /types: typesForSelection\(config\.selection\)/);
+  assert.match(resumeSource, /range: config\.filters\.ranges\[0\],\s*\n\s*importance: config\.filters\.importance\[0\],/);
+  assert.match(resumeSource, /const detail = `重要度 \$\{config\.filters\.importance\[0\]\}`;/);
 });

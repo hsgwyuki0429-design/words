@@ -24,7 +24,7 @@ const APP_SHELL = [
   `./src/theme.js?v=${APP_VERSION}`,
   "./health-notes.html?v=2026.9.39",
   "./public-notes.html?v=2026.9.39",
-  "./data/english-2026-3.json?v=2026.11.06",
+  "./data/english-2026-3.json?v=2026.11.09",
   "./data/public-items.json?v=2026.09.01",
   "./data/health-items.json?v=2026.09.01",
   "./manifest.webmanifest",

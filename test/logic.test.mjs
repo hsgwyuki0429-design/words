@@ -599,16 +599,19 @@ test("「D.C.」「a.m.」のような略語は、ピリオドを外した1語�
 test("3定の英語は、訳に答えの英語がそのまま出ず、熟語の一部だけの訳も残さない", () => {
   const period3 = JSON.parse(fs.readFileSync(new URL("../data/english-2026-3.json", import.meta.url), "utf8"));
   const byEnglish = new Map(period3.map((item) => [item.english, item]));
-  assert.equal(byEnglish.get("fast").japanese, "（___ asleep で）ぐっすりと");
-  assert.equal(byEnglish.get("expect").japanese, "（be ___ a baby で）子どもが生まれる予定である");
+  assert.equal(byEnglish.get("officer").japanese, "警官（police ___ で警察官）");
+  assert.equal(byEnglish.get("reduce A to B").japanese, "AをB（の状態）にする（___ 〜 to ashes で灰にする）");
   assert.equal(byEnglish.get("report").japanese, "〜を通報する／〜を報じる");
-  assert.equal(byEnglish.get("well").japanese, "うまく・順調に");
+  assert.equal(byEnglish.get("it").japanese, "それ・その");
+  assert.equal(byEnglish.get("be allowed to do").type, "phrase");
   assert.equal(byEnglish.get("jail").japanese, "刑務所／〜を刑務所に入れる");
   assert.equal(byEnglish.get("arrest").japanese, "〜を逮捕する");
   assert.equal(byEnglish.get("sir").memo, "⇔ ma'am（女性への敬称）");
   assert.equal(byEnglish.get("legal").generalMeaning, "法律の・法律に関する");
-  // 重要度Cだけの基本語は収録しない。
-  for (const basic of ["and", "of", "be", "I", "the"]) assert.ok(!byEnglish.has(basic), basic);
+  // 重要度Cの基本語は、単語・熟語とも収録しない。
+  for (const basic of ["and", "of", "be", "I", "well", "have to do", "a lot of", "for example"]) {
+    assert.ok(!byEnglish.has(basic), basic);
+  }
 });
 
 test("4択の誤答は品詞と訳の形をそろえ、正解だけが浮かないようにする", async () => {

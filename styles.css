@@ -6644,3 +6644,11 @@ body.fx-lite.max-mode.fx-fever .fx-backdrop.is-on {
     padding-bottom: 4px;
   }
 }
+
+/* 4択の訳の（ ）書き（使い方の注記）は、灰色の小さな文字にして意味より控えめにする。
+   正解・不正解で文字色が変わっても読めるよう、色は文字色を薄めて作る。 */
+.gloss-note {
+  font-size: 0.8em;
+  font-weight: 600;
+  opacity: 0.5;
+}

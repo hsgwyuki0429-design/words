@@ -108,8 +108,8 @@ test("難易度は教材にないので、難易度順の並び替えでも順�
   assert.ok(sample.every((item) => item.difficulty === "—"));
   const sorted = sortItems(sample, new Map(), "difficulty-level-desc", () => 0.5);
   assert.deepEqual(sorted.map((item) => item.id), sample.map((item) => item.id));
-  // 並び替えの選択画面では、一問一答と同じく「難易度順」を出さない。
-  assert.match(appSource, /\.\.\.\(!isRecallSubject\(\)\s*\?\s*\[\{ key: "difficulty-level-desc"/);
+  // 学習の並びはランダムに固定で、並び順の選択画面は無い。
+  assert.match(appSource, /const STUDY_SORT_KEY = "random";/);
 });
 
 test("作品の順に範囲を並べ、範囲名は作品名になる", () => {

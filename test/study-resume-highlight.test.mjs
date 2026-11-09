@@ -101,13 +101,13 @@ test("全範囲の周回は「全範囲」ボタンだけを光らせ、個別�
   assert.equal(singleRangeOnly.size, 0);
 });
 
-test("学習の準備でも、いま選んでいる条件が最後のセットならハイライトする", () => {
-  const source = functionSource("renderSetupProgress", "sortGroupMarkup");
-  // 進捗キーまで一致する（＝そのまま押せば続きになる）ときだけ光らせる。
-  assert.match(source, /const isLatest = Boolean\(plan\.stored\) && plan\.key === latestStudyEntry\(\)\?\.key;/);
-  assert.match(source, /setup-progress-card meter-card\$\{isLatest \? " is-in-progress" : ""\}/);
-  assert.match(source, /\$\{isLatest \? studyBadgeMarkup\(\) : ""\}/);
-  assert.match(stylesSource, /\.setup-progress-card\.is-in-progress \{[^}]*border-color: var\(--red\)/);
+test("学習の準備の上のカードは、続きなら「続きから」、そうでなければ「スタート」と出て、押すと始まる", () => {
+  const source = functionSource("renderSetupProgress", "renderStudySetup");
+  // 進捗キーまで一致する（＝そのまま押せば続きになる）ときは、ホームの「続きから」と同じ「続ける」になる。
+  assert.match(source, /const inProgress = plan\.label === "続きから";/);
+  assert.match(source, /const action = inProgress \? "続ける" : "始める";/);
+  assert.match(source, /<span class="continue-eyebrow">\$\{escapeHtml\(plan\.label\)\}<\/span>/);
+  assert.match(source, /data-setup-start/);
 });
 
 test("周回を終えたセットでも、最後にやったものならハイライトの基準になる", () => {

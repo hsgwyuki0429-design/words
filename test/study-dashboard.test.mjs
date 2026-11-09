@@ -211,12 +211,12 @@ test("進み具合は、習得を円・今の周回を横棒で、形を分け�
 });
 
 test("学習の準備・続きからにも形式カードと同じ円と横棒を出し、選んだ重要度の組だけを見せる", () => {
-  // 学習の準備は上の面に、選んでいる重要度の組の円と周回を1つだけ出す（重要度ごとには付けない）。
-  const setupSource = functionSource("renderSetupProgress", "sortGroupMarkup");
-  assert.match(setupSource, /setup-progress-card meter-card/);
+  // 学習の準備は上のカード（ホームの「続きから」と同じ形）に、選んでいる重要度の組の円と周回を1つだけ出す。
+  const setupSource = functionSource("renderSetupProgress", "renderStudySetup");
+  assert.match(setupSource, /<button class="continue-card setup-continue-card" type="button" data-setup-start/);
   assert.match(setupSource, /setRingMarkup\(plan\.ring\)/);
   assert.match(setupSource, /cycleBarMarkup\(plan\.summary, \{ total: plan\.pool\.length \}\)/);
-  assert.match(setupSource, /ringLegendMarkup\(plan\.ring\)/);
+  assert.match(setupSource, /<span class="continue-action">\$\{action\}/);
   // 1つの組（範囲1つ・形式・重要度1つ）ごとに、周回と習得の材料を作る。
   const statusSource = functionSource("practiceStatus", "setupPlan");
   assert.match(statusSource, /summarizeSetRing\(\{ progress: stored, poolIds, answeredIds \}\)/);
@@ -299,14 +299,11 @@ test("the mastery gauge is fed by the current mastery round, not by long-term hi
   );
 });
 
-test("重要度と並び替えは学習の準備で毎回見直せる", () => {
+test("重要度は学習の準備で毎回見直せる（並びはランダム固定）", () => {
   const setupSource = functionSource("renderStudySetup", "dashboardTargetGroups");
   assert.match(setupSource, /currentImportanceOrder\(\)\s*\n?\s*\.map\(\(importance\) =>/);
-  assert.match(functionSource("sortGroupMarkup", "renderStudySetup"), /primarySortOptions\(\)/);
-  // 並び替えの選択肢（重要度・苦手順・ランダム・その他）は削っていない
-  assert.match(appSource, /\["random", "ランダム"\]/);
-  assert.match(appSource, /difficulty: "苦手順"/);
-  assert.match(appSource, /"importance-desc": "重要度順"/);
+  // 並び順は選ばせず、ランダムに固定
+  assert.match(appSource, /const STUDY_SORT_KEY = "random";/);
   // 回答状況を毎回選ばせる画面は通常フローから外す
   assert.doesNotMatch(indexSource, /id="view-study-performance"/);
   assert.doesNotMatch(appSource, /data-study-performance=/);

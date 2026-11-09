@@ -1,5 +1,5 @@
-import { createHaptics } from "./haptics.js?v=2026.11.27";
-import { createKobunController } from "./kobun.js?v=2026.11.27";
+import { createHaptics } from "./haptics.js?v=2026.11.28";
+import { createKobunController } from "./kobun.js?v=2026.11.28";
 import {
   ALL_MODES,
   ALPHABET_KEYBOARD_ROWS,
@@ -73,8 +73,8 @@ import {
   unmasterStudyItems,
   gaugeColorIndex,
   hasAnsweredMode,
-} from "./logic.js?v=2026.11.27";
-import { createMaxAudioEngine } from "./audio.js?v=2026.11.27";
+} from "./logic.js?v=2026.11.28";
+import { createMaxAudioEngine } from "./audio.js?v=2026.11.28";
 import {
   CORRECT_VARIANTS,
   LANDING_VARIANTS,
@@ -82,7 +82,7 @@ import {
   SFX_VOLUME_OPTIONS,
   createSfxEngine,
   normalizeSfxVolume,
-} from "./sfx.js?v=2026.11.27";
+} from "./sfx.js?v=2026.11.28";
 import {
   MAX_FEVER_GOAL,
   MAX_TIMELINE_PHASES,
@@ -97,7 +97,7 @@ import {
   resolveMaxCue,
   scaledVisualPlan,
   shouldPlayMaxSound,
-} from "./max-cues.js?v=2026.11.27";
+} from "./max-cues.js?v=2026.11.28";
 import {
   clearAllData,
   getMeta,
@@ -109,7 +109,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.11.27";
+} from "./storage.js?v=2026.11.28";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -117,7 +117,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.11.27";
+} from "./quiz-gestures.js?v=2026.11.28";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
@@ -126,7 +126,7 @@ import {
   normalizeSpeechRate,
   normalizeSpeechVoiceURI,
   voiceKey,
-} from "./speech.js?v=2026.11.27";
+} from "./speech.js?v=2026.11.28";
 import {
   AI_LINK_JOURNAL_KEY,
   AI_LINK_META_KEY,
@@ -142,7 +142,7 @@ import {
   isAiLinkConfigured,
   mcpUrlFor,
   normalizeAiLinkConfig,
-} from "./ai-link.js?v=2026.11.27";
+} from "./ai-link.js?v=2026.11.28";
 import {
   DEFAULT_DEVICE_SYNC,
   DEVICE_SYNC_META_KEY,
@@ -159,13 +159,13 @@ import {
   syncStateLabel,
   transferFileName,
   unsentEntries,
-} from "./sync.js?v=2026.11.27";
+} from "./sync.js?v=2026.11.28";
 import {
   applyThemePreference,
   normalizeThemePreference,
   readStoredThemePreference,
   watchSystemTheme,
-} from "./theme.js?v=2026.11.27";
+} from "./theme.js?v=2026.11.28";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -218,7 +218,7 @@ const state = {
     minimumWrong: 0,
     search: "",
   },
-  sortKey: "importance-desc",
+  sortKey: "random",
   listLimit: 60,
   session: null,
   // 直前に完了した学習のリザルト（保存済み。分析画面で前回分として表示する）
@@ -394,31 +394,6 @@ function startingSubject(lastSubject) {
   return subjects.includes(lastSubject) ? lastSubject : subjects[0];
 }
 
-const OTHER_SORT_OPTIONS = [
-  ["random", "ランダム"],
-  ["importance-asc", "重要度が低い順"],
-  ["wrong-desc", "間違い回数が多い順"],
-  ["wrong-asc", "間違い回数が少ない順"],
-  ["accuracy-asc", "正答率が低い順"],
-  ["accuracy-desc", "正答率が高い順"],
-  ["attempts-asc", "回答回数が少ない順"],
-  ["attempts-desc", "回答回数が多い順"],
-  ["recent-wrong", "最近間違えた順"],
-  ["recent-attempted", "最近回答した順"],
-  ["oldest-attempted", "古く回答した順"],
-  ["range", "範囲順"],
-  ["registration", "登録順"],
-  ["alpha-en", "A–Z"],
-  ["alpha-ja", "あいうえお順"],
-];
-
-const STUDY_SORT_LABELS = {
-  "importance-desc": "重要度順",
-  "difficulty-level-desc": "難易度順",
-  difficulty: "苦手順",
-  ...Object.fromEntries(OTHER_SORT_OPTIONS),
-};
-
 const SUBJECT_LABELS = {
   english: "英語",
   public: "公共",
@@ -590,7 +565,7 @@ function resetStudyFlow() {
     method: null,
     scope: "full",
   };
-  state.sortKey = "importance-desc";
+  state.sortKey = STUDY_SORT_KEY;
   state.filters = emptyFilters();
   state.testDraft = { ranges: null, formats: null, importance: null };
   state.filters.ranges = ranges;
@@ -688,16 +663,6 @@ function importanceLabel(importance = []) {
 // 円（習得）と横棒（今の周回）を出す。初めは前回その範囲・形式で学習した重要度を選んでおく。
 // ---------------------------------------------------------------------------
 
-// 押してすぐ選べる並び順。ほかの並び順は「その他」（端末の選択肢）から選ぶ。
-function primarySortOptions() {
-  return [
-    { key: "importance-desc", title: "重要度順" },
-    ...(!isRecallSubject() ? [{ key: "difficulty-level-desc", title: "難易度順" }] : []),
-    { key: "difficulty", title: "苦手順" },
-    { key: "random", title: "ランダム" },
-  ];
-}
-
 function setupChip({ label, count = null, selected = false, attribute, disabled = false }) {
   return `
       <button class="setup-chip${selected ? " is-selected" : ""}" type="button" ${attribute} aria-pressed="${selected}"${disabled ? ' disabled aria-disabled="true"' : ""}>
@@ -712,6 +677,9 @@ function setupGroup(title, chips) {
       <div class="setup-chips">${chips.join("")}</div>
     </section>`;
 }
+
+// 学習の並びは、毎回ランダムで固定（並び順は選ばせない）。
+const STUDY_SORT_KEY = "random";
 
 // 演習の条件（範囲1つ・重要度1つ・内容はすべて）。重要度が無いときは、その範囲・形式の全部。
 function practiceConfig({ range, importance = null, selection = state.studySelection, sortKey = state.sortKey } = {}) {
@@ -772,51 +740,40 @@ function setupStartMarkup(label, detail) {
   return `<span class="setup-start-label">${escapeHtml(label)}</span><small>${escapeHtml(detail)}</small><span aria-hidden="true">→</span>`;
 }
 
-// 上の面：選んでいる重要度の組の円（何%を習得したか）と、今の周回。
+// 上のカード：ホームの「続きから」と同じ形。選んでいる重要度の組の円・今の周回が出て、
+// 押すとそのまま学習が始まる（下の「スタート」ボタンと同じ）。
 function renderSetupProgress() {
   const plan = setupPlan();
-  const isLatest = Boolean(plan.stored) && plan.key === latestStudyEntry()?.key;
-  elements.setupProgress.innerHTML = `
-    <div class="setup-progress-card meter-card${isLatest ? " is-in-progress" : ""}">
-      ${setRingMarkup(plan.ring)}
-      <span class="meter-body">
-        <span class="setup-progress-head">
-          <span class="setup-progress-label">出題する問題</span>
-          <strong>${plan.pool.length}${recallUnit()}</strong>
-          ${isLatest ? studyBadgeMarkup() : ""}
+  const unit = recallUnit();
+  const meter = summarizeCycleMeter(plan.summary);
+  const title = `${state.filters.ranges[0]} · ${modeShortLabel(plan.mode ?? exactStudyMode(state.studySelection))}`;
+  const detail = `重要度 ${state.filters.importance[0]}`;
+  const inProgress = plan.label === "続きから";
+  const action = inProgress ? "続ける" : "始める";
+  const statusText = !meter.started
+    ? `${plan.pool.length}${unit}`
+    : meter.complete ? `${meter.cycleNumber}周目まで完了` : `${meter.cycleNumber}周目、あと${meter.remainingCount}${unit}`;
+  elements.setupProgress.innerHTML = plan.pool.length ? `
+    <button class="continue-card setup-continue-card" type="button" data-setup-start aria-label="${escapeHtml(`${plan.label}：${title}（${detail}）、${statusText}`)}">
+      <span class="continue-top meter-card">
+        ${setRingMarkup(plan.ring)}
+        <span class="meter-body">
+          <span class="continue-eyebrow">${escapeHtml(plan.label)}</span>
+          <span class="continue-title">${escapeHtml(title)}</span>
+          <span class="continue-detail">${escapeHtml(detail)}</span>
         </span>
-        ${cycleBarMarkup(plan.summary, { total: plan.pool.length })}
       </span>
-      ${ringLegendMarkup(plan.ring)}
-    </div>`;
+      <span class="continue-foot">
+        ${cycleBarMarkup(plan.summary, { total: plan.pool.length })}
+        <span class="continue-action">${action}<span aria-hidden="true">→</span></span>
+      </span>
+    </button>` : "";
   elements.setupStart.disabled = !plan.pool.length;
   elements.setupStart.innerHTML = plan.pool.length
     ? setupStartMarkup(plan.label, plan.detail)
     : '<span class="setup-start-label">この条件に合う問題がありません</span>';
 }
 
-function sortGroupMarkup() {
-  const primary = primarySortOptions();
-  const isOther = !primary.some((option) => option.key === state.sortKey);
-  const others = OTHER_SORT_OPTIONS.filter(([key]) => !primary.some((option) => option.key === key));
-  return setupGroup("並び順", [
-    ...primary.map((option) => setupChip({
-      label: option.title,
-      selected: state.sortKey === option.key,
-      attribute: `data-setup-sort="${option.key}"`,
-    })),
-    `
-      <label class="setup-chip setup-chip--select${isOther ? " is-selected" : ""}">
-        <span>${escapeHtml(isOther ? STUDY_SORT_LABELS[state.sortKey] ?? "その他" : "その他")}</span><span class="setup-chip-caret" aria-hidden="true">▾</span>
-        <select data-setup-sort-other aria-label="その他の並び順">
-          <option value="" disabled${isOther ? "" : " selected"}>その他の並び順</option>
-          ${others.map(([key, label]) => `<option value="${key}"${state.sortKey === key ? " selected" : ""}>${escapeHtml(label)}</option>`).join("")}
-        </select>
-      </label>`,
-  ]);
-}
-
-// 学習の準備（演習）。重要度を1つと並び順を選ぶ。
 function renderStudySetup() {
   const mode = exactStudyMode(state.studySelection);
   const range = state.filters.ranges[0];
@@ -832,16 +789,13 @@ function renderStudySetup() {
   }
   elements.setupTitle.textContent = state.setupTitle ?? modeShortLabel(mode);
   elements.setupNote.textContent = range;
-  elements.setupGroups.innerHTML = [
-    setupGroup("重要度", counts.map(([importance, count]) => setupChip({
-      label: importance,
-      count,
-      selected: importance === state.filters.importance[0],
-      attribute: `data-setup-importance="${importance}"`,
-      disabled: !count,
-    }))),
-    sortGroupMarkup(),
-  ].join("");
+  elements.setupGroups.innerHTML = setupGroup("重要度", counts.map(([importance, count]) => setupChip({
+    label: importance,
+    count,
+    selected: importance === state.filters.importance[0],
+    attribute: `data-setup-importance="${importance}"`,
+    disabled: !count,
+  })));
   renderSetupProgress();
 }
 
@@ -1562,7 +1516,7 @@ function startStudyFromTarget(key) {
   const range = state.filters.ranges[0];
   const previous = lastConfigForTarget(target, [range]);
   state.filters = { ...emptyFilters(), ranges: [range], importance: previous?.filters?.importance?.slice(0, 1) ?? [] };
-  state.sortKey = previous?.sortKey ?? "importance-desc";
+  state.sortKey = STUDY_SORT_KEY;
   setView("study-setup");
 }
 
@@ -4205,7 +4159,7 @@ function startSession(overrides = {}) {
     subject: overrides.subject ?? state.subject,
     filters: overrides.filters ?? { ...state.filters, search: "" },
     ...(usesSelection ? { selection } : { mode }),
-    sortKey: overrides.sortKey ?? state.sortKey,
+    sortKey: STUDY_SORT_KEY,
     count: overrides.itemIds ? (overrides.count ?? "all") : "all",
     itemIds: overrides.itemIds ?? null,
   };
@@ -6208,10 +6162,6 @@ function bindEvents() {
       renderStudySetup();
       pulseChip(elements.setupGroups, "data-setup-importance", target.dataset.setupImportance);
     }
-    if (target.dataset.setupSort) {
-      state.sortKey = target.dataset.setupSort;
-      renderStudySetup();
-    }
     if (target.hasAttribute("data-setup-start")) startSession();
     // テストの条件。範囲・形式・重要度はどれも、押すたびに付け外しする（いくつでも選べる）。
     const testPick = [
@@ -6328,11 +6278,6 @@ function bindEvents() {
   elements.listSearch.addEventListener("input", () => renderList(true));
 
   document.addEventListener("change", (event) => {
-    if (event.target.dataset?.setupSortOther !== undefined) {
-      if (event.target.value) state.sortKey = event.target.value;
-      renderStudySetup();
-      return;
-    }
     if (event.target.dataset?.speechVoice !== undefined) {
       state.settings.speechVoiceURI = normalizeSpeechVoiceURI(event.target.value);
       saveSettings();
@@ -6465,7 +6410,7 @@ async function boot() {
       fetch(ENGLISH_DATA_URL),
       fetch("./data/public-items.json?v=2026.09.01"),
       fetch("./data/health-items.json?v=2026.09.01"),
-      fetch("./data/kobun-vocabulary.json?v=2026.11.27"),
+      fetch("./data/kobun-vocabulary.json?v=2026.11.28"),
       loadHistory(),
       getMeta("selectedMode"),
       getMetaObject("settings", DEFAULT_SETTINGS),
@@ -6554,7 +6499,7 @@ async function boot() {
         .catch((error) => console.warn("AI連携の同期に失敗しました", error));
     }
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.11.27").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.11.28").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

@@ -10,7 +10,7 @@
 // 発行したその場でしか本体を見られないようにする（保存先が漏れても悪用されにくい）。
 
 import { fail, readEnum, readString, readStringArray } from "../core/validate.js";
-import { updateDocument } from "../storage/driver.js";
+import { readDocument, updateDocument } from "../storage/driver.js";
 import { STORAGE_KEYS } from "../service/words-service.js";
 
 /** できることの単位。read → write → delete の順に強くなる。 */
@@ -26,16 +26,37 @@ export const DEFAULT_SETTINGS = Object.freeze({
 
 const DEFAULT_TOKENS = { tokens: [] };
 
+/** バイト列を16進数の文字列にする。 */
+function toHex(bytes) {
+  return [...bytes].map((value) => value.toString(16).padStart(2, "0")).join("");
+}
+
 /** ランダムな文字列。Web Crypto はどのサーバーレス環境にもある。 */
 export function generateToken(bytes = 32) {
   const buffer = new Uint8Array(bytes);
   crypto.getRandomValues(buffer);
-  return [...buffer].map((value) => value.toString(16).padStart(2, "0")).join("");
+  return toHex(buffer);
 }
 
 export async function hashToken(token) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
-  return [...new Uint8Array(digest)].map((value) => value.toString(16).padStart(2, "0")).join("");
+  return toHex(new Uint8Array(digest));
+}
+
+/**
+ * 接続トークンの登録内容と、本人が設定画面で入れた権限から、操作する人（actor）を作る。
+ * トークンのスコープと設定の権限、その両方にある操作だけを scopes に入れる。
+ * extra は tokenLabel の直後に差し込む項目（clientName など）。
+ */
+export function actorFromToken(entry, settings, extra = {}) {
+  return {
+    tokenId: entry.id,
+    tokenLabel: entry.label,
+    ...extra,
+    scopes: entry.scopes.filter((scope) => settings.permissions[scope]),
+    tokenScopes: entry.scopes,
+    permissions: settings.permissions,
+  };
 }
 
 /**
@@ -55,17 +76,23 @@ export function timingSafeEqual(left, right) {
 
 export function createAuth({ storage, ownerKey, now = () => Date.now() }) {
   async function readSettings() {
-    const stored = await storage.get(STORAGE_KEYS.settings);
+    const settings = await readDocument(storage, STORAGE_KEYS.settings, DEFAULT_SETTINGS);
     return {
-      ...structuredClone(DEFAULT_SETTINGS),
-      ...(stored ?? {}),
-      permissions: { ...DEFAULT_PERMISSIONS, ...(stored?.permissions ?? {}) },
+      ...settings,
+      permissions: { ...DEFAULT_PERMISSIONS, ...(settings.permissions ?? {}) },
     };
   }
 
   async function readTokens() {
-    const stored = await storage.get(STORAGE_KEYS.tokens);
-    return { ...structuredClone(DEFAULT_TOKENS), ...(stored ?? {}) };
+    return readDocument(storage, STORAGE_KEYS.tokens, DEFAULT_TOKENS);
+  }
+
+  function updateTokens(mutate) {
+    return updateDocument(storage, STORAGE_KEYS.tokens, mutate, { defaults: DEFAULT_TOKENS });
+  }
+
+  function nowIso() {
+    return new Date(now()).toISOString();
   }
 
   return {
@@ -98,8 +125,8 @@ export function createAuth({ storage, ownerKey, now = () => Date.now() }) {
           // 読み取りを切ると何もできなくなるので、連携を使うなら read は常に必要。
           draft.permissions = { ...permissions, read: permissions.read };
         }
-        draft.updatedAt = new Date(now()).toISOString();
-      }, { defaults: structuredClone(DEFAULT_SETTINGS) });
+        draft.updatedAt = nowIso();
+      }, { defaults: DEFAULT_SETTINGS });
       return {
         enabled: document.enabled,
         permissions: document.permissions,
@@ -119,22 +146,22 @@ export function createAuth({ storage, ownerKey, now = () => Date.now() }) {
         label: name,
         hash,
         scopes: requested,
-        createdAt: new Date(now()).toISOString(),
+        createdAt: nowIso(),
         lastUsedAt: null,
         // 見分けるための先頭だけ。これだけでは接続できない。
         preview: `${token.slice(0, 6)}…`,
       };
-      await updateDocument(storage, STORAGE_KEYS.tokens, (document) => {
+      await updateTokens((document) => {
         // 発行しなおしたら前のトークンは使えなくする（AIに配った鍵は1つだけに保つ）。
         document.tokens = [entry];
-      }, { defaults: structuredClone(DEFAULT_TOKENS) });
+      });
       return { token, entry: { ...entry, hash: undefined } };
     },
 
     async revokeTokens() {
-      await updateDocument(storage, STORAGE_KEYS.tokens, (document) => {
+      await updateTokens((document) => {
         document.tokens = [];
-      }, { defaults: structuredClone(DEFAULT_TOKENS) });
+      });
       return { revoked: true };
     },
 
@@ -153,24 +180,13 @@ export function createAuth({ storage, ownerKey, now = () => Date.now() }) {
       const entry = (stored.tokens ?? []).find((candidate) => timingSafeEqual(candidate.hash, hash));
       if (!entry) return { ok: false, reason: "invalid", message: "接続トークンが正しくありません。" };
 
-      const granted = entry.scopes.filter((scope) => settings.permissions[scope]);
       // 最後に使われた時刻の記録は、失敗しても本来の処理を止めない。
-      updateDocument(storage, STORAGE_KEYS.tokens, (document) => {
+      updateTokens((document) => {
         const target = (document.tokens ?? []).find((candidate) => candidate.id === entry.id);
-        if (target) target.lastUsedAt = new Date(now()).toISOString();
-      }, { defaults: structuredClone(DEFAULT_TOKENS) }).catch(() => {});
+        if (target) target.lastUsedAt = nowIso();
+      }).catch(() => {});
 
-      return {
-        ok: true,
-        actor: {
-          tokenId: entry.id,
-          tokenLabel: entry.label,
-          clientName,
-          scopes: granted,
-          tokenScopes: entry.scopes,
-          permissions: settings.permissions,
-        },
-      };
+      return { ok: true, actor: actorFromToken(entry, settings, { clientName }) };
     },
   };
 }

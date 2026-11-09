@@ -156,6 +156,18 @@ export function buildExampleLines(example, term) {
   });
 }
 
+/** 下線表示用データの中で、語句に下線を引けた箇所があるか。 */
+function hasMarkedTerm(exampleLines) {
+  return exampleLines.some((line) => line.parts.some((part) => part.mark));
+}
+
+/** 受け付ける答え。正式な答えを先頭にし、別解は答えと重ならないものだけを後ろに並べる。 */
+function acceptedAnswersWith(answer, extras) {
+  return extras?.length
+    ? [answer, ...extras.filter((value) => value !== answer)]
+    : [answer];
+}
+
 function buildEnglishItem(id, input) {
   const type = readEnum(input.type ?? "word", "question.type", SUBJECTS.english.types);
   const english = input.question;
@@ -204,9 +216,7 @@ function buildRecallItem(id, input, { subject, questionField, answerField, kindL
     kind: kindLabel,
     range: input.range,
     tags: input.tags ?? [kindLabel],
-    acceptedAnswers: input.acceptedAnswers?.length
-      ? [input.answer, ...input.acceptedAnswers.filter((value) => value !== input.answer)]
-      : [input.answer],
+    acceptedAnswers: acceptedAnswersWith(input.answer, input.acceptedAnswers),
     questionModes: [`${subject}_recall`],
   };
   mirrorSources(item, {
@@ -279,12 +289,10 @@ function buildKobunVocabItem(id, input) {
     kind: "重要語句",
     range: input.range,
     tags: input.tags ?? ["重要語句", "現代語訳"],
-    acceptedAnswers: input.acceptedAnswers?.length
-      ? [meaning, ...input.acceptedAnswers.filter((value) => value !== meaning)]
-      : [meaning],
+    acceptedAnswers: acceptedAnswersWith(meaning, input.acceptedAnswers),
     questionModes: ["kobun-vocab_recall"],
   };
-  item.termMarked = item.exampleLines.some((line) => line.parts.some((part) => part.mark));
+  item.termMarked = hasMarkedTerm(item.exampleLines);
   if (input.reading) item.reading = input.reading;
   mirrorSources(item, {
     lesson: input.range,
@@ -361,7 +369,7 @@ export function patchQuestion(item, input, { field = "patch" } = {}) {
       next.recallQuestion = text;
       next.term = text;
       next.exampleLines = buildExampleLines(text, text);
-      next.termMarked = next.exampleLines.some((line) => line.parts.some((part) => part.mark));
+      next.termMarked = hasMarkedTerm(next.exampleLines);
     }
   };
   const setAnswer = (text) => {
@@ -428,10 +436,7 @@ export function patchQuestion(item, input, { field = "patch" } = {}) {
     changed.push("type");
   }
   if (common.acceptedAnswers) {
-    const answer = next[config.answerField];
-    next.acceptedAnswers = subject === "english"
-      ? [...new Set([answer, ...common.acceptedAnswers])]
-      : [...new Set([answer, ...common.acceptedAnswers])];
+    next.acceptedAnswers = [...new Set([next[config.answerField], ...common.acceptedAnswers])];
     changed.push("acceptedAnswers");
   }
   if (common.note !== null) {

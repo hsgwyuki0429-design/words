@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-import argparse
-import json
 import re
+import sys
 from pathlib import Path
 
-from openpyxl import load_workbook
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from import_xlsx import clean_text, question_sheet_rows, run_workbook_cli  # noqa: E402
 
 SHEET_NAME = "全問題"
 HEADERS = ("No.", "問題", "答え", "重要度", "出典", "形式")
@@ -29,10 +30,6 @@ PHOTO_RANGES = {
 }
 
 RANGE_ORDER = ["p.36–37", "p.40–47", "p.60–63", "p.68–69", "p.70–73", "p.76–77"]
-
-
-def clean_text(value: object) -> str:
-    return re.sub(r"\s+", " ", str(value or "")).strip()
 
 
 def parse_source(label: str) -> tuple[str, str, str]:
@@ -86,14 +83,7 @@ def classify_kind(question: str, answer: str, source: str) -> str:
 
 
 def convert(workbook_path: Path) -> list[dict[str, object]]:
-    workbook = load_workbook(workbook_path, read_only=True, data_only=True)
-    if SHEET_NAME not in workbook.sheetnames:
-        raise SystemExit(f"{workbook_path}: sheet {SHEET_NAME} is required")
-    sheet = workbook[SHEET_NAME]
-    rows = sheet.iter_rows(values_only=True)
-    header = tuple(clean_text(cell) for cell in next(rows)[: len(HEADERS)])
-    if header != HEADERS:
-        raise SystemExit(f"{workbook_path}: unexpected header {header}")
+    rows = question_sheet_rows(workbook_path, SHEET_NAME, HEADERS)
 
     items: list[dict[str, object]] = []
     seen: set[tuple[str, str]] = set()
@@ -142,17 +132,7 @@ def convert(workbook_path: Path) -> list[dict[str, object]]:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("workbook", type=Path)
-    parser.add_argument("output", type=Path)
-    args = parser.parse_args()
-
-    items = convert(args.workbook)
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(
-        json.dumps(items, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
-    )
-    print(f"Wrote {len(items)} items to {args.output}")
+    run_workbook_cli(convert)
 
 
 if __name__ == "__main__":

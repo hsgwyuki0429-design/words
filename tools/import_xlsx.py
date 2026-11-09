@@ -497,14 +497,52 @@ def quizzable_records(records: list[dict[str, object]]) -> list[dict[str, object
     return kept
 
 
-def make_item(record: dict[str, object], order: int) -> dict[str, object]:
+def question_modes_and_tags(
+    item_type: str,
+    *,
+    spelling: bool,
+    preposition_blank: dict[str, str] | None,
+    phrase_blank: dict[str, str] | None,
+) -> tuple[list[str], list[str]]:
+    """出題形式とタグ。綴り・前置詞の穴埋め・熟語の穴埋めが作れるものだけ足す。"""
+    modes = ["en_to_ja_choice", "ja_to_en_choice", "ja_to_en_input"]
+    tags = [item_type]
+    if spelling:
+        modes.append("spelling_input")
+        tags.append("spelling")
+    if preposition_blank:
+        modes.append("preposition_input")
+        tags.append("preposition")
+    if phrase_blank:
+        modes.append("phrase_blank_input")
+        tags.append("blank")
+    return modes, tags
+
+
+def blanks_of(
+    preposition_blank: dict[str, str] | None, phrase_blank: dict[str, str] | None
+) -> dict[str, dict[str, str]]:
+    """作れた穴埋めだけをまとめる。1つも無ければ空。"""
+    blanks: dict[str, dict[str, str]] = {}
+    if preposition_blank:
+        blanks["preposition"] = preposition_blank
+    if phrase_blank:
+        blanks["phrase"] = phrase_blank
+    return blanks
+
+
+def make_item(
+    record: dict[str, object], order: int, digest_text: str | None = None
+) -> dict[str, object]:
+    """1問ぶんの教材データを組み立てる。digest_text は問題IDの元になる文字列（省略時は種類と英語）。"""
     english = str(record["english"])
     japanese = "／".join(record["japanese"])
     source_type = str(record["source_type"])
     sources = record["sources"]
     primary = sources[0]
-    digest_source = f"{source_type}|{english}".casefold().encode("utf-8")
-    digest = hashlib.sha1(digest_source).hexdigest()[:10]
+    if digest_text is None:
+        digest_text = f"{source_type}|{english}".casefold()
+    digest = hashlib.sha1(digest_text.encode("utf-8")).hexdigest()[:10]
     item_id = f"{primary['slug']}_{digest}"
 
     answers = accepted_answers(english)
@@ -516,18 +554,12 @@ def make_item(record: dict[str, object], order: int) -> dict[str, object]:
         if item_type in {"phrase", "structure", "expression"}
         else None
     )
-
-    modes = ["en_to_ja_choice", "ja_to_en_choice", "ja_to_en_input"]
-    tags = [item_type]
-    if item_type == "word" and len(word_matches(primary_answer)) == 1:
-        modes.append("spelling_input")
-        tags.append("spelling")
-    if preposition_blank:
-        modes.append("preposition_input")
-        tags.append("preposition")
-    if phrase_blank:
-        modes.append("phrase_blank_input")
-        tags.append("blank")
+    modes, tags = question_modes_and_tags(
+        item_type,
+        spelling=item_type == "word" and len(word_matches(primary_answer)) == 1,
+        preposition_blank=preposition_blank,
+        phrase_blank=phrase_blank,
+    )
 
     item: dict[str, object] = {
         "id": item_id,
@@ -560,11 +592,7 @@ def make_item(record: dict[str, object], order: int) -> dict[str, object]:
     if record.get("notes"):
         item["note"] = "／".join(record["notes"])
 
-    blanks: dict[str, dict[str, str]] = {}
-    if preposition_blank:
-        blanks["preposition"] = preposition_blank
-    if phrase_blank:
-        blanks["phrase"] = phrase_blank
+    blanks = blanks_of(preposition_blank, phrase_blank)
     if blanks:
         item["blanks"] = blanks
     return item
@@ -716,72 +744,11 @@ def convert_legacy(workbook) -> list[dict[str, object]]:
         if note and note not in record["notes"]:
             record["notes"].append(note)
 
-    items: list[dict[str, object]] = []
-    for order, record in enumerate(quizzable_records(list(grouped.values())), start=1):
-        english = record["english"]
-        japanese = "／".join(record["japanese"])
-        source_type = record["source_type"]
-        sources = record["sources"]
-        primary = sources[0]
-        digest = hashlib.sha1(english.casefold().encode("utf-8")).hexdigest()[:10]
-        item_id = f"{primary['slug']}_{digest}"
-
-        answers = accepted_answers(english)
-        primary_answer = answers[0]
-        item_type = classify_type(source_type, english)
-        preposition_blank = build_preposition_blank(primary_answer)
-        phrase_blank = (
-            build_phrase_blank(primary_answer)
-            if item_type in {"phrase", "structure", "expression"}
-            else None
-        )
-
-        modes = ["en_to_ja_choice", "ja_to_en_choice", "ja_to_en_input"]
-        tags = [item_type]
-        if item_type == "word" and len(word_matches(primary_answer)) == 1:
-            modes.append("spelling_input")
-            tags.append("spelling")
-        if preposition_blank:
-            modes.append("preposition_input")
-            tags.append("preposition")
-        if phrase_blank:
-            modes.append("phrase_blank_input")
-            tags.append("blank")
-
-        item: dict[str, object] = {
-            "id": item_id,
-            "english": english,
-            "japanese": japanese,
-            "type": item_type,
-            "sourceType": source_type,
-            "importance": record["importance"],
-            "difficulty": record["difficulty"],
-            "range": primary["range"],
-            "lesson": primary["lesson"],
-            "title": primary["title"],
-            "source": "; ".join(source["label"] for source in sources),
-            "sourceDetail": primary["detail"],
-            "sources": [
-                {key: value for key, value in source.items() if key != "slug"}
-                for source in sources
-            ],
-            "tags": tags,
-            "acceptedAnswers": answers,
-            "questionModes": modes,
-            "order": order,
-        }
-        if record["notes"]:
-            item["note"] = "／".join(record["notes"])
-        blanks: dict[str, dict[str, str]] = {}
-        if preposition_blank:
-            blanks["preposition"] = preposition_blank
-        if phrase_blank:
-            blanks["phrase"] = phrase_blank
-        if blanks:
-            item["blanks"] = blanks
-        items.append(item)
-
-    return items
+    # 旧形式の一覧では、問題IDの元を英語だけにしている（種類を含めない）。
+    return [
+        make_item(record, order, digest_text=record["english"].casefold())
+        for order, record in enumerate(quizzable_records(list(grouped.values())), start=1)
+    ]
 
 
 def convert(workbook_path: Path) -> list[dict[str, object]]:
@@ -791,18 +758,36 @@ def convert(workbook_path: Path) -> list[dict[str, object]]:
     return convert_legacy(workbook)
 
 
-def main() -> None:
+def question_sheet_rows(workbook_path: Path, sheet_name: str, headers: tuple[str, ...]):
+    """一問一答のシートを開き、見出しを確かめてから、見出しより下の行を返す。"""
+    workbook = load_workbook(workbook_path, read_only=True, data_only=True)
+    if sheet_name not in workbook.sheetnames:
+        raise SystemExit(f"{workbook_path}: sheet {sheet_name} is required")
+    sheet = workbook[sheet_name]
+    rows = sheet.iter_rows(values_only=True)
+    header = tuple(clean_text(cell) for cell in next(rows)[: len(headers)])
+    if header != headers:
+        raise SystemExit(f"{workbook_path}: unexpected header {header}")
+    return rows
+
+
+def run_workbook_cli(convert_workbook) -> None:
+    """「ブック 書き出し先」を受け取り、変換した教材データをJSONで書き出す。"""
     parser = argparse.ArgumentParser()
     parser.add_argument("workbook", type=Path)
     parser.add_argument("output", type=Path)
     args = parser.parse_args()
 
-    items = convert(args.workbook)
+    items = convert_workbook(args.workbook)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(
         json.dumps(items, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
     print(f"Wrote {len(items)} items to {args.output}")
+
+
+def main() -> None:
+    run_workbook_cli(convert)
 
 
 if __name__ == "__main__":

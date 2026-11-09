@@ -13,9 +13,9 @@
 // 「重ね合わせ（overlay）」として別に保存し、読むときに合成する。
 // こうしておけば、既存データはいつでもそのままの形で残る。
 
-import { getHistory, historyForModes } from "../../src/logic.js";
+import { IMPORTANCE_ORDER, getHistory, historyForModes } from "../../src/logic.js";
 import { ValidationError, fail, readEnum, readId, readInteger, readString, readStringArray } from "../core/validate.js";
-import { pushCapped, updateDocument } from "../storage/driver.js";
+import { pushCapped, readDocument, updateDocument } from "../storage/driver.js";
 import { buildQuestion, patchQuestion } from "./question-input.js";
 import { mergeRecordMaps } from "./history-merge.js";
 import { SUBJECTS, SUBJECT_IDS, answerText, explanationText, questionText, subjectOf } from "./subjects.js";
@@ -46,18 +46,69 @@ const DEFAULT_OVERLAY = { schemaVersion: DATA_SCHEMA_VERSION, added: {}, patched
 const DEFAULT_HISTORY = { updatedAt: null, deviceId: null, records: {}, journal: [], sessions: [] };
 const DEFAULT_LOG = { entries: [] };
 
+const DAY_MS = 86400000;
+const MINUTE_MS = 60 * 1000;
+
+/** 正誤履歴での絞り込みに使える値。 */
+const PERFORMANCE_FILTERS = ["all", "answered", "unanswered", "wrong", "correct", "last-wrong"];
+
 function normalizeText(value) {
   return String(value ?? "").normalize("NFKC").toLocaleLowerCase("ja-JP");
 }
 
 function startOfDay(timestamp, offsetMinutes) {
   // 端末の時間帯（例：日本なら +540 分）で「その日」を切り出す。
-  const shifted = timestamp + offsetMinutes * 60 * 1000;
-  return Math.floor(shifted / 86400000) * 86400000 - offsetMinutes * 60 * 1000;
+  const shifted = timestamp + offsetMinutes * MINUTE_MS;
+  return Math.floor(shifted / DAY_MS) * DAY_MS - offsetMinutes * MINUTE_MS;
 }
 
 function dayKey(timestamp, offsetMinutes) {
-  return new Date(timestamp + offsetMinutes * 60 * 1000).toISOString().slice(0, 10);
+  return new Date(timestamp + offsetMinutes * MINUTE_MS).toISOString().slice(0, 10);
+}
+
+/** 正答率。回答が無ければ null。小数第3位までに丸める。 */
+function accuracyOf(correct, attempts) {
+  return attempts ? Number((correct / attempts).toFixed(3)) : null;
+}
+
+/** 時刻（ミリ秒）を ISO 8601 の文字列にする。 */
+function toIso(timestamp) {
+  return new Date(timestamp).toISOString();
+}
+
+/** 教科の絞り込み（空なら全教科）に、その問題が当てはまるか。 */
+function inSubjects(item, subjects) {
+  return !subjects?.length || subjects.includes(subjectOf(item));
+}
+
+/** 問題IDごとの履歴から1問ぶんを取り出す。modes を渡すと、その出題形式の分だけに絞る。 */
+function recordFor(records, itemId, modes = []) {
+  const record = getHistory(records, itemId);
+  return modes.length ? historyForModes(record, modes) : record;
+}
+
+/** 検索・一覧の並び順。relevance は見つかった順のまま。 */
+const QUESTION_SORTERS = {
+  relevance: null,
+  id: (a, b) => a.item.id.localeCompare(b.item.id),
+  importance: (a, b) => IMPORTANCE_ORDER.indexOf(a.item.importance) - IMPORTANCE_ORDER.indexOf(b.item.importance),
+  "most-wrong": (a, b) => b.record.wrongCount - a.record.wrongCount,
+  "recently-studied": (a, b) => (b.record.lastAttemptAt ?? 0) - (a.record.lastAttemptAt ?? 0),
+  "recently-wrong": (a, b) => (b.record.lastWrongAt ?? 0) - (a.record.lastWrongAt ?? 0),
+};
+
+// ------------------------------------------------------------------
+// AIから届いた引数の読み取り（複数のツールで同じ規則を使う）
+// ------------------------------------------------------------------
+
+function readLearner(params) {
+  return readString(params.learner, "learner", { max: 60 });
+}
+
+function readTimezoneOffset(params) {
+  return readInteger(params.timezoneOffsetMinutes, "timezoneOffsetMinutes", {
+    min: -840, max: 840, fallback: 540,
+  });
 }
 
 /** 一覧やAIへ返すときの、問題の短い形。全項目を返すと量が多すぎるため。 */
@@ -78,9 +129,9 @@ export function summarizeQuestion(item, record = null) {
       attempts: record.totalAttempts,
       correct: record.correctCount,
       wrong: record.wrongCount,
-      accuracy: record.totalAttempts ? Number((record.correctCount / record.totalAttempts).toFixed(3)) : null,
+      accuracy: accuracyOf(record.correctCount, record.totalAttempts),
       lastResult: record.lastResult,
-      lastAttemptAt: record.lastAttemptAt ? new Date(record.lastAttemptAt).toISOString() : null,
+      lastAttemptAt: record.lastAttemptAt ? toIso(record.lastAttemptAt) : null,
     };
   }
   return summary;
@@ -116,13 +167,16 @@ export function createWordsService({
   now = () => Date.now(),
   idSuffix = () => Math.random().toString(36).slice(2, 8),
 }) {
-  async function readDocument(key, defaults) {
-    const stored = await storage.get(key);
-    return { ...structuredClone(defaults), ...(stored ?? {}) };
+  function nowIso() {
+    return toIso(now());
   }
 
   async function readOverlay() {
-    return readDocument(STORAGE_KEYS.overlay, DEFAULT_OVERLAY);
+    return readDocument(storage, STORAGE_KEYS.overlay, DEFAULT_OVERLAY);
+  }
+
+  function updateOverlay(mutate) {
+    return updateDocument(storage, STORAGE_KEYS.overlay, mutate, { defaults: DEFAULT_OVERLAY });
   }
 
   /**
@@ -130,23 +184,19 @@ export function createWordsService({
    * 端末をまたいだ合算は同期層が受け持つので、ここでは結果を受け取るだけでよい。
    */
   async function readHistory(learner = null) {
-    if (!sync) return readDocument(STORAGE_KEYS.history, DEFAULT_HISTORY);
+    if (!sync) return readDocument(storage, STORAGE_KEYS.history, DEFAULT_HISTORY);
     return sync.historyFor(learner);
   }
 
   /** 教材データに重ね合わせを適用して、いまの問題一覧を作る。 */
   async function resolveItems({ includeDeleted = false } = {}) {
     const [base, overlay] = await Promise.all([catalog.allBaseItems(), readOverlay()]);
+    const added = Object.values(overlay.added).map((entry) => entry.item);
     const items = [];
-    for (const item of base) {
+    for (const item of [...base, ...added]) {
       if (!includeDeleted && overlay.trash[item.id]) continue;
       const patch = overlay.patched[item.id];
       items.push(patch ? { ...item, ...patch.item } : item);
-    }
-    for (const entry of Object.values(overlay.added)) {
-      if (!includeDeleted && overlay.trash[entry.item.id]) continue;
-      const patch = overlay.patched[entry.item.id];
-      items.push(patch ? { ...entry.item, ...patch.item } : entry.item);
     }
     return { items, overlay };
   }
@@ -167,7 +217,7 @@ export function createWordsService({
 
   function logEntry(actor, tool, summary, extra = {}) {
     return {
-      at: new Date(now()).toISOString(),
+      at: nowIso(),
       client: actor?.clientName ?? "unknown",
       token: actor?.tokenLabel ?? null,
       tool,
@@ -177,7 +227,7 @@ export function createWordsService({
   }
 
   function nextId(subject, taken) {
-    const date = new Date(now()).toISOString().slice(0, 10).replace(/-/g, "");
+    const date = nowIso().slice(0, 10).replace(/-/g, "");
     for (let attempt = 0; attempt < 50; attempt += 1) {
       const candidate = `ai-${subject}-${date}-${idSuffix()}`;
       if (!taken.has(candidate)) return candidate;
@@ -190,7 +240,7 @@ export function createWordsService({
   // ------------------------------------------------------------------
 
   function matchesFilters(item, record, filters) {
-    if (filters.subjects?.length && !filters.subjects.includes(subjectOf(item))) return false;
+    if (!inSubjects(item, filters.subjects)) return false;
     if (filters.ranges?.length && !filters.ranges.includes(item.range)) return false;
     if (filters.importance?.length && !filters.importance.includes(item.importance)) return false;
     if (filters.types?.length && !filters.types.includes(item.type)) return false;
@@ -223,18 +273,6 @@ export function createWordsService({
     return true;
   }
 
-  const SORTERS = {
-    relevance: null,
-    id: (a, b) => a.item.id.localeCompare(b.item.id),
-    importance: (a, b) => {
-      const order = ["SSS", "SS", "S", "A", "B", "C", "D"];
-      return order.indexOf(a.item.importance) - order.indexOf(b.item.importance);
-    },
-    "most-wrong": (a, b) => b.record.wrongCount - a.record.wrongCount,
-    "recently-studied": (a, b) => (b.record.lastAttemptAt ?? 0) - (a.record.lastAttemptAt ?? 0),
-    "recently-wrong": (a, b) => (b.record.lastWrongAt ?? 0) - (a.record.lastWrongAt ?? 0),
-  };
-
   /** 検索と一覧の共通処理。件数は必ず上限で区切り、続きは offset で取る。 */
   async function queryQuestions(filters = {}, { limit, offset = 0, sort = "id", includeDeleted = false, learner = null } = {}) {
     const [{ items }, history] = await Promise.all([resolveItems({ includeDeleted }), readHistory(learner)]);
@@ -242,17 +280,18 @@ export function createWordsService({
     const rows = items
       .map((item) => ({ item, record: getHistory(records, item.id) }))
       .filter(({ item, record }) => matchesFilters(item, record, filters));
-    const sorter = SORTERS[sort] ?? SORTERS.id;
+    const sorter = QUESTION_SORTERS[sort] ?? QUESTION_SORTERS.id;
     if (sorter) rows.sort(sorter);
     const size = Math.min(Math.max(1, limit ?? SERVICE_LIMITS.searchLimitDefault), SERVICE_LIMITS.searchLimitMax);
     const page = rows.slice(offset, offset + size);
+    const hasMore = offset + page.length < rows.length;
     return {
       total: rows.length,
       offset,
       limit: size,
       returned: page.length,
-      hasMore: offset + page.length < rows.length,
-      nextOffset: offset + page.length < rows.length ? offset + page.length : null,
+      hasMore,
+      nextOffset: hasMore ? offset + page.length : null,
       questions: page.map(({ item, record }) => summarizeQuestion(item, record)),
     };
   }
@@ -264,7 +303,7 @@ export function createWordsService({
       const [{ items, overlay }, history, settings] = await Promise.all([
         resolveItems(),
         readHistory(),
-        readDocument(STORAGE_KEYS.settings, {}),
+        readDocument(storage, STORAGE_KEYS.settings, {}),
       ]);
       const bySubject = Object.fromEntries(SUBJECT_IDS.map((subject) => [
         subject,
@@ -303,39 +342,24 @@ export function createWordsService({
         ?.split(/\s+/)
         .filter(Boolean)
         .map(normalizeText) ?? [];
-      return queryQuestions(
-        { ...readFilters(params), keywords },
-        {
-          limit: readInteger(params.limit, "limit", { min: 1, max: SERVICE_LIMITS.searchLimitMax }),
-          offset: readInteger(params.offset, "offset", { min: 0, fallback: 0 }),
-          sort: readEnum(params.sort, "sort", Object.keys(SORTERS), { fallback: "id" }),
-          includeDeleted: params.includeDeleted === true,
-          learner: readString(params.learner, "learner", { max: 60 }),
-        },
-      );
+      return queryQuestions({ ...readFilters(params), keywords }, readQueryOptions(params));
     },
 
     async listQuestions(params = {}) {
-      return queryQuestions(readFilters(params), {
-        limit: readInteger(params.limit, "limit", { min: 1, max: SERVICE_LIMITS.searchLimitMax }),
-        offset: readInteger(params.offset, "offset", { min: 0, fallback: 0 }),
-        sort: readEnum(params.sort, "sort", Object.keys(SORTERS), { fallback: "id" }),
-        includeDeleted: params.includeDeleted === true,
-        learner: readString(params.learner, "learner", { max: 60 }),
-      });
+      return queryQuestions(readFilters(params), readQueryOptions(params));
     },
 
     async getQuestion(params = {}) {
       const id = readId(params.id, "id");
-      const learner = readString(params.learner, "learner", { max: 60 });
+      const learner = readLearner(params);
       const [{ item, overlay }, history] = await Promise.all([findItem(id), readHistory(learner)]);
-      if (!item) fail(`問題 ${id} は見つかりませんでした。`, "id");
-      const detail = detailQuestion(item, getHistory(history.records ?? {}, id));
+      if (!item) failNotFound(id);
+      const record = getHistory(history.records ?? {}, id);
+      const detail = detailQuestion(item, record);
       detail.edited = Boolean(overlay.patched[id]);
       detail.deleted = Boolean(overlay.trash[id]);
       if (overlay.trash[id]) detail.deletedAt = overlay.trash[id].at;
-      const modeStats = getHistory(history.records ?? {}, id).modeStats ?? {};
-      detail.study = { ...(detail.study ?? {}), byMode: modeStats };
+      detail.study = { ...(detail.study ?? {}), byMode: record.modeStats ?? {} };
       return detail;
     },
 
@@ -373,8 +397,8 @@ export function createWordsService({
         return item;
       });
 
-      const at = new Date(now()).toISOString();
-      const { result } = await updateDocument(storage, STORAGE_KEYS.overlay, (document) => {
+      const at = nowIso();
+      const { result } = await updateOverlay((document) => {
         const total = Object.keys(document.added).length + built.length;
         if (total > SERVICE_LIMITS.totalAdded) {
           fail(`AI経由で追加できる問題は合計${SERVICE_LIMITS.totalAdded}件までです。`, "questions");
@@ -383,7 +407,7 @@ export function createWordsService({
           document.added[item.id] = { item, at, client: actor.clientName ?? null, token: actor.tokenLabel ?? null };
         });
         return built.map((item) => item.id);
-      }, { defaults: DEFAULT_OVERLAY });
+      });
 
       await appendLog(logEntry(actor, "addQuestions", `${SUBJECTS[targetSubject].label}に${built.length}件追加`, {
         subject: targetSubject,
@@ -399,17 +423,17 @@ export function createWordsService({
     async updateQuestion({ id, patch }, actor = {}) {
       const questionId = readId(id, "id");
       const { item } = await findItem(questionId, { includeDeleted: true });
-      if (!item) fail(`問題 ${questionId} は見つかりませんでした。`, "id");
+      if (!item) failNotFound(questionId);
       const { item: updated, changed } = patchQuestion(item, patch ?? {}, { field: "patch" });
-      const at = new Date(now()).toISOString();
-      await updateDocument(storage, STORAGE_KEYS.overlay, (document) => {
+      const at = nowIso();
+      await updateOverlay((document) => {
         if (document.added[questionId]) {
           // AIが追加した問題は、重ね合わせを重ねずに元の登録内容を書き換える。
           document.added[questionId] = { ...document.added[questionId], item: updated, updatedAt: at };
           return;
         }
         document.patched[questionId] = { item: updated, at, client: actor.clientName ?? null, changed };
-      }, { defaults: DEFAULT_OVERLAY });
+      });
 
       await appendLog(logEntry(actor, "updateQuestion", `${questionId} の ${changed.join("・")} を変更`, {
         questionId,
@@ -432,12 +456,12 @@ export function createWordsService({
       }
       const note = readString(reason, "reason", { max: 200 });
       const { item, overlay } = await findItem(questionId, { includeDeleted: true });
-      if (!item) fail(`問題 ${questionId} は見つかりませんでした。`, "id");
+      if (!item) failNotFound(questionId);
       if (overlay.trash[questionId]) {
         return { id: questionId, alreadyDeleted: true, deletedAt: overlay.trash[questionId].at };
       }
-      const at = new Date(now()).toISOString();
-      await updateDocument(storage, STORAGE_KEYS.overlay, (document) => {
+      const at = nowIso();
+      await updateOverlay((document) => {
         document.trash[questionId] = {
           at,
           reason: note,
@@ -445,7 +469,7 @@ export function createWordsService({
           token: actor.tokenLabel ?? null,
           question: questionText(item),
         };
-      }, { defaults: DEFAULT_OVERLAY });
+      });
       await appendLog(logEntry(actor, "deleteQuestion", `${questionId} をゴミ箱へ移動`, { questionId, reason: note }));
       return {
         id: questionId,
@@ -460,9 +484,9 @@ export function createWordsService({
       const questionId = readId(id, "id");
       const { overlay } = await findItem(questionId, { includeDeleted: true });
       if (!overlay.trash[questionId]) fail(`問題 ${questionId} はゴミ箱にありません。`, "id");
-      await updateDocument(storage, STORAGE_KEYS.overlay, (document) => {
+      await updateOverlay((document) => {
         delete document.trash[questionId];
-      }, { defaults: DEFAULT_OVERLAY });
+      });
       await appendLog(logEntry(actor, "restoreQuestion", `${questionId} をゴミ箱から復元`, { questionId }));
       return { id: questionId, restored: true };
     },
@@ -472,22 +496,15 @@ export function createWordsService({
     // ------------------------------------------------------------------
 
     async getStudyStats(params = {}) {
-      const learner = readString(params.learner, "learner", { max: 60 });
+      const learner = readLearner(params);
       const [{ items }, history] = await Promise.all([resolveItems(), readHistory(learner)]);
-      const records = history.records ?? {};
       const modes = readStringArray(params.modes, "modes", { max: 12 }) ?? [];
       const subjects = readStringArray(params.subjects, "subjects", { max: 4, allowed: SUBJECT_IDS }) ?? SUBJECT_IDS;
-      const offsetMinutes = readInteger(params.timezoneOffsetMinutes, "timezoneOffsetMinutes", {
-        min: -840, max: 840, fallback: 540,
-      });
+      const offsetMinutes = readTimezoneOffset(params);
 
       const scoped = items.filter((item) => subjects.includes(subjectOf(item)));
-      const rows = scoped.map((item) => ({
-        item,
-        record: modes.length
-          ? historyForModes(getHistory(records, item.id), modes)
-          : getHistory(records, item.id),
-      }));
+      const rowsFor = (records) => scoped.map((item) => ({ item, record: recordFor(records, item.id, modes) }));
+      const rows = rowsFor(history.records ?? {});
 
       const tally = (list) => {
         const attempts = list.reduce((sum, row) => sum + row.record.totalAttempts, 0);
@@ -500,7 +517,7 @@ export function createWordsService({
           attempts,
           correct,
           wrong: attempts - correct,
-          accuracy: attempts ? Number((correct / attempts).toFixed(3)) : null,
+          accuracy: accuracyOf(correct, attempts),
         };
       };
 
@@ -516,7 +533,7 @@ export function createWordsService({
 
       const today = startOfDay(now(), offsetMinutes);
       const recentDays = readInteger(params.recentDays, "recentDays", { min: 1, max: 90, fallback: 7 });
-      const since = today - (recentDays - 1) * 86400000;
+      const since = today - (recentDays - 1) * DAY_MS;
       const journal = (history.journal ?? []).filter((entry) => entry.at >= since);
       const dailyMap = new Map();
       journal.forEach((entry) => {
@@ -529,15 +546,9 @@ export function createWordsService({
 
       // 学習者が複数いて、誰とも指定が無いときは、人ごとの成績も添える。
       const perLearner = !learner && (history.learners ?? []).length > 1 && sync
-        ? await Promise.all((await sync.historyByLearner()).map(async (entry) => {
-          const learnerRows = scoped.map((item) => ({
-            item,
-            record: modes.length
-              ? historyForModes(getHistory(entry.records, item.id), modes)
-              : getHistory(entry.records, item.id),
-          }));
-          return { learner: entry.name, learnerId: entry.id, ...tally(learnerRows) };
-        }))
+        ? await Promise.all((await sync.historyByLearner()).map(async (entry) => (
+          { learner: entry.name, learnerId: entry.id, ...tally(rowsFor(entry.records)) }
+        )))
         : null;
 
       return {
@@ -566,16 +577,14 @@ export function createWordsService({
     },
 
     async getRecentMistakes(params = {}) {
-      const offsetMinutes = readInteger(params.timezoneOffsetMinutes, "timezoneOffsetMinutes", {
-        min: -840, max: 840, fallback: 540,
-      });
+      const offsetMinutes = readTimezoneOffset(params);
       const days = readInteger(params.days, "days", { min: 1, max: 365, fallback: 1 });
       const limit = readInteger(params.limit, "limit", { min: 1, max: SERVICE_LIMITS.searchLimitMax, fallback: 20 });
       const since = params.since !== undefined && params.since !== null
         ? readInteger(params.since, "since", { min: 0 })
-        : startOfDay(now(), offsetMinutes) - (days - 1) * 86400000;
+        : startOfDay(now(), offsetMinutes) - (days - 1) * DAY_MS;
 
-      const learner = readString(params.learner, "learner", { max: 60 });
+      const learner = readLearner(params);
       const [{ items }, history] = await Promise.all([resolveItems(), readHistory(learner)]);
       const records = history.records ?? {};
       const subjects = readStringArray(params.subjects, "subjects", { max: 4, allowed: SUBJECT_IDS });
@@ -586,8 +595,7 @@ export function createWordsService({
       const fromJournal = new Map();
       journal.forEach((entry) => {
         const item = byId.get(entry.itemId);
-        if (!item) return;
-        if (subjects?.length && !subjects.includes(subjectOf(item))) return;
+        if (!item || !inSubjects(item, subjects)) return;
         const key = entry.learner ? `${entry.learner}|${entry.itemId}` : entry.itemId;
         const current = fromJournal.get(key)
           ?? { item, times: 0, lastAt: 0, modes: new Set(), learner: entry.learner ?? null };
@@ -606,26 +614,26 @@ export function createWordsService({
           .map((entry) => ({
             ...summarizeQuestion(entry.item, getHistory(records, entry.item.id)),
             missedTimes: entry.times,
-            missedAt: new Date(entry.lastAt).toISOString(),
+            missedAt: toIso(entry.lastAt),
             modes: [...entry.modes],
             ...(entry.learner ? { learner: entry.learner } : {}),
           }));
       } else {
         source = "history";
         rows = items
-          .filter((item) => (!subjects?.length || subjects.includes(subjectOf(item))))
+          .filter((item) => inSubjects(item, subjects))
           .map((item) => ({ item, record: getHistory(records, item.id) }))
           .filter(({ record }) => (record.lastWrongAt ?? 0) >= since)
           .sort((a, b) => (b.record.lastWrongAt ?? 0) - (a.record.lastWrongAt ?? 0))
           .map(({ item, record }) => ({
             ...summarizeQuestion(item, record),
             missedTimes: record.wrongCount,
-            missedAt: new Date(record.lastWrongAt).toISOString(),
+            missedAt: toIso(record.lastWrongAt),
           }));
       }
 
       return {
-        since: new Date(since).toISOString(),
+        since: toIso(since),
         days,
         source,
         learner: learner ?? null,
@@ -638,13 +646,11 @@ export function createWordsService({
     },
 
     async getStudyHistory(params = {}) {
-      const offsetMinutes = readInteger(params.timezoneOffsetMinutes, "timezoneOffsetMinutes", {
-        min: -840, max: 840, fallback: 540,
-      });
+      const offsetMinutes = readTimezoneOffset(params);
       const days = readInteger(params.days, "days", { min: 1, max: 365, fallback: 7 });
       const limit = readInteger(params.limit, "limit", { min: 1, max: 200, fallback: 50 });
-      const since = startOfDay(now(), offsetMinutes) - (days - 1) * 86400000;
-      const learner = readString(params.learner, "learner", { max: 60 });
+      const since = startOfDay(now(), offsetMinutes) - (days - 1) * DAY_MS;
+      const learner = readLearner(params);
       const [{ items }, history] = await Promise.all([resolveItems({ includeDeleted: true }), readHistory(learner)]);
       const byId = new Map(items.map((item) => [item.id, item]));
       const onlyWrong = params.onlyWrong === true;
@@ -656,7 +662,7 @@ export function createWordsService({
         .map((entry) => {
           const item = byId.get(entry.itemId);
           return {
-            at: new Date(entry.at).toISOString(),
+            at: toIso(entry.at),
             date: dayKey(entry.at, offsetMinutes),
             questionId: entry.itemId,
             subject: item ? subjectOf(item) : null,
@@ -670,7 +676,7 @@ export function createWordsService({
         });
 
       return {
-        since: new Date(since).toISOString(),
+        since: toIso(since),
         days,
         learner: learner ?? null,
         learners: history.learners ?? [],
@@ -711,7 +717,7 @@ export function createWordsService({
             durationMs: Number.isFinite(entry.durationMs) ? entry.durationMs : null,
           }))
         : [];
-      const savedAt = new Date(now()).toISOString();
+      const savedAt = nowIso();
       const sessions = Array.isArray(payload.sessions) ? payload.sessions.slice(0, 20) : [];
       if (!sync) {
         await storage.put(STORAGE_KEYS.history, {
@@ -748,7 +754,7 @@ export function createWordsService({
     },
 
     async getOperationLog({ limit = 20 } = {}) {
-      const document = await readDocument(STORAGE_KEYS.log, DEFAULT_LOG);
+      const document = await readDocument(storage, STORAGE_KEYS.log, DEFAULT_LOG);
       const size = Math.min(Math.max(1, Number(limit) || 20), SERVICE_LIMITS.logEntries);
       return { total: (document.entries ?? []).length, entries: (document.entries ?? []).slice(0, size) };
     },
@@ -757,6 +763,21 @@ export function createWordsService({
     resolveItems,
     readOverlay,
     readHistory,
+  };
+}
+
+function failNotFound(id) {
+  fail(`問題 ${id} は見つかりませんでした。`, "id");
+}
+
+/** 検索・一覧に共通する件数・並び順などの読み取り。 */
+function readQueryOptions(params) {
+  return {
+    limit: readInteger(params.limit, "limit", { min: 1, max: SERVICE_LIMITS.searchLimitMax }),
+    offset: readInteger(params.offset, "offset", { min: 0, fallback: 0 }),
+    sort: readEnum(params.sort, "sort", Object.keys(QUESTION_SORTERS), { fallback: "id" }),
+    includeDeleted: params.includeDeleted === true,
+    learner: readLearner(params),
   };
 }
 
@@ -770,14 +791,12 @@ function readFilters(params) {
     ranges: readStringArray(params.ranges ?? (params.range ? [params.range] : null), "ranges", { max: 16 }),
     importance: readStringArray(params.importance, "importance", {
       max: 7,
-      allowed: ["SSS", "SS", "S", "A", "B", "C", "D"],
+      allowed: IMPORTANCE_ORDER,
     }),
     types: readStringArray(params.types, "types", { max: 8 }),
     tags: readStringArray(params.tags, "tags", { max: 12 }),
     questionModes: readStringArray(params.questionModes, "questionModes", { max: 12 }),
-    performance: readEnum(params.performance, "performance", [
-      "all", "answered", "unanswered", "wrong", "correct", "last-wrong",
-    ], { fallback: "all" }),
+    performance: readEnum(params.performance, "performance", PERFORMANCE_FILTERS, { fallback: "all" }),
     minimumWrong: readInteger(params.minimumWrong, "minimumWrong", { min: 0, max: 999, fallback: 0 }),
     aiAddedOnly: params.aiAddedOnly === true,
   };

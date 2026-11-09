@@ -31,11 +31,15 @@ function later(left, right) {
   return Math.max(left, right);
 }
 
+/** 最後に解いたのが新しいほう。同じ時刻なら左を採る。 */
+function newerOf(left, right) {
+  return (left.lastAttemptAt ?? 0) >= (right.lastAttemptAt ?? 0) ? left : right;
+}
+
 function mergeModeStat(left, right) {
   if (!left) return right ? { ...right } : null;
   if (!right) return { ...left };
-  const leftIsNewer = (left.lastAttemptAt ?? 0) >= (right.lastAttemptAt ?? 0);
-  const newer = leftIsNewer ? left : right;
+  const newer = newerOf(left, right);
   return {
     attempts: add(left.attempts, right.attempts),
     correct: add(left.correct, right.correct),
@@ -57,8 +61,7 @@ export function mergeHistoryRecords(left, right) {
   if (!left) return right ? structuredClone(right) : null;
   if (!right) return structuredClone(left);
 
-  const leftIsNewer = (left.lastAttemptAt ?? 0) >= (right.lastAttemptAt ?? 0);
-  const newer = leftIsNewer ? left : right;
+  const newer = newerOf(left, right);
   const modes = new Set([
     ...Object.keys(left.modeStats ?? {}),
     ...Object.keys(right.modeStats ?? {}),

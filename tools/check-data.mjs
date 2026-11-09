@@ -15,6 +15,11 @@ import {
 
 const recallExplanationOf = (item) => String(item.explanation ?? item.editorial?.explanation ?? "").trim();
 
+/** values の値ごとに、field がその値になっている問題の数を数える。 */
+const countBy = (list, field, values) => Object.fromEntries(
+  values.map((value) => [value, list.filter((item) => item[field] === value).length]),
+);
+
 // 2定（2026.2）の英語。
 const items = JSON.parse(fs.readFileSync(new URL("../data/items.json", import.meta.url), "utf8"));
 // 3定（2026.3）の英語。アプリが読むのはこちら。
@@ -136,7 +141,7 @@ assert.equal(
   "3定の英語の見出しが重複している",
 );
 assert.deepEqual(
-  Object.fromEntries(["word", "phrase", "structure"].map((type) => [type, englishPeriod3.filter((item) => item.type === type).length])),
+  countBy(englishPeriod3, "type", ["word", "phrase", "structure"]),
   { word: 266, phrase: 71, structure: 5 },
   "3定の英語の内訳（単語・熟語・構文）",
 );
@@ -156,18 +161,12 @@ console.log(`3定の英語: ${englishPeriod3.length}語句（${[...new Set(engli
 assert.equal(publicItems.length, 207, "Public data must contain 207 unique reviewed questions");
 assert.equal(new Set(publicItems.map((item) => item.id)).size, 207, "Public IDs must be unique");
 assert.deepEqual(
-  Object.fromEntries(["public-term", "public-short"].map((type) => [
-    type,
-    publicItems.filter((item) => item.type === type).length,
-  ])),
+  countBy(publicItems, "type", ["public-term", "public-short"]),
   { "public-term": 207, "public-short": 0 },
   "The one-word answer workbook must contain term questions only",
 );
 assert.deepEqual(
-  Object.fromEntries(["S", "A", "B", "C", "D"].map((importance) => [
-    importance,
-    publicItems.filter((item) => item.importance === importance).length,
-  ])),
+  countBy(publicItems, "importance", ["S", "A", "B", "C", "D"]),
   { S: 48, A: 81, B: 55, C: 22, D: 1 },
   "Public importance counts must match the workbook audit sheet",
 );
@@ -217,18 +216,12 @@ console.log(`Public data check passed: ${publicItems.length} questions across ${
 assert.equal(healthItems.length, 282, "Health data must contain 282 unique reviewed questions");
 assert.equal(new Set(healthItems.map((item) => item.id)).size, healthItems.length, "Health IDs must be unique");
 assert.deepEqual(
-  Object.fromEntries(["health-term", "health-short"].map((type) => [
-    type,
-    healthItems.filter((item) => item.type === type).length,
-  ])),
+  countBy(healthItems, "type", ["health-term", "health-short"]),
   { "health-term": 282, "health-short": 0 },
   "The one-word answer workbook must contain term questions only",
 );
 assert.deepEqual(
-  Object.fromEntries(["S", "A", "B", "C"].map((importance) => [
-    importance,
-    healthItems.filter((item) => item.importance === importance).length,
-  ])),
+  countBy(healthItems, "importance", ["S", "A", "B", "C"]),
   { S: 127, A: 96, B: 48, C: 11 },
   "Health importance counts must match the workbook audit sheet",
 );
@@ -260,10 +253,7 @@ console.log(`Health data check passed: ${healthItems.length} questions across ${
 assert.equal(kobunVocabulary.length, 360, "Kobun vocabulary must contain the 360 audited terms");
 assert.equal(new Set(kobunVocabulary.map((item) => item.id)).size, kobunVocabulary.length, "Kobun vocabulary IDs must be unique");
 assert.deepEqual(
-  Object.fromEntries(["S", "A", "B", "C", "D"].map((importance) => [
-    importance,
-    kobunVocabulary.filter((item) => item.importance === importance).length,
-  ])),
+  countBy(kobunVocabulary, "importance", ["S", "A", "B", "C", "D"]),
   { S: 98, A: 156, B: 62, C: 28, D: 16 },
   "Kobun vocabulary importance counts must match the source tally",
 );

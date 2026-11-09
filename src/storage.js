@@ -201,38 +201,58 @@ async function transaction(storeName, mode, operation) {
   return runTransaction(database, storeName, mode, (store) => requestBox(store, operation));
 }
 
-export async function loadHistory() {
-  const database = await openDatabase();
-  if (useFallback || !database) {
-    const data = fallbackData();
-    return new Map(Object.entries(data.history ?? {}));
-  }
+/**
+ * IndexedDB で処理し、使えないとき（skipPrimary）や失敗したときは localStorage で処理し直す。
+ * 失敗したときは、以後の保存も localStorage へ切り替える。
+ */
+async function withFallback(skipPrimary, primary, fallback) {
+  if (skipPrimary) return fallback();
   try {
-    await restorePending(database);
-    const records = await transaction(HISTORY_STORE, "readonly", (store) => store.getAll());
-    return new Map((records ?? []).map((record) => [record.itemId, record]));
+    return await primary();
   } catch (error) {
     switchToFallback(error);
-    const data = fallbackData();
-    return new Map(Object.entries(data.history ?? {}));
+    return fallback();
   }
 }
 
-function recordAttemptToFallback(itemId, mode, correct, durationMs) {
+/** localStorage 側のデータを書き換えて保存する。保存できなければ message の誤りにする。 */
+function updateFallback(mutate, message) {
   const data = fallbackData();
-  const current = data.history?.[itemId] ?? emptyHistory(itemId);
-  const next = mergeAttempt(current, { itemId, mode, correct, durationMs });
-  data.history = { ...(data.history ?? {}), [itemId]: next };
-  if (!writeFallback(data)) throw new Error("回答履歴を保存できませんでした");
+  mutate(data);
+  if (!writeFallback(data)) throw new Error(message);
+}
+
+function fallbackHistory() {
+  return new Map(Object.entries(fallbackData().history ?? {}));
+}
+
+function fallbackMeta(key, fallback) {
+  return fallbackData().meta?.[key] ?? fallback;
+}
+
+export async function loadHistory() {
+  const database = await openDatabase();
+  return withFallback(useFallback || !database, async () => {
+    await restorePending(database);
+    const records = await transaction(HISTORY_STORE, "readonly", (store) => store.getAll());
+    return new Map((records ?? []).map((record) => [record.itemId, record]));
+  }, fallbackHistory);
+}
+
+function recordAttemptToFallback(itemId, mode, correct, durationMs) {
+  let next;
+  updateFallback((data) => {
+    const current = data.history?.[itemId] ?? emptyHistory(itemId);
+    next = mergeAttempt(current, { itemId, mode, correct, durationMs });
+    data.history = { ...(data.history ?? {}), [itemId]: next };
+  }, "回答履歴を保存できませんでした");
   return next;
 }
 
 export async function recordAttempt(itemId, mode, correct, durationMs) {
   if (dataCleared) return emptyHistory(itemId);
   const database = await openDatabase();
-  if (useFallback || !database) return recordAttemptToFallback(itemId, mode, correct, durationMs);
-
-  try {
+  return withFallback(useFallback || !database, async () => {
     await restorePending(database);
     const current = await runTransaction(database, HISTORY_STORE, "readonly", (store) =>
       requestBox(store, (target) => target.get(itemId)));
@@ -246,10 +266,7 @@ export async function recordAttempt(itemId, mode, correct, durationMs) {
     });
     removePending("history", itemId);
     return next;
-  } catch (error) {
-    switchToFallback(error);
-    return recordAttemptToFallback(itemId, mode, correct, durationMs);
-  }
+  }, () => recordAttemptToFallback(itemId, mode, correct, durationMs));
 }
 
 // 直前の回答を取り消すため、回答前のレコードをそのまま書き戻す／削除する。
@@ -257,22 +274,17 @@ export async function putHistory(record) {
   if (dataCleared) return null;
   if (!record?.itemId) return null;
   await openDatabase();
-  const writeToFallback = () => {
-    const data = fallbackData();
-    data.history = { ...(data.history ?? {}), [record.itemId]: record };
-    if (!writeFallback(data)) throw new Error("回答履歴を保存できませんでした");
-    return record;
-  };
-  if (useFallback) return writeToFallback();
-  try {
+  return withFallback(useFallback, async () => {
     addPending("history", record.itemId, record);
     await transaction(HISTORY_STORE, "readwrite", (store) => store.put(record));
     removePending("history", record.itemId);
     return record;
-  } catch (error) {
-    switchToFallback(error);
-    return writeToFallback();
-  }
+  }, () => {
+    updateFallback((data) => {
+      data.history = { ...(data.history ?? {}), [record.itemId]: record };
+    }, "回答履歴を保存できませんでした");
+    return record;
+  });
 }
 
 /**
@@ -283,16 +295,7 @@ export async function replaceHistory(records = {}) {
   if (dataCleared) return;
   const list = Object.values(records).filter((record) => record?.itemId);
   await openDatabase();
-  const writeToFallback = () => {
-    const data = fallbackData();
-    data.history = Object.fromEntries(list.map((record) => [record.itemId, record]));
-    if (!writeFallback(data)) throw new Error("学習履歴を保存できませんでした");
-  };
-  if (useFallback) {
-    writeToFallback();
-    return;
-  }
-  try {
+  await withFallback(useFallback, async () => {
     await transaction(HISTORY_STORE, "readwrite", (store) => store.clear());
     // 1つの取引でまとめて入れ、全部そろってから確定させる。
     const database = await openDatabase();
@@ -300,44 +303,29 @@ export async function replaceHistory(records = {}) {
       list.forEach((record) => store.put(record));
       return { value: list.length };
     });
-  } catch (error) {
-    switchToFallback(error);
-    writeToFallback();
-  }
+  }, () => updateFallback((data) => {
+    data.history = Object.fromEntries(list.map((record) => [record.itemId, record]));
+  }, "学習履歴を保存できませんでした"));
 }
 
 export async function removeHistory(itemId) {
   if (dataCleared) return;
   await openDatabase();
-  const removeFromFallback = () => {
-    const data = fallbackData();
-    if (data.history) delete data.history[itemId];
-    if (!writeFallback(data)) throw new Error("回答履歴を保存できませんでした");
-  };
-  if (useFallback) {
-    removeFromFallback();
-    return;
-  }
-  try {
+  await withFallback(useFallback, async () => {
     removePending("history", itemId);
     await transaction(HISTORY_STORE, "readwrite", (store) => store.delete(itemId));
-  } catch (error) {
-    switchToFallback(error);
-    removeFromFallback();
-  }
+  }, () => updateFallback((data) => {
+    if (data.history) delete data.history[itemId];
+  }, "回答履歴を保存できませんでした"));
 }
 
 export async function getMeta(key, fallback = null) {
   const database = await openDatabase();
-  if (useFallback || !database) return fallbackData().meta?.[key] ?? fallback;
-  try {
+  return withFallback(useFallback || !database, async () => {
     await restorePending(database);
     const record = await transaction(META_STORE, "readonly", (store) => store.get(key));
     return record?.value ?? fallback;
-  } catch (error) {
-    switchToFallback(error);
-    return fallbackData().meta?.[key] ?? fallback;
-  }
+  }, () => fallbackMeta(key, fallback));
 }
 
 export async function getMetaObject(key, defaults = {}) {
@@ -346,26 +334,19 @@ export async function getMetaObject(key, defaults = {}) {
   return { ...defaults, ...stored };
 }
 
+/** localStorage 側のメタ情報に1つ書き込む。 */
+function setFallbackMeta(data, key, value) {
+  data.meta = { ...(data.meta ?? {}), [key]: value };
+}
+
 export async function setMeta(key, value) {
   if (dataCleared) return;
   await openDatabase();
-  const writeToFallback = () => {
-    const data = fallbackData();
-    data.meta = { ...(data.meta ?? {}), [key]: value };
-    if (!writeFallback(data)) throw new Error(`${key} を保存できませんでした`);
-  };
-  if (useFallback) {
-    writeToFallback();
-    return;
-  }
-  try {
+  await withFallback(useFallback, async () => {
     addPending("meta", key, value);
     await transaction(META_STORE, "readwrite", (store) => store.put({ key, value }));
     removePending("meta", key);
-  } catch (error) {
-    switchToFallback(error);
-    writeToFallback();
-  }
+  }, () => updateFallback((data) => setFallbackMeta(data, key, value), `${key} を保存できませんでした`));
 }
 
 // 画面を閉じる直前など、非同期の保存が間に合わない場面で使う同期の退避。
@@ -374,7 +355,7 @@ export function stashMeta(key, value) {
   if (dataCleared) return;
   if (useFallback) {
     const data = fallbackData();
-    data.meta = { ...(data.meta ?? {}), [key]: value };
+    setFallbackMeta(data, key, value);
     writeFallback(data);
     return;
   }

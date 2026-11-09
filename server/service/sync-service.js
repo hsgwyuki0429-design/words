@@ -18,12 +18,13 @@
 
 import { fail, readString, readStringArray } from "../core/validate.js";
 import { generateToken, hashToken, timingSafeEqual } from "../auth/tokens.js";
-import { updateDocument } from "../storage/driver.js";
+import { readDocument, updateDocument } from "../storage/driver.js";
 import {
   compactDevice,
   dedupeJournal,
   mergeLearnerHistory,
   mergeProgressMaps,
+  mergeRecordMaps,
   unwrapProgressMap,
   wrapProgressMap,
 } from "./history-merge.js";
@@ -75,15 +76,45 @@ function learnerId() {
   return `learner-${generateToken(6)}`;
 }
 
+/** 学習者を外へ見せるときの最小限の形。 */
+function learnerRef(learner) {
+  return { id: learner.id, name: learner.name };
+}
+
+function failLearnerNotFound(id) {
+  fail(`学習者 ${id} は見つかりませんでした。`, "id");
+}
+
 export function createSyncService({ storage, now = () => Date.now() }) {
+  function nowIso() {
+    return new Date(now()).toISOString();
+  }
+
   async function readIndex() {
-    const stored = await storage.get(SYNC_KEYS.learners);
-    return { ...structuredClone(DEFAULT_LEARNERS), ...(stored ?? {}) };
+    return readDocument(storage, SYNC_KEYS.learners, DEFAULT_LEARNERS);
   }
 
   async function readLearnerData(id) {
-    const stored = await storage.get(SYNC_KEYS.learner(id));
-    return { ...structuredClone(DEFAULT_LEARNER_DATA), ...(stored ?? {}) };
+    return readDocument(storage, SYNC_KEYS.learner(id), DEFAULT_LEARNER_DATA);
+  }
+
+  /** 学習者の一覧（words:learners）を書き換える。 */
+  function updateIndex(mutate) {
+    return updateDocument(storage, SYNC_KEYS.learners, mutate, { defaults: DEFAULT_LEARNERS });
+  }
+
+  /** 1人ぶんの学習データ（words:learner:<id>）を書き換える。 */
+  function updateLearnerData(id, mutate) {
+    return updateDocument(storage, SYNC_KEYS.learner(id), mutate, { defaults: DEFAULT_LEARNER_DATA });
+  }
+
+  /** 学習者の一覧から1人を探して書き換える。見つからなければ誤りにする。 */
+  function updateLearnerEntry(id, mutate) {
+    return updateIndex((document) => {
+      const target = document.learners.find((learner) => learner.id === id);
+      if (!target) failLearnerNotFound(id);
+      mutate(target);
+    });
   }
 
   /**
@@ -96,13 +127,13 @@ export function createSyncService({ storage, now = () => Date.now() }) {
     const legacy = await storage.get(SYNC_KEYS.legacyHistory);
     const hasLegacy = legacy && Object.keys(legacy.records ?? {}).length > 0;
     if (!hasLegacy) {
-      await updateDocument(storage, SYNC_KEYS.learners, (document) => {
+      await updateIndex((document) => {
         document.migratedLegacy = true;
-      }, { defaults: structuredClone(DEFAULT_LEARNERS) });
+      });
       return readIndex();
     }
     const id = learnerId();
-    const at = new Date(now()).toISOString();
+    const at = nowIso();
     await storage.put(SYNC_KEYS.learner(id), {
       ...structuredClone(DEFAULT_LEARNER_DATA),
       devices: {
@@ -120,10 +151,10 @@ export function createSyncService({ storage, now = () => Date.now() }) {
       sessions: legacy.sessions ?? [],
       updatedAt: at,
     });
-    await updateDocument(storage, SYNC_KEYS.learners, (document) => {
+    await updateIndex((document) => {
       document.learners = [{ id, name: "本人", createdAt: at, codeHash: null, codePreview: null }];
       document.migratedLegacy = true;
-    }, { defaults: structuredClone(DEFAULT_LEARNERS) });
+    });
     return readIndex();
   }
 
@@ -190,9 +221,9 @@ export function createSyncService({ storage, now = () => Date.now() }) {
       }
       const id = learnerId();
       const code = generateSyncCode();
-      const at = new Date(now()).toISOString();
+      const at = nowIso();
       await storage.put(SYNC_KEYS.learner(id), { ...structuredClone(DEFAULT_LEARNER_DATA), updatedAt: at });
-      await updateDocument(storage, SYNC_KEYS.learners, (document) => {
+      await updateIndex((document) => {
         document.learners = [...document.learners, {
           id,
           name: label,
@@ -201,7 +232,7 @@ export function createSyncService({ storage, now = () => Date.now() }) {
           codePreview: code.slice(0, 10),
         }];
         document.migratedLegacy = true;
-      }, { defaults: structuredClone(DEFAULT_LEARNERS) });
+      });
       await this.setSyncCode(id, code);
       return { id, name: label, syncCode: code, createdAt: at };
     },
@@ -209,18 +240,16 @@ export function createSyncService({ storage, now = () => Date.now() }) {
     /** 同期コードを保存する。控えるのはハッシュだけ。 */
     async setSyncCode(id, code) {
       const hash = await hashToken(code);
-      await updateDocument(storage, SYNC_KEYS.learners, (document) => {
-        const target = document.learners.find((learner) => learner.id === id);
-        if (!target) fail(`学習者 ${id} は見つかりませんでした。`, "id");
+      await updateLearnerEntry(id, (target) => {
         target.codeHash = hash;
         target.codePreview = code.slice(0, 10);
-      }, { defaults: structuredClone(DEFAULT_LEARNERS) });
+      });
       return { id, syncCode: code };
     },
 
     /** 同期コードを出し直す。前のコードでは登録できなくなる（登録済みの端末は続けて使える）。 */
     async reissueSyncCode({ id }) {
-      if (!(await findLearner(id))) fail(`学習者 ${id} は見つかりませんでした。`, "id");
+      if (!(await findLearner(id))) failLearnerNotFound(id);
       const code = generateSyncCode();
       await this.setSyncCode(id, code);
       return { id, syncCode: code };
@@ -228,11 +257,9 @@ export function createSyncService({ storage, now = () => Date.now() }) {
 
     async renameLearner({ id, name }) {
       const label = readString(name, "name", { required: true, max: 40 });
-      await updateDocument(storage, SYNC_KEYS.learners, (document) => {
-        const target = document.learners.find((learner) => learner.id === id);
-        if (!target) fail(`学習者 ${id} は見つかりませんでした。`, "id");
+      await updateLearnerEntry(id, (target) => {
         target.name = label;
-      }, { defaults: structuredClone(DEFAULT_LEARNERS) });
+      });
       return { id, name: label };
     },
 
@@ -242,10 +269,10 @@ export function createSyncService({ storage, now = () => Date.now() }) {
         fail("学習者を消すと、その人の学習履歴も一緒に消えます。confirm を true にしてください。", "confirm");
       }
       const learner = await findLearner(id);
-      if (!learner) fail(`学習者 ${id} は見つかりませんでした。`, "id");
-      await updateDocument(storage, SYNC_KEYS.learners, (document) => {
+      if (!learner) failLearnerNotFound(id);
+      await updateIndex((document) => {
         document.learners = document.learners.filter((entry) => entry.id !== id);
-      }, { defaults: structuredClone(DEFAULT_LEARNERS) });
+      });
       await storage.delete(SYNC_KEYS.learner(id));
       return { id, name: learner.name, deleted: true };
     },
@@ -275,8 +302,8 @@ export function createSyncService({ storage, now = () => Date.now() }) {
 
       const deviceId = `device-${generateToken(6)}`;
       const deviceKey = generateToken(32);
-      const at = new Date(now()).toISOString();
-      await updateDocument(storage, SYNC_KEYS.learner(learner.id), (document) => {
+      const at = nowIso();
+      await updateLearnerData(learner.id, (document) => {
         document.devices[deviceId] = {
           name: readString(deviceName, "deviceName", { max: 40 }) || "端末",
           baseline: {},
@@ -288,12 +315,12 @@ export function createSyncService({ storage, now = () => Date.now() }) {
           baselineReceived: false,
         };
         document.updatedAt = at;
-      }, { defaults: structuredClone(DEFAULT_LEARNER_DATA) });
+      });
 
       const keyHash = await hashToken(deviceKey);
-      await updateDocument(storage, SYNC_KEYS.learner(learner.id), (document) => {
+      await updateLearnerData(learner.id, (document) => {
         document.devices[deviceId].keyHash = keyHash;
-      }, { defaults: structuredClone(DEFAULT_LEARNER_DATA) });
+      });
 
       return {
         learnerId: learner.id,
@@ -331,9 +358,9 @@ export function createSyncService({ storage, now = () => Date.now() }) {
       if (baseline && Object.keys(baseline).length > SYNC_LIMITS.records) {
         fail(`学習履歴は${SYNC_LIMITS.records}件までです。`, "baseline");
       }
-      const at = new Date(now()).toISOString();
+      const at = nowIso();
 
-      await updateDocument(storage, SYNC_KEYS.learner(learnerId), (document) => {
+      await updateLearnerData(learnerId, (document) => {
         const device = document.devices?.[deviceId];
         if (!device) fail("この端末は登録されていません。接続しなおしてください。", "deviceId");
 
@@ -363,7 +390,7 @@ export function createSyncService({ storage, now = () => Date.now() }) {
           document.sessions = payload.sessions.slice(0, SYNC_LIMITS.sessions);
         }
         document.updatedAt = at;
-      }, { defaults: structuredClone(DEFAULT_LEARNER_DATA) });
+      });
 
       return { savedAt: at, accepted: journal.length, baselineStored: Boolean(baseline) };
     },
@@ -391,13 +418,13 @@ export function createSyncService({ storage, now = () => Date.now() }) {
 
     /** その端末の登録を解く。預かっている学習の記録は残す（他の端末から見えるまま）。 */
     async leaveDevice(learnerId, deviceId) {
-      await updateDocument(storage, SYNC_KEYS.learner(learnerId), (document) => {
+      await updateLearnerData(learnerId, (document) => {
         const device = document.devices?.[deviceId];
         if (!device) return;
         // 鍵だけ無効にして、積み上げた記録は残す。消すと合計が減ってしまう。
         device.keyHash = null;
-        device.releasedAt = new Date(now()).toISOString();
-      }, { defaults: structuredClone(DEFAULT_LEARNER_DATA) });
+        device.releasedAt = nowIso();
+      });
       return { learnerId, deviceId, released: true };
     },
 
@@ -424,7 +451,7 @@ export function createSyncService({ storage, now = () => Date.now() }) {
           journal: snapshot.journal.map((entry) => ({ ...entry, learner: learner.name })),
           sessions: snapshot.sessions,
           updatedAt: snapshot.updatedAt,
-          learners: [{ id: learner.id, name: learner.name }],
+          learners: [learnerRef(learner)],
         };
       }
 
@@ -437,7 +464,6 @@ export function createSyncService({ storage, now = () => Date.now() }) {
       const journal = [];
       const sessions = [];
       let updatedAt = null;
-      const { mergeRecordMaps } = await import("./history-merge.js");
       for (const { learner, snapshot } of snapshots) {
         records = mergeRecordMaps(records, snapshot.records);
         journal.push(...snapshot.journal.map((entry) => ({ ...entry, learner: learner.name })));
@@ -449,7 +475,7 @@ export function createSyncService({ storage, now = () => Date.now() }) {
         journal: journal.sort((left, right) => right.at - left.at),
         sessions,
         updatedAt,
-        learners: index.learners.map((learner) => ({ id: learner.id, name: learner.name })),
+        learners: index.learners.map(learnerRef),
       };
     },
 
@@ -473,11 +499,11 @@ export function createSyncService({ storage, now = () => Date.now() }) {
       let learner = index.learners[0] ?? null;
       if (!learner) {
         const created = await this.createLearner({ name: "本人" });
-        learner = { id: created.id, name: created.name };
+        learner = learnerRef(created);
       }
       const key = deviceId ? `device-owner-${String(deviceId).replace(/[^A-Za-z0-9_-]/g, "").slice(0, 40)}` : "device-owner";
-      const at = new Date(now()).toISOString();
-      await updateDocument(storage, SYNC_KEYS.learner(learner.id), (document) => {
+      const at = nowIso();
+      await updateLearnerData(learner.id, (document) => {
         const existing = document.devices?.[key] ?? { name: "この端末", joinedAt: at, keyHash: null };
         // この入口は端末のいまの状態（合計）をそのまま預かる形なので、基準値を置き換える。
         // 1問ごとの記録は合計にすでに入っているため、積み上げずに表示用としてだけ持つ。
@@ -491,7 +517,7 @@ export function createSyncService({ storage, now = () => Date.now() }) {
         };
         if (sessions.length) document.sessions = sessions.slice(0, SYNC_LIMITS.sessions);
         document.updatedAt = at;
-      }, { defaults: structuredClone(DEFAULT_LEARNER_DATA) });
+      });
       return { learnerId: learner.id, learnerName: learner.name, savedAt: at };
     },
 

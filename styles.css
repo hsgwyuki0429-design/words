@@ -1784,38 +1784,6 @@ body.home-test-mode .main-content {
   background: var(--accent);
 }
 
-/* 印は小さな角丸の四角。選ぶと塗られて、中にチェックが付く。 */
-.test-chip-check {
-  position: relative;
-  flex: 0 0 auto;
-  width: 14px;
-  height: 14px;
-  border-radius: 4px;
-  box-shadow: inset 0 0 0 1.5px var(--line-strong);
-  transition: background-color 160ms ease, box-shadow 160ms ease;
-}
-
-.test-chip.is-selected .test-chip-check {
-  background: var(--on-accent);
-  box-shadow: none;
-}
-
-.test-chip.is-selected .test-chip-check::after {
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 7px;
-  height: 4px;
-  border-bottom: 2px solid var(--accent);
-  border-left: 2px solid var(--accent);
-  content: "";
-  transform: rotate(-45deg);
-}
-
-.test-chip.is-pulsing .test-chip-check {
-  animation: check-pop 420ms var(--spring);
-}
-
 .test-chip-text {
   display: grid;
   min-width: 0;
@@ -1855,49 +1823,33 @@ body.home-test-mode .main-content {
   justify-items: center;
 }
 
-.test-chips--importance .test-chip-check {
-  display: none;
-}
-
-/* 幅の狭い端末では、文字と印を少しだけ小さくして名前を切らない。 */
+/* 幅の狭い端末では、文字を少しだけ小さくして名前を切らない。 */
 @media (max-width: 400px) {
   .test-chip {
-    gap: 5px;
     padding: 6px 7px;
   }
 
   .test-chip-label {
     font-size: 12px;
   }
-
-  .test-chip-check {
-    width: 12px;
-    height: 12px;
-  }
-
-  .test-chip.is-selected .test-chip-check::after {
-    top: 2px;
-    left: 2px;
-    width: 6px;
-    height: 3px;
-  }
 }
 
-/* さらに狭い端末では印を省き（選んだ札は塗りで分かる）、形式を3列に保つ。 */
 @media (max-width: 360px) {
   .test-chips--formats {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
-
-  .test-chip-check {
-    display: none;
-  }
 }
 
-@keyframes check-pop {
-  0% { scale: 0.5; }
-  60% { scale: 1.18; }
-  100% { scale: 1; }
+/* 並び順は短い名前なので、中央にそろえて横に並べる。 */
+.test-chips--sort {
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  grid-auto-flow: column;
+}
+
+.test-chip--plain {
+  justify-content: center;
+  min-height: 40px;
+  text-align: center;
 }
 
 .home-pane.is-entering-right .test-chip {
@@ -6556,6 +6508,11 @@ body.fx-lite.max-mode.fx-fever .fx-backdrop.is-on {
 
   .test-home {
     gap: 10px;
+  }
+
+  /* 低い画面では説明を省いて、並び順まで1画面に収める。 */
+  .test-home-note {
+    display: none;
   }
 
   .test-group-title {

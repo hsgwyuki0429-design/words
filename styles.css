@@ -6079,32 +6079,32 @@ body.fx-lite.max-mode.fx-fever .fx-backdrop.is-on {
   --line-strong: rgba(255, 255, 255, 0.16);
   --accent: #f4f4f5;
   --on-accent: #0b0b0d;
-  --pop: #6683ff;
-  --pop-soft: rgba(102, 131, 255, 0.16);
-  --blue: #6683ff;
+  --pop: #2b50ff;
+  --pop-soft: rgba(43, 80, 255, 0.1);
+  --blue: #2b50ff;
   --green: #34c46b;
   --red: #f0524a;
   --ink-green: #5fdc8f;
   --tint-green: rgba(52, 196, 107, 0.14);
   --ink-red: #ff8a82;
   --tint-red: rgba(240, 82, 74, 0.15);
-  --ink-blue: #9aaeff;
-  --tint-blue: rgba(102, 131, 255, 0.14);
+  --ink-blue: #2340d8;
+  --tint-blue: #eef1ff;
   --ink-amber: #f5c15c;
   --tint-amber: rgba(245, 193, 92, 0.14);
   --ink-purple: #c4a5ff;
   --tint-purple: rgba(167, 139, 250, 0.15);
   --gauge-track: rgba(255, 255, 255, 0.1);
-  --set-color-1: #6683ff;
+  --set-color-1: #2b50ff;
   --set-color-2: #f0524a;
   --set-color-3: #a78bfa;
   --set-color-4: #34c46b;
   --set-color-5: #f59e0b;
-  --set-soft-1: rgba(102, 131, 255, 0.34);
+  --set-soft-1: rgba(43, 80, 255, 0.26);
   /* 黒い地の上の影は、ふちのごく淡い光と深い影でつくる。 */
   --shadow-card: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 18px 44px rgba(0, 0, 0, 0.65);
   --shadow-raised: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 14px 36px rgba(0, 0, 0, 0.7);
-  --focus-ring: 0 0 0 3px rgba(102, 131, 255, 0.45);
+  --focus-ring: 0 0 0 3px rgba(43, 80, 255, 0.28);
   --toast-surface: rgba(244, 244, 245, 0.96);
 }
 

@@ -124,7 +124,7 @@ assert.deepEqual([...ranges].sort(), RANGE_ORDER.slice(0, 8).sort(), "All eight 
 console.log(`Data check passed: ${items.length} items across ${ranges.size} ranges.`);
 
 // 3定（2026.3）の英語。tools/import_english_csv.py で語彙表（CSV）から作る。
-assert.equal(englishPeriod3.length, 367, "3定の英語は367語句（重要度Cだけの基本語を除く）");
+assert.equal(englishPeriod3.length, 342, "3定の英語は342語句（重要度Cの基本語を除く）");
 assert.equal(new Set(englishPeriod3.map((item) => item.id)).size, englishPeriod3.length, "3定の英語のIDが重複している");
 assert.ok(
   englishPeriod3.every((item) => !items.some((old) => old.id === item.id)),
@@ -137,7 +137,7 @@ assert.equal(
 );
 assert.deepEqual(
   Object.fromEntries(["word", "phrase", "structure"].map((type) => [type, englishPeriod3.filter((item) => item.type === type).length])),
-  { word: 322, phrase: 44, structure: 1 },
+  { word: 266, phrase: 71, structure: 5 },
   "3定の英語の内訳（単語・熟語・構文）",
 );
 assert.deepEqual(
@@ -149,7 +149,7 @@ for (const item of englishPeriod3) {
   assert.ok(!/P\d{3}-S\d+/.test(item.japanese), `${item.id}: 本文の位置（P136-S8 など）が訳に残っている`);
   assert.ok(!/^[（(][^）)]*[）)]$/.test(item.japanese), `${item.id}: 訳が注記だけになっている`);
   assert.ok(item.sources.every((source) => RANGE_ORDER.includes(source.range)), `${item.id}: 出典の範囲が不明`);
-  assert.ok(item.importance !== "C" || item.type !== "word", `${item.id}: 重要度Cの単語は収録しない`);
+  assert.ok(item.importance !== "C", `${item.id}: 重要度Cの語句は収録しない`);
 }
 console.log(`3定の英語: ${englishPeriod3.length}語句（${[...new Set(englishPeriod3.map((item) => item.range))].join("・")}）`);
 

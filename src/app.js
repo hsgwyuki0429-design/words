@@ -364,7 +364,7 @@ function emptyPeriodMarkup() {
 }
 
 // いま学習する英語の教材データ（3定）。sw.js の APP_SHELL にも同じURLを載せる。
-const ENGLISH_DATA_URL = "./data/english-2026-3.json?v=2026.11.06";
+const ENGLISH_DATA_URL = "./data/english-2026-3.json?v=2026.11.09";
 
 // いま選べる定期テストの回。2定（2026.2）は終えたので外し、3定だけにしている。
 // 選べる回が1つだけのときは、回を選ぶ画面を出さずに自動で選ぶ。

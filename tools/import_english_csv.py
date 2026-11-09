@@ -9,8 +9,8 @@ CSVの列: 原形, 本文中の形, 品詞, 本文中の意味, 一般的な意�
 変換の決まり（2定の import_xlsx.py と同じ考え方）:
 - 単語は原形でまとめる。品詞や意味が違う行も1件にし、訳は「／」でつなぐ。
   重要度はいちばん高いもの、難易度はいちばん難しいものを採る。
-- まとめたあとの重要度が C の単語（and・of・be などの基本語）は収録しない。
-  C の行の訳は、B 以上の行と同じ原形なら、まとめた訳に加える。
+- まとめたあとの重要度が C の語句（and・of・be・have to do などの基本語）は、
+  単語・熟語とも収録しない。C の行の訳は、B 以上の行と同じ原形なら、まとめた訳に加える。
 - 熟語は1行1件。
 - 日本語訳の中に答えの英語が出ている注記は、答えの部分を「___」に置き換える。
   「（fast asleep で）ぐっすりと」→「（___ asleep で）ぐっすりと」
@@ -66,7 +66,7 @@ LESSONS = OrderedDict(
     ]
 )
 
-APP_WORD_IMPORTANCE = {"SSS", "SS", "S", "A", "B"}
+APP_IMPORTANCE = {"SSS", "SS", "S", "A", "B"}
 PAGE_REF_RE = re.compile(r"P\d{3}-S\d+")
 
 # 自動の整形ではうまく直せない訳を、元の訳（本文中の意味）ごとに書き直す。
@@ -81,34 +81,12 @@ MEANING_OVERRIDES: dict[tuple[str, str], str | None] = {
     ("around", "〜中の・あちこちの（P121-S4）／〜の周りに（P121-S16）"): "〜中の・あちこちの／〜の周りに",
     ("around", "〜頃に（P136-S4）／およそ（P136-S16）"): "〜頃に／およそ",
     ("with", "〜で（いっぱいで）（P136-S4）／〜に関して（P137-S16）"): "〜で（いっぱいで）／〜に関して",
-    ("only", "たった・わずか（P136-S7）／（not only A but also B で）〜だけ"): "たった・わずか／（not ___ A but also B で）〜だけ",
-    ("burn", "燃える（P136-S13）／（burn to death で）焼死する"): "燃える／（___ to death で）焼死する",
-    ("death", "死（P136-S16 の deaths は「死者」）"): "死／（複数形で）死者",
-    ("what", "何が（P136-S8）／（what … was like で）…がどのようなものか（P137-S8）"): "何が／（___ 〜 was like で）〜がどのようなものか",
-    ("it", "（時刻を表す it／形式目的語の it／if it had not been for の it）"): None,
+    ("reduce A to B", "AをB（の状態）にする（reduce … to ashes で灰にする）"): "AをB（の状態）にする（___ 〜 to ashes で灰にする）",
+    ("it", "（時刻を表す it／形式目的語の it）"): None,
     ("it", "それ（its：その）"): "それ・その",
     ("the District", "＝Washington D.C."): "（＝ワシントン市）コロンビア特別区",
-    ("well", "（A as well as B の一部）"): None,
-    ("long", "（as long as の一部）長く"): "長く（as ___ as の一部）",
-    ("as", "（as well as / as long as の一部）同じくらい"): "同じくらい（A ___ well ___ B・___ long ___ の一部）",
-    ("as", "〜として（as a result of の一部を含む）"): "〜として",
-    ("up", "（make up one's mind / stand up for の一部）すっかり・上へ"): "すっかり・上へ（make ___ one's mind・stand ___ for の一部）",
-    ("out", "（speak out / set out / work out / break out の一部）はっきりと・外へ"): "はっきりと・外へ（speak ___・set ___・work ___・break ___ の一部）",
-    ("down", "（turn down / hand down の一部）下へ"): "下へ（turn ___・hand ___ の一部）",
-    ("mind", "考え・心（make up one's mind / change one's mind の一部）"): "考え・心（make up one's ___・change one's ___ の一部）",
-    ("make", "（決断・努力などを）する（make a decision / make up one's mind / make an effort）"): "（決断・努力などを）する（___ a decision・___ up one's mind・___ an effort）",
-    ("one", "ある〜（one day でいつか・ある日／one judge である判事）"): "ある〜（___ day でいつか・ある日、___ judge である判事）",
-    ("in", "〜に・〜で（時・場所・範囲）／in fact・in the end・in need・pride in・believe in などの一部"): "〜に・〜で（時・場所・範囲）",
-    ("of", "〜の／〜という（同格）／because of・a number of などの一部"): "〜の／〜という（同格）",
-    ("for", "〜の間／〜のために／〜を求めて／for free・for example・if it had not been for などの一部"): "〜の間／〜のために／〜を求めて",
-    ("to", "（to＋動詞の原形で不定詞をつくる／have to・in order to の to を含む）"): None,
-    ("have", "（完了形をつくる）"): None,
-    ("be", "（進行形・受動態をつくる）"): None,
-    ("do", "（疑問文・否定文をつくる）"): None,
-    ("more", "より〜（比較級をつくる）"): None,
     ("anything", "何か（P121-S15）／何も（P121-S22）"): "何か／（否定文で）何も",
     ("from", "〜から／〜出身の（P121-S19）"): "〜から／〜出身の",
-    ("with", "〜と（一緒に）（meet with の with を含む）"): "〜と（一緒に）",
 }
 
 # 一般的な意味の欄のうち、意味ではなく補足（対になる語・語源）を書いている印。
@@ -305,7 +283,7 @@ def build_records(rows: list[dict[str, str]]) -> list[dict[str, object]]:
         ]
         record["importance"] = best_importance(record.pop("importances"))
         record["difficulty"] = hardest_difficulty(record.pop("difficulties"))
-        if record["source_type"] == "単語" and record["importance"] not in APP_WORD_IMPORTANCE:
+        if record["importance"] not in APP_IMPORTANCE:
             continue
         if not record["japanese"]:
             raise ValueError(f"訳が残りませんでした: {record['english']}")

@@ -141,6 +141,12 @@ export function createQuizGestureRecognizer(options = {}) {
   let active = null;
   let locked = false;
 
+  /** 指を置いた位置から、いまの位置までのずれ。 */
+  const offsetFromStart = (x, y) => ({
+    dx: (Number(x) || 0) - active.startX,
+    dy: (Number(y) || 0) - active.startY,
+  });
+
   return {
     start({ x, y, time = 0, viewport = {} } = {}) {
       if (locked || active) return false;
@@ -155,8 +161,7 @@ export function createQuizGestureRecognizer(options = {}) {
     },
     move({ x, y } = {}) {
       if (!active) return null;
-      const dx = (Number(x) || 0) - active.startX;
-      const dy = (Number(y) || 0) - active.startY;
+      const { dx, dy } = offsetFromStart(x, y);
       if (Math.hypot(dx, dy) > config.dragStartPx) active.wasDragging = true;
       return {
         dx,
@@ -167,8 +172,7 @@ export function createQuizGestureRecognizer(options = {}) {
     },
     end({ x, y, time = 0 } = {}) {
       if (!active) return null;
-      const dx = (Number(x) || 0) - active.startX;
-      const dy = (Number(y) || 0) - active.startY;
+      const { dx, dy } = offsetFromStart(x, y);
       const result = classifyQuizGesture({
         dx,
         dy,
@@ -348,12 +352,16 @@ export function bindQuizGestures(container, {
     event.stopImmediatePropagation();
   };
 
-  container.addEventListener("pointerdown", handlePointerDown);
-  container.addEventListener("pointermove", handlePointerMove, { passive: false });
-  container.addEventListener("pointerup", handlePointerUp);
-  container.addEventListener("pointercancel", handlePointerCancel);
-  container.addEventListener("lostpointercapture", handlePointerCancel);
-  container.addEventListener("click", handleClickCapture, true);
+  // [イベント名, 処理, 登録のオプション]。外すときも同じ表を使い、付け外しの食い違いを防ぐ。
+  const listeners = [
+    ["pointerdown", handlePointerDown],
+    ["pointermove", handlePointerMove, { passive: false }],
+    ["pointerup", handlePointerUp],
+    ["pointercancel", handlePointerCancel],
+    ["lostpointercapture", handlePointerCancel],
+    ["click", handleClickCapture, true],
+  ];
+  listeners.forEach(([type, handler, options]) => container.addEventListener(type, handler, options));
 
   return {
     reset() {
@@ -363,12 +371,8 @@ export function bindQuizGestures(container, {
       suppressClickUntil = 0;
     },
     destroy() {
-      container.removeEventListener("pointerdown", handlePointerDown);
-      container.removeEventListener("pointermove", handlePointerMove);
-      container.removeEventListener("pointerup", handlePointerUp);
-      container.removeEventListener("pointercancel", handlePointerCancel);
-      container.removeEventListener("lostpointercapture", handlePointerCancel);
-      container.removeEventListener("click", handleClickCapture, true);
+      // 外すときに効くのは capture の指定だけなので、登録時と同じオプションを渡せばよい。
+      listeners.forEach(([type, handler, options]) => container.removeEventListener(type, handler, options));
       recognizer.reset();
     },
     get isLocked() {

@@ -20,6 +20,11 @@ function base64UrlOfBytes(bytes) {
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
+/** 期限（expiresAt）が at より先のものだけを残す。 */
+function unexpiredEntries(entries, at) {
+  return Object.fromEntries(Object.entries(entries).filter(([, entry]) => entry.expiresAt > at));
+}
+
 /** PKCE の S256。code_verifier をSHA-256して base64url にしたものが code_challenge。 */
 export async function pkceChallengeOf(verifier) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier));
@@ -34,12 +39,8 @@ export function createOAuth({ storage, now = () => Date.now() }) {
   async function write(document) {
     // 期限切れを掃除してから保存する。放っておくと際限なく増えるため。
     const at = now();
-    document.codes = Object.fromEntries(
-      Object.entries(document.codes).filter(([, code]) => code.expiresAt > at),
-    );
-    document.tokens = Object.fromEntries(
-      Object.entries(document.tokens).filter(([, token]) => token.expiresAt > at),
-    );
+    document.codes = unexpiredEntries(document.codes, at);
+    document.tokens = unexpiredEntries(document.tokens, at);
     await storage.put(OAUTH_KEY, document);
   }
 

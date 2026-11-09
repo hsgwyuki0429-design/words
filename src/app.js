@@ -209,15 +209,7 @@ const state = {
   view: "period",
   selectedMode: null,
   studySelection: { subject: "english", content: null, contents: [], direction: null, method: null, scope: "full" },
-  filters: {
-    ranges: [],
-    importance: [],
-    types: [],
-    tags: [],
-    performance: "all",
-    minimumWrong: 0,
-    search: "",
-  },
+  filters: emptyFilters(),
   sortKey: "random",
   listLimit: 60,
   session: null,
@@ -423,6 +415,9 @@ const STUDY_CONTENT_META = {
   structure: { icon: "V", title: "構文", detail: "構文だけを学習", tags: ["構文"] },
   all: { icon: "＋", title: "全選択", detail: "単語・熟語・構文をまとめて学習", tags: ["単語", "熟語", "構文"] },
 };
+
+/** 学習の条件に当てはまる問題が1問も無いときの知らせ。 */
+const NO_MATCHING_QUESTIONS_MESSAGE = "この条件に合う問題がありません";
 
 const TAG_LABELS = {
   word: "単語",
@@ -771,7 +766,7 @@ function renderSetupProgress() {
   elements.setupStart.disabled = !plan.pool.length;
   elements.setupStart.innerHTML = plan.pool.length
     ? setupStartMarkup(plan.label, plan.detail)
-    : '<span class="setup-start-label">この条件に合う問題がありません</span>';
+    : `<span class="setup-start-label">${NO_MATCHING_QUESTIONS_MESSAGE}</span>`;
 }
 
 function renderStudySetup() {
@@ -1280,13 +1275,13 @@ function renderTestHome() {
       <button class="primary-button setup-start" type="button" data-test-start${total ? "" : " disabled"}>
         ${total
           ? setupStartMarkup("テスト開始", `${total}${unit}`)
-          : `<span class="setup-start-label">${missing ? `${missing}を選んでください` : "この条件に合う問題がありません"}</span>`}
+          : `<span class="setup-start-label">${missing ? `${missing}を選んでください` : NO_MATCHING_QUESTIONS_MESSAGE}</span>`}
       </button>`;
 }
 
 function startTest(entries, { formats = [], ranges = [], importance = [], sort = "random", retryOf = null } = {}) {
   if (!entries.length) {
-    showToast("この条件に合う問題がありません");
+    showToast(NO_MATCHING_QUESTIONS_MESSAGE);
     return;
   }
   state.resultTestId = null;
@@ -1771,6 +1766,20 @@ function scheduleAiLinkSync({ delayMs = 20000 } = {}) {
   aiLinkSyncTimer = setTimeout(() => { syncAiLinkHistory().catch(console.warn); }, delayMs);
 }
 
+/** 同期の接続を解く。入力済みのサーバーURLだけは残し、次に接続しなおしやすくする。 */
+function resetDeviceSync() {
+  state.deviceSync = { ...DEFAULT_DEVICE_SYNC, serverUrl: state.deviceSync.serverUrl };
+}
+
+/** 保存されていた「キー → 値」の表を normalize で整え、読めなかった値は落とす。 */
+function normalizeEntries(map, normalize) {
+  return Object.fromEntries(
+    Object.entries(map)
+      .map(([key, value]) => [key, normalize(value)])
+      .filter(([, value]) => value),
+  );
+}
+
 function saveDeviceSync() {
   return setMeta(DEVICE_SYNC_META_KEY, state.deviceSync).catch(console.warn);
 }
@@ -1841,20 +1850,12 @@ async function adoptSyncSnapshot(snapshot, { localAttempts = 0 } = {}) {
     await setMeta(AI_LINK_JOURNAL_KEY, state.aiLinkJournal);
   }
   if (snapshot.progress && typeof snapshot.progress === "object") {
-    const remote = Object.fromEntries(
-      Object.entries(snapshot.progress)
-        .map(([key, value]) => [key, normalizeStudyProgress(value)])
-        .filter(([, value]) => value),
-    );
+    const remote = normalizeEntries(snapshot.progress, normalizeStudyProgress);
     state.studyProgress = mergeStudyProgress(state.studyProgress, remote);
     await setMeta("studyProgress", state.studyProgress);
   }
   if (snapshot.configs && typeof snapshot.configs === "object") {
-    const remote = Object.fromEntries(
-      Object.entries(snapshot.configs)
-        .map(([key, value]) => [key, normalizeRecentStudyConfig(value)])
-        .filter(([, value]) => value),
-    );
+    const remote = normalizeEntries(snapshot.configs, normalizeRecentStudyConfig);
     state.studyConfigs = { ...remote, ...state.studyConfigs };
     await setMeta("studyConfigs", state.studyConfigs);
   }
@@ -1903,7 +1904,7 @@ async function syncDeviceNow({ silent = true } = {}) {
     state.syncError = error.message;
     // 端末の登録が解かれていたら、つながらないまま試し続けない。
     if (error.status === 401) {
-      state.deviceSync = { ...DEFAULT_DEVICE_SYNC, serverUrl: state.deviceSync.serverUrl };
+      resetDeviceSync();
       await saveDeviceSync();
     }
     return null;
@@ -1960,7 +1961,7 @@ async function disconnectDeviceSync() {
     // すでに解除されている場合もあるので、失敗しても端末側は必ず切る。
     console.warn("同期の解除をサーバーへ伝えられませんでした", error);
   }
-  state.deviceSync = { ...DEFAULT_DEVICE_SYNC, serverUrl: state.deviceSync.serverUrl };
+  resetDeviceSync();
   state.syncError = null;
   await saveDeviceSync();
   showToast("この端末の同期を解除しました");
@@ -1982,10 +1983,27 @@ async function connectAiLink(serverUrl, ownerKey) {
   renderSettings();
 }
 
-async function setAiLinkEnabled(enabled) {
+/**
+ * MCP Server とやりとりする設定画面の操作を、処理中の表示つきで行う。
+ * 失敗したら知らせ、recordError のときは設定画面にも誤りを残す。
+ * 終わったら（成功でも失敗でも）処理中を解いて設定画面を描き直す。
+ */
+async function runAiLinkAction(action, { recordError = false } = {}) {
   state.aiLinkBusy = true;
   renderSettings();
   try {
+    await action();
+  } catch (error) {
+    if (recordError) state.aiLinkError = error.message;
+    showToast(error.message);
+  } finally {
+    state.aiLinkBusy = false;
+    renderSettings();
+  }
+}
+
+async function setAiLinkEnabled(enabled) {
+  await runAiLinkAction(async () => {
     // サーバー側と端末側の両方を切り替える。片方だけ有効でも動かない。
     await aiLinkClient.updateSettings(state.aiLink, { enabled });
     state.aiLink.enabled = enabled;
@@ -1996,47 +2014,25 @@ async function setAiLinkEnabled(enabled) {
       await syncAiLinkHistory({ force: true });
     }
     showToast(enabled ? "AI連携を有効にしました" : "AI連携を無効にしました");
-  } catch (error) {
-    state.aiLinkError = error.message;
-    showToast(error.message);
-  } finally {
-    state.aiLinkBusy = false;
-    renderSettings();
-  }
+  }, { recordError: true });
 }
 
 async function setAiLinkPermission(scope, allowed) {
-  state.aiLinkBusy = true;
-  renderSettings();
-  try {
+  await runAiLinkAction(async () => {
     const result = await aiLinkClient.updateSettings(state.aiLink, { permissions: { [scope]: allowed } });
     state.aiLinkStatus = { ...(state.aiLinkStatus ?? {}), permissions: result.permissions, enabled: result.enabled };
     state.aiLinkError = null;
-  } catch (error) {
-    state.aiLinkError = error.message;
-    showToast(error.message);
-  } finally {
-    state.aiLinkBusy = false;
-    renderSettings();
-  }
+  }, { recordError: true });
 }
 
 async function issueAiLinkToken() {
-  state.aiLinkBusy = true;
-  renderSettings();
-  try {
+  await runAiLinkAction(async () => {
     // 発行しなおすと、前のトークンは使えなくなる。
     const result = await aiLinkClient.issueToken(state.aiLink, ["read", "write", "delete"]);
     state.aiLinkIssuedToken = result.token;
     await refreshAiLinkStatus({ render: false });
     showToast("接続トークンを発行しました");
-  } catch (error) {
-    state.aiLinkError = error.message;
-    showToast(error.message);
-  } finally {
-    state.aiLinkBusy = false;
-    renderSettings();
-  }
+  }, { recordError: true });
 }
 
 
@@ -2099,12 +2095,8 @@ async function importStudyData(file) {
   await replaceHistory(history);
   state.history = new Map(Object.entries(history));
   state.aiLinkJournal = journal;
-  state.studyProgress = Object.fromEntries(
-    Object.entries(studyProgress).map(([key, value]) => [key, normalizeStudyProgress(value)]).filter(([, value]) => value),
-  );
-  state.studyConfigs = Object.fromEntries(
-    Object.entries(studyConfigs).map(([key, value]) => [key, normalizeRecentStudyConfig(value)]).filter(([, value]) => value),
-  );
+  state.studyProgress = normalizeEntries(studyProgress, normalizeStudyProgress);
+  state.studyConfigs = normalizeEntries(studyConfigs, normalizeRecentStudyConfig);
   state.settings = { ...DEFAULT_SETTINGS, ...state.settings, ...settings };
   state.bestCombo = Number(bestCombo) || state.bestCombo;
   if (normalizeSelectedPeriod(selectedPeriod)) state.selectedPeriod = selectedPeriod;
@@ -2145,59 +2137,36 @@ async function refreshLearners() {
 async function addLearner() {
   const name = prompt("学習者の名前を入れてください（例: 田中、自分）");
   if (!name?.trim()) return;
-  state.aiLinkBusy = true;
-  renderSettings();
-  try {
+  await runAiLinkAction(async () => {
     const created = await aiLinkClient.createLearner(state.aiLink, name.trim());
     // 同期コードを見せるのはこの一度だけ。控えてもらう必要がある。
     state.issuedSyncCode = { name: created.name, code: created.syncCode };
     await refreshLearners();
     showToast(`${created.name}を追加しました`);
-  } catch (error) {
-    showToast(error.message);
-  } finally {
-    state.aiLinkBusy = false;
-    renderSettings();
-  }
+  });
 }
 
 async function reissueLearnerCode(id, name) {
   if (!confirm(`${name}の同期コードを作り直します。\n古いコードでは新しい端末を接続できなくなります（接続済みの端末はそのまま使えます）。`)) return;
-  state.aiLinkBusy = true;
-  renderSettings();
-  try {
+  await runAiLinkAction(async () => {
     const result = await aiLinkClient.reissueLearnerCode(state.aiLink, id);
     state.issuedSyncCode = { name, code: result.syncCode };
     await refreshLearners();
-  } catch (error) {
-    showToast(error.message);
-  } finally {
-    state.aiLinkBusy = false;
-    renderSettings();
-  }
+  });
 }
 
 async function removeLearner(id, name) {
   if (!confirm(`${name}を消します。\nこの人の学習履歴もすべて消え、元に戻せません。よろしいですか？`)) return;
-  state.aiLinkBusy = true;
-  renderSettings();
-  try {
+  await runAiLinkAction(async () => {
     await aiLinkClient.deleteLearner(state.aiLink, id);
     await refreshLearners();
     showToast(`${name}を削除しました`);
-  } catch (error) {
-    showToast(error.message);
-  } finally {
-    state.aiLinkBusy = false;
-    renderSettings();
-  }
+  });
 }
 
 /** 持ち主が、この端末を「本人」としてひと押しで同期できるようにする。 */
 async function connectOwnerDevice() {
-  state.aiLinkBusy = true;
-  renderSettings();
-  try {
+  await runAiLinkAction(async () => {
     await refreshLearners();
     const existing = (state.learners ?? [])[0];
     const learner = existing ?? await aiLinkClient.createLearner(state.aiLink, "本人");
@@ -2206,12 +2175,7 @@ async function connectOwnerDevice() {
       : learner.syncCode;
     await connectDeviceSync(state.aiLink.serverUrl, code);
     await refreshLearners();
-  } catch (error) {
-    showToast(error.message);
-  } finally {
-    state.aiLinkBusy = false;
-    renderSettings();
-  }
+  });
 }
 
 async function copyToClipboard(text, message) {
@@ -2880,6 +2844,11 @@ function particleBudget() {
   return isLowPowerDevice() ? 170 : 460;
 }
 
+/** 演出を描いてよく、描くための canvas も用意できたか。 */
+function fxCanvasReady() {
+  return canvasEffectsEnabled() && Boolean(ensureFxCanvas());
+}
+
 function impactOrigin() {
   const context = ensureFxCanvas();
   if (!context) return fxOrigin();
@@ -2903,9 +2872,7 @@ function spawnParticleBurst({
   spread = Math.PI * 2,
   direction = -Math.PI / 2,
 } = {}) {
-  if (!canvasEffectsEnabled()) return;
-  const context = ensureFxCanvas();
-  if (!context) return;
+  if (!fxCanvasReady()) return;
   const center = origin ?? impactOrigin();
   const total = Math.min(Math.round(count), particleBudget() - fx.particles.length);
   if (total <= 0) return;
@@ -2937,9 +2904,7 @@ function spawnParticleBurst({
 }
 
 function spawnConvergingParticles({ count = 36, origin = null, palette = PARTICLE_COLORS, power = 2 } = {}) {
-  if (!canvasEffectsEnabled()) return;
-  const context = ensureFxCanvas();
-  if (!context) return;
+  if (!fxCanvasReady()) return;
   const center = origin ?? impactOrigin();
   const total = Math.min(count, particleBudget() - fx.particles.length);
   for (let index = 0; index < total; index += 1) {
@@ -2967,9 +2932,7 @@ function spawnConvergingParticles({ count = 36, origin = null, palette = PARTICL
 }
 
 function spawnGoldShower({ count = 30, palette = PARTICLE_COLORS, power = 3 } = {}) {
-  if (!canvasEffectsEnabled()) return;
-  const context = ensureFxCanvas();
-  if (!context) return;
+  if (!fxCanvasReady()) return;
   const total = Math.min(count, particleBudget() - fx.particles.length);
   for (let index = 0; index < total; index += 1) {
     const depth = 0.55 + Math.random() * 0.8;
@@ -3002,9 +2965,7 @@ function triggerShockwave({
   decay = 0.03,
   alpha = 1,
 } = {}) {
-  if (!canvasEffectsEnabled()) return;
-  const context = ensureFxCanvas();
-  if (!context) return;
+  if (!fxCanvasReady()) return;
   if (fx.rings.length > 12) return;
   const center = origin ?? impactOrigin();
   fx.rings.push({ x: center.x, y: center.y, radius, speed, width, color, decay, alpha, life: 1 });
@@ -3012,9 +2973,7 @@ function triggerShockwave({
 }
 
 function spawnSpeedLines({ origin = null, count = 24, power = 1, palette = PARTICLE_COLORS, inward = false } = {}) {
-  if (!canvasEffectsEnabled()) return;
-  const context = ensureFxCanvas();
-  if (!context) return;
+  if (!fxCanvasReady()) return;
   if (fx.rays.length > 96) return;
   const center = origin ?? impactOrigin();
   const total = isLowPowerDevice() ? Math.ceil(count / 2) : count;
@@ -3038,9 +2997,7 @@ function spawnSpeedLines({ origin = null, count = 24, power = 1, palette = PARTI
 }
 
 function spawnLightColumns({ count = 2, origin = null, palette = PARTICLE_COLORS, power = 3 } = {}) {
-  if (!canvasEffectsEnabled()) return;
-  const context = ensureFxCanvas();
-  if (!context) return;
+  if (!fxCanvasReady()) return;
   const center = origin ?? impactOrigin();
   const total = Math.min(count * 2, 12);
   for (let index = 0; index < total; index += 1) {
@@ -3540,6 +3497,24 @@ function triggerMaxEntrance(detail = "READY") {
   runMaxCue("max-enter", { label: "MAX MODE", detail, power: 4 });
 }
 
+/** 粒子・輪・光線を捨て、描画の繰り返しを止めて、演出用の canvas を消す。 */
+function clearFxCanvas() {
+  fx.frozen = false;
+  fx.particles = [];
+  fx.rings = [];
+  fx.rays = [];
+  stopFxLoop();
+  if (fx.context && fx.width) fx.context.clearRect(0, 0, fx.width, fx.height);
+}
+
+/** MAXの大見出し（コールアウト）を隠して中身を空にする。 */
+function hideMaxCallout() {
+  if (elements.maxCallout) {
+    elements.maxCallout.hidden = true;
+    elements.maxCallout.innerHTML = "";
+  }
+}
+
 /** MAX終了：突入の逆再生。エネルギーが抜けて通常世界へ戻る。 */
 function triggerMaxExit() {
   clearFxTimers();
@@ -3547,16 +3522,8 @@ function triggerMaxExit() {
   clearCueVisualState();
   maxAudio.stopAll();
   document.body.classList.remove("fx-freeze", "fx-rgb", "fx-answer", "fx-max-entrance", "fx-fanfare", "fx-jackpot", "fx-destroyed");
-  fx.frozen = false;
-  fx.particles = [];
-  fx.rings = [];
-  fx.rays = [];
-  stopFxLoop();
-  if (fx.context && fx.width) fx.context.clearRect(0, 0, fx.width, fx.height);
-  if (elements.maxCallout) {
-    elements.maxCallout.hidden = true;
-    elements.maxCallout.innerHTML = "";
-  }
+  clearFxCanvas();
+  hideMaxCallout();
   document.body.classList.add("fx-max-exit");
   if (!prefersReducedMotion()) {
     const keyframes = [
@@ -3591,12 +3558,7 @@ function resetMaxEffects({ keepAmbience = false, keepAudio = false } = {}) {
   cancelFxAnimations();
   clearCueVisualState();
   if (!keepAudio) maxAudio.stopAll();
-  fx.frozen = false;
-  fx.particles = [];
-  fx.rings = [];
-  fx.rays = [];
-  stopFxLoop();
-  if (fx.context && fx.width) fx.context.clearRect(0, 0, fx.width, fx.height);
+  clearFxCanvas();
   document.body.classList.remove(
     "fx-freeze",
     "fx-rgb",
@@ -3608,10 +3570,7 @@ function resetMaxEffects({ keepAmbience = false, keepAudio = false } = {}) {
     "fx-destroyed",
   );
   document.querySelectorAll(".fx-float").forEach((node) => node.remove());
-  if (elements.maxCallout) {
-    elements.maxCallout.hidden = true;
-    elements.maxCallout.innerHTML = "";
-  }
+  hideMaxCallout();
   if (!keepAmbience && elements.fxBackdrop) {
     elements.fxBackdrop.classList.remove("is-on", "is-quiz");
     fx.ambient = false;
@@ -3902,6 +3861,16 @@ function filteredItems(filters = state.filters) {
 // 単語帳は検索だけで絞り、並びは重要度順に固定する。
 const LIST_SORT_KEY = "importance-desc";
 
+/** 重要度（SSS〜D）のバッジ。 */
+function importanceBadgeMarkup(item) {
+  return `<span class="importance-badge importance-${item.importance.toLowerCase()}">${item.importance}</span>`;
+}
+
+/** 一覧のカードに添える、その問題の成績（未回答なら「未回答」）。 */
+function listResultLabel(record, accuracy) {
+  return record.totalAttempts ? `${record.wrongCount}ミス・${formatPercent(accuracy)}` : "未回答";
+}
+
 function renderList(resetLimit = false) {
   if (resetLimit) state.listLimit = 60;
   // データの無い回では、検索欄も出さない。
@@ -3928,7 +3897,7 @@ function renderList(resetLimit = false) {
       return `
         <article class="public-question-card vocab-question-card">
           <div class="public-question-meta">
-            <span class="importance-badge importance-${item.importance.toLowerCase()}">${item.importance}</span>
+            ${importanceBadgeMarkup(item)}
             <span class="type-label">${TYPE_LABELS[item.type]}</span>
             <span class="public-range">${escapeHtml(item.range)}</span>
           </div>
@@ -3937,7 +3906,7 @@ function renderList(resetLimit = false) {
           ${item.point ? `<p class="vocab-list-point">${escapeHtml(item.point)}</p>` : ""}
           <div class="public-list-footer">
             <span>${escapeHtml(item.work ?? item.range)}</span>
-            <span>${record.totalAttempts ? `${record.wrongCount}ミス・${formatPercent(accuracy)}` : "未回答"}</span>
+            <span>${listResultLabel(record, accuracy)}</span>
           </div>
         </article>`;
     }
@@ -3946,7 +3915,7 @@ function renderList(resetLimit = false) {
         <article class="public-question-card">
           <div class="public-question-meta">
             <span class="public-number">Q${item.number}</span>
-            <span class="importance-badge importance-${item.importance.toLowerCase()}">${item.importance}</span>
+            ${importanceBadgeMarkup(item)}
             <span class="type-label">${TYPE_LABELS[item.type]}</span>
             <span class="public-range">${escapeHtml(item.range)}</span>
           </div>
@@ -3954,7 +3923,7 @@ function renderList(resetLimit = false) {
           <div class="public-list-answer"><span>答え</span><strong>${escapeHtml(recallAnswer(item))}</strong></div>
           <div class="public-list-footer">
             <span>${escapeHtml(item.sourceDetail)}</span>
-            <span>${record.totalAttempts ? `${record.wrongCount}ミス・${formatPercent(accuracy)}` : "未回答"}</span>
+            <span>${listResultLabel(record, accuracy)}</span>
           </div>
         </article>`;
     }
@@ -3962,7 +3931,7 @@ function renderList(resetLimit = false) {
       <article class="word-card">
         <div class="word-card-main">
           <div class="word-card-title">
-            <span class="importance-badge importance-${item.importance.toLowerCase()}">${item.importance}</span>
+            ${importanceBadgeMarkup(item)}
             <span class="type-label">${TYPE_LABELS[item.type]}</span>
           </div>
           ${item.type === "word" ? '<span class="word-form-kind">原形</span>' : ""}
@@ -3982,7 +3951,7 @@ function renderList(resetLimit = false) {
         <div class="word-card-meta">
           <span>${escapeHtml(item.range)}</span>
           <span>${escapeHtml(item.sourceDetail || item.lesson)}</span>
-          <span>${record.totalAttempts ? `${record.wrongCount}ミス・${formatPercent(accuracy)}` : "未回答"}</span>
+          <span>${listResultLabel(record, accuracy)}</span>
         </div>
       </article>`;
   }).join("");
@@ -4216,7 +4185,7 @@ function startSession(overrides = {}) {
           count: config.count,
         });
     if (!queue.length) {
-      showToast("この条件に合う問題がありません");
+      showToast(NO_MATCHING_QUESTIONS_MESSAGE);
       return;
     }
     if (usesSelection) state.studySelection = selection;
@@ -4229,7 +4198,7 @@ function startSession(overrides = {}) {
 
   const poolItems = studyPoolItems(config);
   if (!poolItems.length) {
-    showToast("この条件に合う問題がありません");
+    showToast(NO_MATCHING_QUESTIONS_MESSAGE);
     return;
   }
   const { key, progress, restarted } = ensureStudyProgress(config, poolItems);
@@ -4242,7 +4211,7 @@ function startSession(overrides = {}) {
     built = buildCycleQueue({ progress: activeProgress, poolItems, mode: exactMode, sortKey: config.sortKey });
   }
   if (!built.queue.length) {
-    showToast("この条件に合う問題がありません");
+    showToast(NO_MATCHING_QUESTIONS_MESSAGE);
     return;
   }
   persistStudyProgress(key, activeProgress);
@@ -4632,7 +4601,7 @@ function renderFeedback(question, _answer, correct) {
         ? `<div class="feedback-explanation"><span>解説</span><p>${escapeHtml(recallExplanation(question.item))}</p></div>`
         : ""}
       ${showSourceBox ? `<div class="source-box">
-        <span class="importance-badge importance-${question.item.importance.toLowerCase()}">${question.item.importance}</span>
+        ${importanceBadgeMarkup(question.item)}
         <div>
           <strong class="source-range">範囲：${escapeHtml(question.item.range)}</strong>
           ${state.settings.showSources && !isChoice && sourceLine(question.item) ? `<p>${escapeHtml(sourceLine(question.item))}</p>` : ""}
@@ -4755,20 +4724,32 @@ function animateSwipeCancel({ surface }) {
     clearGestureSurfaceStyles(surface);
     return Promise.resolve();
   }
+  return waitForSurfaceTransform(surface, {
+    timeoutMs: 240,
+    cleanup: () => clearGestureSurfaceStyles(surface),
+  });
+}
+
+/**
+ * カードの transform の動きが終わるのを待つ。終わらないまま timeoutMs が過ぎても打ち切る。
+ * 終わったら一度だけ cleanup を呼ぶ。start は待ち始めてすぐ（打ち切りの時計より前）に呼ぶ。
+ */
+function waitForSurfaceTransform(surface, { timeoutMs, cleanup, start = null }) {
   return new Promise((resolve) => {
     let finished = false;
     const finish = () => {
       if (finished) return;
       finished = true;
       surface.removeEventListener("transitionend", onTransitionEnd);
-      clearGestureSurfaceStyles(surface);
+      cleanup();
       resolve();
     };
     const onTransitionEnd = (event) => {
       if (event.target === surface && event.propertyName === "transform") finish();
     };
     surface.addEventListener("transitionend", onTransitionEnd);
-    setTimeout(finish, 240);
+    start?.();
+    setTimeout(finish, timeoutMs);
   });
 }
 
@@ -4852,26 +4833,17 @@ function startCardEnterAnimation(direction) {
   surface.dataset.enterFrom = direction;
   surface.style.setProperty("--quiz-enter-x", `${translation.x}px`);
   surface.style.setProperty("--quiz-enter-y", `${translation.y}px`);
-  return new Promise((resolve) => {
-    let finished = false;
-    const finish = () => {
-      if (finished) return;
-      finished = true;
-      surface.removeEventListener("transitionend", onTransitionEnd);
+  return waitForSurfaceTransform(surface, {
+    timeoutMs: CARD_ENTER_DURATION_MS + 100,
+    start: () => requestAnimationFrame(() => requestAnimationFrame(() => {
+      surface.classList.add("is-card-entered");
+    })),
+    cleanup: () => {
       surface.classList.remove("is-card-entering", "is-card-entered");
       surface.removeAttribute("data-enter-from");
       surface.style.removeProperty("--quiz-enter-x");
       surface.style.removeProperty("--quiz-enter-y");
-      resolve();
-    };
-    const onTransitionEnd = (event) => {
-      if (event.target === surface && event.propertyName === "transform") finish();
-    };
-    surface.addEventListener("transitionend", onTransitionEnd);
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      surface.classList.add("is-card-entered");
-    }));
-    setTimeout(finish, CARD_ENTER_DURATION_MS + 100);
+    },
   });
 }
 
@@ -5107,10 +5079,7 @@ function renderRecallQuiz() {
   elements.quizContent.innerHTML = `
     <div class="quiz-shell public-quiz${revealed ? " answer-revealed" : ""}">
       <header class="quiz-header">
-        <div class="quiz-header-left">
-          <button class="icon-button" type="button" data-quit-quiz aria-label="学習を終了">×</button>
-          ${undoButtonMarkup()}
-        </div>
+        ${quizHeaderLeftMarkup()}
         <div class="quiz-progress-copy"><strong>${session.cursor + 1}</strong> / ${questionTotal}</div>
         ${isMaxMode() ? renderMaxHud() : `<span class="mode-pill">${TYPE_LABELS[question.item.type]}</span>`}
       </header>
@@ -5127,7 +5096,7 @@ function renderRecallQuiz() {
           aria-label="${revealed ? state.session.test ? "答え面。タップで問題面。上はわかった、左右はわからなかった" : "答え面。タップで問題面。左は3分後、右は1時間後、上は習得" : "問題面。タップで答えを表示"}"
         >
           <div class="public-recall-meta">
-            <span class="importance-badge importance-${question.item.importance.toLowerCase()}">${question.item.importance}</span>
+            ${importanceBadgeMarkup(question.item)}
             <span>${escapeHtml(question.item.range)}</span>
             ${!vocabCard && question.item.number ? `<span>Q${question.item.number}</span>` : ""}
           </div>
@@ -5184,10 +5153,7 @@ function renderQuiz() {
   elements.quizContent.innerHTML = `
     <div class="quiz-shell${answered ? " quiz-answered" : ""}${isChoice ? " quiz-choice" : ""}${isPublicChoice ? " quiz-public-choice" : ""}${isKeyboardInput ? " quiz-keyboard-input" : ""}${showAlphabetKeyboard ? " has-alphabet-keyboard" : ""}">
       <header class="quiz-header${isKeyboardInput ? " quiz-header--input" : ""}">
-        <div class="quiz-header-left">
-          <button class="icon-button" type="button" data-quit-quiz aria-label="学習を終了">×</button>
-          ${undoButtonMarkup()}
-        </div>
+        ${quizHeaderLeftMarkup()}
         <div class="quiz-progress-copy"><strong>${session.cursor + 1}</strong> / ${questionTotal}</div>
         ${isKeyboardInput ? `<div class="quiz-header-tools">
           ${isMaxMode() ? renderMaxHud() : `<span class="mode-pill">${escapeHtml(question.label)}</span>`}
@@ -5432,10 +5398,7 @@ function renderReviewWait() {
   elements.quizContent.innerHTML = `
     <div class="quiz-shell review-wait-shell">
       <header class="quiz-header">
-        <div class="quiz-header-left">
-          <button class="icon-button" type="button" data-quit-quiz aria-label="学習を終了">×</button>
-          ${undoButtonMarkup()}
-        </div>
+        ${quizHeaderLeftMarkup()}
         <div class="quiz-progress-copy">復習待ち</div>
         <span class="mode-pill">${session.deferredReviews.length}問</span>
       </header>
@@ -5512,6 +5475,14 @@ async function undoLastAnswer() {
   prepareQuestion();
   showToast("直前の回答を取り消しました");
   renderHeader();
+}
+
+/** 学習画面の見出しの左側（終了ボタンと、直前の回答の取り消し）。 */
+function quizHeaderLeftMarkup() {
+  return `<div class="quiz-header-left">
+          <button class="icon-button" type="button" data-quit-quiz aria-label="学習を終了">×</button>
+          ${undoButtonMarkup()}
+        </div>`;
 }
 
 function undoButtonMarkup() {
@@ -5876,7 +5847,7 @@ function retryWrongItems() {
     .map((result) => ({ item: pool.get(result.itemId), mode: result.mode }))
     .filter((entry) => entry.item);
   if (!wrong.length) {
-    showToast("この条件に合う問題がありません");
+    showToast(NO_MATCHING_QUESTIONS_MESSAGE);
     return;
   }
   beginSession(wrong, {
@@ -5903,7 +5874,7 @@ function repeatCompletedSession() {
     .map((entry) => ({ item: pool.get(entry.itemId ?? entry.item?.id), mode: entry.mode }))
     .filter((entry) => entry.item);
   if (!queue.length) {
-    showToast("この条件に合う問題がありません");
+    showToast(NO_MATCHING_QUESTIONS_MESSAGE);
     return;
   }
   beginSession(queue, {
@@ -6492,19 +6463,11 @@ async function boot() {
     // 届くのを待たないため、出題やスワイプが遅くなることはない。
     englishSpeech.prime();
     state.bestCombo = Number(bestCombo) || 0;
-    state.studyConfigs = Object.fromEntries(
-      Object.entries(studyConfigs ?? {})
-        .map(([key, config]) => [key, normalizeRecentStudyConfig(config)])
-        .filter(([, config]) => config),
-    );
+    state.studyConfigs = normalizeEntries(studyConfigs ?? {}, normalizeRecentStudyConfig);
     state.settings.masteryCriterion = normalizeMasteryCriterion(state.settings.masteryCriterion);
     state.settings.speechRate = normalizeSpeechRate(state.settings.speechRate);
     state.settings.speechVoiceURI = normalizeSpeechVoiceURI(state.settings.speechVoiceURI);
-    state.studyProgress = Object.fromEntries(
-      Object.entries(studyProgress ?? {})
-        .map(([key, value]) => [key, normalizeStudyProgress(value)])
-        .filter(([, value]) => value),
-    );
+    state.studyProgress = normalizeEntries(studyProgress ?? {}, normalizeStudyProgress);
     adoptLegacyStudyConfigs(legacyRecentStudies);
     state.lastSessionResult = normalizeSessionResultSnapshot(lastSessionResult);
     // 2定を選んでいた端末は、もう一度回を選ぶ画面から始める。

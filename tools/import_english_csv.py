@@ -35,10 +35,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from import_xlsx import (  # noqa: E402
     accepted_answers,
     best_importance,
+    blanks_of,
     build_phrase_blank,
     build_preposition_blank,
     clean_text,
     hardest_difficulty,
+    question_modes_and_tags,
     word_matches,
 )
 
@@ -306,19 +308,18 @@ def make_item(record: dict[str, object], order: int) -> dict[str, object]:
     has_placeholder = any(match.group() in {"A", "B"} for match in tokens)
     item_type = "word" if is_word else ("structure" if has_placeholder else "phrase")
 
-    modes = ["en_to_ja_choice", "ja_to_en_choice", "ja_to_en_input"]
-    tags = [item_type]
-    if is_word and len(tokens) == 1 and re.fullmatch(r"[A-Za-z]+(?:[-'][A-Za-z]+)*", primary_answer):
-        modes.append("spelling_input")
-        tags.append("spelling")
     preposition_blank = None if is_word else build_preposition_blank(primary_answer)
     phrase_blank = None if is_word else build_phrase_blank(primary_answer)
-    if preposition_blank:
-        modes.append("preposition_input")
-        tags.append("preposition")
-    if phrase_blank:
-        modes.append("phrase_blank_input")
-        tags.append("blank")
+    modes, tags = question_modes_and_tags(
+        item_type,
+        spelling=bool(
+            is_word
+            and len(tokens) == 1
+            and re.fullmatch(r"[A-Za-z]+(?:[-'][A-Za-z]+)*", primary_answer)
+        ),
+        preposition_blank=preposition_blank,
+        phrase_blank=phrase_blank,
+    )
 
     sources = [make_source(lesson) for lesson in lessons]
     item: dict[str, object] = {
@@ -354,11 +355,7 @@ def make_item(record: dict[str, object], order: int) -> dict[str, object]:
         item["generalMeaning"] = "・".join(record["general"])
     if record["memo"]:
         item["memo"] = "／".join(record["memo"])
-    blanks: dict[str, dict[str, str]] = {}
-    if preposition_blank:
-        blanks["preposition"] = preposition_blank
-    if phrase_blank:
-        blanks["phrase"] = phrase_blank
+    blanks = blanks_of(preposition_blank, phrase_blank)
     if blanks:
         item["blanks"] = blanks
     return item

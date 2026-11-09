@@ -15,6 +15,15 @@
 export const DOCUMENT_REVISION_KEY = "revision";
 
 /**
+ * 文書を読み、無い項目は既定値で埋めて返す。
+ * 既定値は毎回複製するので、呼び出し側で書き換えても既定値そのものは変わらない。
+ */
+export async function readDocument(driver, key, defaults) {
+  const stored = await driver.get(key);
+  return { ...structuredClone(defaults), ...(stored ?? {}) };
+}
+
+/**
  * 読み込み→書き換え→保存をまとめて行う。
  * 途中で他の書き込みが入った場合は revision が変わるので、その場合だけやり直す。
  */

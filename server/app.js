@@ -11,7 +11,7 @@
 
 import { ERROR, createMcpServer } from "./core/mcp.js";
 import { ValidationError } from "./core/validate.js";
-import { SCOPES, createAuth } from "./auth/tokens.js";
+import { SCOPES, actorFromToken, createAuth } from "./auth/tokens.js";
 import {
   authorizationServerMetadata,
   createOAuth,
@@ -30,9 +30,39 @@ export const SERVER_INFO = Object.freeze({
 });
 
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8" };
+const HTML_HEADERS = { "content-type": "text/html; charset=utf-8" };
+const TEXT_HEADERS = { "content-type": "text/plain; charset=utf-8" };
 
 function json(body, { status = 200, headers = {} } = {}) {
   return new Response(JSON.stringify(body), { status, headers: { ...JSON_HEADERS, ...headers } });
+}
+
+function html(body, { status = 200 } = {}) {
+  return new Response(body, { status, headers: HTML_HEADERS });
+}
+
+function plainText(body, { status = 200 } = {}) {
+  return new Response(body, { status, headers: TEXT_HEADERS });
+}
+
+function notFound() {
+  return json({ error: "not_found" }, { status: 404 });
+}
+
+/** 「メソッド パス」をキーにした表から、処理を探して呼ぶ。無ければ 404。 */
+async function dispatchRoute(routes, request, path) {
+  const handler = routes[`${request.method} ${path}`];
+  return handler ? handler(request) : notFound();
+}
+
+/** OAuth クライアントが登録済みで、その折り返し先も登録されているか。 */
+function isRegisteredRedirect(client, redirectUri) {
+  return Boolean(client) && client.redirectUris.includes(redirectUri);
+}
+
+/** フォームの値を文字列で読む。無ければ空文字。 */
+function formString(form, name) {
+  return String(form.get(name) ?? "");
 }
 
 function escapeHtml(value) {
@@ -164,16 +194,7 @@ export function createWordsMcpApp({ storage, env = {}, catalog = null, now = () 
       if (!entry || !settings.enabled) {
         return unauthorized(request, "この接続は無効になりました。wordsの設定画面から接続しなおしてください。");
       }
-      authenticated = {
-        ok: true,
-        actor: {
-          tokenId: entry.id,
-          tokenLabel: entry.label,
-          scopes: entry.scopes.filter((scope) => settings.permissions[scope]),
-          tokenScopes: entry.scopes,
-          permissions: settings.permissions,
-        },
-      };
+      authenticated = { ok: true, actor: actorFromToken(entry, settings) };
     } else {
       authenticated = await auth.authenticate(presented);
     }
@@ -193,11 +214,9 @@ export function createWordsMcpApp({ storage, env = {}, catalog = null, now = () 
   // 管理API（wordsの設定画面から使う）
   // ------------------------------------------------------------------
 
-  async function handleAdmin(request, path) {
-    const denied = ownerGuard(request);
-    if (denied) return denied;
-
-    if (path === "/api/admin/status" && request.method === "GET") {
+  /** 管理APIの入口。キーは「メソッド パス」。 */
+  const ADMIN_ROUTES = {
+    "GET /api/admin/status": async (request) => {
       const [settings, tokens, info, log] = await Promise.all([
         auth.readSettings(),
         auth.readTokens(),
@@ -225,13 +244,11 @@ export function createWordsMcpApp({ storage, env = {}, catalog = null, now = () 
         studyHistory: info.studyHistory,
         log: log.entries,
       });
-    }
+    },
 
-    if (path === "/api/admin/settings" && request.method === "POST") {
-      return json(await auth.updateSettings(await readJsonBody(request)));
-    }
+    "POST /api/admin/settings": async (request) => json(await auth.updateSettings(await readJsonBody(request))),
 
-    if (path === "/api/admin/token" && request.method === "POST") {
+    "POST /api/admin/token": async (request) => {
       const body = await readJsonBody(request);
       const issued = await auth.issueToken({ label: body.label, scopes: body.scopes });
       return json({
@@ -240,54 +257,54 @@ export function createWordsMcpApp({ storage, env = {}, catalog = null, now = () 
         entry: issued.entry,
         mcpUrl: `${originOf(request)}/mcp`,
       });
-    }
+    },
 
-    if (path === "/api/admin/token" && request.method === "DELETE") {
-      return json(await auth.revokeTokens());
-    }
+    "DELETE /api/admin/token": async () => json(await auth.revokeTokens()),
 
-    if (path === "/api/admin/learners" && request.method === "GET") {
-      return json(await sync.listLearners());
-    }
+    "GET /api/admin/learners": async () => json(await sync.listLearners()),
 
-    if (path === "/api/admin/learners" && request.method === "POST") {
+    "POST /api/admin/learners": async (request) => {
       const body = await readJsonBody(request);
       // 同期コードを返すのはここだけ。保存してあるのはハッシュだけなので、
       // 見失ったら作り直す（再発行）ことになる。
       return json(await sync.createLearner({ name: body.name }));
-    }
+    },
 
-    if (path === "/api/admin/learners" && request.method === "DELETE") {
+    "DELETE /api/admin/learners": async (request) => {
       const body = await readJsonBody(request);
       return json(await sync.deleteLearner({ id: body.id, confirm: body.confirm }));
-    }
+    },
 
-    if (path === "/api/admin/learners/code" && request.method === "POST") {
+    "POST /api/admin/learners/code": async (request) => {
       const body = await readJsonBody(request);
       return json(await sync.reissueSyncCode({ id: body.id }));
-    }
+    },
 
-    if (path === "/api/admin/learners/name" && request.method === "POST") {
+    "POST /api/admin/learners/name": async (request) => {
       const body = await readJsonBody(request);
       return json(await sync.renameLearner({ id: body.id, name: body.name }));
-    }
+    },
 
-    if (path === "/api/admin/log" && request.method === "GET") {
+    "GET /api/admin/log": async (request) => {
       const limit = Number(new URL(request.url).searchParams.get("limit") ?? 20);
       return json(await service.getOperationLog({ limit }));
-    }
+    },
 
-    if (path === "/api/admin/trash" && request.method === "GET") {
+    "GET /api/admin/trash": async () => {
       const overlay = await service.getOverlay();
       return json({ trash: overlay.trash });
-    }
+    },
 
-    if (path === "/api/admin/restore" && request.method === "POST") {
+    "POST /api/admin/restore": async (request) => {
       const body = await readJsonBody(request);
       return json(await service.restoreQuestion({ id: body.id }, { clientName: "words", tokenLabel: "設定画面" }));
-    }
+    },
+  };
 
-    return json({ error: "not_found" }, { status: 404 });
+  async function handleAdmin(request, path) {
+    const denied = ownerGuard(request);
+    if (denied) return denied;
+    return dispatchRoute(ADMIN_ROUTES, request, path);
   }
 
   /**
@@ -311,28 +328,28 @@ export function createWordsMcpApp({ storage, env = {}, catalog = null, now = () 
       }, { status: 401 });
     }
 
-    if (path === "/api/sync/push" && request.method === "POST") {
-      const body = await readJsonBody(request);
-      const saved = await sync.push(device.learnerId, device.deviceId, body);
-      // 送ったあとの合算結果をそのまま返す。往復を1回で済ませるため。
-      return json({ ...saved, snapshot: await sync.pull(device.learnerId), learner: device.learnerName });
-    }
-
-    if (path === "/api/sync/pull" && request.method === "GET") {
-      return json({
+    return dispatchRoute({
+      "POST /api/sync/push": async () => {
+        const body = await readJsonBody(request);
+        const saved = await sync.push(device.learnerId, device.deviceId, body);
+        // 送ったあとの合算結果をそのまま返す。往復を1回で済ませるため。
+        return json({ ...saved, snapshot: await sync.pull(device.learnerId), learner: device.learnerName });
+      },
+      "GET /api/sync/pull": async () => json({
         ...(await sync.pull(device.learnerId)),
         learner: device.learnerName,
         deviceName: device.deviceName,
         overlay: await service.getOverlay(),
-      });
-    }
-
-    if (path === "/api/sync/leave" && request.method === "POST") {
-      return json(await sync.leaveDevice(device.learnerId, device.deviceId));
-    }
-
-    return json({ error: "not_found" }, { status: 404 });
+      }),
+      "POST /api/sync/leave": async () => json(await sync.leaveDevice(device.learnerId, device.deviceId)),
+    }, request, path);
   }
+
+  /** 管理キーで使う同期の入口。 */
+  const OWNER_SYNC_ROUTES = {
+    "POST /api/sync/history": async (request) => json(await service.saveHistorySnapshot(await readJsonBody(request))),
+    "GET /api/sync/overlay": async () => json(await service.getOverlay()),
+  };
 
   async function handleSync(request, path) {
     // 端末ごとの鍵で使う入口は、管理キーを求めない。
@@ -342,14 +359,7 @@ export function createWordsMcpApp({ storage, env = {}, catalog = null, now = () 
 
     const denied = ownerGuard(request);
     if (denied) return denied;
-
-    if (path === "/api/sync/history" && request.method === "POST") {
-      return json(await service.saveHistorySnapshot(await readJsonBody(request)));
-    }
-    if (path === "/api/sync/overlay" && request.method === "GET") {
-      return json(await service.getOverlay());
-    }
-    return json({ error: "not_found" }, { status: 404 });
+    return dispatchRoute(OWNER_SYNC_ROUTES, request, path);
   }
 
   // ------------------------------------------------------------------
@@ -421,53 +431,50 @@ export function createWordsMcpApp({ storage, env = {}, catalog = null, now = () 
       const clientId = url.searchParams.get("client_id") ?? "";
       const client = await oauth.getClient(clientId);
       const redirectUri = url.searchParams.get("redirect_uri") ?? "";
-      if (!client || !client.redirectUris.includes(redirectUri)) {
-        return new Response("client_id または redirect_uri が登録されていません。", {
-          status: 400, headers: { "content-type": "text/plain; charset=utf-8" },
-        });
+      if (!isRegisteredRedirect(client, redirectUri)) {
+        return plainText("client_id または redirect_uri が登録されていません。", { status: 400 });
       }
       if (url.searchParams.get("code_challenge_method") !== "S256") {
-        return new Response("code_challenge_method は S256 だけに対応しています。", {
-          status: 400, headers: { "content-type": "text/plain; charset=utf-8" },
-        });
+        return plainText("code_challenge_method は S256 だけに対応しています。", { status: 400 });
       }
-      return new Response(consentPage(origin, {
+      return html(consentPage(origin, {
         clientName: client.clientName,
         clientId,
         redirectUri,
         codeChallenge: url.searchParams.get("code_challenge") ?? "",
         state: url.searchParams.get("state") ?? "",
-      }), { headers: { "content-type": "text/html; charset=utf-8" } });
+      }));
     }
 
     if (path === "/oauth/authorize" && request.method === "POST") {
       const form = await request.formData();
-      const clientId = String(form.get("client_id") ?? "");
-      const redirectUri = String(form.get("redirect_uri") ?? "");
+      const clientId = formString(form, "client_id");
+      const redirectUri = formString(form, "redirect_uri");
+      const codeChallenge = formString(form, "code_challenge");
+      const state = formString(form, "state");
       const client = await oauth.getClient(clientId);
-      if (!client || !client.redirectUris.includes(redirectUri)) {
+      if (!isRegisteredRedirect(client, redirectUri)) {
         return new Response("redirect_uri が登録されていません。", { status: 400 });
       }
-      const authenticated = await auth.authenticate(String(form.get("connection_token") ?? ""));
+      const authenticated = await auth.authenticate(formString(form, "connection_token"));
       if (!authenticated.ok) {
-        return new Response(consentPage(origin, {
+        return html(consentPage(origin, {
           clientName: client.clientName,
           clientId,
           redirectUri,
-          codeChallenge: String(form.get("code_challenge") ?? ""),
-          state: String(form.get("state") ?? ""),
-        }, authenticated.message), { status: 401, headers: { "content-type": "text/html; charset=utf-8" } });
+          codeChallenge,
+          state,
+        }, authenticated.message), { status: 401 });
       }
       const code = await oauth.issueCode({
         clientId,
         redirectUri,
-        codeChallenge: String(form.get("code_challenge") ?? ""),
+        codeChallenge,
         scopes: authenticated.actor.tokenScopes,
         tokenId: authenticated.actor.tokenId,
       });
       const target = new URL(redirectUri);
       target.searchParams.set("code", code);
-      const state = String(form.get("state") ?? "");
       if (state) target.searchParams.set("state", state);
       // RFC 9207: どの認可サーバーが返したかを明示する。
       target.searchParams.set("iss", origin);
@@ -482,9 +489,9 @@ export function createWordsMcpApp({ storage, env = {}, catalog = null, now = () 
       try {
         const issued = await oauth.exchangeCode({
           code: form.get("code"),
-          clientId: String(form.get("client_id") ?? ""),
-          redirectUri: String(form.get("redirect_uri") ?? ""),
-          codeVerifier: String(form.get("code_verifier") ?? ""),
+          clientId: formString(form, "client_id"),
+          redirectUri: formString(form, "redirect_uri"),
+          codeVerifier: formString(form, "code_verifier"),
         });
         return json({
           access_token: issued.accessToken,
@@ -497,7 +504,7 @@ export function createWordsMcpApp({ storage, env = {}, catalog = null, now = () 
       }
     }
 
-    return json({ error: "not_found" }, { status: 404 });
+    return notFound();
   }
 
   // ------------------------------------------------------------------
@@ -540,9 +547,7 @@ code{background:#f0f0f3;padding:2px 6px;border-radius:6px}:root{color-scheme:lig
         if (path === "/health") {
           response = json({ ok: true, server: SERVER_INFO.name, version: SERVER_INFO.version });
         } else if (path === "/") {
-          response = new Response(landingPage(request), {
-            headers: { "content-type": "text/html; charset=utf-8" },
-          });
+          response = html(landingPage(request));
         } else if (path === "/mcp") {
           response = await handleMcp(request);
         } else if (path === "/.well-known/oauth-protected-resource"

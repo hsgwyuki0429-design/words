@@ -10,11 +10,18 @@ import { ValidationError } from "./core/validate.js";
 import { QUESTION_INPUT_FIELDS, QUESTION_LIMITS } from "./service/question-input.js";
 import { SERVICE_LIMITS } from "./service/words-service.js";
 import { SUBJECTS, SUBJECT_IDS } from "./service/subjects.js";
+import { DIFFICULTY_ORDER, IMPORTANCE_ORDER } from "../src/logic.js";
 
-const IMPORTANCE_VALUES = ["SSS", "SS", "S", "A", "B", "C", "D"];
+const IMPORTANCE_VALUES = IMPORTANCE_ORDER;
 const RANGE_HINT = SUBJECT_IDS
   .map((subject) => `${SUBJECTS[subject].label}(${subject}): ${SUBJECTS[subject].ranges.join(" / ")}`)
   .join("\n");
+
+/** 読むだけのツールに付ける注記。 */
+const READ_ONLY = Object.freeze({ readOnlyHint: true, openWorldHint: false });
+
+/** 教科での絞り込み。 */
+const SUBJECTS_PROPERTY = { type: "array", items: { type: "string", enum: [...SUBJECT_IDS] }, description: "教科で絞る。" };
 
 /** 誰の学習データかを指す。名前でもIDでも受け取れる。 */
 const LEARNER_PROPERTY = {
@@ -80,7 +87,7 @@ const QUESTION_PROPERTIES = {
   },
   correctChoice: { type: "string", enum: ["A", "B", "C", "D"], description: "choices のうち、どれが正解かの記号。" },
   importance: { type: "string", enum: IMPORTANCE_VALUES, description: "重要度。省略時は英語がB、それ以外がA。" },
-  difficulty: { type: "string", enum: ["—", "A", "B", "C", "D", "E", "F"], description: "難易度。" },
+  difficulty: { type: "string", enum: DIFFICULTY_ORDER, description: "難易度。" },
   range: { type: "string", description: `単元・範囲。教科ごとに決まった値のみ。\n${RANGE_HINT}` },
   lesson: { type: "string", description: "レッスン名。省略すると range と同じになる。" },
   title: { type: "string", description: "題材名。" },
@@ -154,7 +161,7 @@ export function createTools() {
       title: "wordsの基本情報",
       description: "wordsの構成・問題数・教科と範囲の一覧・データ形式の版・学習履歴の同期状況・許可されている権限を返す。最初にこれを呼ぶと、他のツールへ渡せる値（教科名や範囲名）が分かる。",
       scope: "read",
-      annotations: { readOnlyHint: true, openWorldHint: false },
+      annotations: READ_ONLY,
       inputSchema: { properties: {} },
       run: (_args, { service }) => service.getAppInfo(),
     }),
@@ -164,7 +171,7 @@ export function createTools() {
       title: "問題を検索",
       description: "キーワードと条件でwordsの問題を探す。問題文・答え・解説・タグ・出典が検索対象。一度に返る件数には上限があるので、続きは nextOffset を offset に渡して読む。",
       scope: "read",
-      annotations: { readOnlyHint: true, openWorldHint: false },
+      annotations: READ_ONLY,
       inputSchema: {
         properties: {
           query: { type: "string", maxLength: 200, description: "検索語。空白で区切るとすべてを含む問題だけに絞られる。" },
@@ -180,7 +187,7 @@ export function createTools() {
       title: "問題の詳細",
       description: "問題IDを指定して1問の詳細（問題文・答え・解説・選択肢・タグ・出典・その問題の学習成績）を取得する。",
       scope: "read",
-      annotations: { readOnlyHint: true, openWorldHint: false },
+      annotations: READ_ONLY,
       inputSchema: {
         properties: {
           id: { type: "string", description: "問題ID。" },
@@ -196,7 +203,7 @@ export function createTools() {
       title: "条件で問題を一覧",
       description: "キーワードを使わず、教科・範囲・重要度・正誤履歴などの条件だけで問題を一覧する。件数の把握や、範囲ごとの問題の並びを見るときに使う。",
       scope: "read",
-      annotations: { readOnlyHint: true, openWorldHint: false },
+      annotations: READ_ONLY,
       inputSchema: { properties: { ...FILTER_PROPERTIES, includeDeleted: { type: "boolean" } } },
       run: (args, { service }) => service.listQuestions(args),
     }),
@@ -282,7 +289,7 @@ export function createTools() {
       title: "学習者の一覧",
       description: "wordsを使っている学習者（生徒や自分自身）の一覧を返す。それぞれが何台の端末で使っているか、最後に同期したのがいつかも分かる。誰かの成績を見るときは、まずここで名前を確かめる。学習者が1人しかいない場合、ほかのツールでは learner を省略できる。",
       scope: "read",
-      annotations: { readOnlyHint: true, openWorldHint: false },
+      annotations: READ_ONLY,
       inputSchema: { properties: {} },
       run: async (_args, { sync }) => {
         if (!sync) return { learners: [], total: 0, note: "このサーバーは学習者の管理に対応していません。" };
@@ -301,10 +308,10 @@ export function createTools() {
       title: "学習統計",
       description: "回答数・正解数・正答率を、全体／教科別／範囲別／重要度別に返す。直近の学習状況（日ごとの回答数と正解数）も含む。学習履歴はwordsの設定画面でAI連携を有効にしたときだけ同期される。",
       scope: "read",
-      annotations: { readOnlyHint: true, openWorldHint: false },
+      annotations: READ_ONLY,
       inputSchema: {
         properties: {
-          subjects: { type: "array", items: { type: "string", enum: [...SUBJECT_IDS] }, description: "教科で絞る。" },
+          subjects: SUBJECTS_PROPERTY,
           modes: { type: "array", items: { type: "string" }, description: "出題形式で絞る（例: ja_to_en_input）。" },
           recentDays: { type: "integer", minimum: 1, maximum: 90, description: "直近何日ぶんの学習状況を返すか。既定は7。" },
           learner: LEARNER_PROPERTY,
@@ -319,12 +326,12 @@ export function createTools() {
       title: "最近間違えた問題",
       description: "最近間違えた問題を新しい順に返す。days=1 なら今日、7 なら今週ぶん。1問ごとの学習記録が無い場合は「最後に間違えた日時」から拾う。",
       scope: "read",
-      annotations: { readOnlyHint: true, openWorldHint: false },
+      annotations: READ_ONLY,
       inputSchema: {
         properties: {
           days: { type: "integer", minimum: 1, maximum: 365, description: "今日から何日ぶんさかのぼるか。既定は1（今日）。" },
           limit: { type: "integer", minimum: 1, maximum: SERVICE_LIMITS.searchLimitMax, description: "返す件数。既定は20。" },
-          subjects: { type: "array", items: { type: "string", enum: [...SUBJECT_IDS] }, description: "教科で絞る。" },
+          subjects: SUBJECTS_PROPERTY,
           learner: LEARNER_PROPERTY,
           timezoneOffsetMinutes: TIMEZONE_PROPERTY,
         },
@@ -337,7 +344,7 @@ export function createTools() {
       title: "学習履歴",
       description: "1問ごとの学習記録（日時・問題・答え・正誤・出題形式・かかった時間）を新しい順に返す。AI連携を有効にしてから記録が貯まる。",
       scope: "read",
-      annotations: { readOnlyHint: true, openWorldHint: false },
+      annotations: READ_ONLY,
       inputSchema: {
         properties: {
           days: { type: "integer", minimum: 1, maximum: 365, description: "今日から何日ぶんさかのぼるか。既定は7。" },

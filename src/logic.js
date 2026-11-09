@@ -989,20 +989,24 @@ export function normalizeRecentStudyConfig(config = {}) {
     return null;
   }
   const filters = config.filters ?? {};
-  const stringList = (values) => [...new Set(Array.isArray(values) ? values.filter(Boolean).map(String) : [])];
+  return savedStudyConfig(selection, filters.ranges, filters, config.sortKey);
+}
+
+/** 保存・再開に使う学習設定の形。検索語は持ち越さず、件数は常に全問にする。 */
+function savedStudyConfig(selection, ranges, filters, sortKey) {
   return {
     subject: selection.subject,
     selection,
     filters: {
-      ranges: stringList(filters.ranges),
-      importance: stringList(filters.importance),
-      types: stringList(filters.types),
-      tags: stringList(filters.tags),
+      ranges: uniqueIds(ranges),
+      importance: uniqueIds(filters.importance),
+      types: uniqueIds(filters.types),
+      tags: uniqueIds(filters.tags),
       performance: typeof filters.performance === "string" ? filters.performance : "all",
       minimumWrong: Math.max(0, Number(filters.minimumWrong) || 0),
       search: "",
     },
-    sortKey: typeof config.sortKey === "string" ? config.sortKey : "importance-desc",
+    sortKey: typeof sortKey === "string" ? sortKey : "importance-desc",
     count: "all",
     itemIds: null,
   };
@@ -1567,23 +1571,7 @@ export function studyConfigForTarget({
   sortKey = "importance-desc",
 } = {}) {
   const selection = normalizeStudySelection(target?.selection ?? {});
-  const stringList = (values) => [...new Set(Array.isArray(values) ? values.filter(Boolean).map(String) : [])];
-  return {
-    subject: selection.subject,
-    selection,
-    filters: {
-      ranges: stringList(ranges),
-      importance: stringList(filters.importance),
-      types: stringList(filters.types),
-      tags: stringList(filters.tags),
-      performance: typeof filters.performance === "string" ? filters.performance : "all",
-      minimumWrong: Math.max(0, Number(filters.minimumWrong) || 0),
-      search: "",
-    },
-    sortKey: typeof sortKey === "string" ? sortKey : "importance-desc",
-    count: "all",
-    itemIds: null,
-  };
+  return savedStudyConfig(selection, ranges, filters, sortKey);
 }
 
 // ---------------------------------------------------------------------------
@@ -1598,6 +1586,7 @@ export function studyConfigForTarget({
 
 const STUDY_PROGRESS_VERSION = 1;
 
+/** 重複と空を除いた文字列の並び。配列でなければ空にする。 */
 function uniqueIds(values) {
   return [...new Set((Array.isArray(values) ? values : []).filter(Boolean).map(String))];
 }

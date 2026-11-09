@@ -60,9 +60,11 @@ test("an individual selection replaces the initial select-all state", () => {
   assert.match(appSource, /\["testImportance", "data-test-importance", "importance"\]/);
 });
 
-test("study sorting exposes workbook difficulty order", () => {
-  assert.match(appSource, /"difficulty-level-desc": "難易度順"/);
-  assert.match(appSource, /key: "difficulty-level-desc", title: "難易度順"/);
+test("学習の並びはランダムに固定で、並び順は選ばせない", () => {
+  assert.match(appSource, /const STUDY_SORT_KEY = "random";/);
+  assert.match(appSource, /sortKey: STUDY_SORT_KEY,/);
+  assert.doesNotMatch(appSource, /data-setup-sort|setupSortOther|primarySortOptions|OTHER_SORT_OPTIONS/);
+  assert.doesNotMatch(stylesSource, /setup-chip--select|setup-chip-caret/);
 });
 
 test("result screen shows only the three requested session records", () => {

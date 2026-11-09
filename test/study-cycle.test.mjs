@@ -288,17 +288,13 @@ test("mode-level streaks are recorded per format and never taken from the global
   assert.equal(record.modeStats.ja_to_en_choice.currentCorrectStreak, 1);
 });
 
-// 学習の準備：重要度を1つ選び、並び順を決めてスタート。内容は選ばない。
-test("形式カードの次は学習の準備1画面で、重要度（1つ）と並び順を選ぶ", () => {
+// 学習の準備：重要度を1つ選んでスタート。内容・並び順は選ばない。
+test("形式カードの次は学習の準備1画面で、重要度（1つ）だけを選ぶ（並びはランダム固定）", () => {
   const setupSource = functionSource("renderStudySetup", "dashboardTargetGroups");
   assert.match(setupSource, /setupGroup\("重要度", counts\.map\(/);
   assert.match(setupSource, /selected: importance === state\.filters\.importance\[0\]/);
   assert.match(setupSource, /data-setup-importance="\$\{importance\}"/);
-  assert.match(setupSource, /sortGroupMarkup\(\)/);
-  const sortSource = functionSource("sortGroupMarkup", "renderStudySetup");
-  assert.match(sortSource, /setupGroup\("並び順"/);
-  assert.match(sortSource, /data-setup-sort="\$\{option\.key\}"/);
-  assert.match(sortSource, /data-setup-sort-other/);
+  assert.doesNotMatch(setupSource, /並び順/);
   // 内容（単語・熟語・構文）と重要度の「すべて」は演習では選ばない。
   assert.doesNotMatch(appSource, /data-setup-content|data-setup-importance="all"/);
   // 重要度は押した1つだけを選ぶ。
@@ -323,20 +319,6 @@ test("「すべて」から1つを押すとそれだけ、選んでいる中で�
   assert.deepEqual(toggleSetupValue(["phrase"], "phrase", all), [], "全部外したらすべてに戻る");
   assert.deepEqual(toggleSetupValue(["word", "phrase"], "structure", all), [], "全部を選んだらすべてと同じ");
   assert.deepEqual(toggleSetupValue(["word"], "all", all), [], "「すべて」はいつでも全部");
-});
-
-test("並び替えは主要4種を札で、その他は端末の選択肢で選ぶ", () => {
-  const sortSource = functionSource("primarySortOptions", "setupChip");
-  assert.match(sortSource, /key: "importance-desc", title: "重要度順"/);
-  assert.match(sortSource, /key: "difficulty-level-desc", title: "難易度順"/);
-  assert.match(sortSource, /key: "difficulty", title: "苦手順"/);
-  assert.match(sortSource, /key: "random", title: "ランダム"/);
-  // 札を押しても学習はまだ始めない（条件を見直してからスタートを押す）。
-  assert.match(appSource, /if \(target\.dataset\.setupSort\) \{\s*\n\s*state\.sortKey = target\.dataset\.setupSort;\s*\n\s*renderStudySetup\(\);/);
-  // 既存の詳細並び替えは削除しない
-  assert.match(appSource, /\["accuracy-asc", "正答率が低い順"\]/);
-  assert.match(appSource, /\["alpha-ja", "あいうえお順"\]/);
-  assert.match(appSource, /event\.target\.dataset\?\.setupSortOther !== undefined[\s\S]*?state\.sortKey = event\.target\.value/);
 });
 
 // テスト17：設定の保存
@@ -488,7 +470,7 @@ test("学習の準備は前回の条件を初期値にし、そのまま押せ�
   const startSource = functionSource("startStudyFromTarget", "stashStudyProgress");
   assert.match(startSource, /const previous = lastConfigForTarget\(target, \[range\]\);/);
   assert.match(startSource, /importance: previous\?\.filters\?\.importance\?\.slice\(0, 1\) \?\? \[\]/);
-  assert.match(startSource, /state\.sortKey = previous\?\.sortKey \?\? "importance-desc";/);
+  assert.match(startSource, /state\.sortKey = STUDY_SORT_KEY;/);
 });
 
 test("スタートのボタンは、何問から・何周目から始まるかを示す", () => {
@@ -500,5 +482,5 @@ test("スタートのボタンは、何問から・何周目から始まるか�
   assert.match(planSource, /newRound \? "次のセットを始める" : `\$\{next\.cycleNumber\}周目を始める`/);
   assert.match(functionSource("practiceStatus", "setupPlan"), /const key = studyProgressKey\(config\);/);
   // 出題できる問題が無ければ押せない。
-  assert.match(functionSource("renderSetupProgress", "sortGroupMarkup"), /elements\.setupStart\.disabled = !plan\.pool\.length;/);
+  assert.match(functionSource("renderSetupProgress", "renderStudySetup"), /elements\.setupStart\.disabled = !plan\.pool\.length;/);
 });

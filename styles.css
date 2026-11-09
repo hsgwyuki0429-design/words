@@ -854,8 +854,7 @@ textarea:focus-visible,
 
 /* 学習途中の選択肢は赤の縁取りと小さなラベルで示し、続きへ導く。 */
 .range-choice.is-in-progress,
-.mode-progress-card.is-in-progress,
-.setup-progress-card.is-in-progress {
+.mode-progress-card.is-in-progress {
   border-color: var(--red);
   box-shadow: inset 0 0 0 1px var(--red);
 }
@@ -1377,13 +1376,11 @@ textarea:focus-visible,
 }
 
 /* 学習の準備・続きからは、円を少し大きく。 */
-.setup-progress-card .meter-ring,
 .continue-card .meter-ring {
   --ring-size: 68px;
   --ring-thickness: 8px;
 }
 
-.setup-progress-card .meter-ring-value,
 .continue-card .meter-ring-value {
   font-size: 20px;
 }
@@ -1398,49 +1395,15 @@ textarea:focus-visible,
   padding-bottom: calc(96px + var(--safe-bottom));
 }
 
-.setup-progress-card {
-  display: grid;
-  gap: 10px;
-  padding: 16px;
-  background: var(--tile);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-}
-
-.setup-progress-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 4px 10px;
-}
-
-.setup-progress-label {
-  flex: 1 0 100%;
-  color: var(--secondary);
-  font-size: 12px;
-  font-weight: 750;
-}
-
-.setup-progress-head strong {
-  font-size: 26px;
-  font-weight: 850;
-  letter-spacing: -0.03em;
-  font-variant-numeric: tabular-nums;
-}
-
-.setup-progress-head .mode-progress-cycle {
-  flex: 0 1 auto;
-  font-size: 13px;
-}
-
-.setup-progress-head .in-progress-badge {
-  margin-left: auto;
-}
-
 .setup-groups {
   display: grid;
   gap: 18px;
   margin-top: 20px;
+}
+
+/* 学習の準備の上のカード（ホームの「続きから」と同じ形）。 */
+.setup-continue-card {
+  margin-bottom: 0;
 }
 
 .setup-group-title {
@@ -1480,13 +1443,6 @@ textarea:focus-visible,
   transition: background-color 120ms ease, color 120ms ease, transform 120ms var(--ease-out);
 }
 
-/* 並び順は名前が長いので、少しだけ小さく組む。 */
-.setup-chip[data-setup-sort],
-.setup-chip--select {
-  font-size: 13px;
-  letter-spacing: -0.02em;
-}
-
 .setup-chip > span:first-child {
   max-width: 100%;
   overflow: hidden;
@@ -1518,27 +1474,6 @@ textarea:focus-visible,
 
 .setup-chip:disabled {
   opacity: 0.4;
-}
-
-/* 「その他」の並び順は、札の上に重ねた端末の選択肢から選ぶ。 */
-.setup-chip--select select {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  font-size: 16px;
-  cursor: pointer;
-}
-
-.setup-chip-caret {
-  font-size: 10px;
-  line-height: 1;
-  opacity: 0.7;
-}
-
-.setup-chip--select:focus-within {
-  box-shadow: var(--focus-ring);
 }
 
 /* 画面の下に貼りつく主ボタン（学習の準備・テスト） */
@@ -6309,9 +6244,7 @@ body.fx-lite.max-mode.fx-fever .fx-backdrop.is-on {
     gap: 5px;
   }
 
-  .setup-chip,
-  .setup-chip[data-setup-sort],
-  .setup-chip--select {
+  .setup-chip {
     font-size: 12px;
   }
 
@@ -6595,15 +6528,6 @@ body.fx-lite.max-mode.fx-fever .fx-backdrop.is-on {
   .setup-groups {
     gap: 14px;
     margin-top: 14px;
-  }
-
-  .setup-progress-card {
-    gap: 8px;
-    padding: 12px 14px;
-  }
-
-  .setup-progress-head strong {
-    font-size: 22px;
   }
 
   .setup-chip {

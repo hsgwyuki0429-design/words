@@ -1,5 +1,5 @@
-import { createHaptics } from "./haptics.js?v=2026.11.28";
-import { createKobunController } from "./kobun.js?v=2026.11.28";
+import { createHaptics } from "./haptics.js?v=2026.11.29";
+import { createKobunController } from "./kobun.js?v=2026.11.29";
 import {
   ALL_MODES,
   ALPHABET_KEYBOARD_ROWS,
@@ -73,8 +73,8 @@ import {
   unmasterStudyItems,
   gaugeColorIndex,
   hasAnsweredMode,
-} from "./logic.js?v=2026.11.28";
-import { createMaxAudioEngine } from "./audio.js?v=2026.11.28";
+} from "./logic.js?v=2026.11.29";
+import { createMaxAudioEngine } from "./audio.js?v=2026.11.29";
 import {
   CORRECT_VARIANTS,
   LANDING_VARIANTS,
@@ -82,7 +82,7 @@ import {
   SFX_VOLUME_OPTIONS,
   createSfxEngine,
   normalizeSfxVolume,
-} from "./sfx.js?v=2026.11.28";
+} from "./sfx.js?v=2026.11.29";
 import {
   MAX_FEVER_GOAL,
   MAX_TIMELINE_PHASES,
@@ -97,7 +97,7 @@ import {
   resolveMaxCue,
   scaledVisualPlan,
   shouldPlayMaxSound,
-} from "./max-cues.js?v=2026.11.28";
+} from "./max-cues.js?v=2026.11.29";
 import {
   clearAllData,
   getMeta,
@@ -109,7 +109,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.11.28";
+} from "./storage.js?v=2026.11.29";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -117,7 +117,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.11.28";
+} from "./quiz-gestures.js?v=2026.11.29";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
@@ -126,7 +126,7 @@ import {
   normalizeSpeechRate,
   normalizeSpeechVoiceURI,
   voiceKey,
-} from "./speech.js?v=2026.11.28";
+} from "./speech.js?v=2026.11.29";
 import {
   AI_LINK_JOURNAL_KEY,
   AI_LINK_META_KEY,
@@ -142,7 +142,7 @@ import {
   isAiLinkConfigured,
   mcpUrlFor,
   normalizeAiLinkConfig,
-} from "./ai-link.js?v=2026.11.28";
+} from "./ai-link.js?v=2026.11.29";
 import {
   DEFAULT_DEVICE_SYNC,
   DEVICE_SYNC_META_KEY,
@@ -159,13 +159,13 @@ import {
   syncStateLabel,
   transferFileName,
   unsentEntries,
-} from "./sync.js?v=2026.11.28";
+} from "./sync.js?v=2026.11.29";
 import {
   applyThemePreference,
   normalizeThemePreference,
   readStoredThemePreference,
   watchSystemTheme,
-} from "./theme.js?v=2026.11.28";
+} from "./theme.js?v=2026.11.29";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -240,7 +240,7 @@ const state = {
   // テストの条件（範囲・形式・重要度。範囲と重要度は空なら「すべて」）。
   // テストの条件（押すたびに付け外し）。null はまだ選んでいない＝初めの状態
   // （範囲・重要度はすべて、形式は先頭の1つ）。
-  testDraft: { ranges: null, formats: null, importance: null },
+  testDraft: { ranges: null, formats: null, importance: null, sort: "random" },
   // テストの記録（新しい順）。
   testHistory: [],
   // 結果画面で開いているテストの記録と、履歴から開いたか。
@@ -567,7 +567,7 @@ function resetStudyFlow() {
   };
   state.sortKey = STUDY_SORT_KEY;
   state.filters = emptyFilters();
-  state.testDraft = { ranges: null, formats: null, importance: null };
+  state.testDraft = { ranges: null, formats: null, importance: null, sort: "random" };
   state.filters.ranges = ranges;
   state.importanceFilterMode = null;
   state.rangeSelectionMode = "all";
@@ -1113,7 +1113,7 @@ function setHomeMode(mode) {
   if (next === state.homeMode) return;
   state.homeMode = next;
   // テストを開くときは、何も選んでいない状態から始める。
-  if (next === "test") state.testDraft = { ranges: null, formats: null, importance: null };
+  if (next === "test") state.testDraft = { ranges: null, formats: null, importance: null, sort: "random" };
   setMeta("homeMode", next).catch(console.warn);
   haptics.trigger("flip");
   renderDashboard();
@@ -1187,9 +1187,28 @@ function compactSelection(values, all) {
 
 // 範囲・形式・重要度に合う問題（範囲・重要度は空なら「すべて」）。
 // 形式を2つ以上選んだら、形式ごとに1回ずつ出して全体を混ぜる。
-function testEntriesFor({ ranges = [], formats = [], importance = [] } = {}) {
+function testEntriesFor({ ranges = [], formats = [], importance = [], sort = "random" } = {}) {
   const entries = formats.flatMap((format) => testQueueFor({ ranges, importance, mode: format.mode, content: format.content }));
-  return formats.length > 1 ? shuffle(entries) : entries;
+  if (formats.length > 1) return shuffle(entries);
+  if (sort === "random") return entries;
+  // 並び順を選んだときは、その順に並べる（同じレベル帯の中だけランダム）。
+  const byItem = new Map(entries.map((entry) => [entry.item.id, entry]));
+  return sortItems(entries.map((entry) => entry.item), state.history, sort, Math.random, { randomizeTies: true })
+    .map((item) => byItem.get(item.id));
+}
+
+// テストで選べる並び順（1つだけ）。
+function testSortOptions() {
+  return [
+    { key: "random", title: "ランダム" },
+    { key: "importance-desc", title: "重要度順" },
+    ...(!isRecallSubject() ? [{ key: "difficulty-level-desc", title: "難易度順" }] : []),
+    { key: "difficulty", title: "苦手順" },
+  ];
+}
+
+function testDraftSort() {
+  return testSortOptions().some((option) => option.key === state.testDraft.sort) ? state.testDraft.sort : "random";
 }
 
 function testFormatsLabel(formats = []) {
@@ -1211,11 +1230,11 @@ function renderTestHome() {
   const pickFormats = formats.length ? formats : options;
   const countFor = ({ r = pick(ranges, "ranges"), f = pickFormats, i = pick(importance, "importance") } = {}) =>
     testEntriesFor({ ranges: r, formats: f, importance: i }).length;
+  const sort = testDraftSort();
   const missing = !ranges.length ? "範囲" : !formats.length ? "形式" : !importance.length ? "重要度" : null;
   const total = missing ? 0 : countFor({ r: ranges, f: formats, i: importance });
   const chip = ({ attribute, label, value, selected, index }) => `
         <button class="test-chip${selected ? " is-selected" : ""}" type="button" ${attribute} aria-pressed="${selected}" style="--i:${index}"${value || selected ? "" : ' disabled aria-disabled="true"'}>
-          <span class="test-chip-check" aria-hidden="true"></span>
           <span class="test-chip-text"><span class="test-chip-label">${escapeHtml(label)}</span><small>${value}${unit}</small></span>
         </button>`;
   const group = (title, chosen, all, className, chips) => `
@@ -1248,6 +1267,13 @@ function renderTestHome() {
       selected: importance.includes(value),
       index,
     })).join(""))}
+    <section class="test-group" aria-label="並び順">
+      <h2 class="test-group-title">並び順</h2>
+      <div class="test-chips test-chips--sort">${testSortOptions().map((option, index) => `
+        <button class="test-chip test-chip--plain${sort === option.key ? " is-selected" : ""}" type="button" data-test-sort="${option.key}" aria-pressed="${sort === option.key}" style="--i:${index}">
+          <span class="test-chip-label">${escapeHtml(option.title)}</span>
+        </button>`).join("")}</div>
+    </section>
     <p class="test-home-note">テストは、習得モードでどのくらいの割合の単語を覚えたかを確認するためのモードです。</p>`;
   // 開始ボタンは滑り込む面の外に置く（動いている面の中だと、画面の下に貼りつかず途中に出てしまう）。
   elements.testStartBar.innerHTML = `
@@ -1258,7 +1284,7 @@ function renderTestHome() {
       </button>`;
 }
 
-function startTest(entries, { formats = [], ranges = [], importance = [], retryOf = null } = {}) {
+function startTest(entries, { formats = [], ranges = [], importance = [], sort = "random", retryOf = null } = {}) {
   if (!entries.length) {
     showToast("この条件に合う問題がありません");
     return;
@@ -1266,7 +1292,7 @@ function startTest(entries, { formats = [], ranges = [], importance = [], retryO
   state.resultTestId = null;
   state.resultFromHistory = false;
   beginSession(entries, {
-    test: { formats: formats.map((format) => ({ ...format })), ranges: [...ranges], importance: [...importance], retryOf },
+    test: { formats: formats.map((format) => ({ ...format })), ranges: [...ranges], importance: [...importance], sort, retryOf },
   });
 }
 
@@ -1278,7 +1304,8 @@ function startTestFromDraft() {
   const ranges = normalizedTestRanges(selectedRanges);
   const importance = compactSelection(selectedImportance, testChoiceValues("importance"));
   const plain = formats.map(({ mode, content, label }) => ({ mode, content, label }));
-  startTest(testEntriesFor({ ranges, formats, importance }), { formats: plain, ranges, importance });
+  const sort = testDraftSort();
+  startTest(testEntriesFor({ ranges, formats, importance, sort }), { formats: plain, ranges, importance, sort });
 }
 
 function saveTestHistory() {
@@ -1299,6 +1326,7 @@ function recordTestResult(session) {
     rangesLabel: rangesLabel(test.ranges),
     importance: test.importance,
     importanceLabel: importanceLabel(test.importance),
+    sort: test.sort ?? "random",
     retryOf: test.retryOf,
     ...summary,
     results: session.results.map((result) => ({
@@ -1484,13 +1512,14 @@ function retryTestRecord(id, { onlyWrong = true } = {}) {
       .filter((result) => !result.correct)
       .map((result) => ({ item: pool.get(result.itemId), mode: result.mode }))
       .filter((entry) => entry.item);
-    startTest(entries, { formats, ranges: record.ranges, importance: record.importance, retryOf: record.id });
+    startTest(entries, { formats, ranges: record.ranges, importance: record.importance, sort: record.sort ?? "random", retryOf: record.id });
     return;
   }
-  startTest(testEntriesFor({ ranges: record.ranges, formats, importance: record.importance }), {
+  startTest(testEntriesFor({ ranges: record.ranges, formats, importance: record.importance, sort: record.sort ?? "random" }), {
     formats,
     ranges: record.ranges,
     importance: record.importance,
+    sort: record.sort ?? "random",
   });
 }
 
@@ -6169,6 +6198,12 @@ function bindEvents() {
       ["testFormat", "data-test-format", "formats"],
       ["testImportance", "data-test-importance", "importance"],
     ].find(([key]) => target.dataset[key]);
+    if (target.dataset.testSort) {
+      state.testDraft.sort = target.dataset.testSort;
+      haptics.trigger("flip");
+      renderTestHome();
+      pulseChip(elements.testHome, "data-test-sort", target.dataset.testSort);
+    }
     if (testPick) {
       const [key, attribute, field] = testPick;
       const value = target.dataset[key];
@@ -6410,7 +6445,7 @@ async function boot() {
       fetch(ENGLISH_DATA_URL),
       fetch("./data/public-items.json?v=2026.09.01"),
       fetch("./data/health-items.json?v=2026.09.01"),
-      fetch("./data/kobun-vocabulary.json?v=2026.11.28"),
+      fetch("./data/kobun-vocabulary.json?v=2026.11.29"),
       loadHistory(),
       getMeta("selectedMode"),
       getMetaObject("settings", DEFAULT_SETTINGS),
@@ -6499,7 +6534,7 @@ async function boot() {
         .catch((error) => console.warn("AI連携の同期に失敗しました", error));
     }
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.11.28").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.11.29").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

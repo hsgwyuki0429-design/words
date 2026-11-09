@@ -66,11 +66,18 @@ test("テストは1画面で、範囲・形式・重要度を札で付け外し�
   assert.match(home, /data-test-start/);
   // 「全選択」の札は置かない。何も選んでいない欄があれば、開始ボタンでそれを知らせる。
   assert.doesNotMatch(appSource, /data-test-(range|format|importance)="all"/);
+  // チェックボックスの印は付けない（選んだ札は塗りで分かる）。
+  assert.doesNotMatch(appSource, /test-chip-check/);
+  assert.doesNotMatch(stylesSource, /test-chip-check/);
+  // 並び順は1つ選ぶ（初めはランダム）。選んだ順に並べて出す。
+  assert.match(home, /data-test-sort="\$\{option\.key\}"/);
+  assert.match(functionSource("testSortOptions", "testDraftSort"), /key: "random", title: "ランダム"[\s\S]*?key: "importance-desc"[\s\S]*?key: "difficulty", title: "苦手順"/);
+  assert.match(functionSource("testEntriesFor", "testSortOptions"), /sortItems\(entries\.map\(\(entry\) => entry\.item\), state\.history, sort, Math\.random, \{ randomizeTies: true \}\)/);
   assert.doesNotMatch(home, /全選択/);
   assert.match(home, /`\$\{missing\}を選んでください`/);
   // 初めは何も選んでいない（テストを開くたびに空に戻す）。範囲・重要度は付け外し、形式は1つだけ。
   assert.match(functionSource("testDraftValues", "selectedTestFormats"), /state\.testDraft\[field\] = \[\];/);
-  assert.match(functionSource("setHomeMode", "normalizedTestRanges"), /if \(next === "test"\) state\.testDraft = \{ ranges: null, formats: null, importance: null \};/);
+  assert.match(functionSource("setHomeMode", "normalizedTestRanges"), /if \(next === "test"\) state\.testDraft = \{ ranges: null, formats: null, importance: null, sort: "random" \};/);
   assert.match(appSource, /state\.testDraft\[field\] = current\.includes\(value\)\s*\n\s*\? current\.filter\(\(entry\) => entry !== value\)\s*\n\s*: field === "formats" \? \[value\] : \[\.\.\.current, value\];/);
   // 指で滑らせて切り替えても、押したときと同じ音が鳴る。
   assert.match(functionSource("activateSegment", "bindEvents"), /sfx\.play\("tap"\);/);
@@ -78,7 +85,7 @@ test("テストは1画面で、範囲・形式・重要度を札で付け外し�
   assert.match(functionSource("renderDashboard", "setRingColor"), /if \(test\) \{\s*\n\s*renderTestHome\(\);/);
   assert.match(stylesSource, /\.test-chip \{[^}]*min-height: 46px;/);
   // 形式を2つ以上選んだら、形式ごとに1回ずつ出して全体を混ぜる。
-  assert.match(functionSource("testEntriesFor", "testFormatsLabel"), /return formats\.length > 1 \? shuffle\(entries\) : entries;/);
+  assert.match(functionSource("testEntriesFor", "testSortOptions"), /if \(formats\.length > 1\) return shuffle\(entries\);/);
 
   const items = [
     englishItem("a", { range: "Plastic", importance: "A" }),
@@ -102,7 +109,7 @@ test("テストでは間違えても出し直さず、演習の周回にも入�
   assert.match(submit, /const scheduledDelay = session\.test \? null : reviewDelayForAnswer\(/);
   // テストのセッションは周回（progress）を持たない。
   const start = functionSource("startTest", "startTestFromDraft");
-  assert.match(start, /beginSession\(entries, \{\s*\n\s*test: \{ formats: formats\.map\(\(format\) => \(\{ \.\.\.format \}\)\), ranges: \[\.\.\.ranges\], importance: \[\.\.\.importance\], retryOf \},\s*\n\s*\}\);/);
+  assert.match(start, /beginSession\(entries, \{\s*\n\s*test: \{ formats: formats\.map\(\(format\) => \(\{ \.\.\.format \}\)\), ranges: \[\.\.\.ranges\], importance: \[\.\.\.importance\], sort, retryOf \},\s*\n\s*\}\);/);
   assert.doesNotMatch(start, /progressKey|progress:/);
   // 終わったら演習の結果ではなく、テストの記録として残す。
   const complete = functionSource("completeSession", "slimResultItem");

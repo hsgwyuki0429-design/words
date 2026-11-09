@@ -1,5 +1,5 @@
-import { createHaptics } from "./haptics.js?v=2026.11.25";
-import { createKobunController } from "./kobun.js?v=2026.11.25";
+import { createHaptics } from "./haptics.js?v=2026.11.26";
+import { createKobunController } from "./kobun.js?v=2026.11.26";
 import {
   ALL_MODES,
   ALPHABET_KEYBOARD_ROWS,
@@ -73,8 +73,8 @@ import {
   unmasterStudyItems,
   gaugeColorIndex,
   hasAnsweredMode,
-} from "./logic.js?v=2026.11.25";
-import { createMaxAudioEngine } from "./audio.js?v=2026.11.25";
+} from "./logic.js?v=2026.11.26";
+import { createMaxAudioEngine } from "./audio.js?v=2026.11.26";
 import {
   CORRECT_VARIANTS,
   LANDING_VARIANTS,
@@ -82,7 +82,7 @@ import {
   SFX_VOLUME_OPTIONS,
   createSfxEngine,
   normalizeSfxVolume,
-} from "./sfx.js?v=2026.11.25";
+} from "./sfx.js?v=2026.11.26";
 import {
   MAX_FEVER_GOAL,
   MAX_TIMELINE_PHASES,
@@ -97,7 +97,7 @@ import {
   resolveMaxCue,
   scaledVisualPlan,
   shouldPlayMaxSound,
-} from "./max-cues.js?v=2026.11.25";
+} from "./max-cues.js?v=2026.11.26";
 import {
   clearAllData,
   getMeta,
@@ -109,7 +109,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.11.25";
+} from "./storage.js?v=2026.11.26";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -117,7 +117,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.11.25";
+} from "./quiz-gestures.js?v=2026.11.26";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
@@ -126,7 +126,7 @@ import {
   normalizeSpeechRate,
   normalizeSpeechVoiceURI,
   voiceKey,
-} from "./speech.js?v=2026.11.25";
+} from "./speech.js?v=2026.11.26";
 import {
   AI_LINK_JOURNAL_KEY,
   AI_LINK_META_KEY,
@@ -142,7 +142,7 @@ import {
   isAiLinkConfigured,
   mcpUrlFor,
   normalizeAiLinkConfig,
-} from "./ai-link.js?v=2026.11.25";
+} from "./ai-link.js?v=2026.11.26";
 import {
   DEFAULT_DEVICE_SYNC,
   DEVICE_SYNC_META_KEY,
@@ -159,13 +159,13 @@ import {
   syncStateLabel,
   transferFileName,
   unsentEntries,
-} from "./sync.js?v=2026.11.25";
+} from "./sync.js?v=2026.11.26";
 import {
   applyThemePreference,
   normalizeThemePreference,
   readStoredThemePreference,
   watchSystemTheme,
-} from "./theme.js?v=2026.11.25";
+} from "./theme.js?v=2026.11.26";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -4352,11 +4352,22 @@ function renderChoiceArea(question, answered, currentAnswer) {
           : "";
         const unknownClass = choice === UNKNOWN_CHOICE ? " choice-unknown" : "";
         return `<button class="choice-button${unknownClass}${resultClass}" type="button" data-choice="${escapeHtml(choice)}" ${answered ? "disabled" : ""}>
-          <span>${letters[index]}</span><strong>${escapeHtml(choice)}${answered && selected && question.mode === "public_choice" ? '<small class="choice-selected-label">あなたの回答</small>' : ""}</strong>
+          <span>${letters[index]}</span><strong>${glossMarkup(choice)}${answered && selected && question.mode === "public_choice" ? '<small class="choice-selected-label">あなたの回答</small>' : ""}</strong>
         </button>`;
       })
       .join("")}
   </div>`;
+}
+
+// 訳の中の（ ）書き（「turn ___ の一部」「～で」などの使い方の注記）は、見出しの意味より
+// 一段控えめな灰色の小さな文字にして、意味そのものが先に目に入るようにする。
+function glossMarkup(text) {
+  return String(text ?? "")
+    .split(/([（(][^（）()]*[）)])/)
+    .map((part) => (/^[（(].*[）)]$/.test(part)
+      ? `<span class="gloss-note">${escapeHtml(part)}</span>`
+      : escapeHtml(part)))
+    .join("");
 }
 
 function characterHintMarkup(token, value = "") {
@@ -6454,7 +6465,7 @@ async function boot() {
       fetch(ENGLISH_DATA_URL),
       fetch("./data/public-items.json?v=2026.09.01"),
       fetch("./data/health-items.json?v=2026.09.01"),
-      fetch("./data/kobun-vocabulary.json?v=2026.11.25"),
+      fetch("./data/kobun-vocabulary.json?v=2026.11.26"),
       loadHistory(),
       getMeta("selectedMode"),
       getMetaObject("settings", DEFAULT_SETTINGS),
@@ -6543,7 +6554,7 @@ async function boot() {
         .catch((error) => console.warn("AI連携の同期に失敗しました", error));
     }
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.11.25").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.11.26").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

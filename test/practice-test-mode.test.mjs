@@ -206,3 +206,10 @@ test("切り替えは、つまみを指で横へ滑らせても選べる", () =>
   assert.match(stylesSource, /\.segment-switch \{\s*\n\s*touch-action: pan-y;/);
   assert.match(stylesSource, /\.segment-switch\.is-dragging \.segment-thumb \{[^}]*transition: none;/);
 });
+
+test("4択の訳の（ ）書きは、灰色の小さな文字にして意味より控えめにする", () => {
+  const gloss = functionSource("glossMarkup", "characterHintMarkup");
+  assert.match(gloss, /<span class="gloss-note">\$\{escapeHtml\(part\)\}<\/span>/);
+  assert.match(appSource, /<strong>\$\{glossMarkup\(choice\)\}/);
+  assert.match(stylesSource, /\.gloss-note \{[^}]*opacity: 0\.5;/);
+});

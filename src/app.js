@@ -1,5 +1,5 @@
-import { createHaptics } from "./haptics.js?v=2026.11.29";
-import { createKobunController } from "./kobun.js?v=2026.11.29";
+import { createHaptics } from "./haptics.js?v=2026.11.30";
+import { createKobunController } from "./kobun.js?v=2026.11.30";
 import {
   ALL_MODES,
   ALPHABET_KEYBOARD_ROWS,
@@ -73,8 +73,8 @@ import {
   unmasterStudyItems,
   gaugeColorIndex,
   hasAnsweredMode,
-} from "./logic.js?v=2026.11.29";
-import { createMaxAudioEngine } from "./audio.js?v=2026.11.29";
+} from "./logic.js?v=2026.11.30";
+import { createMaxAudioEngine } from "./audio.js?v=2026.11.30";
 import {
   CORRECT_VARIANTS,
   LANDING_VARIANTS,
@@ -82,7 +82,7 @@ import {
   SFX_VOLUME_OPTIONS,
   createSfxEngine,
   normalizeSfxVolume,
-} from "./sfx.js?v=2026.11.29";
+} from "./sfx.js?v=2026.11.30";
 import {
   MAX_FEVER_GOAL,
   MAX_TIMELINE_PHASES,
@@ -97,7 +97,7 @@ import {
   resolveMaxCue,
   scaledVisualPlan,
   shouldPlayMaxSound,
-} from "./max-cues.js?v=2026.11.29";
+} from "./max-cues.js?v=2026.11.30";
 import {
   clearAllData,
   getMeta,
@@ -109,7 +109,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.11.29";
+} from "./storage.js?v=2026.11.30";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -117,7 +117,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.11.29";
+} from "./quiz-gestures.js?v=2026.11.30";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
@@ -126,7 +126,7 @@ import {
   normalizeSpeechRate,
   normalizeSpeechVoiceURI,
   voiceKey,
-} from "./speech.js?v=2026.11.29";
+} from "./speech.js?v=2026.11.30";
 import {
   AI_LINK_JOURNAL_KEY,
   AI_LINK_META_KEY,
@@ -142,7 +142,7 @@ import {
   isAiLinkConfigured,
   mcpUrlFor,
   normalizeAiLinkConfig,
-} from "./ai-link.js?v=2026.11.29";
+} from "./ai-link.js?v=2026.11.30";
 import {
   DEFAULT_DEVICE_SYNC,
   DEVICE_SYNC_META_KEY,
@@ -159,13 +159,13 @@ import {
   syncStateLabel,
   transferFileName,
   unsentEntries,
-} from "./sync.js?v=2026.11.29";
+} from "./sync.js?v=2026.11.30";
 import {
   applyThemePreference,
   normalizeThemePreference,
   readStoredThemePreference,
   watchSystemTheme,
-} from "./theme.js?v=2026.11.29";
+} from "./theme.js?v=2026.11.30";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -364,7 +364,7 @@ function emptyPeriodMarkup() {
 }
 
 // いま学習する英語の教材データ（3定）。sw.js の APP_SHELL にも同じURLを載せる。
-const ENGLISH_DATA_URL = "./data/english-2026-3.json?v=2026.11.11";
+const ENGLISH_DATA_URL = "./data/english-2026-3.json?v=2026.11.12";
 // いま学習する公共の教材データ（3定・単元20〜30）。2定の公共は data/public-items.json に残している。
 const PUBLIC_DATA_URL = "./data/public-2026-3.json?v=2026.11.11";
 
@@ -6428,7 +6428,7 @@ async function boot() {
       fetch(ENGLISH_DATA_URL),
       fetch(PUBLIC_DATA_URL),
       fetch("./data/health-items.json?v=2026.09.01"),
-      fetch("./data/kobun-vocabulary.json?v=2026.11.29"),
+      fetch("./data/kobun-vocabulary.json?v=2026.11.30"),
       loadHistory(),
       getMeta("selectedMode"),
       getMetaObject("settings", DEFAULT_SETTINGS),
@@ -6509,7 +6509,7 @@ async function boot() {
         .catch((error) => console.warn("AI連携の同期に失敗しました", error));
     }
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.11.29").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.11.30").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

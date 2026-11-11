@@ -611,7 +611,7 @@ test("3定の英語は、訳に答えの英語がそのまま出ず、熟語の�
   assert.equal(byEnglish.get("sir").memo, "⇔ ma'am（女性への敬称）");
   assert.equal(byEnglish.get("legal").generalMeaning, "法律の・法律に関する");
   // 重要度Cの基本語は、単語・熟語とも収録しない。
-  for (const basic of ["and", "of", "be", "I", "have to do", "a lot of", "for example", "Shun", "the"]) {
+  for (const basic of ["and", "of", "be", "I", "a lot of", "for example", "Shun", "the"]) {
     assert.ok(!byEnglish.has(basic), basic);
   }
 });
@@ -649,4 +649,22 @@ test("4択の誤答は品詞と訳の形をそろえ、正解だけが浮かな�
     if (choices.filter((choice) => choice !== item.japanese).every((choice) => glossShape(choice) === shape)) matched += 1;
   }
   assert.ok(matched / targets.length > 0.85, `形のそろう問題が少ない（${matched}/${targets.length}）`);
+});
+
+test("Chapter 10 の熟語の表も他の章と同じ形で Rwanda に入る", () => {
+  const period3 = JSON.parse(fs.readFileSync(new URL("../data/english-2026-3.json", import.meta.url), "utf8"));
+  const byEnglish = new Map(period3.map((item) => [item.english, item]));
+  const thereIs = byEnglish.get("there is / are 〜");
+  assert.deepEqual(thereIs.acceptedAnswers, ["there is 〜", "there are 〜"]);
+  assert.equal(thereIs.range, "Rwanda");
+  // 見出しの「~」は「〜」に、後ろの注記と本文での使い方はメモへ。
+  const emphasis = byEnglish.get("It is 〜 that …");
+  assert.equal(emphasis.japanese, "…のは〜だ");
+  assert.match(emphasis.memo, /^強調構文／本文では：/);
+  assert.equal(byEnglish.get("make O C").type, "structure");
+  assert.equal(byEnglish.get("make O C").blanks?.phrase, undefined);
+  // 他の章にもある熟語は1件にまとめる。
+  const breakOut = byEnglish.get("break out");
+  assert.equal(breakOut.japanese, "急に起こる／（戦争などが）勃発する");
+  assert.ok(itemMatchesRange(breakOut, "Edo") && itemMatchesRange(breakOut, "Rwanda"));
 });

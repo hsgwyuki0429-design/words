@@ -291,12 +291,64 @@ def make_source(lesson: dict[str, str]) -> dict[str, str]:
     }
 
 
+# 「there is / are 〜」のように、併記が見出しの一部だけを言い換えている語句の答え。
+# そのまま「/」で分けると「are 〜」だけが答えになってしまうので、書き分けを並べる。
+ANSWER_OVERRIDES = {
+    "there is / are 〜": ["there is 〜", "there are 〜"],
+    "from what S have found / learned": ["from what S have found", "from what S have learned"],
+}
+# 穴埋めにすると「wh」だけが答えになるような、穴埋めに向かない語句。
+NO_BLANK = {"ask A＋wh-節"}
+# 語句の中で「A」「B」「O」「C」「S」「V」は、当てはまる語を入れる場所を表す（構文として扱う）。
+PLACEHOLDERS = {"A", "B", "O", "C", "S", "V"}
+
+# 熟語の表（列：表現・日本語訳・本文中の意味・使い方・出典・重要度・難易度）で、
+# 見出しの後ろに付いた日本語の注記（「（強調構文）」「（'d like to）」など）。
+TRAILING_NOTE_RE = re.compile(r"（([^（）]*)）$")
+
+
+def phrase_sheet_row(row: dict[str, str]) -> dict[str, str] | None:
+    """熟語の表の1行を、単語の表と同じ列の形に直す。
+
+    - 見出しの「~」は他の章と同じ「〜」にし、後ろの注記は使い方のメモへ回す。
+    - 「本文中の意味・使い方」は本文でどう使われたかの説明なので、訳ではなくメモに入れる。
+    - 末尾の「※単語一覧に載せなかった語…」のような説明の行は読まない。
+    """
+    english = row.get("表現", "")
+    if not english or english.startswith("※"):
+        return None
+    notes = []
+    note = TRAILING_NOTE_RE.search(english)
+    if note:
+        notes.append(note.group(1))
+        english = english[: note.start()].strip()
+    english = english.replace("~", "〜")
+    usage = row.get("本文中の意味・使い方", "")
+    if usage and usage not in SAME_AS_TEXT:
+        notes.append(f"本文では：{usage}")
+    return {
+        "原形": english,
+        "本文中の形": "",
+        "品詞": "熟語",
+        "本文中の意味": row.get("日本語訳", ""),
+        "一般的な意味": "",
+        "memo": "／".join(notes),
+        "出典": row.get("出典", ""),
+        "重要度": row.get("重要度", ""),
+        "難易度": row.get("難易度", ""),
+    }
+
+
 def read_rows(path: Path, lesson: str | None = None) -> list[dict[str, str]]:
     """語彙表を読む。lesson を渡すと、出典の欄にかかわらずその範囲の行として扱う。"""
     rows = []
     with path.open(encoding="utf-8-sig", newline="") as handle:
         for raw in csv.DictReader(handle):
             row = {key: clean_text(value) for key, value in raw.items()}
+            if "表現" in row:
+                row = phrase_sheet_row(row)
+                if row is None:
+                    continue
             # 固有名詞は原形が「—」のことがあるので、本文中の形を見出しにする。
             if row.get("原形") in SAME_AS_TEXT:
                 row["原形"] = row.get("本文中の形", "")
@@ -337,6 +389,8 @@ def build_records(rows: list[dict[str, str]]) -> list[dict[str, object]]:
             record["japanese"],
             clean_meaning(lemma, row["本文中の意味"], record["surface_forms"], hide=True),
         )
+        if row.get("memo"):
+            append_unique(record["memo"], [row["memo"]])
         general = row["一般的な意味"]
         if general.startswith(MEMO_PREFIXES):
             append_unique(record["memo"], [general])
@@ -383,16 +437,20 @@ def make_item(record: dict[str, object], order: int) -> dict[str, object]:
     lessons = record["lessons"]
     primary = lessons[0]
     digest = hashlib.sha1(f"{source_type}|{english}".casefold().encode("utf-8")).hexdigest()[:10]
-    answers = accepted_answers(english)
+    answers = list(ANSWER_OVERRIDES.get(english) or accepted_answers(english))
     if english == "Washington D.C.":
         answers.append("Washington, D.C.")
     primary_answer = answers[0]
     tokens = word_matches(primary_answer)
-    has_placeholder = any(match.group() in {"A", "B"} for match in tokens)
+    has_placeholder = any(match.group() in PLACEHOLDERS for match in tokens)
     item_type = "word" if is_word else ("structure" if has_placeholder else "phrase")
 
-    preposition_blank = None if is_word else build_preposition_blank(primary_answer)
-    phrase_blank = None if is_word else build_phrase_blank(primary_answer)
+    blankable = not is_word and english not in NO_BLANK
+    preposition_blank = build_preposition_blank(primary_answer) if blankable else None
+    phrase_blank = build_phrase_blank(primary_answer) if blankable else None
+    # 「make O C」の「O C」のように、入れる場所の記号を答えにする穴埋めは作らない。
+    if phrase_blank and any(match.group() in PLACEHOLDERS for match in word_matches(phrase_blank["answer"])):
+        phrase_blank = None
     modes, tags = question_modes_and_tags(
         item_type,
         spelling=bool(

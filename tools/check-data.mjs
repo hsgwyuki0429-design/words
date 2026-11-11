@@ -132,7 +132,7 @@ assert.deepEqual([...ranges].sort(), RANGE_ORDER.slice(0, 8).sort(), "All eight 
 console.log(`Data check passed: ${items.length} items across ${ranges.size} ranges.`);
 
 // 3定（2026.3）の英語。tools/import_english_csv.py で語彙表（CSV）から作る。
-assert.equal(englishPeriod3.length, 435, "3定の英語は435語句（Chapter 8〜10、重要度Cの基本語を除く）");
+assert.equal(englishPeriod3.length, 538, "3定の英語は538語句（Chapter 8〜10、重要度Cの基本語を除く）");
 assert.equal(new Set(englishPeriod3.map((item) => item.id)).size, englishPeriod3.length, "3定の英語のIDが重複している");
 assert.ok(
   englishPeriod3.every((item) => !items.some((old) => old.id === item.id)),
@@ -145,7 +145,7 @@ assert.equal(
 );
 assert.deepEqual(
   countBy(englishPeriod3, "type", ["word", "phrase", "structure"]),
-  { word: 359, phrase: 71, structure: 5 },
+  { word: 359, phrase: 155, structure: 24 },
   "3定の英語の内訳（単語・熟語・構文）",
 );
 assert.deepEqual(

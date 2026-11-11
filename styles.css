@@ -839,7 +839,8 @@ textarea:focus-visible,
 .range-choice-name {
   flex: 1 1 auto;
   min-width: 0;
-  overflow-wrap: anywhere;
+  /* 英語の範囲名は語の途中で折り返さない（入りきらない長い語だけ折る）。 */
+  overflow-wrap: break-word;
   font-size: 15px;
   font-weight: 750;
   line-height: 1.35;
@@ -873,8 +874,18 @@ textarea:focus-visible,
   white-space: nowrap;
 }
 
+/* 範囲ボタンの印は、ボタンの上辺に重ねて置く。名前と横に並べると、名前の幅が
+   狭まって「Rwan / da」のように語の途中で折り返し、ボタンの高さが変わってしまう。 */
 .range-choice .in-progress-badge {
-  margin-left: auto;
+  position: absolute;
+  top: -9px;
+  right: 10px;
+  min-height: 18px;
+  padding: 0 7px;
+  font-size: 10px;
+  /* ダークの印の色は半透明なので、下に背景色を敷いて縁取りの線が透けないようにする。 */
+  background: linear-gradient(var(--tint-red), var(--tint-red)), var(--background);
+  pointer-events: none;
 }
 
 .range-multi-entry {

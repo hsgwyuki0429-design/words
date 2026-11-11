@@ -6569,7 +6569,7 @@
   {
     "id": "edo_2137d6371c",
     "english": "break out",
-    "japanese": "急に起こる",
+    "japanese": "急に起こる／（戦争などが）勃発する",
     "type": "phrase",
     "sourceType": "熟語",
     "importance": "SSS",
@@ -6577,8 +6577,8 @@
     "range": "Edo",
     "lesson": "Chapter 9",
     "title": "Edo, the Resilient City",
-    "source": "Chapter 9 Edo, the Resilient City",
-    "sourceDetail": "Chapter 9",
+    "source": "Chapter 9 Edo, the Resilient City; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 9 / Chapter 10",
     "sources": [
       {
         "range": "Edo",
@@ -6589,6 +6589,16 @@
         "note": "",
         "detail": "",
         "label": "Chapter 9 Edo, the Resilient City"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
       }
     ],
     "tags": [
@@ -6609,6 +6619,7 @@
     "examples": [
       "broke out"
     ],
+    "memo": "本文では：戦争が起きた",
     "blanks": {
       "phrase": {
         "prompt": "break ___",
@@ -14038,13 +14049,13 @@
     "japanese": "最初は",
     "type": "phrase",
     "sourceType": "熟語",
-    "importance": "B",
+    "importance": "SS",
     "difficulty": "A",
     "range": "A Loving Story",
     "lesson": "Chapter 8",
     "title": "A Loving Story",
-    "source": "Chapter 8 A Loving Story",
-    "sourceDetail": "Chapter 8",
+    "source": "Chapter 8 A Loving Story; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 8 / Chapter 10",
     "sources": [
       {
         "range": "A Loving Story",
@@ -14055,6 +14066,16 @@
         "note": "",
         "detail": "",
         "label": "Chapter 8 A Loving Story"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
       }
     ],
     "tags": [
@@ -14074,6 +14095,7 @@
     ],
     "order": 291,
     "partOfSpeech": "熟語",
+    "memo": "本文では：当初は家で昼食",
     "blanks": {
       "preposition": {
         "prompt": "___ first",
@@ -16704,6 +16726,78 @@
     ]
   },
   {
+    "id": "loving_66031bb336",
+    "english": "have to do",
+    "japanese": "〜しなければならない",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "SS",
+    "difficulty": "A",
+    "range": "A Loving Story",
+    "lesson": "Chapter 8",
+    "title": "A Loving Story",
+    "source": "Chapter 8 A Loving Story; Chapter 9 Edo, the Resilient City; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 8 / Chapter 9 / Chapter 10",
+    "sources": [
+      {
+        "range": "A Loving Story",
+        "lesson": "Chapter 8",
+        "title": "A Loving Story",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 8 A Loving Story"
+      },
+      {
+        "range": "Edo",
+        "lesson": "Chapter 9",
+        "title": "Edo, the Resilient City",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 9 Edo, the Resilient City"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "have to do"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 345,
+    "partOfSpeech": "熟語",
+    "examples": [
+      "had to",
+      "have to"
+    ],
+    "memo": "本文では：no child has to worry（心配しなくていい）",
+    "blanks": {
+      "phrase": {
+        "prompt": "have ___",
+        "answer": "to do"
+      }
+    }
+  },
+  {
     "id": "loving_14bf8e7da1",
     "english": "important",
     "japanese": "重要な",
@@ -16751,7 +16845,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 345,
+    "order": 346,
     "partOfSpeech": "形容詞",
     "lemma": "important",
     "surfaceForms": [
@@ -16806,7 +16900,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 346,
+    "order": 347,
     "partOfSpeech": "助動詞",
     "lemma": "will",
     "surfaceForms": [
@@ -16863,7 +16957,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 347,
+    "order": 348,
     "partOfSpeech": "名詞",
     "lemma": "time",
     "surfaceForms": [
@@ -16929,7 +17023,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 348,
+    "order": 349,
     "partOfSpeech": "前置詞・副詞",
     "lemma": "about",
     "surfaceForms": [
@@ -16984,7 +17078,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 349,
+    "order": 350,
     "partOfSpeech": "副詞",
     "lemma": "well",
     "surfaceForms": [
@@ -17041,7 +17135,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 350,
+    "order": 351,
     "partOfSpeech": "名詞",
     "lemma": "word",
     "surfaceForms": [
@@ -17097,7 +17191,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 351,
+    "order": 352,
     "partOfSpeech": "名詞",
     "lemma": "world",
     "surfaceForms": [
@@ -17153,7 +17247,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 352,
+    "order": 353,
     "partOfSpeech": "代名詞・限定詞",
     "lemma": "all",
     "surfaceForms": [
@@ -17209,7 +17303,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 353,
+    "order": 354,
     "partOfSpeech": "副詞・代名詞・形容詞",
     "lemma": "more",
     "surfaceForms": [
@@ -17264,7 +17358,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 354,
+    "order": 355,
     "partOfSpeech": "副詞",
     "lemma": "most",
     "surfaceForms": [
@@ -17308,7 +17402,7 @@
       "ja_to_en_choice",
       "ja_to_en_input"
     ],
-    "order": 355,
+    "order": 356,
     "partOfSpeech": "固有名詞",
     "lemma": "Nelson Mandela",
     "surfaceForms": [
@@ -17351,7 +17445,7 @@
       "ja_to_en_choice",
       "ja_to_en_input"
     ],
-    "order": 356,
+    "order": 357,
     "partOfSpeech": "固有名詞",
     "lemma": "Malala Yousafzai",
     "surfaceForms": [
@@ -17394,7 +17488,7 @@
       "ja_to_en_choice",
       "ja_to_en_input"
     ],
-    "order": 357,
+    "order": 358,
     "partOfSpeech": "固有名詞",
     "lemma": "United Nations",
     "surfaceForms": [
@@ -17439,7 +17533,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 358,
+    "order": 359,
     "partOfSpeech": "固有名詞（略）",
     "lemma": "SDGs",
     "surfaceForms": [
@@ -17484,7 +17578,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 359,
+    "order": 360,
     "partOfSpeech": "固有名詞",
     "lemma": "Africa",
     "surfaceForms": [
@@ -17529,7 +17623,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 360,
+    "order": 361,
     "partOfSpeech": "固有名詞",
     "lemma": "Rwanda",
     "surfaceForms": [
@@ -17572,7 +17666,7 @@
       "ja_to_en_choice",
       "ja_to_en_input"
     ],
-    "order": 361,
+    "order": 362,
     "partOfSpeech": "固有名詞",
     "lemma": "Marie Louise",
     "surfaceForms": [
@@ -17619,7 +17713,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 362,
+    "order": 363,
     "partOfSpeech": "固有名詞（略）",
     "lemma": "JICA",
     "surfaceForms": [
@@ -17664,7 +17758,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 363,
+    "order": 364,
     "partOfSpeech": "固有名詞",
     "lemma": "Kigali",
     "surfaceForms": [
@@ -17707,7 +17801,7 @@
       "ja_to_en_choice",
       "ja_to_en_input"
     ],
-    "order": 364,
+    "order": 365,
     "partOfSpeech": "固有名詞",
     "lemma": "Great East Japan Earthquake",
     "surfaceForms": [
@@ -17752,7 +17846,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 365,
+    "order": 366,
     "partOfSpeech": "名詞",
     "lemma": "education",
     "surfaceForms": [
@@ -17797,7 +17891,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 366,
+    "order": 367,
     "partOfSpeech": "名詞",
     "lemma": "quote",
     "surfaceForms": [
@@ -17843,7 +17937,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 367,
+    "order": 368,
     "partOfSpeech": "名詞",
     "lemma": "weapon",
     "surfaceForms": [
@@ -17888,7 +17982,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 368,
+    "order": 369,
     "partOfSpeech": "名詞",
     "lemma": "comment",
     "surfaceForms": [
@@ -17934,7 +18028,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 369,
+    "order": 370,
     "partOfSpeech": "名詞",
     "lemma": "quality",
     "surfaceForms": [
@@ -17980,7 +18074,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 370,
+    "order": 371,
     "partOfSpeech": "名詞",
     "lemma": "reason",
     "surfaceForms": [
@@ -18026,7 +18120,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 371,
+    "order": 372,
     "partOfSpeech": "名詞",
     "lemma": "parent",
     "surfaceForms": [
@@ -18071,7 +18165,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 372,
+    "order": 373,
     "partOfSpeech": "名詞",
     "lemma": "poverty",
     "surfaceForms": [
@@ -18116,7 +18210,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 373,
+    "order": 374,
     "partOfSpeech": "名詞",
     "lemma": "transcript",
     "surfaceForms": [
@@ -18162,7 +18256,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 374,
+    "order": 375,
     "partOfSpeech": "名詞・動詞",
     "lemma": "interview",
     "surfaceForms": [
@@ -18209,7 +18303,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 375,
+    "order": 376,
     "partOfSpeech": "名詞",
     "lemma": "history",
     "surfaceForms": [
@@ -18255,7 +18349,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 376,
+    "order": 377,
     "partOfSpeech": "名詞",
     "lemma": "dressmaking",
     "surfaceForms": [
@@ -18300,7 +18394,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 377,
+    "order": 378,
     "partOfSpeech": "名詞",
     "lemma": "program",
     "surfaceForms": [
@@ -18346,7 +18440,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 378,
+    "order": 379,
     "partOfSpeech": "名詞",
     "lemma": "genocide",
     "surfaceForms": [
@@ -18391,7 +18485,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 379,
+    "order": 380,
     "partOfSpeech": "名詞",
     "lemma": "war",
     "surfaceForms": [
@@ -18436,7 +18530,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 380,
+    "order": 381,
     "partOfSpeech": "名詞",
     "lemma": "refugee",
     "surfaceForms": [
@@ -18481,7 +18575,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 381,
+    "order": 382,
     "partOfSpeech": "名詞",
     "lemma": "breast",
     "surfaceForms": [
@@ -18526,7 +18620,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 382,
+    "order": 383,
     "partOfSpeech": "名詞",
     "lemma": "terror",
     "surfaceForms": [
@@ -18572,7 +18666,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 383,
+    "order": 384,
     "partOfSpeech": "名詞（略）",
     "lemma": "NPO",
     "surfaceForms": [
@@ -18617,7 +18711,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 384,
+    "order": 385,
     "partOfSpeech": "名詞",
     "lemma": "capital",
     "surfaceForms": [
@@ -18663,7 +18757,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 385,
+    "order": 386,
     "partOfSpeech": "名詞",
     "lemma": "opportunity",
     "surfaceForms": [
@@ -18708,7 +18802,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 386,
+    "order": 387,
     "partOfSpeech": "名詞",
     "lemma": "kindergarten",
     "surfaceForms": [
@@ -18753,7 +18847,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 387,
+    "order": 388,
     "partOfSpeech": "名詞",
     "lemma": "checkup",
     "surfaceForms": [
@@ -18797,7 +18891,7 @@
       "ja_to_en_choice",
       "ja_to_en_input"
     ],
-    "order": 388,
+    "order": 389,
     "partOfSpeech": "名詞（形容詞的）",
     "lemma": "school lunch",
     "surfaceForms": [
@@ -18842,7 +18936,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 389,
+    "order": 390,
     "partOfSpeech": "名詞",
     "lemma": "daughter",
     "surfaceForms": [
@@ -18887,7 +18981,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 390,
+    "order": 391,
     "partOfSpeech": "名詞",
     "lemma": "president",
     "surfaceForms": [
@@ -18933,7 +19027,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 391,
+    "order": 392,
     "partOfSpeech": "名詞",
     "lemma": "value",
     "surfaceForms": [
@@ -18979,7 +19073,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 392,
+    "order": 393,
     "partOfSpeech": "動詞",
     "lemma": "change",
     "surfaceForms": [
@@ -19024,7 +19118,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 393,
+    "order": 394,
     "partOfSpeech": "動詞",
     "lemma": "believe",
     "surfaceForms": [
@@ -19070,7 +19164,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 394,
+    "order": 395,
     "partOfSpeech": "動詞",
     "lemma": "link",
     "surfaceForms": [
@@ -19116,7 +19210,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 395,
+    "order": 396,
     "partOfSpeech": "動詞（過去分詞）",
     "lemma": "sponsor",
     "surfaceForms": [
@@ -19162,7 +19256,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 396,
+    "order": 397,
     "partOfSpeech": "動詞",
     "lemma": "kill",
     "surfaceForms": [
@@ -19207,7 +19301,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 397,
+    "order": 398,
     "partOfSpeech": "動詞",
     "lemma": "flee",
     "surfaceForms": [
@@ -19252,7 +19346,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 398,
+    "order": 399,
     "partOfSpeech": "動詞",
     "lemma": "lie",
     "surfaceForms": [
@@ -19298,7 +19392,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 399,
+    "order": 400,
     "partOfSpeech": "動詞",
     "lemma": "hate",
     "surfaceForms": [
@@ -19344,7 +19438,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 400,
+    "order": 401,
     "partOfSpeech": "動詞",
     "lemma": "realize",
     "surfaceForms": [
@@ -19390,7 +19484,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 401,
+    "order": 402,
     "partOfSpeech": "動詞",
     "lemma": "end",
     "surfaceForms": [
@@ -19436,7 +19530,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 402,
+    "order": 403,
     "partOfSpeech": "動詞",
     "lemma": "establish",
     "surfaceForms": [
@@ -19482,7 +19576,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 403,
+    "order": 404,
     "partOfSpeech": "動詞",
     "lemma": "attend",
     "surfaceForms": [
@@ -19528,7 +19622,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 404,
+    "order": 405,
     "partOfSpeech": "動詞",
     "lemma": "serve",
     "surfaceForms": [
@@ -19574,7 +19668,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 405,
+    "order": 406,
     "partOfSpeech": "動詞",
     "lemma": "concentrate",
     "surfaceForms": [
@@ -19620,7 +19714,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 406,
+    "order": 407,
     "partOfSpeech": "動詞",
     "lemma": "introduce",
     "surfaceForms": [
@@ -19666,7 +19760,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 407,
+    "order": 408,
     "partOfSpeech": "動詞",
     "lemma": "hope",
     "surfaceForms": [
@@ -19712,7 +19806,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 408,
+    "order": 409,
     "partOfSpeech": "動詞",
     "lemma": "stay",
     "surfaceForms": [
@@ -19758,7 +19852,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 409,
+    "order": 410,
     "partOfSpeech": "動詞",
     "lemma": "save",
     "surfaceForms": [
@@ -19804,7 +19898,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 410,
+    "order": 411,
     "partOfSpeech": "形容詞",
     "lemma": "impressive",
     "surfaceForms": [
@@ -19849,7 +19943,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 411,
+    "order": 412,
     "partOfSpeech": "形容詞",
     "lemma": "powerful",
     "surfaceForms": [
@@ -19894,7 +19988,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 412,
+    "order": 413,
     "partOfSpeech": "形容詞",
     "lemma": "sub-Saharan",
     "surfaceForms": [
@@ -19939,7 +20033,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 413,
+    "order": 414,
     "partOfSpeech": "形容詞",
     "lemma": "main",
     "surfaceForms": [
@@ -19984,7 +20078,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 414,
+    "order": 415,
     "partOfSpeech": "形容詞",
     "lemma": "enough",
     "surfaceForms": [
@@ -20029,7 +20123,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 415,
+    "order": 416,
     "partOfSpeech": "形容詞",
     "lemma": "poor",
     "surfaceForms": [
@@ -20075,7 +20169,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 416,
+    "order": 417,
     "partOfSpeech": "副詞",
     "lemma": "closely",
     "surfaceForms": [
@@ -20121,7 +20215,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 417,
+    "order": 418,
     "partOfSpeech": "形容詞",
     "lemma": "personal",
     "surfaceForms": [
@@ -20166,7 +20260,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 418,
+    "order": 419,
     "partOfSpeech": "形容詞",
     "lemma": "central",
     "surfaceForms": [
@@ -20212,7 +20306,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 419,
+    "order": 420,
     "partOfSpeech": "形容詞",
     "lemma": "Rwandan",
     "surfaceForms": [
@@ -20257,7 +20351,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 420,
+    "order": 421,
     "partOfSpeech": "形容詞",
     "lemma": "ethnic",
     "surfaceForms": [
@@ -20302,7 +20396,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 421,
+    "order": 422,
     "partOfSpeech": "形容詞",
     "lemma": "terrible",
     "surfaceForms": [
@@ -20347,7 +20441,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 422,
+    "order": 423,
     "partOfSpeech": "形容詞",
     "lemma": "dead",
     "surfaceForms": [
@@ -20392,7 +20486,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 423,
+    "order": 424,
     "partOfSpeech": "形容詞",
     "lemma": "awful",
     "surfaceForms": [
@@ -20437,7 +20531,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 424,
+    "order": 425,
     "partOfSpeech": "形容詞",
     "lemma": "horrible",
     "surfaceForms": [
@@ -20482,7 +20576,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 425,
+    "order": 426,
     "partOfSpeech": "形容詞",
     "lemma": "nonprofit",
     "surfaceForms": [
@@ -20527,7 +20621,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 426,
+    "order": 427,
     "partOfSpeech": "形容詞",
     "lemma": "regular",
     "surfaceForms": [
@@ -20573,7 +20667,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 427,
+    "order": 428,
     "partOfSpeech": "形容詞",
     "lemma": "medical",
     "surfaceForms": [
@@ -20618,7 +20712,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 428,
+    "order": 429,
     "partOfSpeech": "形容詞",
     "lemma": "healthy",
     "surfaceForms": [
@@ -20663,7 +20757,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 429,
+    "order": 430,
     "partOfSpeech": "副詞",
     "lemma": "long",
     "surfaceForms": [
@@ -20709,7 +20803,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 430,
+    "order": 431,
     "partOfSpeech": "形容詞",
     "lemma": "amazing",
     "surfaceForms": [
@@ -20755,7 +20849,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 431,
+    "order": 432,
     "partOfSpeech": "形容詞",
     "lemma": "aware",
     "surfaceForms": [
@@ -20800,7 +20894,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 432,
+    "order": 433,
     "partOfSpeech": "形容詞",
     "lemma": "disastrous",
     "surfaceForms": [
@@ -20845,7 +20939,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 433,
+    "order": 434,
     "partOfSpeech": "限定詞",
     "lemma": "no",
     "surfaceForms": [
@@ -20890,7 +20984,7 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 434,
+    "order": 435,
     "partOfSpeech": "前置詞",
     "lemma": "along",
     "surfaceForms": [
@@ -20935,12 +21029,5185 @@
       "ja_to_en_input",
       "spelling_input"
     ],
-    "order": 435,
+    "order": 436,
     "partOfSpeech": "接続詞",
     "lemma": "if",
     "surfaceForms": [
       "if"
     ],
     "generalMeaning": "もし〜なら"
+  },
+  {
+    "id": "rwanda_38c7cfc983",
+    "english": "do (some) research on 〜",
+    "japanese": "〜について調査する",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "A",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "do (some) research on 〜"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 437,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：教育について調べた",
+    "blanks": {
+      "preposition": {
+        "prompt": "do (some) research ___ 〜",
+        "answer": "on"
+      },
+      "phrase": {
+        "prompt": "do (some) ___ 〜",
+        "answer": "research on"
+      }
+    }
+  },
+  {
+    "id": "rwanda_0a8d8b8e30",
+    "english": "use A to do",
+    "japanese": "Aを使って〜する",
+    "type": "structure",
+    "sourceType": "熟語",
+    "importance": "S",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "structure",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "use A to do"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 438,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：世界を変えるために使える武器",
+    "blanks": {
+      "phrase": {
+        "prompt": "use A ___",
+        "answer": "to do"
+      }
+    }
+  },
+  {
+    "id": "rwanda_d3f533ddbc",
+    "english": "change the world",
+    "japanese": "世界を変える",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "change the world"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 439,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：名言の中の表現",
+    "blanks": {
+      "phrase": {
+        "prompt": "change ___",
+        "answer": "the world"
+      }
+    }
+  },
+  {
+    "id": "rwanda_4258182342",
+    "english": "How about you?",
+    "japanese": "あなたはどう？",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "A",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "How about you?"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 440,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：相手の意見を聞き返す",
+    "blanks": {
+      "preposition": {
+        "prompt": "How ___ you?",
+        "answer": "about"
+      },
+      "phrase": {
+        "prompt": "How ___ ?",
+        "answer": "about you"
+      }
+    }
+  },
+  {
+    "id": "rwanda_c982f6560e",
+    "english": "seem to do",
+    "japanese": "〜するようだ",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "SS",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "seem to do"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 441,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：誰もが同意しているようだ",
+    "blanks": {
+      "phrase": {
+        "prompt": "seem ___",
+        "answer": "to do"
+      }
+    }
+  },
+  {
+    "id": "rwanda_e60ddc24cf",
+    "english": "agree that 〜",
+    "japanese": "〜ということに同意する",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "S",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "agree that 〜"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 442,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：教育が大切だと同意",
+    "blanks": {
+      "phrase": {
+        "prompt": "agree ___ 〜",
+        "answer": "that"
+      }
+    }
+  },
+  {
+    "id": "rwanda_28feeb6dee",
+    "english": "there is / are 〜",
+    "japanese": "〜がある・いる",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "there is 〜",
+      "there are 〜"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 443,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：約7800万人いる／学校が足りない",
+    "blanks": {
+      "phrase": {
+        "prompt": "there ___ 〜",
+        "answer": "is"
+      }
+    }
+  },
+  {
+    "id": "rwanda_78ec2a5463",
+    "english": "in the world",
+    "japanese": "世界で",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "in the world"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 444,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：世界に〜がいる",
+    "blanks": {
+      "preposition": {
+        "prompt": "___ the world",
+        "answer": "in"
+      },
+      "phrase": {
+        "prompt": "in ___",
+        "answer": "the world"
+      }
+    }
+  },
+  {
+    "id": "rwanda_9445a40777",
+    "english": "go to school",
+    "japanese": "学校に通う",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "A",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "go to school"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 445,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：通学する（went to elementary schoolも同型）",
+    "blanks": {
+      "preposition": {
+        "prompt": "go ___ school",
+        "answer": "to"
+      },
+      "phrase": {
+        "prompt": "go ___",
+        "answer": "to school"
+      }
+    }
+  },
+  {
+    "id": "rwanda_3cd7592c58",
+    "english": "That is why 〜",
+    "japanese": "そういうわけで〜",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "SS",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "That is why 〜"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 446,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：だから国連は〜を選んだ",
+    "blanks": {
+      "phrase": {
+        "prompt": "That ___ 〜",
+        "answer": "is why"
+      }
+    }
+  },
+  {
+    "id": "rwanda_ecfdbffe9a",
+    "english": "choose A as B",
+    "japanese": "AをBとして選ぶ",
+    "type": "structure",
+    "sourceType": "熟語",
+    "importance": "S",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "structure",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "choose A as B"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 447,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：「質の高い教育」をSDGsの1つに選んだ",
+    "blanks": {
+      "preposition": {
+        "prompt": "choose A ___ B",
+        "answer": "as"
+      },
+      "phrase": {
+        "prompt": "choose A ___ B",
+        "answer": "as"
+      }
+    }
+  },
+  {
+    "id": "rwanda_a96c79f2b1",
+    "english": "one of the＋複数名詞",
+    "japanese": "〜のうちの1つ",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "SS",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "one of the＋複数名詞"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 448,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：one of the SDGs / main reasons",
+    "blanks": {
+      "preposition": {
+        "prompt": "one ___ the＋複数名詞",
+        "answer": "of"
+      },
+      "phrase": {
+        "prompt": "one ___ ＋複数名詞",
+        "answer": "of the"
+      }
+    }
+  },
+  {
+    "id": "rwanda_011121baaa",
+    "english": "from what S have found / learned",
+    "japanese": "〜したところによると",
+    "type": "structure",
+    "sourceType": "熟語",
+    "importance": "S",
+    "difficulty": "C",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "structure",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "from what S have found",
+      "from what S have learned"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 449,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：調べた・習った範囲では",
+    "blanks": {
+      "preposition": {
+        "prompt": "___ what S have found",
+        "answer": "from"
+      },
+      "phrase": {
+        "prompt": "from what S ___",
+        "answer": "have found"
+      }
+    }
+  },
+  {
+    "id": "rwanda_a5f3077ee3",
+    "english": "it seems that 〜",
+    "japanese": "〜のようだ",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "SS",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "it seems that 〜"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 450,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：約半数がアフリカに住んでいるようだ",
+    "blanks": {
+      "phrase": {
+        "prompt": "it ___ 〜",
+        "answer": "seems that"
+      }
+    }
+  },
+  {
+    "id": "rwanda_21e7b83948",
+    "english": "half of 〜",
+    "japanese": "〜の半分",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "half of 〜"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 451,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：7800万人の約半数",
+    "blanks": {
+      "preposition": {
+        "prompt": "half ___ 〜",
+        "answer": "of"
+      },
+      "phrase": {
+        "prompt": "half ___ 〜",
+        "answer": "of"
+      }
+    }
+  },
+  {
+    "id": "rwanda_4fd9fafaff",
+    "english": "as far as I know",
+    "japanese": "私の知る限りでは",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "SSS",
+    "difficulty": "C",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "as far as I know"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 452,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：as far as ... の形",
+    "blanks": {
+      "preposition": {
+        "prompt": "as far ___ I know",
+        "answer": "as"
+      },
+      "phrase": {
+        "prompt": "as far as ___",
+        "answer": "I know"
+      }
+    }
+  },
+  {
+    "id": "rwanda_5148402d00",
+    "english": "the reason is that 〜 / reason (that) S V",
+    "japanese": "理由は〜だ／SがVする理由",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "S",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "the reason is that 〜",
+      "reason (that) S V"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 453,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：主な理由の1つは〜；子どもが通えない別の理由",
+    "blanks": {
+      "phrase": {
+        "prompt": "the reason ___ 〜",
+        "answer": "is that"
+      }
+    }
+  },
+  {
+    "id": "rwanda_343c9a60b7",
+    "english": "in addition",
+    "japanese": "さらに・加えて",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "SSS",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "in addition"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 454,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：理由を追加する",
+    "blanks": {
+      "preposition": {
+        "prompt": "___ addition",
+        "answer": "in"
+      },
+      "phrase": {
+        "prompt": "in ___",
+        "answer": "addition"
+      }
+    }
+  },
+  {
+    "id": "rwanda_30e03a1572",
+    "english": "cannot afford to do",
+    "japanese": "〜する余裕がない",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "SS",
+    "difficulty": "C",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "cannot afford to do"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 455,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：子どもを学校に通わせる金銭的余裕がない",
+    "blanks": {
+      "phrase": {
+        "prompt": "cannot afford ___",
+        "answer": "to do"
+      }
+    }
+  },
+  {
+    "id": "rwanda_e4788f1d11",
+    "english": "send A to school",
+    "japanese": "Aを学校に行かせる",
+    "type": "structure",
+    "sourceType": "熟語",
+    "importance": "A",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "structure",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "send A to school"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 456,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：子どもを通学させる",
+    "blanks": {
+      "preposition": {
+        "prompt": "send A ___ school",
+        "answer": "to"
+      },
+      "phrase": {
+        "prompt": "send A ___",
+        "answer": "to school"
+      }
+    }
+  },
+  {
+    "id": "rwanda_fddd623643",
+    "english": "want A to do",
+    "japanese": "Aに〜してほしい",
+    "type": "structure",
+    "sourceType": "熟語",
+    "importance": "SS",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "structure",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "want A to do"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 457,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：子どもに働いてほしい／貧しい人に機会を持ってほしい",
+    "blanks": {
+      "phrase": {
+        "prompt": "want A ___",
+        "answer": "to do"
+      }
+    }
+  },
+  {
+    "id": "rwanda_fcff9d5aec",
+    "english": "earn money",
+    "japanese": "お金を稼ぐ",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "S",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "earn money"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 458,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：家族のために稼ぐ",
+    "blanks": {
+      "phrase": {
+        "prompt": "earn ___",
+        "answer": "money"
+      }
+    }
+  },
+  {
+    "id": "rwanda_804529a1ca",
+    "english": "instead of doing",
+    "japanese": "〜する代わりに",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "SS",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "instead of doing"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 459,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：学校に行く代わりに",
+    "blanks": {
+      "preposition": {
+        "prompt": "instead ___ doing",
+        "answer": "of"
+      },
+      "phrase": {
+        "prompt": "instead ___",
+        "answer": "of doing"
+      }
+    }
+  },
+  {
+    "id": "rwanda_5067438d82",
+    "english": "in short",
+    "japanese": "要するに",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "SSS",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "in short"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 460,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：まとめ",
+    "blanks": {
+      "preposition": {
+        "prompt": "___ short",
+        "answer": "in"
+      },
+      "phrase": {
+        "prompt": "in ___",
+        "answer": "short"
+      }
+    }
+  },
+  {
+    "id": "rwanda_0ea9912e6a",
+    "english": "a way out of 〜",
+    "japanese": "〜から抜け出す道",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "A",
+    "difficulty": "C",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "a way out of 〜"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 461,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：貧困から抜け出す手段",
+    "blanks": {
+      "preposition": {
+        "prompt": "a way out ___ 〜",
+        "answer": "of"
+      },
+      "phrase": {
+        "prompt": "a way ___ 〜",
+        "answer": "out of"
+      }
+    }
+  },
+  {
+    "id": "rwanda_d8bb0a3656",
+    "english": "Here is 〜",
+    "japanese": "ここに〜がある",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "Here is 〜"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 462,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：これがインタビューの記録です",
+    "blanks": {
+      "phrase": {
+        "prompt": "Here ___ 〜",
+        "answer": "is"
+      }
+    }
+  },
+  {
+    "id": "rwanda_4d5f03f8fc",
+    "english": "Thank you (very much) for 〜",
+    "japanese": "〜をありがとう",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "A",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "Thank you (very much) for 〜"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 463,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：時間を作ってくれて／時間を割いてくれて",
+    "blanks": {
+      "preposition": {
+        "prompt": "Thank you (very much) ___ 〜",
+        "answer": "for"
+      },
+      "phrase": {
+        "prompt": "Thank you (very much) ___ 〜",
+        "answer": "for"
+      }
+    }
+  },
+  {
+    "id": "rwanda_992fcf23b4",
+    "english": "make time for 〜",
+    "japanese": "〜のために時間を作る",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "A",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "make time for 〜"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 464,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：私たちのために時間を取る",
+    "blanks": {
+      "preposition": {
+        "prompt": "make time ___ 〜",
+        "answer": "for"
+      },
+      "phrase": {
+        "prompt": "make ___ 〜",
+        "answer": "time for"
+      }
+    }
+  },
+  {
+    "id": "rwanda_1be6b0f7b7",
+    "english": "first of all",
+    "japanese": "まず第一に",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "SSS",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "first of all"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 465,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：最初の質問の導入",
+    "blanks": {
+      "preposition": {
+        "prompt": "first ___ all",
+        "answer": "of"
+      },
+      "phrase": {
+        "prompt": "first ___",
+        "answer": "of all"
+      }
+    }
+  },
+  {
+    "id": "rwanda_d0341705e7",
+    "english": "would like to do",
+    "japanese": "〜したい（丁寧）",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "SS",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "would like to do"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 466,
+    "partOfSpeech": "熟語",
+    "memo": "'d like to／本文では：尋ねたい／共有したい",
+    "blanks": {
+      "preposition": {
+        "prompt": "would ___ to do",
+        "answer": "like"
+      },
+      "phrase": {
+        "prompt": "would like ___",
+        "answer": "to do"
+      }
+    }
+  },
+  {
+    "id": "rwanda_31a53a1b26",
+    "english": "ask about 〜",
+    "japanese": "〜について尋ねる",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "ask about 〜"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 467,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：経歴について",
+    "blanks": {
+      "preposition": {
+        "prompt": "ask ___ 〜",
+        "answer": "about"
+      },
+      "phrase": {
+        "prompt": "ask ___ 〜",
+        "answer": "about"
+      }
+    }
+  },
+  {
+    "id": "rwanda_0bb9bba24d",
+    "english": "It's nice to meet you.",
+    "japanese": "はじめまして",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "It's nice to meet you."
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 468,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：あいさつ",
+    "blanks": {
+      "preposition": {
+        "prompt": "It's nice ___ meet you.",
+        "answer": "to"
+      },
+      "phrase": {
+        "prompt": "It's nice to ___ .",
+        "answer": "meet you"
+      }
+    }
+  },
+  {
+    "id": "rwanda_7f827baf46",
+    "english": "be born in 〜",
+    "japanese": "〜で生まれる",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "A",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "be born in 〜"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 469,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：ルワンダで生まれた",
+    "blanks": {
+      "preposition": {
+        "prompt": "be born ___ 〜",
+        "answer": "in"
+      },
+      "phrase": {
+        "prompt": "be ___ 〜",
+        "answer": "born in"
+      }
+    }
+  },
+  {
+    "id": "rwanda_3819c2c887",
+    "english": "work as 〜",
+    "japanese": "〜として働く",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "A",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "work as 〜"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 470,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：洋裁の先生として",
+    "blanks": {
+      "preposition": {
+        "prompt": "work ___ 〜",
+        "answer": "as"
+      },
+      "phrase": {
+        "prompt": "work ___ 〜",
+        "answer": "as"
+      }
+    }
+  },
+  {
+    "id": "rwanda_9c4d5a0363",
+    "english": "as part of 〜",
+    "japanese": "〜の一環として",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "S",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "as part of 〜"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 471,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：JICA主催プログラムの一環で",
+    "blanks": {
+      "preposition": {
+        "prompt": "as part ___ 〜",
+        "answer": "of"
+      },
+      "phrase": {
+        "prompt": "as ___ 〜",
+        "answer": "part of"
+      }
+    }
+  },
+  {
+    "id": "rwanda_14a4e0c945",
+    "english": "around the time (that) 〜",
+    "japanese": "〜した頃",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "A",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "around the time (that) 〜"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 472,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：虐殺が起きた頃",
+    "blanks": {
+      "preposition": {
+        "prompt": "___ the time (that) 〜",
+        "answer": "around"
+      },
+      "phrase": {
+        "prompt": "around the ___ (that) 〜",
+        "answer": "time"
+      }
+    }
+  },
+  {
+    "id": "rwanda_e66df43a42",
+    "english": "That's right.",
+    "japanese": "その通りです",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "SSS",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "That's right."
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 473,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：相づち",
+    "blanks": {
+      "phrase": {
+        "prompt": "That's ___ .",
+        "answer": "right"
+      }
+    }
+  },
+  {
+    "id": "rwanda_8b961f0575",
+    "english": "It is 〜 that …",
+    "japanese": "…のは〜だ",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "SS",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "It is 〜 that …",
+      "It is 〜 that"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 474,
+    "partOfSpeech": "熟語",
+    "memo": "強調構文／本文では：戦争が起きたのは帰国2か月後だった",
+    "blanks": {
+      "phrase": {
+        "prompt": "It ___ …",
+        "answer": "is 〜 that"
+      }
+    }
+  },
+  {
+    "id": "rwanda_9b20bcf5e0",
+    "english": "期間＋after S V",
+    "japanese": "SがVしてから〜後に",
+    "type": "structure",
+    "sourceType": "熟語",
+    "importance": "A",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "structure",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "期間＋after S V"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 475,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：two months after I returned",
+    "blanks": {
+      "preposition": {
+        "prompt": "期間＋ ___ S V",
+        "answer": "after"
+      },
+      "phrase": {
+        "prompt": "期間＋ ___ S V",
+        "answer": "after"
+      }
+    }
+  },
+  {
+    "id": "rwanda_ff31986f97",
+    "english": "return to 〜",
+    "japanese": "〜に戻る",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "S",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "return to 〜"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 476,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：ルワンダに戻る",
+    "blanks": {
+      "preposition": {
+        "prompt": "return ___ 〜",
+        "answer": "to"
+      },
+      "phrase": {
+        "prompt": "return ___ 〜",
+        "answer": "to"
+      }
+    }
+  },
+  {
+    "id": "rwanda_b25dfb6efb",
+    "english": "ethnic group",
+    "japanese": "民族集団",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "S",
+    "difficulty": "C",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "ethnic group"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 477,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：2つの民族の間で",
+    "blanks": {
+      "phrase": {
+        "prompt": "ethnic ___",
+        "answer": "group"
+      }
+    }
+  },
+  {
+    "id": "rwanda_88605b2633",
+    "english": "hundreds of thousands of 〜",
+    "japanese": "何十万もの〜",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "S",
+    "difficulty": "C",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "hundreds of thousands of 〜"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 478,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：何十万人もの人が殺された",
+    "blanks": {
+      "preposition": {
+        "prompt": "hundreds of thousands ___ 〜",
+        "answer": "of"
+      },
+      "phrase": {
+        "prompt": "hundreds of ___ 〜",
+        "answer": "thousands of"
+      }
+    }
+  },
+  {
+    "id": "rwanda_13d4efb537",
+    "english": "refugee camp",
+    "japanese": "難民キャンプ",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "A",
+    "difficulty": "C",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "refugee camp"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 479,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：家族で避難した先",
+    "blanks": {
+      "phrase": {
+        "prompt": "refugee ___",
+        "answer": "camp"
+      }
+    }
+  },
+  {
+    "id": "rwanda_52e6d79e16",
+    "english": "see O doing",
+    "japanese": "Oが〜しているのを見る",
+    "type": "structure",
+    "sourceType": "熟語",
+    "importance": "SS",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "structure"
+    ],
+    "acceptedAnswers": [
+      "see O doing"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input"
+    ],
+    "order": 480,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：遺体が横たわっているのを見た"
+  },
+  {
+    "id": "rwanda_4aaedec211",
+    "english": "make O do",
+    "japanese": "Oに〜させる",
+    "type": "structure",
+    "sourceType": "熟語",
+    "importance": "SS",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "structure"
+    ],
+    "acceptedAnswers": [
+      "make O do"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input"
+    ],
+    "order": 481,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：私に戦争をもっと憎ませた"
+  },
+  {
+    "id": "rwanda_a9e8fa31cc",
+    "english": "even more",
+    "japanese": "さらにいっそう",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "S",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "even more"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 482,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：もっと憎むようになった",
+    "blanks": {
+      "phrase": {
+        "prompt": "even ___",
+        "answer": "more"
+      }
+    }
+  },
+  {
+    "id": "rwanda_cf0419890a",
+    "english": "at one's breast",
+    "japanese": "胸に抱いて（授乳して）",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "B",
+    "difficulty": "D",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "at one's breast"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 483,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：赤ちゃんを胸に抱いて",
+    "blanks": {
+      "preposition": {
+        "prompt": "___ one's breast",
+        "answer": "at"
+      },
+      "phrase": {
+        "prompt": "at ___",
+        "answer": "one's breast"
+      }
+    }
+  },
+  {
+    "id": "rwanda_a9428e7728",
+    "english": "try to do",
+    "japanese": "〜しようとする",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "SS",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "try to do"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 484,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：乳を飲もうとしていた／機会を与えようとしている",
+    "blanks": {
+      "phrase": {
+        "prompt": "try ___",
+        "answer": "to do"
+      }
+    }
+  },
+  {
+    "id": "rwanda_b24da5cd4a",
+    "english": "thanks to 〜",
+    "japanese": "〜のおかげで",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "SS",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "thanks to 〜"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 485,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：日本の友人のおかげで",
+    "blanks": {
+      "preposition": {
+        "prompt": "thanks ___ 〜",
+        "answer": "to"
+      },
+      "phrase": {
+        "prompt": "thanks ___ 〜",
+        "answer": "to"
+      }
+    }
+  },
+  {
+    "id": "rwanda_3855211570",
+    "english": "be able to do",
+    "japanese": "〜できる",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "SS",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "be able to do"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 486,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：福島に戻れた／学校を設立できた",
+    "blanks": {
+      "phrase": {
+        "prompt": "be able ___",
+        "answer": "to do"
+      }
+    }
+  },
+  {
+    "id": "rwanda_bb36a9e14a",
+    "english": "move back to 〜",
+    "japanese": "〜に戻って移り住む",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "A",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "move back to 〜"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 487,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：福島へ戻った",
+    "blanks": {
+      "preposition": {
+        "prompt": "move back ___ 〜",
+        "answer": "to"
+      },
+      "phrase": {
+        "prompt": "move ___ 〜",
+        "answer": "back to"
+      }
+    }
+  },
+  {
+    "id": "rwanda_80e204a7c0",
+    "english": "come to do",
+    "japanese": "〜するようになる",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "SS",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "come to do"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 488,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：come to realize（悟るようになった）",
+    "blanks": {
+      "phrase": {
+        "prompt": "come ___",
+        "answer": "to do"
+      }
+    }
+  },
+  {
+    "id": "rwanda_b0ac212ac9",
+    "english": "the key to 〜 (doing)",
+    "japanese": "〜の鍵",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "SS",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "the key to 〜 (doing)"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 489,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：戦争の恐怖を終わらせる鍵（toは前置詞）",
+    "blanks": {
+      "phrase": {
+        "prompt": "the key ___ 〜 (doing)",
+        "answer": "to"
+      }
+    }
+  },
+  {
+    "id": "rwanda_824d5726b2",
+    "english": "set up",
+    "japanese": "設立する",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "SSS",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "set up"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 490,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：NPOを立ち上げた",
+    "blanks": {
+      "phrase": {
+        "prompt": "set ___",
+        "answer": "up"
+      }
+    }
+  },
+  {
+    "id": "rwanda_c1f87358fe",
+    "english": "nonprofit organization",
+    "japanese": "非営利団体",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "A",
+    "difficulty": "C",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "nonprofit organization"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 491,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：NPO",
+    "blanks": {
+      "phrase": {
+        "prompt": "nonprofit ___",
+        "answer": "organization"
+      }
+    }
+  },
+  {
+    "id": "rwanda_d8eedfa643",
+    "english": "A called B",
+    "japanese": "Bという名のA",
+    "type": "structure",
+    "sourceType": "熟語",
+    "importance": "S",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "structure",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "A called B"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 492,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：〜という団体",
+    "blanks": {
+      "phrase": {
+        "prompt": "A ___ B",
+        "answer": "called"
+      }
+    }
+  },
+  {
+    "id": "rwanda_e682cc7598",
+    "english": "since then",
+    "japanese": "それ以来",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "S",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "since then"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 493,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：2001年以来ずっと支援",
+    "blanks": {
+      "preposition": {
+        "prompt": "___ then",
+        "answer": "since"
+      },
+      "phrase": {
+        "prompt": "since ___",
+        "answer": "then"
+      }
+    }
+  },
+  {
+    "id": "rwanda_ddaddbcf76",
+    "english": "tell A (more) about B",
+    "japanese": "AにBについて（もっと）話す",
+    "type": "structure",
+    "sourceType": "熟語",
+    "importance": "A",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "structure",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "tell A (more) about B"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 494,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：学校についてもっと教えて",
+    "blanks": {
+      "preposition": {
+        "prompt": "tell A (more) ___ B",
+        "answer": "about"
+      },
+      "phrase": {
+        "prompt": "tell A (more) ___ B",
+        "answer": "about"
+      }
+    }
+  },
+  {
+    "id": "rwanda_682f82353d",
+    "english": "offer A B",
+    "japanese": "AにBを提供する",
+    "type": "structure",
+    "sourceType": "熟語",
+    "importance": "S",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "structure",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "offer A B"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 495,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：子どもたちに学ぶ機会を",
+    "blanks": {
+      "phrase": {
+        "prompt": "___ A B",
+        "answer": "offer"
+      }
+    }
+  },
+  {
+    "id": "rwanda_1baecdd7d4",
+    "english": "an opportunity to do",
+    "japanese": "〜する機会",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "SS",
+    "difficulty": "C",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "an opportunity to do"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 496,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：学ぶ機会",
+    "blanks": {
+      "phrase": {
+        "prompt": "an opportunity ___",
+        "answer": "to do"
+      }
+    }
+  },
+  {
+    "id": "rwanda_2fd30adb13",
+    "english": "at present",
+    "japanese": "現在",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "S",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "at present"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 497,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：現在約270人",
+    "blanks": {
+      "preposition": {
+        "prompt": "___ present",
+        "answer": "at"
+      },
+      "phrase": {
+        "prompt": "at ___",
+        "answer": "present"
+      }
+    }
+  },
+  {
+    "id": "rwanda_323c4bb825",
+    "english": "elementary school",
+    "japanese": "小学校",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "A",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "elementary school"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 498,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：幼稚園・小学校の児童／娘が小学校へ",
+    "blanks": {
+      "phrase": {
+        "prompt": "elementary ___",
+        "answer": "school"
+      }
+    }
+  },
+  {
+    "id": "rwanda_c8fde73acc",
+    "english": "sports day",
+    "japanese": "運動会",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "sports day"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 499,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：日本と同じ行事",
+    "blanks": {
+      "phrase": {
+        "prompt": "sports ___",
+        "answer": "day"
+      }
+    }
+  },
+  {
+    "id": "rwanda_f31c0e256e",
+    "english": "give A B / be given B",
+    "japanese": "AにBを与える／Bを与えられる",
+    "type": "structure",
+    "sourceType": "熟語",
+    "importance": "S",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "structure",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "give A B",
+      "be given B"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 500,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：健康診断を受けさせる／給食が出された",
+    "blanks": {
+      "phrase": {
+        "prompt": "___ A B",
+        "answer": "give"
+      }
+    }
+  },
+  {
+    "id": "rwanda_1e8319437b",
+    "english": "What do you think is 〜?",
+    "japanese": "何が〜だと思いますか",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "S",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "What do you think is 〜?"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 501,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：一番大切なことは何だと思うか",
+    "blanks": {
+      "phrase": {
+        "prompt": "What do you ___ 〜?",
+        "answer": "think is"
+      }
+    }
+  },
+  {
+    "id": "rwanda_d60c0c36f1",
+    "english": "school life",
+    "japanese": "学校生活",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "school life"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 502,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：学校生活で大切なこと",
+    "blanks": {
+      "phrase": {
+        "prompt": "school ___",
+        "answer": "life"
+      }
+    }
+  },
+  {
+    "id": "rwanda_a63c3c0456",
+    "english": "make O C",
+    "japanese": "OをCにする",
+    "type": "structure",
+    "sourceType": "熟語",
+    "importance": "SS",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "structure"
+    ],
+    "acceptedAnswers": [
+      "make O C"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input"
+    ],
+    "order": 503,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：生徒をより健康にする"
+  },
+  {
+    "id": "rwanda_e1e4485092",
+    "english": "bring A to B",
+    "japanese": "AをBに連れてくる",
+    "type": "structure",
+    "sourceType": "熟語",
+    "importance": "A",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "structure",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "bring A to B"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 504,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：子どもを学校に来させる",
+    "blanks": {
+      "preposition": {
+        "prompt": "bring A ___ B",
+        "answer": "to"
+      },
+      "phrase": {
+        "prompt": "bring A ___ B",
+        "answer": "to"
+      }
+    }
+  },
+  {
+    "id": "rwanda_535a206889",
+    "english": "mean that 〜",
+    "japanese": "〜ということを意味する",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "S",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "mean that 〜"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 505,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：長く在籍することにつながる",
+    "blanks": {
+      "phrase": {
+        "prompt": "mean ___ 〜",
+        "answer": "that"
+      }
+    }
+  },
+  {
+    "id": "rwanda_15164c6b12",
+    "english": "stay in school",
+    "japanese": "学校に通い続ける",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "A",
+    "difficulty": "C",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "stay in school"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 506,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：退学せずに長く在籍する",
+    "blanks": {
+      "preposition": {
+        "prompt": "stay ___ school",
+        "answer": "in"
+      },
+      "phrase": {
+        "prompt": "stay ___",
+        "answer": "in school"
+      }
+    }
+  },
+  {
+    "id": "rwanda_018f546267",
+    "english": "as with 〜",
+    "japanese": "〜と同様に",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "S",
+    "difficulty": "D",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "as with 〜"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 507,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：他の学校と同じく",
+    "blanks": {
+      "preposition": {
+        "prompt": "as ___ 〜",
+        "answer": "with"
+      },
+      "phrase": {
+        "prompt": "as ___ 〜",
+        "answer": "with"
+      }
+    }
+  },
+  {
+    "id": "rwanda_7da23b0858",
+    "english": "go home",
+    "japanese": "家に帰る",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "go home"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 508,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：昼食のため帰宅",
+    "blanks": {
+      "phrase": {
+        "prompt": "go ___",
+        "answer": "home"
+      }
+    }
+  },
+  {
+    "id": "rwanda_6a571b5b10",
+    "english": "for lunch",
+    "japanese": "昼食に",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "for lunch"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 509,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：昼食をとりに",
+    "blanks": {
+      "preposition": {
+        "prompt": "___ lunch",
+        "answer": "for"
+      },
+      "phrase": {
+        "prompt": "for ___",
+        "answer": "lunch"
+      }
+    }
+  },
+  {
+    "id": "rwanda_d8ade64273",
+    "english": "come back to 〜",
+    "japanese": "〜に戻ってくる",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "A",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "come back to 〜"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 510,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：空腹で学校に戻ってきた",
+    "blanks": {
+      "preposition": {
+        "prompt": "come back ___ 〜",
+        "answer": "to"
+      },
+      "phrase": {
+        "prompt": "come ___ 〜",
+        "answer": "back to"
+      }
+    }
+  },
+  {
+    "id": "rwanda_16bbeeeeeb",
+    "english": "get to know (about) 〜",
+    "japanese": "〜を知るようになる",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "S",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "get to know (about) 〜"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 511,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：給食制度を知った",
+    "blanks": {
+      "preposition": {
+        "prompt": "get to know ( ___ ) 〜",
+        "answer": "about"
+      },
+      "phrase": {
+        "prompt": "get to ___ (about) 〜",
+        "answer": "know"
+      }
+    }
+  },
+  {
+    "id": "rwanda_87fb0a28d4",
+    "english": "worry about 〜",
+    "japanese": "〜を心配する",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "S",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "worry about 〜"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 512,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：食べ物の心配",
+    "blanks": {
+      "preposition": {
+        "prompt": "worry ___ 〜",
+        "answer": "about"
+      },
+      "phrase": {
+        "prompt": "worry ___ 〜",
+        "answer": "about"
+      }
+    }
+  },
+  {
+    "id": "rwanda_dccff2e5f4",
+    "english": "It is＋形容詞＋to do",
+    "japanese": "〜するのは…だ",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "SS",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "It is＋形容詞＋to do"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 513,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：空腹で勉強するのはつらい",
+    "blanks": {
+      "phrase": {
+        "prompt": "It is＋形容詞＋ ___",
+        "answer": "to do"
+      }
+    }
+  },
+  {
+    "id": "rwanda_549be40ea3",
+    "english": "on an empty stomach",
+    "japanese": "空腹で",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "S",
+    "difficulty": "C",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "on an empty stomach"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 514,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：何も食べずに",
+    "blanks": {
+      "preposition": {
+        "prompt": "___ an empty stomach",
+        "answer": "on"
+      },
+      "phrase": {
+        "prompt": "on an ___",
+        "answer": "empty stomach"
+      }
+    }
+  },
+  {
+    "id": "rwanda_2e5d15bd68",
+    "english": "I see.",
+    "japanese": "なるほど",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "SSS",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "I see."
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 515,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：相づち",
+    "blanks": {
+      "phrase": {
+        "prompt": "I ___ .",
+        "answer": "see"
+      }
+    }
+  },
+  {
+    "id": "rwanda_2d8ebcd15b",
+    "english": "have an effect on 〜",
+    "japanese": "〜に影響を与える",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "SS",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "have an effect on 〜"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 516,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：学校が生徒に与えた影響",
+    "blanks": {
+      "preposition": {
+        "prompt": "have an effect ___ 〜",
+        "answer": "on"
+      },
+      "phrase": {
+        "prompt": "have an ___ 〜",
+        "answer": "effect on"
+      }
+    }
+  },
+  {
+    "id": "rwanda_89790e1db1",
+    "english": "ask A＋wh-節",
+    "japanese": "Aに〜かを尋ねる",
+    "type": "structure",
+    "sourceType": "熟語",
+    "importance": "A",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "structure"
+    ],
+    "acceptedAnswers": [
+      "ask A＋wh-節"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input"
+    ],
+    "order": 517,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：将来何になりたいか尋ねた"
+  },
+  {
+    "id": "rwanda_74e4ca7627",
+    "english": "grow up",
+    "japanese": "成長する・大人になる",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "S",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "grow up"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 518,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：大人になったら",
+    "blanks": {
+      "phrase": {
+        "prompt": "grow ___",
+        "answer": "up"
+      }
+    }
+  },
+  {
+    "id": "rwanda_b875aa8ed6",
+    "english": "be shocked that 〜",
+    "japanese": "〜ということにショックを受ける",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "A",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "be shocked that 〜"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 519,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：生きられるか分からないと言われ衝撃",
+    "blanks": {
+      "phrase": {
+        "prompt": "be ___ 〜",
+        "answer": "shocked that"
+      }
+    }
+  },
+  {
+    "id": "rwanda_78fdaa401c",
+    "english": "share A with B",
+    "japanese": "AをBと共有する",
+    "type": "structure",
+    "sourceType": "熟語",
+    "importance": "S",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "structure",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "share A with B"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 520,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：私たちに伝えたいメッセージ",
+    "blanks": {
+      "preposition": {
+        "prompt": "share A ___ B",
+        "answer": "with"
+      },
+      "phrase": {
+        "prompt": "share A ___ B",
+        "answer": "with"
+      }
+    }
+  },
+  {
+    "id": "rwanda_402faf5870",
+    "english": "stop doing",
+    "japanese": "〜するのをやめる",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "SS",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "stop doing"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 521,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：〜と考えるのをやめる",
+    "blanks": {
+      "phrase": {
+        "prompt": "stop ___",
+        "answer": "doing"
+      }
+    }
+  },
+  {
+    "id": "rwanda_56f6def16c",
+    "english": "live in poverty",
+    "japanese": "貧困の中で暮らす",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "A",
+    "difficulty": "C",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "live in poverty"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 522,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：貧しい子どもたち",
+    "blanks": {
+      "preposition": {
+        "prompt": "live ___ poverty",
+        "answer": "in"
+      },
+      "phrase": {
+        "prompt": "live ___",
+        "answer": "in poverty"
+      }
+    }
+  },
+  {
+    "id": "rwanda_9b8a629fb7",
+    "english": "as much A as 〜",
+    "japanese": "〜と同じくらい多くのA",
+    "type": "structure",
+    "sourceType": "熟語",
+    "importance": "SS",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "structure",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "as much A as 〜"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 523,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：他の子と同じくらい学ぶ意欲がある",
+    "blanks": {
+      "preposition": {
+        "prompt": "as much A ___ 〜",
+        "answer": "as"
+      },
+      "phrase": {
+        "prompt": "as much A ___ 〜",
+        "answer": "as"
+      }
+    }
+  },
+  {
+    "id": "rwanda_1c0450ad4d",
+    "english": "desire to do",
+    "japanese": "〜したいという願望",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "S",
+    "difficulty": "C",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "desire to do"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 524,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：学びたい意欲",
+    "blanks": {
+      "phrase": {
+        "prompt": "desire ___",
+        "answer": "to do"
+      }
+    }
+  },
+  {
+    "id": "rwanda_58b117b375",
+    "english": "any other＋名詞",
+    "japanese": "他のどんな〜",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "S",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "any other＋名詞"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 525,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：他のどの子どもとも",
+    "blanks": {
+      "phrase": {
+        "prompt": "any ___ ＋名詞",
+        "answer": "other"
+      }
+    }
+  },
+  {
+    "id": "rwanda_c83175255d",
+    "english": "the same A as B",
+    "japanese": "Bと同じA",
+    "type": "structure",
+    "sourceType": "熟語",
+    "importance": "SS",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "structure",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "the same A as B"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 526,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：他の皆と同じ機会",
+    "blanks": {
+      "preposition": {
+        "prompt": "the same A ___ B",
+        "answer": "as"
+      },
+      "phrase": {
+        "prompt": "the same A ___ B",
+        "answer": "as"
+      }
+    }
+  },
+  {
+    "id": "rwanda_819903568b",
+    "english": "chance to do",
+    "japanese": "〜する機会",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "S",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "chance to do"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 527,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：教育を受ける機会",
+    "blanks": {
+      "phrase": {
+        "prompt": "chance ___",
+        "answer": "to do"
+      }
+    }
+  },
+  {
+    "id": "rwanda_8e60c3b175",
+    "english": "everyone else",
+    "japanese": "他の皆",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "A",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "everyone else"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 528,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：他のすべての人",
+    "blanks": {
+      "phrase": {
+        "prompt": "everyone ___",
+        "answer": "else"
+      }
+    }
+  },
+  {
+    "id": "rwanda_c3af7c1f21",
+    "english": "get an education",
+    "japanese": "教育を受ける",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "A",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "get an education"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 529,
+    "partOfSpeech": "熟語",
+    "blanks": {
+      "phrase": {
+        "prompt": "get ___",
+        "answer": "an education"
+      }
+    }
+  },
+  {
+    "id": "rwanda_f672f0b1e2",
+    "english": "do one's best",
+    "japanese": "全力を尽くす",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "SSS",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "do one's best"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 530,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：do our best to make ~",
+    "blanks": {
+      "phrase": {
+        "prompt": "do ___",
+        "answer": "one's best"
+      }
+    }
+  },
+  {
+    "id": "rwanda_4222cceb29",
+    "english": "make A aware of B",
+    "japanese": "AにBを気づかせる",
+    "type": "structure",
+    "sourceType": "熟語",
+    "importance": "S",
+    "difficulty": "C",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "structure",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "make A aware of B"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 531,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：人々に教育の価値を知ってもらう",
+    "blanks": {
+      "preposition": {
+        "prompt": "make A aware ___ B",
+        "answer": "of"
+      },
+      "phrase": {
+        "prompt": "make A ___ B",
+        "answer": "aware of"
+      }
+    }
+  },
+  {
+    "id": "rwanda_ac29bde5d0",
+    "english": "around the world",
+    "japanese": "世界中の",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "S",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "around the world"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 532,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：世界中のすべての人",
+    "blanks": {
+      "preposition": {
+        "prompt": "___ the world",
+        "answer": "around"
+      },
+      "phrase": {
+        "prompt": "around ___",
+        "answer": "the world"
+      }
+    }
+  },
+  {
+    "id": "rwanda_604d7c3f6e",
+    "english": "be forced to do",
+    "japanese": "〜せざるを得ない",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "SS",
+    "difficulty": "C",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "be forced to do"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 533,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：車中泊を強いられた",
+    "blanks": {
+      "phrase": {
+        "prompt": "be forced ___",
+        "answer": "to do"
+      }
+    }
+  },
+  {
+    "id": "rwanda_593eac6333",
+    "english": "for some time",
+    "japanese": "しばらくの間",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "A",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "for some time"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 534,
+    "partOfSpeech": "熟語",
+    "blanks": {
+      "preposition": {
+        "prompt": "___ some time",
+        "answer": "for"
+      },
+      "phrase": {
+        "prompt": "for ___",
+        "answer": "some time"
+      }
+    }
+  },
+  {
+    "id": "rwanda_3bc70131ba",
+    "english": "at the time of 〜",
+    "japanese": "〜の時に",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "S",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "at the time of 〜"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 535,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：ルワンダ内戦の時",
+    "blanks": {
+      "preposition": {
+        "prompt": "at the time ___ 〜",
+        "answer": "of"
+      },
+      "phrase": {
+        "prompt": "at the ___ 〜",
+        "answer": "time of"
+      }
+    }
+  },
+  {
+    "id": "rwanda_a575e0586f",
+    "english": "civil war",
+    "japanese": "内戦",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "A",
+    "difficulty": "C",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "civil war"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 536,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：ルワンダ内戦（civilは脚注語）",
+    "blanks": {
+      "phrase": {
+        "prompt": "civil ___",
+        "answer": "war"
+      }
+    }
+  },
+  {
+    "id": "rwanda_38653ec9f9",
+    "english": "return the favor",
+    "japanese": "恩返しをする",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "A",
+    "difficulty": "D",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "return the favor"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "phrase_blank_input"
+    ],
+    "order": 537,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：福島の人々への恩返し",
+    "blanks": {
+      "phrase": {
+        "prompt": "return ___",
+        "answer": "the favor"
+      }
+    }
+  },
+  {
+    "id": "rwanda_6aa79122fd",
+    "english": "as much as possible",
+    "japanese": "できるだけ",
+    "type": "phrase",
+    "sourceType": "熟語",
+    "importance": "SS",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "phrase",
+      "preposition",
+      "blank"
+    ],
+    "acceptedAnswers": [
+      "as much as possible"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "preposition_input",
+      "phrase_blank_input"
+    ],
+    "order": 538,
+    "partOfSpeech": "熟語",
+    "memo": "本文では：できる限り助けたい",
+    "blanks": {
+      "preposition": {
+        "prompt": "as much ___ possible",
+        "answer": "as"
+      },
+      "phrase": {
+        "prompt": "as much ___",
+        "answer": "as possible"
+      }
+    }
   }
 ]

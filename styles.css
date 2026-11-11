@@ -6552,33 +6552,6 @@ body.fx-lite.max-mode.fx-fever .fx-backdrop.is-on {
   opacity: 0.55;
 }
 
-.basic-card-figures {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 14px;
-  font-size: 12px;
-  font-weight: 650;
-  opacity: 0.85;
-}
-
-.basic-card-figures b {
-  margin-left: 4px;
-  font-size: 15px;
-  font-weight: 800;
-}
-
-.basic-card-figures small {
-  margin-left: 4px;
-  opacity: 0.7;
-}
-
-.basic-format-switch {
-  width: 100%;
-  margin-top: 14px;
-  /* 教科の切り替えと同じ見た目のまま、横幅いっぱいを形式の数で等分する。 */
-  grid-template-columns: repeat(var(--count, 2), minmax(0, 1fr));
-}
-
 .basic-choice {
   flex-wrap: wrap;
   align-content: center;
@@ -6643,4 +6616,164 @@ body.fx-lite.max-mode.fx-fever .fx-backdrop.is-on {
 /* 正誤の4択の解説は「A：×。…」を選択肢ごとの行に分けて書いているので、改行をそのまま見せる。 */
 .feedback-explanation p {
   white-space: pre-line;
+}
+
+/* 形式の切り替え（英語・公共）：教科の切り替えと同じ見た目・動きで、横幅いっぱいを等分する。 */
+.format-bars {
+  display: grid;
+  gap: 8px;
+  margin: -12px 0 18px;
+}
+
+.format-bars[hidden] {
+  display: none;
+}
+
+.format-switch {
+  width: 100%;
+  grid-template-columns: repeat(var(--count, 2), minmax(0, 1fr));
+}
+
+.format-switch button {
+  font-size: 13px;
+}
+
+/* 選べる形式が1つだけのときは、つまみを置いたまま動かせない。 */
+.format-switch.is-locked {
+  touch-action: auto;
+}
+
+.format-switch.is-locked button {
+  cursor: default;
+}
+
+.format-switch.is-locked button:active {
+  scale: 1;
+}
+
+/* 公共の黒いカード：円・題名・始めるボタンを1段にまとめ、画面に収める。 */
+.basic-card {
+  padding: 14px 16px;
+}
+
+.basic-card .continue-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 0;
+}
+
+.basic-card .meter-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.basic-card .continue-detail {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.basic-card .continue-action {
+  padding: 0 14px;
+}
+
+/* 公共の題名は折り返さず1行に（入りきらないときは文字を小さくする）。数は右に小さく。 */
+.basic-range {
+  flex-wrap: nowrap;
+  min-height: 46px;
+  padding: 8px 10px 8px 12px;
+}
+
+.basic-range .range-choice-name {
+  flex: 1 1 auto;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.basic-range .basic-choice-detail {
+  flex: 0 0 auto;
+}
+
+.range-choice-list:has(.basic-range) {
+  gap: 8px;
+}
+
+/* 範囲 → 重要度：一覧を左へ流し、次の一覧を右から入れる（戻るときは逆向き）。 */
+.slide-out-left {
+  animation: home-slide-out-left 170ms var(--ease-out, ease-out) forwards;
+}
+
+.slide-out-right {
+  animation: home-slide-out-right 170ms var(--ease-out, ease-out) forwards;
+}
+
+.slide-in-right {
+  animation: home-slide-in-right 340ms var(--ease-out, ease-out);
+}
+
+.slide-in-left {
+  animation: home-slide-in-left 340ms var(--ease-out, ease-out);
+}
+
+@keyframes home-slide-out-left { to { opacity: 0; transform: translateX(-36%); } }
+@keyframes home-slide-out-right { to { opacity: 0; transform: translateX(36%); } }
+@keyframes home-slide-in-right { from { opacity: 0; transform: translateX(36%); } }
+@keyframes home-slide-in-left { from { opacity: 0; transform: translateX(-36%); } }
+
+.home-view {
+  overflow-x: clip;
+}
+
+.basic-card .continue-title {
+  font-size: 18px;
+  line-height: 1.3;
+}
+
+.basic-card .meter-ring {
+  flex: 0 0 auto;
+}
+
+/* 背の低い画面（iPhone SE など）でも、公共のホームが1画面に収まるように詰める。 */
+@media (max-height: 760px) {
+  .home-view .home-continue {
+    margin-bottom: 18px;
+  }
+
+  .basic-card {
+    padding: 10px 14px;
+  }
+
+  .basic-card .meter-ring {
+    --ring-size: 56px;
+    width: 56px;
+    height: 56px;
+  }
+
+  .format-bars {
+    gap: 6px;
+    margin: -8px 0 10px;
+  }
+
+  .format-bars .segment-switch {
+    height: 38px;
+  }
+
+  .basic-range {
+    min-height: 44px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+
+  .range-choice-list:has(.basic-range) {
+    gap: 6px;
+  }
+}
+
+/* とても背の低い画面では、公共のホームの「2026.3 3定 · 228問」の行を省いて1画面に収める。 */
+@media (max-height: 700px) {
+  .home-basic .home-summary {
+    display: none;
+  }
 }

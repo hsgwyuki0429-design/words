@@ -25,7 +25,7 @@ const APP_SHELL = [
   "./health-notes.html?v=2026.9.39",
   "./public-notes.html?v=2026.9.39",
   "./data/english-2026-3.json?v=2026.11.11",
-  "./data/public-items.json?v=2026.09.01",
+  "./data/public-2026-3.json?v=2026.11.11",
   "./data/health-items.json?v=2026.09.01",
   "./manifest.webmanifest",
   "./icons/app-icon.svg",

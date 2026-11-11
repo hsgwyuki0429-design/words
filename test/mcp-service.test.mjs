@@ -36,22 +36,22 @@ test("教材データはそのまま読み込まれ、既存の問題数が変�
   const service = newService();
   const info = await service.getAppInfo();
   assert.equal(info.subjects.english.questions, 435);
-  assert.equal(info.subjects.public.questions, 207);
+  assert.equal(info.subjects.public.questions, 189);
   assert.equal(info.subjects.health.questions, 282);
   assert.equal(info.subjects["kobun-vocab"].questions, 360);
-  assert.equal(info.totalQuestions, 1284);
+  assert.equal(info.totalQuestions, 1266);
   assert.equal(info.dataSchemaVersion, 1);
 });
 
 test("検索は件数を区切って返し、続きの位置を教える", async () => {
   const service = newService();
-  const page = await service.searchQuestions({ query: "民主", limit: 3 });
+  const page = await service.searchQuestions({ query: "契約", limit: 3 });
   assert.ok(page.total > 3, "見つかった総数は返した件数より多い");
   assert.equal(page.questions.length, 3);
   assert.equal(page.hasMore, true);
   assert.equal(page.nextOffset, 3);
 
-  const next = await service.searchQuestions({ query: "民主", limit: 3, offset: 3 });
+  const next = await service.searchQuestions({ query: "契約", limit: 3, offset: 3 });
   assert.notDeepEqual(next.questions[0].id, page.questions[0].id);
 });
 
@@ -154,14 +154,14 @@ test("同じ問題文は二重に登録されない", async () => {
 
 test("編集は指定した項目だけを変え、他はそのまま残す", async () => {
   const service = newService();
-  const before = await service.getQuestion({ id: "public-20260908-0001" });
+  const before = await service.getQuestion({ id: "public-20261111-0001" });
   const result = await service.updateQuestion({
-    id: "public-20260908-0001",
+    id: "public-20261111-0001",
     patch: { explanation: "書き換えた解説", importance: "SSS" },
   }, actor);
 
   assert.deepEqual(result.changed, ["explanation", "importance"]);
-  const after = await service.getQuestion({ id: "public-20260908-0001" });
+  const after = await service.getQuestion({ id: "public-20261111-0001" });
   assert.equal(after.explanation, "書き換えた解説");
   assert.equal(after.importance, "SSS");
   assert.equal(after.question, before.question, "問題文は変わらない");
@@ -189,23 +189,23 @@ test("答えを変えると、教科ごとの対の項目もまとめて揃う",
 test("削除はゴミ箱へ移すだけで、確認なしには実行できない", async () => {
   const service = newService();
   await assert.rejects(
-    () => service.deleteQuestion({ id: "public-20260908-0001" }, actor),
+    () => service.deleteQuestion({ id: "public-20261111-0001" }, actor),
     ValidationError,
     "confirm が無いと削除しない",
   );
 
-  const deleted = await service.deleteQuestion({ id: "public-20260908-0001", confirm: true, reason: "重複" }, actor);
+  const deleted = await service.deleteQuestion({ id: "public-20261111-0001", confirm: true, reason: "重複" }, actor);
   assert.equal(deleted.deleted, true);
   assert.equal(deleted.restorable, true);
 
   const list = await service.listQuestions({ subjects: ["public"], limit: 1 });
-  assert.equal(list.total, 206, "一覧からは消えている");
+  assert.equal(list.total, 188, "一覧からは消えている");
 
   const overlay = await service.getOverlay();
-  assert.deepEqual(overlay.deletedIds, ["public-20260908-0001"]);
+  assert.deepEqual(overlay.deletedIds, ["public-20261111-0001"]);
 
-  await service.restoreQuestion({ id: "public-20260908-0001" }, actor);
-  assert.equal((await service.listQuestions({ subjects: ["public"], limit: 1 })).total, 207);
+  await service.restoreQuestion({ id: "public-20261111-0001" }, actor);
+  assert.equal((await service.listQuestions({ subjects: ["public"], limit: 1 })).total, 189);
 });
 
 test("AI経由の操作は記録に残る", async () => {
@@ -314,7 +314,7 @@ test("履歴で絞り込める（間違えた問題だけを一覧する）", as
   assert.equal(wrong.questions[0].study.wrong, 2);
 
   const unanswered = await service.listQuestions({ performance: "unanswered", limit: 1 });
-  assert.equal(unanswered.total, 1283);
+  assert.equal(unanswered.total, 1265);
 });
 
 test("教科ごとの範囲は、wordsの画面が知っている値と同じ", async () => {

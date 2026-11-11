@@ -21,6 +21,7 @@ import {
   inputPlanForAnswers,
   itemSupportsMode,
   isAnswerCorrect,
+  PUBLIC_RANGE_ORDER,
   itemMatchesRange,
   mergeAttempt,
   normalizeAnswer,
@@ -567,7 +568,7 @@ test("public study selections keep answer formats separate and use self grading"
   const question = buildQuestion(term, "public_recall", publicItems);
   assert.equal(question.prompt, term.publicQuestion);
   assert.equal(question.answer, term.publicAnswer);
-  assert.equal(summarizeByRange(publicItems, new Map()).length, 6);
+  assert.equal(summarizeByRange(publicItems, new Map()).length, PUBLIC_RANGE_ORDER.length);
 });
 
 test("health study selections match the public self-grading flow", () => {

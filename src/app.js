@@ -339,11 +339,19 @@ const kobun = createKobunController({
 
 // 回ごとに、学習範囲のデータがまだ入っていない教科。ここにある教科では、範囲の代わりに
 // 「データはまだありません」を出す。データを入れたら外す。
-// 3定の英語は data/english-2026-3.json を入れたので外している。
-const SUBJECTS_WITHOUT_DATA = { "2026.3": ["public"] };
+// 3定は英語（data/english-2026-3.json）と公共（data/public-2026-3.json）を入れたので空。
+const SUBJECTS_WITHOUT_DATA = { "2026.3": [] };
 
 function periodHasData(subject = state.subject) {
   return !(SUBJECTS_WITHOUT_DATA[state.selectedPeriod] ?? []).includes(subject);
+}
+
+// まとめノート（public-notes.html・health-notes.html）は2定の範囲の内容。
+// まとめノートの無い回では、右上のボタンから一問一答の一覧を開く。
+const PERIODS_WITH_NOTES = ["2026.2"];
+
+function periodHasNotes(subject = state.subject) {
+  return periodHasData(subject) && PERIODS_WITH_NOTES.includes(state.selectedPeriod);
 }
 
 function emptyPeriodMarkup() {
@@ -357,6 +365,8 @@ function emptyPeriodMarkup() {
 
 // いま学習する英語の教材データ（3定）。sw.js の APP_SHELL にも同じURLを載せる。
 const ENGLISH_DATA_URL = "./data/english-2026-3.json?v=2026.11.11";
+// いま学習する公共の教材データ（3定・単元20〜30）。2定の公共は data/public-items.json に残している。
+const PUBLIC_DATA_URL = "./data/public-2026-3.json?v=2026.11.11";
 
 // いま選べる定期テストの回。2定（2026.2）は終えたので外し、3定だけにしている。
 // 選べる回が1つだけのときは、回を選ぶ画面を出さずに自動で選ぶ。
@@ -598,14 +608,16 @@ function selectSubject(subject) {
   elements.listTitle.textContent = isKobunVocabSubject()
     ? "重要語句一覧"
     : isRecallSubject() ? "一問一答" : "単語帳";
-  elements.navListButton.dataset.viewTarget = !periodHasData()
+  elements.navListButton.dataset.viewTarget = !periodHasNotes()
     ? "list"
     : isHealthSubject()
       ? "health-notes"
       : isPublicSubject()
         ? "public-notes"
         : "list";
-  elements.navListLabel.textContent = isHealthSubject()
+  elements.navListLabel.textContent = isRecallSubject() && !isKobunVocabSubject() && !periodHasNotes()
+    ? "一問一答"
+    : isHealthSubject()
     ? "まとめノート"
     : isPublicSubject()
       ? "まとめノート"
@@ -3772,10 +3784,10 @@ function setView(view) {
   // 結果画面は、学習を終えた直後だけ開く。ホームから開く入口は置かない。
   if (view === "result" && !resultSession() && !(state.resultTestId && testRecordById(state.resultTestId))) view = "dashboard";
   // データの無い回では、まとめノートの代わりに「データはまだありません」を出す（list画面）。
-  if (view === "list" && isHealthSubject() && periodHasData()) view = "health-notes";
-  if (view === "list" && isPublicSubject() && periodHasData()) view = "public-notes";
-  if (view === "health-notes" && (!isHealthSubject() || !periodHasData())) view = "list";
-  if (view === "public-notes" && (!isPublicSubject() || !periodHasData())) view = "list";
+  if (view === "list" && isHealthSubject() && periodHasNotes()) view = "health-notes";
+  if (view === "list" && isPublicSubject() && periodHasNotes()) view = "public-notes";
+  if (view === "health-notes" && (!isHealthSubject() || !periodHasNotes())) view = "list";
+  if (view === "public-notes" && (!isPublicSubject() || !periodHasNotes())) view = "list";
   if (!["period", "subject"].includes(view) && !state.subject) view = state.selectedPeriod ? "subject" : "period";
   if (view !== "quiz" && state.session?.reviewTimer) {
     clearTimeout(state.session.reviewTimer);
@@ -6414,7 +6426,7 @@ async function boot() {
     const [response, publicResponse, healthResponse, vocabResponse, history, selectedMode, settings, bestCombo, selectedPeriod, studyConfigs, legacyRecentStudies, studyProgress, lastSessionResult, aiLink, aiLinkJournal, deviceSync, lastSubject, homeMode, testHistory] = await Promise.all([
       // 英語は3定（2026.3）の範囲。2定の英語は data/items.json に残している。
       fetch(ENGLISH_DATA_URL),
-      fetch("./data/public-items.json?v=2026.09.01"),
+      fetch(PUBLIC_DATA_URL),
       fetch("./data/health-items.json?v=2026.09.01"),
       fetch("./data/kobun-vocabulary.json?v=2026.11.29"),
       loadHistory(),

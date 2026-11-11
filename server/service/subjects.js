@@ -30,7 +30,8 @@ export const SUBJECTS = Object.freeze({
   public: {
     id: "public",
     label: "公共",
-    file: "public-items.json",
+    // 3定（2026.3）の公共。アプリが読む教材と同じものを使う。
+    file: "public-2026-3.json",
     pick: (json) => json,
     ranges: PUBLIC_RANGE_ORDER,
     types: ["public-term", "public-short"],

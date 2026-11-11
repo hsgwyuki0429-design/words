@@ -256,16 +256,18 @@ test("白のミニマル：点線の箱とホームの区切り線を置かな�
   assert.match(stylesSource, /:root:not\(\[data-theme="dark"\]\) \{[\s\S]*?--line: transparent;/);
 });
 
-test("3定は英語のデータを入れ、公共だけ学習範囲のデータがまだ無いことを示す。学習の記録への入口は置かない", () => {
-  assert.match(appSource, /const SUBJECTS_WITHOUT_DATA = \{ "2026\.3": \["public"\] \};/);
+test("3定は英語と公共のデータを入れる。学習の記録への入口は置かない", () => {
+  assert.match(appSource, /const SUBJECTS_WITHOUT_DATA = \{ "2026\.3": \[\] \};/);
+  assert.match(appSource, /const PUBLIC_DATA_URL = "\.\/data\/public-2026-3\.json/);
   assert.match(appSource, /const ENGLISH_DATA_URL = "\.\/data\/english-2026-3\.json/);
   assert.match(appSource, /学習範囲のデータはまだありません/);
   assert.match(appSource, /if \(view === "analysis"\) view = "dashboard";/);
   assert.doesNotMatch(indexSource, /学習の記録を見る/);
 });
 
-test("データの無い回では、まとめノートの代わりに「データはまだありません」を出す", () => {
-  assert.match(appSource, /view === "list" && isPublicSubject\(\) && periodHasData\(\)/);
-  assert.match(appSource, /view === "public-notes" && \(!isPublicSubject\(\) \|\| !periodHasData\(\)\)/);
-  assert.match(appSource, /navListButton\.dataset\.viewTarget = !periodHasData\(\)\s*\? "list"/);
+test("まとめノート（2定の内容）が無い回では、まとめノートの代わりに一問一答の一覧を出す", () => {
+  assert.match(appSource, /const PERIODS_WITH_NOTES = \["2026\.2"\];/);
+  assert.match(appSource, /view === "list" && isPublicSubject\(\) && periodHasNotes\(\)/);
+  assert.match(appSource, /view === "public-notes" && \(!isPublicSubject\(\) \|\| !periodHasNotes\(\)\)/);
+  assert.match(appSource, /navListButton\.dataset\.viewTarget = !periodHasNotes\(\)\s*\? "list"/);
 });

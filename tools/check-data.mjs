@@ -24,7 +24,10 @@ const countBy = (list, field, values) => Object.fromEntries(
 const items = JSON.parse(fs.readFileSync(new URL("../data/items.json", import.meta.url), "utf8"));
 // 3定（2026.3）の英語。アプリが読むのはこちら。
 const englishPeriod3 = JSON.parse(fs.readFileSync(new URL("../data/english-2026-3.json", import.meta.url), "utf8"));
+// 2定の公共。
 const publicItems = JSON.parse(fs.readFileSync(new URL("../data/public-items.json", import.meta.url), "utf8"));
+// 3定の公共（単元20〜30）。アプリが読むのはこちら。
+const publicPeriod3 = JSON.parse(fs.readFileSync(new URL("../data/public-2026-3.json", import.meta.url), "utf8"));
 const healthItems = JSON.parse(fs.readFileSync(new URL("../data/health-items.json", import.meta.url), "utf8"));
 const kobunVocabulary = JSON.parse(fs.readFileSync(new URL("../data/kobun-vocabulary.json", import.meta.url), "utf8")).items;
 
@@ -185,7 +188,7 @@ assert.equal(
   publicKnowledgeKeys.length,
   "Public data must not contain templated duplicate questions",
 );
-for (const item of publicItems) {
+for (const item of [...publicItems, ...publicPeriod3]) {
   for (const field of ["id", "number", "importance", "publicQuestion", "publicAnswer", "source", "range"]) {
     assert.ok(item[field], `${item.id}: ${field} is required`);
   }
@@ -208,9 +211,23 @@ for (const item of publicItems) {
 }
 assert.deepEqual(
   [...new Set(publicItems.map((item) => item.range))],
-  PUBLIC_RANGE_ORDER,
+  PUBLIC_RANGE_ORDER.slice(0, 6),
   "All six public ranges are required in textbook order",
 );
+assert.equal(publicPeriod3.length, 189, "3定の公共は189問（単元20〜30）");
+assert.equal(new Set(publicPeriod3.map((item) => item.id)).size, 189, "3定の公共のIDが重複している");
+assert.ok(publicPeriod3.every((item) => !publicItems.some((old) => old.id === item.id)), "3定の公共のIDが2定と重なっている");
+assert.deepEqual(
+  countBy(publicPeriod3, "importance", ["S", "A", "B", "C", "D"]),
+  { S: 22, A: 93, B: 53, C: 21, D: 0 },
+  "3定の公共の重要度の内訳",
+);
+assert.deepEqual(
+  [...new Set(publicPeriod3.map((item) => item.range))],
+  PUBLIC_RANGE_ORDER.slice(6),
+  "3定の公共の範囲（11単元）を教科書の順に並べる",
+);
+console.log(`3定の公共: ${publicPeriod3.length}問（${PUBLIC_RANGE_ORDER.slice(6).length}範囲）`);
 console.log(`Public data check passed: ${publicItems.length} questions across ${PUBLIC_RANGE_ORDER.length} ranges.`);
 
 assert.equal(healthItems.length, 282, "Health data must contain 282 unique reviewed questions");

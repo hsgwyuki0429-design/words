@@ -1,5 +1,5 @@
-import { createHaptics } from "./haptics.js?v=2026.11.33";
-import { createKobunController } from "./kobun.js?v=2026.11.33";
+import { createHaptics } from "./haptics.js?v=2026.11.34";
+import { createKobunController } from "./kobun.js?v=2026.11.34";
 import {
   ALL_MODES,
   BASIC_SCOPES,
@@ -79,8 +79,8 @@ import {
   unmasterStudyItems,
   gaugeColorIndex,
   hasAnsweredMode,
-} from "./logic.js?v=2026.11.33";
-import { createMaxAudioEngine } from "./audio.js?v=2026.11.33";
+} from "./logic.js?v=2026.11.34";
+import { createMaxAudioEngine } from "./audio.js?v=2026.11.34";
 import {
   CORRECT_VARIANTS,
   LANDING_VARIANTS,
@@ -88,7 +88,7 @@ import {
   SFX_VOLUME_OPTIONS,
   createSfxEngine,
   normalizeSfxVolume,
-} from "./sfx.js?v=2026.11.33";
+} from "./sfx.js?v=2026.11.34";
 import {
   MAX_FEVER_GOAL,
   MAX_TIMELINE_PHASES,
@@ -103,7 +103,7 @@ import {
   resolveMaxCue,
   scaledVisualPlan,
   shouldPlayMaxSound,
-} from "./max-cues.js?v=2026.11.33";
+} from "./max-cues.js?v=2026.11.34";
 import {
   clearAllData,
   getMeta,
@@ -115,7 +115,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.11.33";
+} from "./storage.js?v=2026.11.34";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -123,7 +123,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.11.33";
+} from "./quiz-gestures.js?v=2026.11.34";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
@@ -132,7 +132,7 @@ import {
   normalizeSpeechRate,
   normalizeSpeechVoiceURI,
   voiceKey,
-} from "./speech.js?v=2026.11.33";
+} from "./speech.js?v=2026.11.34";
 import {
   AI_LINK_JOURNAL_KEY,
   AI_LINK_META_KEY,
@@ -148,7 +148,7 @@ import {
   isAiLinkConfigured,
   mcpUrlFor,
   normalizeAiLinkConfig,
-} from "./ai-link.js?v=2026.11.33";
+} from "./ai-link.js?v=2026.11.34";
 import {
   DEFAULT_DEVICE_SYNC,
   DEVICE_SYNC_META_KEY,
@@ -165,13 +165,13 @@ import {
   syncStateLabel,
   transferFileName,
   unsentEntries,
-} from "./sync.js?v=2026.11.33";
+} from "./sync.js?v=2026.11.34";
 import {
   applyThemePreference,
   normalizeThemePreference,
   readStoredThemePreference,
   watchSystemTheme,
-} from "./theme.js?v=2026.11.33";
+} from "./theme.js?v=2026.11.34";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -1135,20 +1135,20 @@ function renderRangeDetail() {
 
 const FORMAT_TREE = {
   english: [
-    { key: "en_to_ja", label: "英語 → 日本語", subs: [
+    { key: "en_to_ja", label: "英語 → 日本語", short: "英→日", subs: [
       { key: "en_to_ja_choice", label: "4択", mode: "en_to_ja_choice" },
-      { key: "en_to_ja_flashcard", label: "フラッシュカード", mode: "en_to_ja_flashcard" },
+      { key: "en_to_ja_flashcard", label: "フラッシュカード", short: "カード", mode: "en_to_ja_flashcard" },
     ] },
-    { key: "ja_to_en", label: "日本語 → 英語", subs: [
+    { key: "ja_to_en", label: "日本語 → 英語", short: "日→英", subs: [
       { key: "ja_to_en_choice", label: "4択", mode: "ja_to_en_choice" },
-      { key: "ja_to_en_flashcard", label: "フラッシュカード", mode: "ja_to_en_flashcard" },
+      { key: "ja_to_en_flashcard", label: "フラッシュカード", short: "カード", mode: "ja_to_en_flashcard" },
       { key: "ja_to_en_input", label: "キーボード", mode: "ja_to_en_input" },
     ] },
   ],
   public: [
     { key: "term", label: "一問一答", subs: [
       { key: "term_choice", label: "4択", mode: "public_choice", type: "public-term" },
-      { key: "term_recall", label: "フラッシュカード", mode: "public_recall", type: "public-term" },
+      { key: "term_recall", label: "フラッシュカード", short: "カード", mode: "public_recall", type: "public-term" },
     ] },
     { key: "statement", label: "正誤問題", subs: [
       { key: "statement_choice", label: "4択", mode: "public_choice", type: "public-statement" },
@@ -1180,7 +1180,7 @@ function formatSwitchMarkup({ level, entries, index, label }) {
   return `
     <div class="segment-switch format-switch${locked ? " is-locked" : ""}" role="radiogroup" aria-label="${label}" data-format-level="${level}" data-keys="${entries.map((entry) => entry.key).join(",")}" style="--count:${entries.length};--index:${index}">
       <span class="segment-thumb" aria-hidden="true"></span>
-      ${entries.map((entry, entryIndex) => `<button type="button" role="radio" data-format-${level}="${entry.key}" aria-checked="${entryIndex === index}"${locked ? ' aria-disabled="true"' : ""}>${escapeHtml(entry.label)}</button>`).join("")}
+      ${entries.map((entry, entryIndex) => `<button type="button" role="radio" data-format-${level}="${entry.key}" aria-checked="${entryIndex === index}" aria-label="${escapeHtml(entry.label)}"${locked ? ' aria-disabled="true"' : ""}>${escapeHtml(entry.short ?? entry.label)}</button>`).join("")}
     </div>`;
 }
 
@@ -6541,8 +6541,48 @@ function activateSegment(button) {
   else if (button.dataset.formatSub) setFormat("sub", button.dataset.formatSub);
 }
 
+// 公共の題名・重要度は、指でなぞるだけで続けて選べる（外すときは、選んであるものからなぞる）。
+// 最初に触れた選択肢が未選択なら「選ぶ」、選択済みなら「外す」で、なぞった選択肢すべてに同じことをする。
+function bindBasicPaintSelect() {
+  let paint = null;
+  const choiceAt = (x, y) => document.elementFromPoint(x, y)?.closest("[data-basic-range], [data-basic-importance]");
+  const fieldOf = (button) => (button.dataset.basicRange ? "ranges" : "importance");
+  const valueOf = (button) => button.dataset.basicRange ?? button.dataset.basicImportance;
+  const apply = (button) => {
+    if (!button || button.disabled || fieldOf(button) !== paint.field) return;
+    const value = valueOf(button);
+    if (paint.touched.has(value)) return;
+    paint.touched.add(value);
+    const draft = basicDraft();
+    const has = draft[paint.field].includes(value);
+    if (paint.select === has) return;
+    draft[paint.field] = paint.select ? [...draft[paint.field], value] : draft[paint.field].filter((entry) => entry !== value);
+    haptics.trigger("flip");
+    renderBasicHome();
+  };
+  document.addEventListener("pointerdown", (event) => {
+    if (!isBasicHome() || state.view !== "dashboard") return;
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    const button = event.target.closest("[data-basic-range], [data-basic-importance]");
+    if (!button || button.disabled) return;
+    const field = fieldOf(button);
+    paint = { field, select: !basicDraft()[field].includes(valueOf(button)), touched: new Set(), pointerId: event.pointerId };
+    apply(button);
+  });
+  document.addEventListener("pointermove", (event) => {
+    if (!paint || event.pointerId !== paint.pointerId) return;
+    apply(choiceAt(event.clientX, event.clientY));
+  });
+  const end = (event) => {
+    if (paint && event.pointerId === paint.pointerId) paint = null;
+  };
+  document.addEventListener("pointerup", end);
+  document.addEventListener("pointercancel", end);
+}
+
 function bindEvents() {
   bindSegmentSwitchDrag();
+  bindBasicPaintSelect();
   document.addEventListener("kobun-subject", () => setView("subject"));
   // 古文の「古文単語」からは、他教科と共通の学習画面へ切り替える。
   // 作品を選んで来たときは、その作品を範囲に入れて形式選びへ直行する。
@@ -6712,8 +6752,9 @@ function bindEvents() {
         .catch(() => showToast("データを削除できませんでした"));
     }
     if (target.dataset.homeMode) setHomeMode(target.dataset.homeMode);
-    if (target.dataset.basicRange) toggleBasicValue("ranges", target.dataset.basicRange);
-    if (target.dataset.basicImportance) toggleBasicValue("importance", target.dataset.basicImportance);
+    // 指・マウスでは押した瞬間（なぞり選択）で切り替え済み。キーボードで押したときだけここで切り替える。
+    if (target.dataset.basicRange && event.detail === 0) toggleBasicValue("ranges", target.dataset.basicRange);
+    if (target.dataset.basicImportance && event.detail === 0) toggleBasicValue("importance", target.dataset.basicImportance);
     if (target.dataset.formatTop) setFormat("top", target.dataset.formatTop);
     if (target.dataset.formatSub) setFormat("sub", target.dataset.formatSub);
     if (target.dataset.englishRange) pickEnglish("range", target.dataset.englishRange);
@@ -6994,7 +7035,7 @@ async function boot() {
       fetch(ENGLISH_DATA_URL),
       fetch(PUBLIC_DATA_URL),
       fetch("./data/health-items.json?v=2026.09.01"),
-      fetch("./data/kobun-vocabulary.json?v=2026.11.33"),
+      fetch("./data/kobun-vocabulary.json?v=2026.11.34"),
       loadHistory(),
       getMeta("selectedMode"),
       getMetaObject("settings", DEFAULT_SETTINGS),
@@ -7080,7 +7121,7 @@ async function boot() {
         .catch((error) => console.warn("AI連携の同期に失敗しました", error));
     }
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.11.33").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.11.34").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

@@ -12,6 +12,7 @@ export const RANGE_ORDER = [
   "Taste Buds",
   "A Loving Story",
   "Edo",
+  "Rwanda",
 ];
 export const PUBLIC_RANGE_ORDER = [
   "p.36–37",
@@ -557,8 +558,13 @@ function matchesPerformance(record, performance) {
   }
 }
 
+// 英語は複数の章に出てくる語句を1件にまとめているので、出典のどれかの章に当たれば
+// その範囲の語句として扱う（例：victim は Edo と Rwanda の両方で出題される）。
 export function itemMatchesRange(item, range) {
-  return item.range === range || (item.subject === "public" && item.title === range);
+  if (item.range === range) return true;
+  if (item.subject === "public") return item.title === range;
+  return (item.subject ?? "english") === "english"
+    && (item.sources ?? []).some((source) => source.range === range);
 }
 
 export function applyFilters(items, history, filters = {}) {
@@ -1159,7 +1165,7 @@ export function summarizeByRange(items, history) {
   const subject = items.find((item) => item.subject)?.subject;
   const ranges = rangeOrderForSubject(subject);
   return ranges.map((range) => {
-    const rangeItems = items.filter((item) => item.range === range);
+    const rangeItems = items.filter((item) => itemMatchesRange(item, range));
     const summary = summarizeHistory(rangeItems, history);
     const mastery = rangeItems.length
       ? rangeItems.reduce(

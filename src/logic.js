@@ -89,6 +89,7 @@ export const TYPE_LABELS = {
   expression: "表現",
   "public-term": "語句回答",
   "public-short": "短文回答",
+  "public-statement": "正誤選択",
   "health-term": "語句回答",
   "health-short": "短文回答",
   "kobun-vocab-term": "重要語句",
@@ -2072,4 +2073,88 @@ export function summarizeTestResult(results = []) {
     percent: total ? Math.round((correct / total) * 100) : 0,
     durationMs,
   };
+}
+
+// ---------------------------------------------------------------------------
+// ベーシック（公共）
+//
+// 範囲と重要度をいくつでも選び、その中でいちばん習得の回数が少ない問題から解く。
+// 1回の学習では、出た問題すべてに1回正解するまで続ける（間違えた問題は後でまた出る）。
+// 学習の中で最初に答えたときに正解した問題は、習得の回数が1つ増える。
+// 習得の回数は形式（一問一答・4択）ごとに数える。
+// ---------------------------------------------------------------------------
+
+export const BASIC_SCOPES = ["lowest", "all"];
+export const DEFAULT_BASIC_SCOPE = "lowest";
+export const BASIC_SCOPE_LABELS = {
+  lowest: { title: "習得の回数がいちばん少ない問題だけ", detail: "選んだ中で、まだ習得の回数が少ない問題だけを解きます" },
+  all: { title: "選んだ問題をすべて1周", detail: "習得の回数が少ない問題から順に、すべてを解きます" },
+};
+
+export function normalizeBasicScope(value) {
+  return BASIC_SCOPES.includes(value) ? value : DEFAULT_BASIC_SCOPE;
+}
+
+export function basicLevelOf(levels, itemId) {
+  const level = Number(levels?.[itemId]);
+  return Number.isFinite(level) && level > 0 ? Math.floor(level) : 0;
+}
+
+/** 選んだ問題の習得の回数を、円とその内訳（形式カードと同じ形）にまとめる。 */
+export function summarizeBasicLevels({ itemIds = [], levels = {} } = {}) {
+  const ids = [...new Set(itemIds)];
+  const total = ids.length;
+  const counts = new Map();
+  ids.forEach((id) => {
+    const level = basicLevelOf(levels, id);
+    if (level > 0) counts.set(level, (counts.get(level) ?? 0) + 1);
+  });
+  const segments = [...counts.entries()]
+    .sort(([left], [right]) => right - left)
+    .map(([round, count]) => ({ kind: "mastered", round, label: `習得${round}回`, count, percent: percentOf(count, total) }));
+  const masteredCount = segments.reduce((sum, segment) => sum + segment.count, 0);
+  const atLeast = (minimum) => ids.filter((id) => basicLevelOf(levels, id) >= minimum).length;
+  return {
+    round: segments[0]?.round ?? 1,
+    total,
+    label: "習得",
+    masteredCount,
+    masteredPercent: percentOf(masteredCount, total),
+    onceCount: atLeast(1),
+    twiceCount: atLeast(2),
+    oncePercent: percentOf(atLeast(1), total),
+    twicePercent: percentOf(atLeast(2), total),
+    segments: [
+      ...segments,
+      { kind: "untouched", round: 0, label: "未習得", count: total - masteredCount, percent: percentOf(total - masteredCount, total) },
+    ],
+  };
+}
+
+/**
+ * 学習で出す問題の並び。scope が lowest なら、習得の回数がいちばん少ない問題だけ。
+ * all なら全部を、回数の少ない順に（同じ回数の中はランダムに）並べる。
+ */
+export function buildBasicQueue({ items = [], levels = {}, mode, scope = DEFAULT_BASIC_SCOPE, rng = Math.random } = {}) {
+  if (!mode || !items.length) return [];
+  const minimum = Math.min(...items.map((item) => basicLevelOf(levels, item.id)));
+  const picked = normalizeBasicScope(scope) === "lowest"
+    ? items.filter((item) => basicLevelOf(levels, item.id) === minimum)
+    : items;
+  const byLevel = new Map();
+  picked.forEach((item) => {
+    const level = basicLevelOf(levels, item.id);
+    if (!byLevel.has(level)) byLevel.set(level, []);
+    byLevel.get(level).push(item);
+  });
+  return [...byLevel.keys()]
+    .sort((left, right) => left - right)
+    .flatMap((level) => shuffle(byLevel.get(level), rng))
+    .map((item) => ({ item, mode }));
+}
+
+/** 学習の中で最初に答えたときだけ、正解なら習得の回数を1つ増やす。 */
+export function applyBasicFirstAnswer(levels = {}, itemId, correct) {
+  if (!correct) return { ...levels };
+  return { ...levels, [itemId]: basicLevelOf(levels, itemId) + 1 };
 }

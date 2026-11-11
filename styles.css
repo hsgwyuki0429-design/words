@@ -6544,3 +6544,103 @@ body.fx-lite.max-mode.fx-fever .fx-backdrop.is-on {
   font-weight: 600;
   opacity: 0.5;
 }
+
+/* ---------------------------------------------------------------------------
+   公共（ベーシック）：題名・重要度をいくつでも選ぶ。押したものは色を反転させる。
+   --------------------------------------------------------------------------- */
+.basic-card[disabled] {
+  opacity: 0.55;
+}
+
+.basic-card-figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 12px;
+  font-weight: 650;
+  opacity: 0.85;
+}
+
+.basic-card-figures b {
+  margin-left: 4px;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.basic-card-figures small {
+  margin-left: 4px;
+  opacity: 0.7;
+}
+
+.basic-format-switch {
+  width: 100%;
+  margin-top: 14px;
+  /* 教科の切り替えと同じ見た目のまま、横幅いっぱいを形式の数で等分する。 */
+  grid-template-columns: repeat(var(--count, 2), minmax(0, 1fr));
+}
+
+.basic-choice {
+  flex-wrap: wrap;
+  align-content: center;
+  gap: 2px 8px;
+}
+
+.basic-choice .range-choice-name {
+  flex: 1 1 100%;
+}
+
+.basic-choice-detail {
+  color: var(--secondary);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.basic-choice.is-selected {
+  color: var(--background);
+  background: var(--text);
+  border-color: var(--text);
+}
+
+.basic-choice.is-selected .basic-choice-detail {
+  color: inherit;
+  opacity: 0.75;
+}
+
+.basic-choice:disabled {
+  opacity: 0.4;
+}
+
+/* 重要度は1列で、画面の下までの余白を選択肢の数で等分する。 */
+.range-choice-list.basic-importance-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.basic-importance-list .basic-importance {
+  flex: 1 1 0;
+  min-height: 56px;
+  padding: 14px 20px;
+}
+
+.basic-importance-list .range-choice-name {
+  font-size: 20px;
+}
+
+.basic-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: 0 4px;
+  color: var(--pop, var(--text));
+  font: inherit;
+  font-weight: 700;
+  background: none;
+  border: 0;
+}
+
+/* 正誤の4択の解説は「A：×。…」を選択肢ごとの行に分けて書いているので、改行をそのまま見せる。 */
+.feedback-explanation p {
+  white-space: pre-line;
+}

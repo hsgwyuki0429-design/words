@@ -68,7 +68,8 @@ test("形式の切り替えは、英語は向き→形式、公共は一問一�
   assert.match(appSource, /\{ key: "statement", label: "正誤問題", subs: \[\s*\{ key: "statement_choice", label: "4択", mode: "public_choice", type: "public-statement" \},\s*\] \}/);
   // 1つしか無い形式は動かせない。
   assert.match(appSource, /const locked = entries\.length < 2;/);
-  // 英語は範囲を押すと重要度へ流れ、重要度を押すと始まる。
-  assert.match(appSource, /chooseEnglishRange\(target\.dataset\.dashboardRange\)/);
-  assert.match(appSource, /if \(target\.dataset\.englishImportance\) startEnglishPractice\(target\.dataset\.englishImportance\);/);
+  // 英語は範囲と重要度を同じ画面で1つずつ選び、カードを押すと始まる。
+  assert.match(appSource, /if \(target\.dataset\.englishRange\) pickEnglish\("range", target\.dataset\.englishRange\);/);
+  assert.match(appSource, /if \(target\.dataset\.englishImportance\) pickEnglish\("importance", target\.dataset\.englishImportance\);/);
+  assert.match(appSource, /if \(target\.hasAttribute\("data-english-start"\)\) startEnglishPractice\(\);/);
 });

@@ -1,5 +1,5 @@
-import { createHaptics } from "./haptics.js?v=2026.11.32";
-import { createKobunController } from "./kobun.js?v=2026.11.32";
+import { createHaptics } from "./haptics.js?v=2026.11.33";
+import { createKobunController } from "./kobun.js?v=2026.11.33";
 import {
   ALL_MODES,
   BASIC_SCOPES,
@@ -79,8 +79,8 @@ import {
   unmasterStudyItems,
   gaugeColorIndex,
   hasAnsweredMode,
-} from "./logic.js?v=2026.11.32";
-import { createMaxAudioEngine } from "./audio.js?v=2026.11.32";
+} from "./logic.js?v=2026.11.33";
+import { createMaxAudioEngine } from "./audio.js?v=2026.11.33";
 import {
   CORRECT_VARIANTS,
   LANDING_VARIANTS,
@@ -88,7 +88,7 @@ import {
   SFX_VOLUME_OPTIONS,
   createSfxEngine,
   normalizeSfxVolume,
-} from "./sfx.js?v=2026.11.32";
+} from "./sfx.js?v=2026.11.33";
 import {
   MAX_FEVER_GOAL,
   MAX_TIMELINE_PHASES,
@@ -103,7 +103,7 @@ import {
   resolveMaxCue,
   scaledVisualPlan,
   shouldPlayMaxSound,
-} from "./max-cues.js?v=2026.11.32";
+} from "./max-cues.js?v=2026.11.33";
 import {
   clearAllData,
   getMeta,
@@ -115,7 +115,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.11.32";
+} from "./storage.js?v=2026.11.33";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -123,7 +123,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.11.32";
+} from "./quiz-gestures.js?v=2026.11.33";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
@@ -132,7 +132,7 @@ import {
   normalizeSpeechRate,
   normalizeSpeechVoiceURI,
   voiceKey,
-} from "./speech.js?v=2026.11.32";
+} from "./speech.js?v=2026.11.33";
 import {
   AI_LINK_JOURNAL_KEY,
   AI_LINK_META_KEY,
@@ -148,7 +148,7 @@ import {
   isAiLinkConfigured,
   mcpUrlFor,
   normalizeAiLinkConfig,
-} from "./ai-link.js?v=2026.11.32";
+} from "./ai-link.js?v=2026.11.33";
 import {
   DEFAULT_DEVICE_SYNC,
   DEVICE_SYNC_META_KEY,
@@ -165,13 +165,13 @@ import {
   syncStateLabel,
   transferFileName,
   unsentEntries,
-} from "./sync.js?v=2026.11.32";
+} from "./sync.js?v=2026.11.33";
 import {
   applyThemePreference,
   normalizeThemePreference,
   readStoredThemePreference,
   watchSystemTheme,
-} from "./theme.js?v=2026.11.32";
+} from "./theme.js?v=2026.11.33";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -242,8 +242,8 @@ const state = {
   basicLevels: {},
   // 英語・公共の形式の切り替え（教科ごとに、上段と、上段ごとの下段）。
   formatPick: {},
-  // 英語：範囲を押したあと、重要度を選んでいるところ。
-  englishStep: null,
+  // 英語：ホームで選んでいる範囲・重要度（1つずつ）。
+  englishPick: null,
   // テストの条件（範囲・形式・重要度。範囲と重要度は空なら「すべて」）。
   // テストの条件（押すたびに付け外し）。null はまだ選んでいない＝初めの状態
   // （範囲・重要度はすべて、形式は先頭の1つ）。
@@ -284,6 +284,8 @@ const elements = Object.fromEntries(
     "home-summary",
     "home-continue",
     "format-bars",
+    "english-importance-head",
+    "english-importance-list",
     "mode-switch",
     "home-pane",
     "test-home",
@@ -939,9 +941,10 @@ function renderDashboard() {
       : "範囲を選ぶ";
   syncHomeMode();
   renderFormatBars();
-  document.body.classList.toggle("home-basic", isBasicHome());
+  document.body.classList.toggle("home-basic", isBasicHome() || isEnglishHome());
   // 公共は、範囲と重要度をいくつでも選んで解く1つの流れだけにする（上の切り替えは出さない）。
   if (isBasicHome()) {
+    setEnglishImportanceVisible(false);
     elements.homePane.hidden = false;
     elements.testHome.hidden = true;
     elements.testStartBar.hidden = true;
@@ -967,13 +970,15 @@ function renderDashboard() {
     renderHeader();
     return;
   }
-  const resume = resumableStudy();
-  elements.homeContinue.innerHTML = resume ? resumeStudyMarkup(resume) : "";
-  if (isEnglishImportanceStep()) {
-    renderEnglishImportance();
+  // 英語は、範囲と重要度を同じ画面で1つずつ選び、上のカードを押して始める。
+  if (isEnglishHome()) {
+    renderEnglishHome();
     renderHeader();
     return;
   }
+  setEnglishImportanceVisible(false);
+  const resume = resumableStudy();
+  elements.homeContinue.innerHTML = resume ? resumeStudyMarkup(resume) : "";
   elements.dashboardRangeList.classList.remove("basic-importance-list");
   elements.dashboardRangeList.style.removeProperty("height");
   const ranges = dashboardRanges();
@@ -1290,65 +1295,127 @@ function backButtonMarkup(attribute, label) {
 }
 
 // ---------------------------------------------------------------------------
-// 英語：範囲を押すと一覧が左へ流れて重要度が右から出る。重要度を押すと始まる。
+// 英語：範囲（1つ）と重要度（1つ）を同じ画面で押して選び、上のカードを押すと始まる。
+// カードは続きが無くても出し、いま選んでいる組の習得の円と今の周回を見せる。
 // ---------------------------------------------------------------------------
+
+function isEnglishHome() {
+  return state.subject === "english" && hasFormatBars();
+}
 
 function englishSelectionForMode(mode) {
   return dashboardTargetGroups().flatMap((group) => group.cards).find((card) => card.mode === mode)?.selection ?? null;
 }
 
-function isEnglishImportanceStep() {
-  return state.subject === "english" && state.englishStep?.step === "importance"
-    && dashboardRanges().includes(state.englishStep.range);
+function setEnglishImportanceVisible(visible) {
+  elements.englishImportanceHead.hidden = !visible;
+  elements.englishImportanceList.hidden = !visible;
+  if (!visible) elements.englishImportanceList.innerHTML = "";
 }
 
-function renderEnglishImportance() {
-  const range = state.englishStep.range;
-  const { sub } = currentFormat();
-  const selection = englishSelectionForMode(sub.mode);
-  if (selection) state.studySelection = normalizeStudySelection(selection);
+// いま選んでいる範囲・重要度（無くなった範囲・重要度は外す）。
+function englishPick() {
+  // 初めて開いたときは、続きのある組（いちばん最近学習した範囲・重要度）を選んでおく。
+  const resume = state.englishPick ? null : resumableStudy();
+  const pick = state.englishPick ?? {
+    range: resume?.config.filters.ranges[0] ?? null,
+    importance: resume?.config.filters.importance[0] ?? null,
+  };
+  if (pick.range && !dashboardRanges().includes(pick.range)) pick.range = null;
+  if (pick.importance && !currentImportanceOrder().includes(pick.importance)) pick.importance = null;
+  state.englishPick = pick;
+  return pick;
+}
+
+function englishCurrentSelection() {
+  const selection = englishSelectionForMode(currentFormat().sub.mode);
+  return selection ? normalizeStudySelection(selection) : state.studySelection;
+}
+
+function englishCardMarkup(pick) {
   const unit = recallUnit();
-  const values = currentImportanceOrder();
-  elements.dashboardTitle.textContent = "重要度を選ぶ";
-  elements.dashboardCopy.innerHTML = backButtonMarkup("data-english-back", "範囲を選び直す");
+  const { top, sub } = currentFormat();
+  const eyebrow = `${top.label} · ${sub.label}`;
+  if (!pick.range || !pick.importance) {
+    const empty = summarizeBasicLevels({ itemIds: [], levels: {} });
+    const detail = !pick.range && !pick.importance ? "範囲と重要度を選ぶ" : !pick.range ? "範囲を選ぶ" : "重要度を選ぶ";
+    return `
+    <button class="continue-card basic-card" type="button" data-english-start disabled aria-disabled="true">
+      <span class="continue-top meter-card">
+        ${setRingMarkup(empty)}
+        <span class="meter-body">
+          <span class="continue-eyebrow">${escapeHtml(eyebrow)}</span>
+          <span class="continue-title">${escapeHtml(pick.range ?? `${dashboardRanges().length}範囲`)}</span>
+          <span class="continue-detail">${escapeHtml(detail)}</span>
+        </span>
+        <span class="continue-action">スタート<span aria-hidden="true">→</span></span>
+      </span>
+    </button>`;
+  }
+  const status = practiceStatus(practiceConfig({ range: pick.range, importance: pick.importance, selection: englishCurrentSelection() }));
+  const inProgress = Boolean(status.stored) && isStudyInProgress(status.stored);
+  const action = inProgress ? "続ける" : "スタート";
+  return `
+    <button class="continue-card basic-card english-card" type="button" data-english-start${status.pool.length ? "" : ' disabled aria-disabled="true"'} aria-label="${escapeHtml(`${action}：${pick.range}、重要度${pick.importance}、${status.pool.length}${unit}`)}">
+      <span class="continue-top meter-card">
+        ${setRingMarkup(status.ring)}
+        <span class="meter-body">
+          <span class="continue-eyebrow">${escapeHtml(eyebrow)}</span>
+          <span class="continue-title">${escapeHtml(pick.range)}</span>
+          <span class="continue-detail">${escapeHtml(`重要度 ${pick.importance} · ${status.pool.length}${unit}`)}</span>
+        </span>
+        <span class="continue-action">${action}<span aria-hidden="true">→</span></span>
+      </span>
+      <span class="continue-foot">${cycleBarMarkup(status.summary, { total: status.pool.length })}</span>
+    </button>`;
+}
+
+function renderEnglishHome() {
+  const pick = englishPick();
+  const unit = recallUnit();
+  const selection = englishCurrentSelection();
+  elements.homeContinue.innerHTML = englishCardMarkup(pick);
+  const ranges = dashboardRanges();
   const list = elements.dashboardRangeList;
-  list.classList.add("basic-importance-list");
-  list.innerHTML = values.map((value, index) => {
-    const status = practiceStatus(practiceConfig({ range, importance: value, selection: state.studySelection }));
-    return importanceButtonMarkup({
-      value,
-      attribute: `data-english-importance="${value}"`,
-      detail: `${range} · ${status.pool.length}${unit} · 習得 ${status.ring.masteredPercent}%`,
-      index,
-      disabled: !status.pool.length,
-    });
+  list.classList.remove("basic-importance-list");
+  list.style.removeProperty("height");
+  elements.dashboardTitle.textContent = "範囲を選ぶ";
+  elements.dashboardCopy.textContent = `${ranges.length}範囲`;
+  list.innerHTML = ranges.map((range, index) => {
+    const selected = pick.range === range;
+    return `
+    <button class="range-choice basic-choice basic-range${selected ? " is-selected" : ""}" type="button" data-english-range="${escapeHtml(range)}" aria-pressed="${selected}" style="--i:${index}">
+      <span class="range-choice-name">${escapeHtml(range)}</span>
+    </button>`;
   }).join("");
-  fitImportanceList();
+  // 重要度は、選んでいる範囲（まだなら全範囲）で出せる語句の数を添える。
+  setEnglishImportanceVisible(true);
+  elements.englishImportanceList.innerHTML = currentImportanceOrder().map((value, index) => {
+    const count = (pick.range ? [pick.range] : ranges)
+      .reduce((sum, range) => sum + studyPoolItems(practiceConfig({ range, importance: value, selection })).length, 0);
+    const selected = pick.importance === value;
+    return `
+    <button class="range-choice basic-choice basic-range${selected ? " is-selected" : ""}" type="button" data-english-importance="${value}" aria-pressed="${selected}" style="--i:${index}"${count ? "" : ' disabled aria-disabled="true"'}>
+      <span class="range-choice-name">${value}</span>
+      <span class="basic-choice-detail">${count}${unit}</span>
+    </button>`;
+  }).join("");
+  fitRangeNames();
 }
 
-function chooseEnglishRange(range) {
+function pickEnglish(field, value) {
+  const pick = englishPick();
+  pick[field] = pick[field] === value ? null : value;
   haptics.trigger("flip");
-  slideHomeList("forward", () => {
-    state.englishStep = { step: "importance", range };
-    renderDashboard();
-  });
+  renderEnglishHome();
 }
 
-function leaveEnglishImportance() {
-  haptics.trigger("flip");
-  slideHomeList("back", () => {
-    state.englishStep = null;
-    renderDashboard();
-  });
-}
-
-function startEnglishPractice(importance) {
-  const range = state.englishStep?.range;
-  const { sub } = currentFormat();
-  const selection = englishSelectionForMode(sub.mode);
-  if (!range || !selection) return;
+function startEnglishPractice() {
+  const pick = englishPick();
+  const selection = englishSelectionForMode(currentFormat().sub.mode);
+  if (!pick.range || !pick.importance || !selection) return;
   state.studySelection = normalizeStudySelection(selection);
-  state.filters = { ...emptyFilters(), ranges: [range], importance: [importance] };
+  state.filters = { ...emptyFilters(), ranges: [pick.range], importance: [pick.importance] };
   state.rangeSelectionMode = "custom";
   state.sortKey = STUDY_SORT_KEY;
   startSession();
@@ -6649,8 +6716,9 @@ function bindEvents() {
     if (target.dataset.basicImportance) toggleBasicValue("importance", target.dataset.basicImportance);
     if (target.dataset.formatTop) setFormat("top", target.dataset.formatTop);
     if (target.dataset.formatSub) setFormat("sub", target.dataset.formatSub);
-    if (target.dataset.englishImportance) startEnglishPractice(target.dataset.englishImportance);
-    if (target.hasAttribute("data-english-back")) leaveEnglishImportance();
+    if (target.dataset.englishRange) pickEnglish("range", target.dataset.englishRange);
+    if (target.dataset.englishImportance) pickEnglish("importance", target.dataset.englishImportance);
+    if (target.hasAttribute("data-english-start")) startEnglishPractice();
     if (target.hasAttribute("data-basic-next")) advanceBasic();
     if (target.hasAttribute("data-basic-back")) retreatBasic();
     if (target.dataset.basicScope) {
@@ -6658,9 +6726,7 @@ function bindEvents() {
       saveSettings();
       renderSettings();
     }
-    if (target.dataset.dashboardRange && state.subject === "english" && hasFormatBars()) {
-      chooseEnglishRange(target.dataset.dashboardRange);
-    } else if (target.dataset.dashboardRange) {
+    if (target.dataset.dashboardRange) {
       state.filters.ranges = [target.dataset.dashboardRange];
       state.rangeSelectionMode = "custom";
       setView("range-detail");
@@ -6928,7 +6994,7 @@ async function boot() {
       fetch(ENGLISH_DATA_URL),
       fetch(PUBLIC_DATA_URL),
       fetch("./data/health-items.json?v=2026.09.01"),
-      fetch("./data/kobun-vocabulary.json?v=2026.11.32"),
+      fetch("./data/kobun-vocabulary.json?v=2026.11.33"),
       loadHistory(),
       getMeta("selectedMode"),
       getMetaObject("settings", DEFAULT_SETTINGS),
@@ -7014,7 +7080,7 @@ async function boot() {
         .catch((error) => console.warn("AI連携の同期に失敗しました", error));
     }
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.11.32").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.11.33").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

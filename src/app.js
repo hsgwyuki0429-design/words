@@ -1,7 +1,13 @@
-import { createHaptics } from "./haptics.js?v=2026.11.30";
-import { createKobunController } from "./kobun.js?v=2026.11.30";
+import { createHaptics } from "./haptics.js?v=2026.11.31";
+import { createKobunController } from "./kobun.js?v=2026.11.31";
 import {
   ALL_MODES,
+  BASIC_SCOPES,
+  BASIC_SCOPE_LABELS,
+  applyBasicFirstAnswer,
+  buildBasicQueue,
+  normalizeBasicScope,
+  summarizeBasicLevels,
   ALPHABET_KEYBOARD_ROWS,
   DEFAULT_MASTERY_CRITERION,
   ENGLISH_CONTENT_TYPES,
@@ -73,8 +79,8 @@ import {
   unmasterStudyItems,
   gaugeColorIndex,
   hasAnsweredMode,
-} from "./logic.js?v=2026.11.30";
-import { createMaxAudioEngine } from "./audio.js?v=2026.11.30";
+} from "./logic.js?v=2026.11.31";
+import { createMaxAudioEngine } from "./audio.js?v=2026.11.31";
 import {
   CORRECT_VARIANTS,
   LANDING_VARIANTS,
@@ -82,7 +88,7 @@ import {
   SFX_VOLUME_OPTIONS,
   createSfxEngine,
   normalizeSfxVolume,
-} from "./sfx.js?v=2026.11.30";
+} from "./sfx.js?v=2026.11.31";
 import {
   MAX_FEVER_GOAL,
   MAX_TIMELINE_PHASES,
@@ -97,7 +103,7 @@ import {
   resolveMaxCue,
   scaledVisualPlan,
   shouldPlayMaxSound,
-} from "./max-cues.js?v=2026.11.30";
+} from "./max-cues.js?v=2026.11.31";
 import {
   clearAllData,
   getMeta,
@@ -109,7 +115,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.11.30";
+} from "./storage.js?v=2026.11.31";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -117,7 +123,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.11.30";
+} from "./quiz-gestures.js?v=2026.11.31";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
@@ -126,7 +132,7 @@ import {
   normalizeSpeechRate,
   normalizeSpeechVoiceURI,
   voiceKey,
-} from "./speech.js?v=2026.11.30";
+} from "./speech.js?v=2026.11.31";
 import {
   AI_LINK_JOURNAL_KEY,
   AI_LINK_META_KEY,
@@ -142,7 +148,7 @@ import {
   isAiLinkConfigured,
   mcpUrlFor,
   normalizeAiLinkConfig,
-} from "./ai-link.js?v=2026.11.30";
+} from "./ai-link.js?v=2026.11.31";
 import {
   DEFAULT_DEVICE_SYNC,
   DEVICE_SYNC_META_KEY,
@@ -159,13 +165,13 @@ import {
   syncStateLabel,
   transferFileName,
   unsentEntries,
-} from "./sync.js?v=2026.11.30";
+} from "./sync.js?v=2026.11.31";
 import {
   applyThemePreference,
   normalizeThemePreference,
   readStoredThemePreference,
   watchSystemTheme,
-} from "./theme.js?v=2026.11.30";
+} from "./theme.js?v=2026.11.31";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -189,6 +195,8 @@ const DEFAULT_SETTINGS = {
   speechRate: DEFAULT_SPEECH_RATE,
   speechVoiceURI: SPEECH_VOICE_AUTO,
   masteryCriterion: DEFAULT_MASTERY_CRITERION,
+  // 公共（ベーシック）で出す問題：習得の回数がいちばん少ない問題だけ（lowest）か、全部1周（all）か。
+  basicScope: "lowest",
 };
 
 // アクティブな入力枠はDOMではなく、この入力UI専用の状態で管理する。
@@ -229,6 +237,9 @@ const state = {
   setupTitle: null,
   // ホームの「演習｜テスト」。端末に覚えておく。
   homeMode: "practice",
+  // 公共（ベーシック）：形式・範囲・重要度の選び途中と、形式ごとの習得の回数。
+  basicDraft: null,
+  basicLevels: {},
   // テストの条件（範囲・形式・重要度。範囲と重要度は空なら「すべて」）。
   // テストの条件（押すたびに付け外し）。null はまだ選んでいない＝初めの状態
   // （範囲・重要度はすべて、形式は先頭の1つ）。
@@ -366,7 +377,7 @@ function emptyPeriodMarkup() {
 // いま学習する英語の教材データ（3定）。sw.js の APP_SHELL にも同じURLを載せる。
 const ENGLISH_DATA_URL = "./data/english-2026-3.json?v=2026.11.12";
 // いま学習する公共の教材データ（3定・単元20〜30）。2定の公共は data/public-items.json に残している。
-const PUBLIC_DATA_URL = "./data/public-2026-3.json?v=2026.11.11";
+const PUBLIC_DATA_URL = "./data/public-2026-3.json?v=2026.11.13";
 
 // いま選べる定期テストの回。2定（2026.2）は終えたので外し、3定だけにしている。
 // 選べる回が1つだけのときは、回を選ぶ画面を出さずに自動で選ぶ。
@@ -922,6 +933,16 @@ function renderDashboard() {
       ? "作品を選ぶ"
       : "範囲を選ぶ";
   syncHomeMode();
+  // 公共は、範囲と重要度をいくつでも選んで解く1つの流れだけにする（上の切り替えは出さない）。
+  if (isBasicHome()) {
+    elements.homePane.hidden = false;
+    elements.testHome.hidden = true;
+    elements.testStartBar.hidden = true;
+    document.body.classList.remove("home-test-mode");
+    renderBasicHome();
+    renderHeader();
+    return;
+  }
   const test = isTestFlow() && periodHasData();
   elements.homePane.hidden = test;
   elements.testHome.hidden = !test;
@@ -1082,6 +1103,228 @@ function renderRangeDetail() {
     </section>`).join("");
 }
 
+
+// ---------------------------------------------------------------------------
+// ベーシック（公共）
+//
+// ホームの上に黒いカード、その下に形式（一問一答・4択）の切り替え、その下に題名の一覧を置く。
+// 題名をいくつでも押して選び（押した題名は色が反転する）、カードを押すと、一覧が重要度に
+// 変わる。重要度もいくつでも選び、もう一度カードを押すと始まる。カードには、いま選んでいる
+// 問題の数と、そのうち習得1回・習得2回の割合を出す。
+// ---------------------------------------------------------------------------
+
+const BASIC_LEVELS_META_KEY = "basicLevels";
+const BASIC_FORMATS = [
+  { mode: "public_recall", label: "一問一答" },
+  { mode: "public_choice", label: "4択" },
+];
+
+function isBasicHome() {
+  return isPublicSubject() && periodHasData();
+}
+
+function basicDraft() {
+  const ranges = dashboardRanges();
+  const draft = state.basicDraft ?? { format: BASIC_FORMATS[0].mode, step: "ranges", ranges: [], importance: [] };
+  if (!BASIC_FORMATS.some((format) => format.mode === draft.format)) draft.format = BASIC_FORMATS[0].mode;
+  draft.ranges = draft.ranges.filter((range) => ranges.includes(range));
+  if (!draft.ranges.length) draft.step = "ranges";
+  state.basicDraft = draft;
+  return draft;
+}
+
+function basicFormatLabel(mode) {
+  return BASIC_FORMATS.find((format) => format.mode === mode)?.label ?? "";
+}
+
+// その形式で出題できる問題（4択だけの正誤問題は一問一答には出ない）。
+function basicItems({ mode, ranges = [], importance = [] } = {}) {
+  return state.items.filter((item) => (item.questionModes ?? []).includes(mode)
+    && (!ranges.length || ranges.some((range) => itemMatchesRange(item, range)))
+    && (!importance.length || importance.includes(item.importance)));
+}
+
+function basicLevels(mode) {
+  return state.basicLevels?.[mode] ?? {};
+}
+
+function basicSummary(items, mode) {
+  return summarizeBasicLevels({ itemIds: items.map((item) => item.id), levels: basicLevels(mode) });
+}
+
+function basicCardMarkup(draft) {
+  const unit = recallUnit();
+  const inRanges = basicItems({ mode: draft.format, ranges: draft.ranges });
+  const choosingImportance = draft.step === "importance";
+  const picked = choosingImportance
+    ? basicItems({ mode: draft.format, ranges: draft.ranges, importance: draft.importance })
+    : inRanges;
+  // まだ何も選んでいないときは、その形式の全部の問題の様子を見せておく。
+  const shown = draft.ranges.length ? picked : basicItems({ mode: draft.format });
+  const summary = basicSummary(shown, draft.format);
+  const ready = choosingImportance ? draft.importance.length && picked.length : draft.ranges.length && inRanges.length;
+  const title = !draft.ranges.length
+    ? "題名を選んでください"
+    : choosingImportance && !draft.importance.length
+      ? "重要度を選んでください"
+      : `${picked.length}${unit}`;
+  const detail = !draft.ranges.length
+    ? `全${shown.length}${unit}`
+    : choosingImportance
+      ? `${rangesLabel(draft.ranges)}${draft.importance.length ? ` · 重要度 ${draft.importance.join("・")}` : ""}`
+      : rangesLabel(draft.ranges);
+  const action = choosingImportance ? "スタート" : "重要度へ";
+  return `
+    <button class="continue-card basic-card" type="button" data-basic-next${ready ? "" : " disabled aria-disabled=\"true\""} aria-label="${escapeHtml(`${title}、${detail}。習得1回 ${summary.oncePercent}パーセント、習得2回 ${summary.twicePercent}パーセント`)}">
+      <span class="continue-top meter-card">
+        ${setRingMarkup(summary)}
+        <span class="meter-body">
+          <span class="continue-eyebrow">${escapeHtml(basicFormatLabel(draft.format))} · ${choosingImportance ? "重要度を選ぶ" : "題名を選ぶ"}</span>
+          <span class="continue-title">${escapeHtml(title)}</span>
+          <span class="continue-detail">${escapeHtml(detail)}</span>
+        </span>
+      </span>
+      <span class="continue-foot">
+        <span class="basic-card-figures">
+          <span>習得1回 <b>${summary.oncePercent}%</b><small>${summary.onceCount}${unit}</small></span>
+          <span>習得2回 <b>${summary.twicePercent}%</b><small>${summary.twiceCount}${unit}</small></span>
+        </span>
+        <span class="continue-action">${action}<span aria-hidden="true">→</span></span>
+      </span>
+    </button>`;
+}
+
+function basicFormatSwitchMarkup(draft) {
+  const index = Math.max(0, BASIC_FORMATS.findIndex((format) => format.mode === draft.format));
+  return `
+    <div class="segment-switch basic-format-switch" role="radiogroup" aria-label="出題の形式" style="--count:${BASIC_FORMATS.length};--index:${index}">
+      <span class="segment-thumb" aria-hidden="true"></span>
+      ${BASIC_FORMATS.map((format) => `<button type="button" role="radio" data-basic-format="${format.mode}" aria-checked="${format.mode === draft.format}">${escapeHtml(format.label)}</button>`).join("")}
+    </div>`;
+}
+
+function renderBasicHome() {
+  const draft = basicDraft();
+  const unit = recallUnit();
+  elements.homeContinue.innerHTML = basicCardMarkup(draft) + basicFormatSwitchMarkup(draft);
+  const list = elements.dashboardRangeList;
+  if (draft.step === "importance") {
+    const inRanges = basicItems({ mode: draft.format, ranges: draft.ranges });
+    const values = IMPORTANCE_ORDER.filter((value) => inRanges.some((item) => item.importance === value));
+    elements.dashboardTitle.textContent = "重要度を選ぶ";
+    elements.dashboardCopy.innerHTML = `<button class="basic-back" type="button" data-basic-back><span aria-hidden="true">←</span>題名を選び直す</button>`;
+    list.classList.add("basic-importance-list");
+    list.innerHTML = values.map((value, index) => {
+      const items = inRanges.filter((item) => item.importance === value);
+      const summary = basicSummary(items, draft.format);
+      const selected = draft.importance.includes(value);
+      return `
+      <button class="range-choice basic-choice basic-importance${selected ? " is-selected" : ""}" type="button" data-basic-importance="${value}" aria-pressed="${selected}" style="--i:${index}">
+        <span class="range-choice-name">重要度 ${value}</span>
+        <span class="basic-choice-detail">${items.length}${unit} · 習得1回 ${summary.oncePercent}%</span>
+      </button>`;
+    }).join("");
+    fitBasicImportanceList();
+    return;
+  }
+  const ranges = dashboardRanges();
+  elements.dashboardTitle.textContent = "題名を選ぶ";
+  elements.dashboardCopy.textContent = `${draft.ranges.length}/${ranges.length}題名`;
+  list.classList.remove("basic-importance-list");
+  list.style.removeProperty("height");
+  list.innerHTML = ranges.map((range, index) => {
+    const count = basicItems({ mode: draft.format, ranges: [range] }).length;
+    const selected = draft.ranges.includes(range);
+    return `
+    <button class="range-choice basic-choice${selected ? " is-selected" : ""}" type="button" data-basic-range="${escapeHtml(range)}" aria-pressed="${selected}" style="--i:${Math.min(index, 16)}"${count ? "" : ' disabled aria-disabled="true"'}>
+      <span class="range-choice-name">${escapeHtml(range)}</span>
+      <span class="basic-choice-detail">${count}${unit}</span>
+    </button>`;
+  }).join("");
+}
+
+// 重要度の選択肢は、画面の下までの余白を等分した大きなボタンにする。
+function fitBasicImportanceList() {
+  const list = elements.dashboardRangeList;
+  if (!list.classList.contains("basic-importance-list") || state.view !== "dashboard") return;
+  const count = list.children.length || 1;
+  // 下に余白を少し残し、画面が縦に動かない高さにする。
+  const bottomGap = 36;
+  const available = window.innerHeight - list.getBoundingClientRect().top - bottomGap;
+  list.style.height = `${Math.max(available, count * 64)}px`;
+}
+
+function toggleBasicValue(field, value) {
+  const draft = basicDraft();
+  draft[field] = draft[field].includes(value)
+    ? draft[field].filter((entry) => entry !== value)
+    : [...draft[field], value];
+  haptics.trigger("flip");
+  renderBasicHome();
+}
+
+function setBasicFormat(mode) {
+  const draft = basicDraft();
+  if (draft.format === mode || !BASIC_FORMATS.some((format) => format.mode === mode)) return;
+  draft.format = mode;
+  haptics.trigger("flip");
+  renderBasicHome();
+  const toggle = elements.homeContinue.querySelector(".basic-format-switch");
+  if (toggle) {
+    toggle.style.setProperty("--index", String(BASIC_FORMATS.findIndex((format) => format.mode === mode)));
+  }
+}
+
+function advanceBasic() {
+  const draft = basicDraft();
+  if (draft.step === "ranges") {
+    if (!draft.ranges.length) return;
+    draft.step = "importance";
+    // 範囲に無い重要度は外しておく。
+    const inRanges = basicItems({ mode: draft.format, ranges: draft.ranges });
+    draft.importance = draft.importance.filter((value) => inRanges.some((item) => item.importance === value));
+    haptics.trigger("flip");
+    renderBasicHome();
+    window.scrollTo({ top: 0, behavior: "auto" });
+    return;
+  }
+  startBasicStudy();
+}
+
+function retreatBasic() {
+  basicDraft().step = "ranges";
+  haptics.trigger("flip");
+  renderBasicHome();
+}
+
+function startBasicStudy() {
+  const draft = basicDraft();
+  const items = basicItems({ mode: draft.format, ranges: draft.ranges, importance: draft.importance });
+  const queue = buildBasicQueue({
+    items,
+    levels: basicLevels(draft.format),
+    mode: draft.format,
+    scope: state.settings.basicScope,
+  });
+  if (!queue.length) {
+    showToast(NO_MATCHING_QUESTIONS_MESSAGE);
+    return;
+  }
+  beginSession(queue, { basic: { mode: draft.format, answered: {} } });
+}
+
+// 学習の中で最初に答えたときだけ、習得の回数を数える。
+function recordBasicAnswer(session, itemId, correct) {
+  const basic = session.basic;
+  if (!basic || basic.answered[itemId]) return;
+  basic.answered[itemId] = true;
+  state.basicLevels = {
+    ...state.basicLevels,
+    [basic.mode]: applyBasicFirstAnswer(basicLevels(basic.mode), itemId, correct),
+  };
+  setMeta(BASIC_LEVELS_META_KEY, state.basicLevels).catch(console.warn);
+}
+
 // ---------------------------------------------------------------------------
 // テスト
 //
@@ -1094,9 +1337,9 @@ function renderRangeDetail() {
 const TEST_HISTORY_META_KEY = "testHistory";
 const TEST_HISTORY_LIMIT = 60;
 
-// ホームが演習側かテスト側か。
+// ホームが演習側かテスト側か。公共にはテストが無い。
 function isTestFlow() {
-  return state.homeMode === "test";
+  return state.homeMode === "test" && !isBasicHome();
 }
 
 function syncHomeMode() {
@@ -1105,7 +1348,7 @@ function syncHomeMode() {
   elements.modeSwitch.querySelectorAll("[data-home-mode]").forEach((button) => {
     button.setAttribute("aria-checked", String(button.dataset.homeMode === state.homeMode));
   });
-  elements.modeSwitch.hidden = !periodHasData();
+  elements.modeSwitch.hidden = !periodHasData() || isBasicHome();
 }
 
 // 押した札だけを弾ませる（描き直したあとの同じ札を探して印を付ける）。
@@ -2505,6 +2748,23 @@ function renderSettings() {
           </button>`).join("")}
       </div>
       <p class="settings-note">習得条件を変えると、周回と習得の判定だけを新しいセットとしてやり直します。回答数・正解数などの学習履歴は残ります。</p>
+    </section>
+    <section class="settings-card">
+      <h2>公共で出す問題</h2>
+      <p>選んだ題名・重要度の中から、どの問題を出すかを選びます。どちらも、出た問題すべてに1回正解すると終わります。</p>
+      <div class="criterion-options" role="radiogroup" aria-label="公共で出す問題">
+        ${BASIC_SCOPES.map((scope) => `
+          <button
+            class="criterion-option${normalizeBasicScope(state.settings.basicScope) === scope ? " selected" : ""}"
+            type="button"
+            role="radio"
+            aria-checked="${normalizeBasicScope(state.settings.basicScope) === scope}"
+            data-basic-scope="${scope}"
+          >
+            <span class="criterion-mark" aria-hidden="true"></span>
+            <span><strong>${escapeHtml(BASIC_SCOPE_LABELS[scope].title)}</strong><small>${escapeHtml(BASIC_SCOPE_LABELS[scope].detail)}</small></span>
+          </button>`).join("")}
+      </div>
     </section>
     <h2 class="settings-group-title">データ</h2>
     ${transferCard()}
@@ -4102,6 +4362,7 @@ function beginSession(queue, {
   poolItemIds = null,
   deferredReviews = [],
   test = null,
+  basic = null,
 } = {}) {
   if (state.session?.reviewTimer) clearTimeout(state.session.reviewTimer);
   const copyQueue = () => queue.map((entry) => ({ ...entry }));
@@ -4136,6 +4397,8 @@ function beginSession(queue, {
     undo: null,
     // テストのとき：条件（形式・範囲・重要度）。テストは出し直しも周回もしない。
     test,
+    // 公共（ベーシック）のとき：形式と、この学習ですでに答えた問題。
+    basic,
     // 新記録の演出に使う、始めた時点の自己ベスト。
     recordAtStart: state.bestCombo,
     recordAnnounced: false,
@@ -5277,6 +5540,8 @@ async function submitAnswer(
     resultsLength: session.results.length,
     cycleAdvanced: session.cycleAdvanced,
     complete: session.complete,
+    basicLevels: session.basic ? JSON.parse(JSON.stringify(state.basicLevels)) : null,
+    basicAnswered: session.basic ? { ...session.basic.answered } : null,
   };
   session.currentAnswer = answer;
   session.currentCorrect = correct;
@@ -5300,6 +5565,7 @@ async function submitAnswer(
     persistStudyProgress(session.progressKey, session.progress);
   }
 
+  recordBasicAnswer(session, question.item.id, correct);
   session.results.push({
     itemId: question.item.id,
     item: question.item,
@@ -5456,6 +5722,11 @@ async function undoLastAnswer() {
   if (undo.progressKey) {
     session.progress = undo.progress;
     persistStudyProgress(undo.progressKey, undo.progress);
+  }
+  if (session.basic && undo.basicLevels) {
+    state.basicLevels = undo.basicLevels;
+    session.basic.answered = undo.basicAnswered ?? {};
+    setMeta(BASIC_LEVELS_META_KEY, state.basicLevels).catch(console.warn);
   }
   state.combo = undo.combo;
   state.fever = undo.fever ?? createFeverState();
@@ -6011,6 +6282,8 @@ function bindEvents() {
     setView("range-detail");
   });
   addEventListener("resize", markFxResize, { passive: true });
+  // 公共の重要度の大きなボタンは、画面の高さに合わせて等分し直す。
+  addEventListener("resize", () => fitBasicImportanceList(), { passive: true });
   addEventListener("resize", () => {
     if (state.view === "quiz" && state.session?.currentQuestion?.mode === "public_choice"
       && !state.session.isTransitioning) fitChoiceScreen();
@@ -6160,6 +6433,16 @@ function bindEvents() {
         .catch(() => showToast("データを削除できませんでした"));
     }
     if (target.dataset.homeMode) setHomeMode(target.dataset.homeMode);
+    if (target.dataset.basicRange) toggleBasicValue("ranges", target.dataset.basicRange);
+    if (target.dataset.basicImportance) toggleBasicValue("importance", target.dataset.basicImportance);
+    if (target.dataset.basicFormat) setBasicFormat(target.dataset.basicFormat);
+    if (target.hasAttribute("data-basic-next")) advanceBasic();
+    if (target.hasAttribute("data-basic-back")) retreatBasic();
+    if (target.dataset.basicScope) {
+      state.settings.basicScope = normalizeBasicScope(target.dataset.basicScope);
+      saveSettings();
+      renderSettings();
+    }
     if (target.dataset.dashboardRange) {
       state.filters.ranges = [target.dataset.dashboardRange];
       state.rangeSelectionMode = "custom";
@@ -6423,12 +6706,12 @@ async function boot() {
     if (themePreference() === "system") applyTheme();
   });
   try {
-    const [response, publicResponse, healthResponse, vocabResponse, history, selectedMode, settings, bestCombo, selectedPeriod, studyConfigs, legacyRecentStudies, studyProgress, lastSessionResult, aiLink, aiLinkJournal, deviceSync, lastSubject, homeMode, testHistory] = await Promise.all([
+    const [response, publicResponse, healthResponse, vocabResponse, history, selectedMode, settings, bestCombo, selectedPeriod, studyConfigs, legacyRecentStudies, studyProgress, lastSessionResult, aiLink, aiLinkJournal, deviceSync, lastSubject, homeMode, testHistory, basicLevels] = await Promise.all([
       // 英語は3定（2026.3）の範囲。2定の英語は data/items.json に残している。
       fetch(ENGLISH_DATA_URL),
       fetch(PUBLIC_DATA_URL),
       fetch("./data/health-items.json?v=2026.09.01"),
-      fetch("./data/kobun-vocabulary.json?v=2026.11.30"),
+      fetch("./data/kobun-vocabulary.json?v=2026.11.31"),
       loadHistory(),
       getMeta("selectedMode"),
       getMetaObject("settings", DEFAULT_SETTINGS),
@@ -6444,6 +6727,7 @@ async function boot() {
       getMeta("lastSubject", null),
       getMeta("homeMode", "practice"),
       getMeta(TEST_HISTORY_META_KEY, []),
+      getMeta(BASIC_LEVELS_META_KEY, {}),
     ]);
     if (!response.ok) throw new Error(`教材データを読み込めませんでした (${response.status})`);
     if (!publicResponse.ok) throw new Error(`公共データを読み込めませんでした (${publicResponse.status})`);
@@ -6456,6 +6740,7 @@ async function boot() {
     state.items = state.englishItems;
     state.history = history;
     state.homeMode = homeMode === "test" ? "test" : "practice";
+    state.basicLevels = basicLevels && typeof basicLevels === "object" && !Array.isArray(basicLevels) ? basicLevels : {};
     state.testHistory = Array.isArray(testHistory)
       ? testHistory.filter((record) => record?.id && Array.isArray(record.results))
       : [];
@@ -6477,6 +6762,7 @@ async function boot() {
     state.bestCombo = Number(bestCombo) || 0;
     state.studyConfigs = normalizeEntries(studyConfigs ?? {}, normalizeRecentStudyConfig);
     state.settings.masteryCriterion = normalizeMasteryCriterion(state.settings.masteryCriterion);
+    state.settings.basicScope = normalizeBasicScope(state.settings.basicScope);
     state.settings.speechRate = normalizeSpeechRate(state.settings.speechRate);
     state.settings.speechVoiceURI = normalizeSpeechVoiceURI(state.settings.speechVoiceURI);
     state.studyProgress = normalizeEntries(studyProgress ?? {}, normalizeStudyProgress);
@@ -6509,7 +6795,7 @@ async function boot() {
         .catch((error) => console.warn("AI連携の同期に失敗しました", error));
     }
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.11.30").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.11.31").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

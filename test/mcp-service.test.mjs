@@ -36,10 +36,10 @@ test("教材データはそのまま読み込まれ、既存の問題数が変�
   const service = newService();
   const info = await service.getAppInfo();
   assert.equal(info.subjects.english.questions, 538);
-  assert.equal(info.subjects.public.questions, 189);
+  assert.equal(info.subjects.public.questions, 228);
   assert.equal(info.subjects.health.questions, 282);
   assert.equal(info.subjects["kobun-vocab"].questions, 360);
-  assert.equal(info.totalQuestions, 1369);
+  assert.equal(info.totalQuestions, 1408);
   assert.equal(info.dataSchemaVersion, 1);
 });
 
@@ -199,13 +199,13 @@ test("削除はゴミ箱へ移すだけで、確認なしには実行できな�
   assert.equal(deleted.restorable, true);
 
   const list = await service.listQuestions({ subjects: ["public"], limit: 1 });
-  assert.equal(list.total, 188, "一覧からは消えている");
+  assert.equal(list.total, 227, "一覧からは消えている");
 
   const overlay = await service.getOverlay();
   assert.deepEqual(overlay.deletedIds, ["public-20261111-0001"]);
 
   await service.restoreQuestion({ id: "public-20261111-0001" }, actor);
-  assert.equal((await service.listQuestions({ subjects: ["public"], limit: 1 })).total, 189);
+  assert.equal((await service.listQuestions({ subjects: ["public"], limit: 1 })).total, 228);
 });
 
 test("AI経由の操作は記録に残る", async () => {
@@ -314,7 +314,7 @@ test("履歴で絞り込める（間違えた問題だけを一覧する）", as
   assert.equal(wrong.questions[0].study.wrong, 2);
 
   const unanswered = await service.listQuestions({ performance: "unanswered", limit: 1 });
-  assert.equal(unanswered.total, 1368);
+  assert.equal(unanswered.total, 1407);
 });
 
 test("教科ごとの範囲は、wordsの画面が知っている値と同じ", async () => {

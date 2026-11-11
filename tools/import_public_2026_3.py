@@ -2,7 +2,7 @@
 """3定（2026.3）公共の問題集（xlsx）を、アプリの公共データ（JSON）へ変換する。
 
 使い方:
-    python3 tools/import_public_2026_3.py 問題集20-30.xlsx data/public-2026-3.json
+    python3 tools/import_public_2026_3.py 問題集20-30.xlsx data/public-2026-3.json --choice-pdf 四択問題集20-30.pdf
 
 シート「問題集」の列:
     No, 単元, 重要度, 問題, 選択肢A〜D, 正解, 正解語句, 解説, 根拠原文〈抜粋〉, 原文の確認, 出典
@@ -17,14 +17,17 @@
 
 from __future__ import annotations
 
+import argparse
+import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from import_public_xlsx import classify_kind  # noqa: E402
-from import_xlsx import clean_text, question_sheet_rows, run_workbook_cli  # noqa: E402
+from import_xlsx import clean_text, question_sheet_rows  # noqa: E402
 
 SHEET_NAME = "問題集"
 HEADERS = (
@@ -107,8 +110,144 @@ def convert(workbook_path: Path) -> list[dict[str, object]]:
     return items
 
 
+# ---------------------------------------------------------------------------
+# 四択問題集（PDF）：「次の記述のうち、正しいものを一つ選べ」型の正誤問題。
+# 選択肢が文になっているので一問一答には向かず、4択（public_choice）だけで出題する。
+# ---------------------------------------------------------------------------
+
+PDF_HEADER_RE = re.compile(r"^(公共 定期テスト対策 四択問題集.*|Page \d+ of \d+|​?Nov \d+, \d{4}|·|教科書p\..*全\d+問|30）)$")
+PDF_LABEL_RE = re.compile(r"^[①②③④⑤⑥]?\s*(問題文|選択肢の正誤|選択肢|正解：|重要度：|出典：)(.*)$")
+PDF_UNIT_RE = re.compile(r"^単元(\d+)\s+(.+)$")
+
+
+def pdf_lines(pdf_path: Path) -> list[str]:
+    """PDFを文字にして、ページの見出し・ページ番号と、ページ送りでちぎれた丸数字・記号を除く。"""
+    text = subprocess.run(["pdftotext", str(pdf_path), "-"], check=True, capture_output=True, text=True).stdout
+    lines = []
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line or PDF_HEADER_RE.match(line) or re.fullmatch(r"[①②③④⑤⑥A-D]", line):
+            continue
+        lines.append(line)
+    return lines
+
+
+def parse_choice_pdf(pdf_path: Path) -> list[dict[str, object]]:
+    questions: list[dict[str, object]] = []
+    unit = None
+    current: dict[str, object] | None = None
+    section = None
+    for line in pdf_lines(pdf_path):
+        unit_match = PDF_UNIT_RE.match(line)
+        if unit_match:
+            unit = (int(unit_match.group(1)), clean_text(unit_match.group(2)))
+            continue
+        if re.fullmatch(r"問\d{3}", line):
+            current = {"label": line, "unit": unit, "question": "", "choices": {}, "verdicts": {}, "importance": "", "source": "", "correct": ""}
+            questions.append(current)
+            section = None
+            continue
+        if current is None:
+            continue
+        # ページ送りで「A：×。」の「A」と「×」だけが後ろへずれて「A ×」の行になることがある。
+        displaced = re.fullmatch(r"([A-D])\s*([○×])", line)
+        if displaced:
+            current.setdefault("marks", {})[displaced.group(1)] = displaced.group(2)
+            continue
+        label = PDF_LABEL_RE.match(line)
+        if label:
+            name, rest = label.group(1), label.group(2).strip()
+            section = {"問題文": "question", "選択肢": "choices", "選択肢の正誤": "verdicts",
+                       "正解：": "correct", "重要度：": "importance", "出典：": "source"}[name]
+            if section in {"correct", "importance", "source"}:
+                current[section] = rest
+            continue
+        if section == "question":
+            current["question"] += line
+        elif section in {"choices", "verdicts"}:
+            target = current[section]
+            separator = "．" if section == "choices" else "："
+            start = re.match(rf"^([A-D])?\s*{separator}\s*(.*)$", line)
+            if start:
+                # ページ送りで行頭の記号だけがちぎれたときは、次の記号として扱う。
+                letter = start.group(1) or "ABCD"[len(target)]
+                target[letter] = start.group(2)
+            elif target:
+                target[list(target)[-1]] += line
+        elif section == "source":
+            current["source"] += line
+    for question in questions:
+        for letter, mark in question.pop("marks", {}).items():
+            text = question["verdicts"].get(letter, "")
+            if not text.startswith(("○", "×")):
+                question["verdicts"][letter] = mark + text
+        for letter, text in question["verdicts"].items():
+            if not re.match(r"^[○×]。", text):
+                raise ValueError(f"{question['label']}: {letter} の正誤（○×）を読み取れませんでした")
+        if sorted(question["choices"]) != list("ABCD") or question["correct"] not in "ABCD" or not question["correct"]:
+            raise ValueError(f"{question['label']}: 選択肢か正解を読み取れませんでした")
+        if not question["importance"] or not question["source"] or not question["unit"]:
+            raise ValueError(f"{question['label']}: 重要度・出典・単元を読み取れませんでした")
+    return questions
+
+
+def convert_choice_pdf(pdf_path: Path, ranges_by_title: dict[str, str], start_number: int) -> list[dict[str, object]]:
+    items = []
+    for offset, question in enumerate(parse_choice_pdf(pdf_path)):
+        number = start_number + offset
+        unit_number, title = question["unit"]
+        study_range = ranges_by_title[title]
+        choices = {key: clean_text(value) for key, value in question["choices"].items()}
+        correct = question["correct"]
+        verdicts = [f"{key}：{clean_text(value)}" for key, value in sorted(question["verdicts"].items())]
+        source = clean_text(question["source"])
+        items.append({
+            "id": f"public-20261111-{number:04d}",
+            "subject": "public",
+            "number": number,
+            "importance": question["importance"],
+            "english": question["question"],
+            "japanese": choices[correct],
+            "publicQuestion": question["question"],
+            "publicAnswer": choices[correct],
+            "type": "public-statement",
+            "answerFormat": "statement",
+            "kind": "正誤",
+            "range": study_range,
+            "lesson": study_range,
+            "title": title,
+            "source": source,
+            "sourceDetail": source,
+            "sources": [{"lesson": study_range, "title": title, "detail": source}],
+            "tags": ["正誤", "四択"],
+            "acceptedAnswers": [choices[correct]],
+            "questionModes": ["public_choice"],
+            "editorial": {
+                "questionNumber": f"問{number:03d}",
+                "chapter": title,
+                "unit": unit_number,
+                "choices": choices,
+                "correctChoice": correct,
+                "explanation": "\n".join(verdicts),
+                "evidenceQuotes": [],
+                "evidenceNote": "",
+            },
+        })
+    return items
+
+
 def main() -> None:
-    run_workbook_cli(convert)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("workbook", type=Path, help="一問一答の問題集（xlsx）")
+    parser.add_argument("output", type=Path)
+    parser.add_argument("--choice-pdf", type=Path, help="正誤を選ぶ四択問題集（PDF）")
+    args = parser.parse_args()
+    items = convert(args.workbook)
+    if args.choice_pdf:
+        ranges_by_title = {item["title"]: item["range"] for item in items}
+        items += convert_choice_pdf(args.choice_pdf, ranges_by_title, len(items) + 1)
+    args.output.write_text(json.dumps(items, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(f"{len(items)}問を {args.output} に書き出しました")
 
 
 if __name__ == "__main__":

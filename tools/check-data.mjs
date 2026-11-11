@@ -193,9 +193,10 @@ for (const item of [...publicItems, ...publicPeriod3]) {
     assert.ok(item[field], `${item.id}: ${field} is required`);
   }
   assert.equal(item.subject, "public", `${item.id}: subject must be public`);
+  // 正誤を選ぶ問題（選択肢が文）は4択だけで出す。
   assert.deepEqual(
     item.questionModes,
-    ["public_recall", "public_choice"],
+    item.type === "public-statement" ? ["public_choice"] : ["public_recall", "public_choice"],
     `${item.id}: public modes are required`,
   );
   // 4択は教材の選択肢をそのまま使う。答えの表記ゆれは記号（correctChoice）で吸収する。
@@ -214,12 +215,13 @@ assert.deepEqual(
   PUBLIC_RANGE_ORDER.slice(0, 6),
   "All six public ranges are required in textbook order",
 );
-assert.equal(publicPeriod3.length, 189, "3定の公共は189問（単元20〜30）");
-assert.equal(new Set(publicPeriod3.map((item) => item.id)).size, 189, "3定の公共のIDが重複している");
+assert.equal(publicPeriod3.length, 228, "3定の公共は228問（単元20〜30、一問一答189問と正誤の4択39問）");
+assert.equal(new Set(publicPeriod3.map((item) => item.id)).size, 228, "3定の公共のIDが重複している");
+assert.equal(publicPeriod3.filter((item) => item.type === "public-statement").length, 39, "正誤の4択は39問");
 assert.ok(publicPeriod3.every((item) => !publicItems.some((old) => old.id === item.id)), "3定の公共のIDが2定と重なっている");
 assert.deepEqual(
   countBy(publicPeriod3, "importance", ["S", "A", "B", "C", "D"]),
-  { S: 22, A: 93, B: 53, C: 21, D: 0 },
+  { S: 35, A: 112, B: 59, C: 22, D: 0 },
   "3定の公共の重要度の内訳",
 );
 assert.deepEqual(

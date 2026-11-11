@@ -716,8 +716,8 @@
     "range": "A Loving Story",
     "lesson": "Chapter 8",
     "title": "A Loving Story",
-    "source": "Chapter 8 A Loving Story",
-    "sourceDetail": "Chapter 8",
+    "source": "Chapter 8 A Loving Story; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 8 / Chapter 10",
     "sources": [
       {
         "range": "A Loving Story",
@@ -728,6 +728,16 @@
         "note": "",
         "detail": "",
         "label": "Chapter 8 A Loving Story"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
       }
     ],
     "tags": [
@@ -744,12 +754,13 @@
       "spelling_input"
     ],
     "order": 16,
-    "partOfSpeech": "他動詞",
+    "partOfSpeech": "他動詞・動詞",
     "lemma": "raise",
     "surfaceForms": [
-      "raise"
+      "raise",
+      "raised"
     ],
-    "generalMeaning": "〜を上げる"
+    "generalMeaning": "〜を上げる・上げる・集める"
   },
   {
     "id": "loving_97b14b8510",
@@ -4871,7 +4882,7 @@
   {
     "id": "edo_c1d213b552",
     "english": "citizen",
-    "japanese": "市民",
+    "japanese": "市民／国民（日本国籍の人）",
     "type": "word",
     "sourceType": "単語",
     "importance": "SSS",
@@ -4879,8 +4890,8 @@
     "range": "Edo",
     "lesson": "Chapter 9",
     "title": "Edo, the Resilient City",
-    "source": "Chapter 9 Edo, the Resilient City",
-    "sourceDetail": "Chapter 9",
+    "source": "Chapter 9 Edo, the Resilient City; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 9 / Chapter 10",
     "sources": [
       {
         "range": "Edo",
@@ -4891,6 +4902,16 @@
         "note": "",
         "detail": "",
         "label": "Chapter 9 Edo, the Resilient City"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
       }
     ],
     "tags": [
@@ -4910,8 +4931,10 @@
     "partOfSpeech": "名詞",
     "lemma": "citizen",
     "surfaceForms": [
-      "citizens"
-    ]
+      "citizens",
+      "citizen"
+    ],
+    "generalMeaning": "国民"
   },
   {
     "id": "edo_3aaebef047",
@@ -5713,7 +5736,7 @@
   {
     "id": "edo_be9f309fe4",
     "english": "occur",
-    "japanese": "起きる",
+    "japanese": "起きる／起こる",
     "type": "word",
     "sourceType": "単語",
     "importance": "SSS",
@@ -5721,8 +5744,8 @@
     "range": "Edo",
     "lesson": "Chapter 9",
     "title": "Edo, the Resilient City",
-    "source": "Chapter 9 Edo, the Resilient City",
-    "sourceDetail": "Chapter 9",
+    "source": "Chapter 9 Edo, the Resilient City; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 9 / Chapter 10",
     "sources": [
       {
         "range": "Edo",
@@ -5733,6 +5756,16 @@
         "note": "",
         "detail": "",
         "label": "Chapter 9 Edo, the Resilient City"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
       }
     ],
     "tags": [
@@ -5749,7 +5782,7 @@
       "spelling_input"
     ],
     "order": 121,
-    "partOfSpeech": "自動詞",
+    "partOfSpeech": "自動詞・動詞",
     "lemma": "occur",
     "surfaceForms": [
       "occurred",
@@ -5851,7 +5884,7 @@
   {
     "id": "edo_479adeefff",
     "english": "victim",
-    "japanese": "被害者",
+    "japanese": "被害者／被災者",
     "type": "word",
     "sourceType": "単語",
     "importance": "SSS",
@@ -5859,8 +5892,8 @@
     "range": "Edo",
     "lesson": "Chapter 9",
     "title": "Edo, the Resilient City",
-    "source": "Chapter 9 Edo, the Resilient City",
-    "sourceDetail": "Chapter 9",
+    "source": "Chapter 9 Edo, the Resilient City; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 9 / Chapter 10",
     "sources": [
       {
         "range": "Edo",
@@ -5871,6 +5904,16 @@
         "note": "",
         "detail": "",
         "label": "Chapter 9 Edo, the Resilient City"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
       }
     ],
     "tags": [
@@ -5891,7 +5934,8 @@
     "lemma": "victim",
     "surfaceForms": [
       "victims"
-    ]
+    ],
+    "generalMeaning": "犠牲者"
   },
   {
     "id": "edo_42be093376",
@@ -5904,8 +5948,8 @@
     "range": "Edo",
     "lesson": "Chapter 9",
     "title": "Edo, the Resilient City",
-    "source": "Chapter 9 Edo, the Resilient City; Chapter 8 A Loving Story",
-    "sourceDetail": "Chapter 9 / Chapter 8",
+    "source": "Chapter 9 Edo, the Resilient City",
+    "sourceDetail": "Chapter 9",
     "sources": [
       {
         "range": "Edo",
@@ -5916,16 +5960,6 @@
         "note": "",
         "detail": "",
         "label": "Chapter 9 Edo, the Resilient City"
-      },
-      {
-        "range": "A Loving Story",
-        "lesson": "Chapter 8",
-        "title": "A Loving Story",
-        "page": "",
-        "paragraph": "",
-        "note": "",
-        "detail": "",
-        "label": "Chapter 8 A Loving Story"
       }
     ],
     "tags": [
@@ -7896,7 +7930,7 @@
   {
     "id": "loving_0613228fb6",
     "english": "what",
-    "japanese": "〜すること・もの／何が",
+    "japanese": "〜すること・もの／何が／何／どんな",
     "type": "word",
     "sourceType": "単語",
     "importance": "S",
@@ -7942,7 +7976,7 @@
       "spelling_input"
     ],
     "order": 166,
-    "partOfSpeech": "関係代名詞・疑問代名詞",
+    "partOfSpeech": "関係代名詞・疑問代名詞・疑問形容詞",
     "lemma": "what",
     "surfaceForms": [
       "what"
@@ -8041,7 +8075,7 @@
   {
     "id": "loving_c0aca9c3a8",
     "english": "support",
-    "japanese": "支援／〜を支持する",
+    "japanese": "支援／〜を支持する／支援する",
     "type": "word",
     "sourceType": "単語",
     "importance": "S",
@@ -8049,8 +8083,8 @@
     "range": "A Loving Story",
     "lesson": "Chapter 8",
     "title": "A Loving Story",
-    "source": "Chapter 8 A Loving Story",
-    "sourceDetail": "Chapter 8",
+    "source": "Chapter 8 A Loving Story; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 8 / Chapter 10",
     "sources": [
       {
         "range": "A Loving Story",
@@ -8061,6 +8095,16 @@
         "note": "",
         "detail": "",
         "label": "Chapter 8 A Loving Story"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
       }
     ],
     "tags": [
@@ -8077,12 +8121,14 @@
       "spelling_input"
     ],
     "order": 169,
-    "partOfSpeech": "名詞・他動詞",
+    "partOfSpeech": "名詞・他動詞・動詞",
     "lemma": "support",
     "surfaceForms": [
       "support",
-      "supported"
-    ]
+      "supported",
+      "supporting"
+    ],
+    "generalMeaning": "支える・支持する"
   },
   {
     "id": "loving_a4d80302d5",
@@ -8251,8 +8297,8 @@
     "range": "A Loving Story",
     "lesson": "Chapter 8",
     "title": "A Loving Story",
-    "source": "Chapter 8 A Loving Story; Chapter 9 Edo, the Resilient City",
-    "sourceDetail": "Chapter 8 / Chapter 9",
+    "source": "Chapter 8 A Loving Story; Chapter 9 Edo, the Resilient City; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 8 / Chapter 9 / Chapter 10",
     "sources": [
       {
         "range": "A Loving Story",
@@ -8273,6 +8319,16 @@
         "note": "",
         "detail": "",
         "label": "Chapter 9 Edo, the Resilient City"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
       }
     ],
     "tags": [
@@ -8293,7 +8349,8 @@
     "lemma": "even",
     "surfaceForms": [
       "even"
-    ]
+    ],
+    "generalMeaning": "さらに"
   },
   {
     "id": "loving_282e5a627a",
@@ -8581,8 +8638,8 @@
     "range": "Edo",
     "lesson": "Chapter 9",
     "title": "Edo, the Resilient City",
-    "source": "Chapter 9 Edo, the Resilient City",
-    "sourceDetail": "Chapter 9",
+    "source": "Chapter 9 Edo, the Resilient City; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 9 / Chapter 10",
     "sources": [
       {
         "range": "Edo",
@@ -8593,6 +8650,16 @@
         "note": "",
         "detail": "",
         "label": "Chapter 9 Edo, the Resilient City"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
       }
     ],
     "tags": [
@@ -8609,7 +8676,7 @@
       "spelling_input"
     ],
     "order": 180,
-    "partOfSpeech": "他動詞",
+    "partOfSpeech": "他動詞・動詞",
     "lemma": "experience",
     "surfaceForms": [
       "experience",
@@ -8816,8 +8883,8 @@
     "range": "Edo",
     "lesson": "Chapter 9",
     "title": "Edo, the Resilient City",
-    "source": "Chapter 9 Edo, the Resilient City; Chapter 8 A Loving Story",
-    "sourceDetail": "Chapter 9 / Chapter 8",
+    "source": "Chapter 9 Edo, the Resilient City",
+    "sourceDetail": "Chapter 9",
     "sources": [
       {
         "range": "Edo",
@@ -8828,16 +8895,6 @@
         "note": "",
         "detail": "",
         "label": "Chapter 9 Edo, the Resilient City"
-      },
-      {
-        "range": "A Loving Story",
-        "lesson": "Chapter 8",
-        "title": "A Loving Story",
-        "page": "",
-        "paragraph": "",
-        "note": "",
-        "detail": "",
-        "label": "Chapter 8 A Loving Story"
       }
     ],
     "tags": [
@@ -9102,7 +9159,7 @@
   {
     "id": "edo_28e73415cf",
     "english": "would",
-    "japanese": "〜することになる（過去から見た未来）／（仮定法過去完了で）〜だっただろう",
+    "japanese": "〜することになる（過去から見た未来）／（仮定法過去完了で）〜だっただろう／〜だろう（時制の一致）",
     "type": "word",
     "sourceType": "単語",
     "importance": "S",
@@ -9110,8 +9167,8 @@
     "range": "Edo",
     "lesson": "Chapter 9",
     "title": "Edo, the Resilient City",
-    "source": "Chapter 9 Edo, the Resilient City",
-    "sourceDetail": "Chapter 9",
+    "source": "Chapter 9 Edo, the Resilient City; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 9 / Chapter 10",
     "sources": [
       {
         "range": "Edo",
@@ -9122,6 +9179,16 @@
         "note": "",
         "detail": "",
         "label": "Chapter 9 Edo, the Resilient City"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
       }
     ],
     "tags": [
@@ -9142,7 +9209,8 @@
     "lemma": "would",
     "surfaceForms": [
       "would"
-    ]
+    ],
+    "generalMeaning": "〜だろう・〜したものだ"
   },
   {
     "id": "edo_e1f49051ca",
@@ -9338,7 +9406,7 @@
   {
     "id": "edo_c466eec77a",
     "english": "which",
-    "japanese": "（非制限用法で）そしてそれは",
+    "japanese": "（非制限用法で）そしてそれは／〜する（もの）（weapon ___ 〜）",
     "type": "word",
     "sourceType": "単語",
     "importance": "S",
@@ -9346,8 +9414,8 @@
     "range": "Edo",
     "lesson": "Chapter 9",
     "title": "Edo, the Resilient City",
-    "source": "Chapter 9 Edo, the Resilient City",
-    "sourceDetail": "Chapter 9",
+    "source": "Chapter 9 Edo, the Resilient City; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 9 / Chapter 10",
     "sources": [
       {
         "range": "Edo",
@@ -9358,6 +9426,16 @@
         "note": "",
         "detail": "",
         "label": "Chapter 9 Edo, the Resilient City"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
       }
     ],
     "tags": [
@@ -9378,7 +9456,8 @@
     "lemma": "which",
     "surfaceForms": [
       "which"
-    ]
+    ],
+    "generalMeaning": "どちら・関係代名詞"
   },
   {
     "id": "edo_f5c46c2a50",
@@ -9564,7 +9643,7 @@
   {
     "id": "edo_6e98bd8c39",
     "english": "still",
-    "japanese": "今でも・依然として",
+    "japanese": "今でも・依然として／今でもなお・まだ",
     "type": "word",
     "sourceType": "単語",
     "importance": "S",
@@ -9572,8 +9651,8 @@
     "range": "Edo",
     "lesson": "Chapter 9",
     "title": "Edo, the Resilient City",
-    "source": "Chapter 9 Edo, the Resilient City",
-    "sourceDetail": "Chapter 9",
+    "source": "Chapter 9 Edo, the Resilient City; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 9 / Chapter 10",
     "sources": [
       {
         "range": "Edo",
@@ -9584,6 +9663,16 @@
         "note": "",
         "detail": "",
         "label": "Chapter 9 Edo, the Resilient City"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
       }
     ],
     "tags": [
@@ -9604,7 +9693,8 @@
     "lemma": "still",
     "surfaceForms": [
       "still"
-    ]
+    ],
+    "generalMeaning": "それでも"
   },
   {
     "id": "edo_c67fcf1a8a",
@@ -9882,8 +9972,10 @@
     "surfaceForms": [
       "could",
       "can",
-      "cannot"
-    ]
+      "cannot",
+      "can't"
+    ],
+    "generalMeaning": "〜してもよい"
   },
   {
     "id": "edo_d085fd03b5",
@@ -11052,7 +11144,7 @@
   {
     "id": "loving_00465f2149",
     "english": "truly",
-    "japanese": "本当に・真に",
+    "japanese": "本当に・真に／心から",
     "type": "word",
     "sourceType": "単語",
     "importance": "A",
@@ -11060,8 +11152,8 @@
     "range": "A Loving Story",
     "lesson": "Chapter 8",
     "title": "A Loving Story",
-    "source": "Chapter 8 A Loving Story",
-    "sourceDetail": "Chapter 8",
+    "source": "Chapter 8 A Loving Story; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 8 / Chapter 10",
     "sources": [
       {
         "range": "A Loving Story",
@@ -11072,6 +11164,16 @@
         "note": "",
         "detail": "",
         "label": "Chapter 8 A Loving Story"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
       }
     ],
     "tags": [
@@ -11101,12 +11203,12 @@
     "type": "word",
     "sourceType": "単語",
     "importance": "A",
-    "difficulty": "B",
+    "difficulty": "C",
     "range": "Edo",
     "lesson": "Chapter 9",
     "title": "Edo, the Resilient City",
-    "source": "Chapter 9 Edo, the Resilient City",
-    "sourceDetail": "Chapter 9",
+    "source": "Chapter 9 Edo, the Resilient City; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 9 / Chapter 10",
     "sources": [
       {
         "range": "Edo",
@@ -11117,6 +11219,16 @@
         "note": "",
         "detail": "",
         "label": "Chapter 9 Edo, the Resilient City"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
       }
     ],
     "tags": [
@@ -11137,7 +11249,8 @@
     "lemma": "saying",
     "surfaceForms": [
       "saying"
-    ]
+    ],
+    "generalMeaning": "格言・発言"
   },
   {
     "id": "edo_3fc3ddecaa",
@@ -11489,8 +11602,8 @@
     "range": "Edo",
     "lesson": "Chapter 9",
     "title": "Edo, the Resilient City",
-    "source": "Chapter 9 Edo, the Resilient City; Chapter 8 A Loving Story",
-    "sourceDetail": "Chapter 9 / Chapter 8",
+    "source": "Chapter 9 Edo, the Resilient City",
+    "sourceDetail": "Chapter 9",
     "sources": [
       {
         "range": "Edo",
@@ -11501,16 +11614,6 @@
         "note": "",
         "detail": "",
         "label": "Chapter 9 Edo, the Resilient City"
-      },
-      {
-        "range": "A Loving Story",
-        "lesson": "Chapter 8",
-        "title": "A Loving Story",
-        "page": "",
-        "paragraph": "",
-        "note": "",
-        "detail": "",
-        "label": "Chapter 8 A Loving Story"
       }
     ],
     "tags": [
@@ -12319,8 +12422,8 @@
     "range": "A Loving Story",
     "lesson": "Chapter 8",
     "title": "A Loving Story",
-    "source": "Chapter 8 A Loving Story",
-    "sourceDetail": "Chapter 8",
+    "source": "Chapter 8 A Loving Story; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 8 / Chapter 10",
     "sources": [
       {
         "range": "A Loving Story",
@@ -12331,6 +12434,16 @@
         "note": "",
         "detail": "",
         "label": "Chapter 8 A Loving Story"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
       }
     ],
     "tags": [
@@ -12446,7 +12559,7 @@
   {
     "id": "loving_30aec759c8",
     "english": "between",
-    "japanese": "〜の間の",
+    "japanese": "〜の間の／〜の間で",
     "type": "word",
     "sourceType": "単語",
     "importance": "B",
@@ -12454,8 +12567,8 @@
     "range": "A Loving Story",
     "lesson": "Chapter 8",
     "title": "A Loving Story",
-    "source": "Chapter 8 A Loving Story",
-    "sourceDetail": "Chapter 8",
+    "source": "Chapter 8 A Loving Story; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 8 / Chapter 10",
     "sources": [
       {
         "range": "A Loving Story",
@@ -12466,6 +12579,16 @@
         "note": "",
         "detail": "",
         "label": "Chapter 8 A Loving Story"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
       }
     ],
     "tags": [
@@ -12744,8 +12867,8 @@
     "range": "A Loving Story",
     "lesson": "Chapter 8",
     "title": "A Loving Story",
-    "source": "Chapter 8 A Loving Story",
-    "sourceDetail": "Chapter 8",
+    "source": "Chapter 8 A Loving Story; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 8 / Chapter 10",
     "sources": [
       {
         "range": "A Loving Story",
@@ -12756,6 +12879,16 @@
         "note": "",
         "detail": "",
         "label": "Chapter 8 A Loving Story"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
       }
     ],
     "tags": [
@@ -12772,7 +12905,7 @@
       "spelling_input"
     ],
     "order": 268,
-    "partOfSpeech": "他動詞",
+    "partOfSpeech": "他動詞・動詞",
     "lemma": "choose",
     "surfaceForms": [
       "chose"
@@ -12838,7 +12971,7 @@
   {
     "id": "loving_1e660c8701",
     "english": "hard",
-    "japanese": "難しい・困難な",
+    "japanese": "難しい・困難な／難しい・つらい",
     "type": "word",
     "sourceType": "単語",
     "importance": "B",
@@ -12846,8 +12979,8 @@
     "range": "A Loving Story",
     "lesson": "Chapter 8",
     "title": "A Loving Story",
-    "source": "Chapter 8 A Loving Story",
-    "sourceDetail": "Chapter 8",
+    "source": "Chapter 8 A Loving Story; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 8 / Chapter 10",
     "sources": [
       {
         "range": "A Loving Story",
@@ -12858,6 +12991,16 @@
         "note": "",
         "detail": "",
         "label": "Chapter 8 A Loving Story"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
       }
     ],
     "tags": [
@@ -12879,7 +13022,7 @@
     "surfaceForms": [
       "hard"
     ],
-    "generalMeaning": "かたい"
+    "generalMeaning": "かたい・硬い"
   },
   {
     "id": "loving_b205f5c270",
@@ -12929,7 +13072,7 @@
   {
     "id": "loving_4c08f772ed",
     "english": "one",
-    "japanese": "ある〜（___ day でいつか・ある日／___ judge である判事）／1（の）",
+    "japanese": "ある〜（___ day でいつか・ある日／___ judge である判事）／1（の）／1人の・1つの",
     "type": "word",
     "sourceType": "単語",
     "importance": "B",
@@ -12937,8 +13080,8 @@
     "range": "A Loving Story",
     "lesson": "Chapter 8",
     "title": "A Loving Story",
-    "source": "Chapter 8 A Loving Story; Chapter 9 Edo, the Resilient City",
-    "sourceDetail": "Chapter 8 / Chapter 9",
+    "source": "Chapter 8 A Loving Story",
+    "sourceDetail": "Chapter 8",
     "sources": [
       {
         "range": "A Loving Story",
@@ -12949,16 +13092,6 @@
         "note": "",
         "detail": "",
         "label": "Chapter 8 A Loving Story"
-      },
-      {
-        "range": "Edo",
-        "lesson": "Chapter 9",
-        "title": "Edo, the Resilient City",
-        "page": "",
-        "paragraph": "",
-        "note": "",
-        "detail": "",
-        "label": "Chapter 9 Edo, the Resilient City"
       }
     ],
     "tags": [
@@ -12975,7 +13108,7 @@
       "spelling_input"
     ],
     "order": 272,
-    "partOfSpeech": "形容詞・数詞",
+    "partOfSpeech": "形容詞・数詞・数詞・形容詞",
     "lemma": "one",
     "surfaceForms": [
       "One"
@@ -13279,12 +13412,13 @@
       "spelling_input"
     ],
     "order": 278,
-    "partOfSpeech": "他動詞",
+    "partOfSpeech": "他動詞・動詞",
     "lemma": "help",
     "surfaceForms": [
       "help",
       "helped"
-    ]
+    ],
+    "generalMeaning": "手伝う"
   },
   {
     "id": "loving_a501a443dc",
@@ -13438,7 +13572,7 @@
   {
     "id": "loving_cb9c2d80aa",
     "english": "like",
-    "japanese": "〜のような",
+    "japanese": "〜のような／好む・気に入っている／〜のように・〜と同様に",
     "type": "word",
     "sourceType": "単語",
     "importance": "B",
@@ -13446,8 +13580,8 @@
     "range": "A Loving Story",
     "lesson": "Chapter 8",
     "title": "A Loving Story",
-    "source": "Chapter 8 A Loving Story",
-    "sourceDetail": "Chapter 8",
+    "source": "Chapter 8 A Loving Story; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 8 / Chapter 10",
     "sources": [
       {
         "range": "A Loving Story",
@@ -13458,6 +13592,16 @@
         "note": "",
         "detail": "",
         "label": "Chapter 8 A Loving Story"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
       }
     ],
     "tags": [
@@ -13474,7 +13618,7 @@
       "spelling_input"
     ],
     "order": 282,
-    "partOfSpeech": "前置詞",
+    "partOfSpeech": "前置詞・動詞",
     "lemma": "like",
     "surfaceForms": [
       "like"
@@ -13541,16 +13685,16 @@
   {
     "id": "loving_7bef6986f2",
     "english": "that",
-    "japanese": "〜ということ／（〜する）ところの／あの・その（___：それらの）／それ・そのこと",
+    "japanese": "〜ということ／（〜する）ところの／あの・その（___：それらの）／それ・そのこと／そんなに（___ long）／〜する（もの）",
     "type": "word",
     "sourceType": "単語",
-    "importance": "B",
-    "difficulty": "A",
+    "importance": "SSS",
+    "difficulty": "C",
     "range": "A Loving Story",
     "lesson": "Chapter 8",
     "title": "A Loving Story",
-    "source": "Chapter 8 A Loving Story; Chapter 9 Edo, the Resilient City",
-    "sourceDetail": "Chapter 8 / Chapter 9",
+    "source": "Chapter 8 A Loving Story; Chapter 9 Edo, the Resilient City; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 8 / Chapter 9 / Chapter 10",
     "sources": [
       {
         "range": "A Loving Story",
@@ -13571,6 +13715,16 @@
         "note": "",
         "detail": "",
         "label": "Chapter 9 Edo, the Resilient City"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
       }
     ],
     "tags": [
@@ -13587,12 +13741,13 @@
       "spelling_input"
     ],
     "order": 284,
-    "partOfSpeech": "接続詞・関係代名詞・限定詞・代名詞",
+    "partOfSpeech": "接続詞・関係代名詞・限定詞・代名詞・副詞",
     "lemma": "that",
     "surfaceForms": [
       "that",
       "those"
-    ]
+    ],
+    "generalMeaning": "あれ・その"
   },
   {
     "id": "loving_de28a3747e",
@@ -13933,16 +14088,16 @@
   {
     "id": "loving_27bebff7a6",
     "english": "finally",
-    "japanese": "ついに・最終的に",
+    "japanese": "ついに・最終的に／最後に",
     "type": "word",
     "sourceType": "単語",
-    "importance": "B",
+    "importance": "A",
     "difficulty": "B",
     "range": "A Loving Story",
     "lesson": "Chapter 8",
     "title": "A Loving Story",
-    "source": "Chapter 8 A Loving Story",
-    "sourceDetail": "Chapter 8",
+    "source": "Chapter 8 A Loving Story; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 8 / Chapter 10",
     "sources": [
       {
         "range": "A Loving Story",
@@ -13953,6 +14108,16 @@
         "note": "",
         "detail": "",
         "label": "Chapter 8 A Loving Story"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
       }
     ],
     "tags": [
@@ -14093,7 +14258,7 @@
   {
     "id": "loving_328290f498",
     "english": "another",
-    "japanese": "もう一人（別の人）／別の・他の",
+    "japanese": "もう一人（別の人）／別の・他の／別の・もう1つの",
     "type": "word",
     "sourceType": "単語",
     "importance": "B",
@@ -14101,8 +14266,8 @@
     "range": "A Loving Story",
     "lesson": "Chapter 8",
     "title": "A Loving Story",
-    "source": "Chapter 8 A Loving Story",
-    "sourceDetail": "Chapter 8",
+    "source": "Chapter 8 A Loving Story; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 8 / Chapter 10",
     "sources": [
       {
         "range": "A Loving Story",
@@ -14113,6 +14278,16 @@
         "note": "",
         "detail": "",
         "label": "Chapter 8 A Loving Story"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
       }
     ],
     "tags": [
@@ -14340,8 +14515,8 @@
     "range": "A Loving Story",
     "lesson": "Chapter 8",
     "title": "A Loving Story",
-    "source": "Chapter 8 A Loving Story; Chapter 9 Edo, the Resilient City",
-    "sourceDetail": "Chapter 8 / Chapter 9",
+    "source": "Chapter 8 A Loving Story",
+    "sourceDetail": "Chapter 8",
     "sources": [
       {
         "range": "A Loving Story",
@@ -14352,16 +14527,6 @@
         "note": "",
         "detail": "",
         "label": "Chapter 8 A Loving Story"
-      },
-      {
-        "range": "Edo",
-        "lesson": "Chapter 9",
-        "title": "Edo, the Resilient City",
-        "page": "",
-        "paragraph": "",
-        "note": "",
-        "detail": "",
-        "label": "Chapter 9 Edo, the Resilient City"
       }
     ],
     "tags": [
@@ -14441,8 +14606,8 @@
     "range": "A Loving Story",
     "lesson": "Chapter 8",
     "title": "A Loving Story",
-    "source": "Chapter 8 A Loving Story",
-    "sourceDetail": "Chapter 8",
+    "source": "Chapter 8 A Loving Story; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 8 / Chapter 10",
     "sources": [
       {
         "range": "A Loving Story",
@@ -14453,6 +14618,16 @@
         "note": "",
         "detail": "",
         "label": "Chapter 8 A Loving Story"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
       }
     ],
     "tags": [
@@ -14481,13 +14656,13 @@
     "japanese": "〜を通じて",
     "type": "word",
     "sourceType": "単語",
-    "importance": "B",
-    "difficulty": "A",
+    "importance": "A",
+    "difficulty": "B",
     "range": "A Loving Story",
     "lesson": "Chapter 8",
     "title": "A Loving Story",
-    "source": "Chapter 8 A Loving Story; Chapter 9 Edo, the Resilient City",
-    "sourceDetail": "Chapter 8 / Chapter 9",
+    "source": "Chapter 8 A Loving Story; Chapter 9 Edo, the Resilient City; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 8 / Chapter 9 / Chapter 10",
     "sources": [
       {
         "range": "A Loving Story",
@@ -14508,6 +14683,16 @@
         "note": "",
         "detail": "",
         "label": "Chapter 9 Edo, the Resilient City"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
       }
     ],
     "tags": [
@@ -14529,7 +14714,7 @@
     "surfaceForms": [
       "through"
     ],
-    "generalMeaning": "〜を通り抜けて"
+    "generalMeaning": "〜を通り抜けて・〜を通って"
   },
   {
     "id": "loving_077f64f29c",
@@ -14870,8 +15055,8 @@
     "range": "Edo",
     "lesson": "Chapter 9",
     "title": "Edo, the Resilient City",
-    "source": "Chapter 9 Edo, the Resilient City",
-    "sourceDetail": "Chapter 9",
+    "source": "Chapter 9 Edo, the Resilient City; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 9 / Chapter 10",
     "sources": [
       {
         "range": "Edo",
@@ -14882,6 +15067,16 @@
         "note": "",
         "detail": "",
         "label": "Chapter 9 Edo, the Resilient City"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
       }
     ],
     "tags": [
@@ -15134,7 +15329,7 @@
   {
     "id": "edo_d6da139c70",
     "english": "other",
-    "japanese": "他の人々／他人／（the ___ side で）向こう側の・もう一方の",
+    "japanese": "他の人々／他人／（the ___ side で）向こう側の・もう一方の／他の",
     "type": "word",
     "sourceType": "単語",
     "importance": "B",
@@ -15142,8 +15337,8 @@
     "range": "Edo",
     "lesson": "Chapter 9",
     "title": "Edo, the Resilient City",
-    "source": "Chapter 9 Edo, the Resilient City",
-    "sourceDetail": "Chapter 9",
+    "source": "Chapter 9 Edo, the Resilient City; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 9 / Chapter 10",
     "sources": [
       {
         "range": "Edo",
@@ -15154,6 +15349,16 @@
         "note": "",
         "detail": "",
         "label": "Chapter 9 Edo, the Resilient City"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
       }
     ],
     "tags": [
@@ -15170,7 +15375,7 @@
       "spelling_input"
     ],
     "order": 317,
-    "partOfSpeech": "代名詞・限定詞",
+    "partOfSpeech": "代名詞・限定詞・形容詞",
     "lemma": "other",
     "surfaceForms": [
       "others",
@@ -15407,16 +15612,16 @@
   {
     "id": "edo_8b6253f740",
     "english": "during",
-    "japanese": "〜の間に",
+    "japanese": "〜の間に／〜の間",
     "type": "word",
     "sourceType": "単語",
-    "importance": "B",
+    "importance": "A",
     "difficulty": "A",
     "range": "Edo",
     "lesson": "Chapter 9",
     "title": "Edo, the Resilient City",
-    "source": "Chapter 9 Edo, the Resilient City",
-    "sourceDetail": "Chapter 9",
+    "source": "Chapter 9 Edo, the Resilient City; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 9 / Chapter 10",
     "sources": [
       {
         "range": "Edo",
@@ -15427,6 +15632,16 @@
         "note": "",
         "detail": "",
         "label": "Chapter 9 Edo, the Resilient City"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
       }
     ],
     "tags": [
@@ -15728,7 +15943,7 @@
   {
     "id": "edo_51e39b6134",
     "english": "who",
-    "japanese": "（非制限用法で）そしてその人たちは／誰（疑問）",
+    "japanese": "（非制限用法で）そしてその人たちは／誰（疑問）／〜する（人）",
     "type": "word",
     "sourceType": "単語",
     "importance": "B",
@@ -15736,8 +15951,8 @@
     "range": "Edo",
     "lesson": "Chapter 9",
     "title": "Edo, the Resilient City",
-    "source": "Chapter 9 Edo, the Resilient City; Chapter 8 A Loving Story",
-    "sourceDetail": "Chapter 9 / Chapter 8",
+    "source": "Chapter 9 Edo, the Resilient City; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 9 / Chapter 10",
     "sources": [
       {
         "range": "Edo",
@@ -15750,14 +15965,14 @@
         "label": "Chapter 9 Edo, the Resilient City"
       },
       {
-        "range": "A Loving Story",
-        "lesson": "Chapter 8",
-        "title": "A Loving Story",
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
         "page": "",
         "paragraph": "",
         "note": "",
         "detail": "",
-        "label": "Chapter 8 A Loving Story"
+        "label": "Chapter 10 Rwanda"
       }
     ],
     "tags": [
@@ -15778,7 +15993,8 @@
     "lemma": "who",
     "surfaceForms": [
       "who"
-    ]
+    ],
+    "generalMeaning": "誰・関係代名詞"
   },
   {
     "id": "edo_af7af8bd9a",
@@ -16350,5 +16566,4381 @@
     "surfaceForms": [
       "possible"
     ]
+  },
+  {
+    "id": "loving_09ba0a5b62",
+    "english": "on",
+    "japanese": "〜に（接触・日付・位置）／〜で（通りで）／〜についての（quote ___ education）",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "A Loving Story",
+    "lesson": "Chapter 8",
+    "title": "A Loving Story",
+    "source": "Chapter 8 A Loving Story; Chapter 9 Edo, the Resilient City; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 8 / Chapter 9 / Chapter 10",
+    "sources": [
+      {
+        "range": "A Loving Story",
+        "lesson": "Chapter 8",
+        "title": "A Loving Story",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 8 A Loving Story"
+      },
+      {
+        "range": "Edo",
+        "lesson": "Chapter 9",
+        "title": "Edo, the Resilient City",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 9 Edo, the Resilient City"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "on"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 343,
+    "partOfSpeech": "前置詞",
+    "lemma": "on",
+    "surfaceForms": [
+      "on"
+    ],
+    "generalMeaning": "〜の上に・〜について"
+  },
+  {
+    "id": "loving_80a92e17e5",
+    "english": "have",
+    "japanese": "（子どもを）もうける／（権利を）持つ／（行事・施設が）ある・行う",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "A Loving Story",
+    "lesson": "Chapter 8",
+    "title": "A Loving Story",
+    "source": "Chapter 8 A Loving Story; Chapter 9 Edo, the Resilient City; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 8 / Chapter 9 / Chapter 10",
+    "sources": [
+      {
+        "range": "A Loving Story",
+        "lesson": "Chapter 8",
+        "title": "A Loving Story",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 8 A Loving Story"
+      },
+      {
+        "range": "Edo",
+        "lesson": "Chapter 9",
+        "title": "Edo, the Resilient City",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 9 Edo, the Resilient City"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "have"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 344,
+    "partOfSpeech": "助動詞・他動詞・動詞",
+    "lemma": "have",
+    "surfaceForms": [
+      "had",
+      "have",
+      "having",
+      "has",
+      "'ve",
+      "didn't have"
+    ]
+  },
+  {
+    "id": "loving_14bf8e7da1",
+    "english": "important",
+    "japanese": "重要な",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "A Loving Story",
+    "lesson": "Chapter 8",
+    "title": "A Loving Story",
+    "source": "Chapter 8 A Loving Story; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 8 / Chapter 10",
+    "sources": [
+      {
+        "range": "A Loving Story",
+        "lesson": "Chapter 8",
+        "title": "A Loving Story",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 8 A Loving Story"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "important"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 345,
+    "partOfSpeech": "形容詞",
+    "lemma": "important",
+    "surfaceForms": [
+      "important"
+    ]
+  },
+  {
+    "id": "loving_bc1202f1c6",
+    "english": "will",
+    "japanese": "（___ you 〜? で）〜してくれませんか／どうしても〜しようとしない（拒絶）／〜だろう・〜するようになる",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "S",
+    "difficulty": "B",
+    "range": "A Loving Story",
+    "lesson": "Chapter 8",
+    "title": "A Loving Story",
+    "source": "Chapter 8 A Loving Story; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 8 / Chapter 10",
+    "sources": [
+      {
+        "range": "A Loving Story",
+        "lesson": "Chapter 8",
+        "title": "A Loving Story",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 8 A Loving Story"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "will"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 346,
+    "partOfSpeech": "助動詞",
+    "lemma": "will",
+    "surfaceForms": [
+      "Will",
+      "won't"
+    ],
+    "generalMeaning": "〜するつもり"
+  },
+  {
+    "id": "loving_18ed2629a9",
+    "english": "time",
+    "japanese": "時・時代／時期・時／（割いてくれた）時間",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "A Loving Story",
+    "lesson": "Chapter 8",
+    "title": "A Loving Story",
+    "source": "Chapter 8 A Loving Story; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 8 / Chapter 10",
+    "sources": [
+      {
+        "range": "A Loving Story",
+        "lesson": "Chapter 8",
+        "title": "A Loving Story",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 8 A Loving Story"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "time"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 347,
+    "partOfSpeech": "名詞",
+    "lemma": "time",
+    "surfaceForms": [
+      "time"
+    ],
+    "generalMeaning": "時間・回"
+  },
+  {
+    "id": "loving_50aedde3de",
+    "english": "about",
+    "japanese": "〜について／約・およそ",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "A Loving Story",
+    "lesson": "Chapter 8",
+    "title": "A Loving Story",
+    "source": "Chapter 8 A Loving Story; Chapter 9 Edo, the Resilient City; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 8 / Chapter 9 / Chapter 10",
+    "sources": [
+      {
+        "range": "A Loving Story",
+        "lesson": "Chapter 8",
+        "title": "A Loving Story",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 8 A Loving Story"
+      },
+      {
+        "range": "Edo",
+        "lesson": "Chapter 9",
+        "title": "Edo, the Resilient City",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 9 Edo, the Resilient City"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "about"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 348,
+    "partOfSpeech": "前置詞・副詞",
+    "lemma": "about",
+    "surfaceForms": [
+      "about"
+    ]
+  },
+  {
+    "id": "loving_021b641091",
+    "english": "well",
+    "japanese": "うまく・順調に／よりよく",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "A Loving Story",
+    "lesson": "Chapter 8",
+    "title": "A Loving Story",
+    "source": "Chapter 8 A Loving Story; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 8 / Chapter 10",
+    "sources": [
+      {
+        "range": "A Loving Story",
+        "lesson": "Chapter 8",
+        "title": "A Loving Story",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 8 A Loving Story"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "well"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 349,
+    "partOfSpeech": "副詞",
+    "lemma": "well",
+    "surfaceForms": [
+      "well",
+      "better"
+    ],
+    "generalMeaning": "上手に・よく"
+  },
+  {
+    "id": "edo_38a71293b5",
+    "english": "word",
+    "japanese": "言葉",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "Edo",
+    "lesson": "Chapter 9",
+    "title": "Edo, the Resilient City",
+    "source": "Chapter 9 Edo, the Resilient City; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 9 / Chapter 10",
+    "sources": [
+      {
+        "range": "Edo",
+        "lesson": "Chapter 9",
+        "title": "Edo, the Resilient City",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 9 Edo, the Resilient City"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "word"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 350,
+    "partOfSpeech": "名詞",
+    "lemma": "word",
+    "surfaceForms": [
+      "words"
+    ],
+    "generalMeaning": "単語"
+  },
+  {
+    "id": "edo_89f29922a1",
+    "english": "world",
+    "japanese": "世界",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "Edo",
+    "lesson": "Chapter 9",
+    "title": "Edo, the Resilient City",
+    "source": "Chapter 9 Edo, the Resilient City; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 9 / Chapter 10",
+    "sources": [
+      {
+        "range": "Edo",
+        "lesson": "Chapter 9",
+        "title": "Edo, the Resilient City",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 9 Edo, the Resilient City"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "world"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 351,
+    "partOfSpeech": "名詞",
+    "lemma": "world",
+    "surfaceForms": [
+      "world's",
+      "world"
+    ]
+  },
+  {
+    "id": "edo_f2af4c0923",
+    "english": "all",
+    "japanese": "すべて（of ___ で全ての中で）／すべての／すべての人",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "Edo",
+    "lesson": "Chapter 9",
+    "title": "Edo, the Resilient City",
+    "source": "Chapter 9 Edo, the Resilient City; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 9 / Chapter 10",
+    "sources": [
+      {
+        "range": "Edo",
+        "lesson": "Chapter 9",
+        "title": "Edo, the Resilient City",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 9 Edo, the Resilient City"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "all"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 352,
+    "partOfSpeech": "代名詞・限定詞",
+    "lemma": "all",
+    "surfaceForms": [
+      "all"
+    ],
+    "generalMeaning": "すべて"
+  },
+  {
+    "id": "edo_f1d26ad00c",
+    "english": "more",
+    "japanese": "より〜（比較級をつくる）／もっと／もっと多くのこと／より多くの",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "Edo",
+    "lesson": "Chapter 9",
+    "title": "Edo, the Resilient City",
+    "source": "Chapter 9 Edo, the Resilient City; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 9 / Chapter 10",
+    "sources": [
+      {
+        "range": "Edo",
+        "lesson": "Chapter 9",
+        "title": "Edo, the Resilient City",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 9 Edo, the Resilient City"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "more"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 353,
+    "partOfSpeech": "副詞・代名詞・形容詞",
+    "lemma": "more",
+    "surfaceForms": [
+      "more"
+    ]
+  },
+  {
+    "id": "edo_a16ebaea08",
+    "english": "most",
+    "japanese": "最も",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "Edo",
+    "lesson": "Chapter 9",
+    "title": "Edo, the Resilient City",
+    "source": "Chapter 9 Edo, the Resilient City; Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 9 / Chapter 10",
+    "sources": [
+      {
+        "range": "Edo",
+        "lesson": "Chapter 9",
+        "title": "Edo, the Resilient City",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 9 Edo, the Resilient City"
+      },
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "most"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 354,
+    "partOfSpeech": "副詞",
+    "lemma": "most",
+    "surfaceForms": [
+      "most"
+    ],
+    "generalMeaning": "（形容詞）大部分の"
+  },
+  {
+    "id": "rwanda_1a76ec77de",
+    "english": "Nelson Mandela",
+    "japanese": "ネルソン・マンデラ（南アフリカ元大統領）",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "SSS",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word"
+    ],
+    "acceptedAnswers": [
+      "Nelson Mandela"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input"
+    ],
+    "order": 355,
+    "partOfSpeech": "固有名詞",
+    "lemma": "Nelson Mandela",
+    "surfaceForms": [
+      "Nelson Mandela's"
+    ]
+  },
+  {
+    "id": "rwanda_ba3f5150d1",
+    "english": "Malala Yousafzai",
+    "japanese": "マララ・ユスフザイ（教育活動家）",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "SSS",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word"
+    ],
+    "acceptedAnswers": [
+      "Malala Yousafzai"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input"
+    ],
+    "order": 356,
+    "partOfSpeech": "固有名詞",
+    "lemma": "Malala Yousafzai",
+    "surfaceForms": [
+      "Malala Yousafzai's"
+    ]
+  },
+  {
+    "id": "rwanda_f41b145ffb",
+    "english": "United Nations",
+    "japanese": "国際連合",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "A",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word"
+    ],
+    "acceptedAnswers": [
+      "United Nations"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input"
+    ],
+    "order": 357,
+    "partOfSpeech": "固有名詞",
+    "lemma": "United Nations",
+    "surfaceForms": [
+      "United Nations"
+    ]
+  },
+  {
+    "id": "rwanda_d533d7c8bc",
+    "english": "SDGs",
+    "japanese": "持続可能な開発目標",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "A",
+    "difficulty": "C",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "SDGs"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 358,
+    "partOfSpeech": "固有名詞（略）",
+    "lemma": "SDGs",
+    "surfaceForms": [
+      "SDGs"
+    ]
+  },
+  {
+    "id": "rwanda_d6fea03dc5",
+    "english": "Africa",
+    "japanese": "アフリカ",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "Africa"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 359,
+    "partOfSpeech": "固有名詞",
+    "lemma": "Africa",
+    "surfaceForms": [
+      "Africa"
+    ]
+  },
+  {
+    "id": "rwanda_5aae3d5596",
+    "english": "Rwanda",
+    "japanese": "ルワンダ（中部アフリカの国）",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "SSS",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "Rwanda"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 360,
+    "partOfSpeech": "固有名詞",
+    "lemma": "Rwanda",
+    "surfaceForms": [
+      "Rwanda"
+    ]
+  },
+  {
+    "id": "rwanda_3227a8ffa3",
+    "english": "Marie Louise",
+    "japanese": "永遠瑠マリールイズ（インタビュー相手）",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "SSS",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word"
+    ],
+    "acceptedAnswers": [
+      "Marie Louise"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input"
+    ],
+    "order": 361,
+    "partOfSpeech": "固有名詞",
+    "lemma": "Marie Louise",
+    "surfaceForms": [
+      "Towari Marie Louise",
+      "Marie Louise",
+      "Louise"
+    ]
+  },
+  {
+    "id": "rwanda_12f2acbaf3",
+    "english": "JICA",
+    "japanese": "国際協力機構",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "B",
+    "difficulty": "C",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "JICA"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 362,
+    "partOfSpeech": "固有名詞（略）",
+    "lemma": "JICA",
+    "surfaceForms": [
+      "JICA"
+    ]
+  },
+  {
+    "id": "rwanda_1a090c967a",
+    "english": "Kigali",
+    "japanese": "キガリ（ルワンダの首都）",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "SSS",
+    "difficulty": "C",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "Kigali"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 363,
+    "partOfSpeech": "固有名詞",
+    "lemma": "Kigali",
+    "surfaceForms": [
+      "Kigali"
+    ]
+  },
+  {
+    "id": "rwanda_a8b48a6225",
+    "english": "Great East Japan Earthquake",
+    "japanese": "東日本大震災",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "A",
+    "difficulty": "C",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word"
+    ],
+    "acceptedAnswers": [
+      "Great East Japan Earthquake"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input"
+    ],
+    "order": 364,
+    "partOfSpeech": "固有名詞",
+    "lemma": "Great East Japan Earthquake",
+    "surfaceForms": [
+      "Great East Japan Earthquake"
+    ]
+  },
+  {
+    "id": "rwanda_ce6a0663ff",
+    "english": "education",
+    "japanese": "教育",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "SS",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "education"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 365,
+    "partOfSpeech": "名詞",
+    "lemma": "education",
+    "surfaceForms": [
+      "education"
+    ]
+  },
+  {
+    "id": "rwanda_16bae2be4a",
+    "english": "quote",
+    "japanese": "名言・引用句",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "SSS",
+    "difficulty": "C",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "quote"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 366,
+    "partOfSpeech": "名詞",
+    "lemma": "quote",
+    "surfaceForms": [
+      "quote"
+    ],
+    "generalMeaning": "引用（文）・（動詞）引用する"
+  },
+  {
+    "id": "rwanda_41f32585f6",
+    "english": "weapon",
+    "japanese": "武器",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "SSS",
+    "difficulty": "C",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "weapon"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 367,
+    "partOfSpeech": "名詞",
+    "lemma": "weapon",
+    "surfaceForms": [
+      "weapon"
+    ]
+  },
+  {
+    "id": "rwanda_f32959b8c1",
+    "english": "comment",
+    "japanese": "発言・言葉",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "A",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "comment"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 368,
+    "partOfSpeech": "名詞",
+    "lemma": "comment",
+    "surfaceForms": [
+      "comment"
+    ],
+    "generalMeaning": "論評・コメント"
+  },
+  {
+    "id": "rwanda_6e8f53002a",
+    "english": "quality",
+    "japanese": "質（___ Educationで「質の高い教育」）",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "S",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "quality"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 369,
+    "partOfSpeech": "名詞",
+    "lemma": "quality",
+    "surfaceForms": [
+      "quality"
+    ],
+    "generalMeaning": "質・品質"
+  },
+  {
+    "id": "rwanda_1b6aa7aef7",
+    "english": "reason",
+    "japanese": "理由",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "A",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "reason"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 370,
+    "partOfSpeech": "名詞",
+    "lemma": "reason",
+    "surfaceForms": [
+      "reason",
+      "reasons"
+    ]
+  },
+  {
+    "id": "rwanda_bcd1f2ad05",
+    "english": "parent",
+    "japanese": "親",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "parent"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 371,
+    "partOfSpeech": "名詞",
+    "lemma": "parent",
+    "surfaceForms": [
+      "parents"
+    ]
+  },
+  {
+    "id": "rwanda_ef36b00f64",
+    "english": "poverty",
+    "japanese": "貧困",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "SSS",
+    "difficulty": "C",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "poverty"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 372,
+    "partOfSpeech": "名詞",
+    "lemma": "poverty",
+    "surfaceForms": [
+      "poverty"
+    ]
+  },
+  {
+    "id": "rwanda_79ad98bd5f",
+    "english": "transcript",
+    "japanese": "（インタビューの）書き起こし",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "SSS",
+    "difficulty": "D",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "transcript"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 373,
+    "partOfSpeech": "名詞",
+    "lemma": "transcript",
+    "surfaceForms": [
+      "transcript"
+    ],
+    "generalMeaning": "記録・成績証明書"
+  },
+  {
+    "id": "rwanda_c8509d2776",
+    "english": "interview",
+    "japanese": "インタビュー／インタビューする",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "B",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "interview"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 374,
+    "partOfSpeech": "名詞・動詞",
+    "lemma": "interview",
+    "surfaceForms": [
+      "interview",
+      "interviewed"
+    ],
+    "generalMeaning": "面接・面接する"
+  },
+  {
+    "id": "rwanda_2b1958d900",
+    "english": "history",
+    "japanese": "経歴・身の上／歴史（world ___ class）",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "A",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "history"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 375,
+    "partOfSpeech": "名詞",
+    "lemma": "history",
+    "surfaceForms": [
+      "history"
+    ],
+    "generalMeaning": "歴史"
+  },
+  {
+    "id": "rwanda_6c133a1838",
+    "english": "dressmaking",
+    "japanese": "洋裁",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "SSS",
+    "difficulty": "D",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "dressmaking"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 376,
+    "partOfSpeech": "名詞",
+    "lemma": "dressmaking",
+    "surfaceForms": [
+      "dressmaking"
+    ]
+  },
+  {
+    "id": "rwanda_f0c718c660",
+    "english": "program",
+    "japanese": "研修プログラム／給食制度",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "A",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "program"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 377,
+    "partOfSpeech": "名詞",
+    "lemma": "program",
+    "surfaceForms": [
+      "program"
+    ],
+    "generalMeaning": "計画・番組・プログラム"
+  },
+  {
+    "id": "rwanda_2b00f21a04",
+    "english": "genocide",
+    "japanese": "大量虐殺",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "SSS",
+    "difficulty": "E",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "genocide"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 378,
+    "partOfSpeech": "名詞",
+    "lemma": "genocide",
+    "surfaceForms": [
+      "genocide"
+    ]
+  },
+  {
+    "id": "rwanda_9261b2e687",
+    "english": "war",
+    "japanese": "戦争",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "war"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 379,
+    "partOfSpeech": "名詞",
+    "lemma": "war",
+    "surfaceForms": [
+      "war"
+    ]
+  },
+  {
+    "id": "rwanda_af0f4c769f",
+    "english": "refugee",
+    "japanese": "難民",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "SSS",
+    "difficulty": "D",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "refugee"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 380,
+    "partOfSpeech": "名詞",
+    "lemma": "refugee",
+    "surfaceForms": [
+      "refugee"
+    ]
+  },
+  {
+    "id": "rwanda_46f7cc6ec3",
+    "english": "breast",
+    "japanese": "胸・乳房",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "SSS",
+    "difficulty": "C",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "breast"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 381,
+    "partOfSpeech": "名詞",
+    "lemma": "breast",
+    "surfaceForms": [
+      "breast"
+    ]
+  },
+  {
+    "id": "rwanda_9268e81511",
+    "english": "terror",
+    "japanese": "恐怖",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "SSS",
+    "difficulty": "D",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "terror"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 382,
+    "partOfSpeech": "名詞",
+    "lemma": "terror",
+    "surfaceForms": [
+      "terror"
+    ],
+    "generalMeaning": "テロ"
+  },
+  {
+    "id": "rwanda_a69c98fced",
+    "english": "NPO",
+    "japanese": "非営利団体",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "B",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "NPO"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 383,
+    "partOfSpeech": "名詞（略）",
+    "lemma": "NPO",
+    "surfaceForms": [
+      "NPO"
+    ]
+  },
+  {
+    "id": "rwanda_2837013086",
+    "english": "capital",
+    "japanese": "首都",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "SSS",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "capital"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 384,
+    "partOfSpeech": "名詞",
+    "lemma": "capital",
+    "surfaceForms": [
+      "capital"
+    ],
+    "generalMeaning": "資本・大文字"
+  },
+  {
+    "id": "rwanda_b4f0d548aa",
+    "english": "opportunity",
+    "japanese": "機会",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "SSS",
+    "difficulty": "C",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "opportunity"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 385,
+    "partOfSpeech": "名詞",
+    "lemma": "opportunity",
+    "surfaceForms": [
+      "opportunity"
+    ]
+  },
+  {
+    "id": "rwanda_936effbb50",
+    "english": "kindergarten",
+    "japanese": "幼稚園",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "SSS",
+    "difficulty": "C",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "kindergarten"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 386,
+    "partOfSpeech": "名詞",
+    "lemma": "kindergarten",
+    "surfaceForms": [
+      "kindergarten"
+    ]
+  },
+  {
+    "id": "rwanda_0464af54be",
+    "english": "checkup",
+    "japanese": "健康診断",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "SSS",
+    "difficulty": "C",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "checkup"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 387,
+    "partOfSpeech": "名詞",
+    "lemma": "checkup",
+    "surfaceForms": [
+      "checkups"
+    ],
+    "generalMeaning": "点検"
+  },
+  {
+    "id": "rwanda_4f7383949f",
+    "english": "school lunch",
+    "japanese": "学校給食の",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word"
+    ],
+    "acceptedAnswers": [
+      "school lunch"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input"
+    ],
+    "order": 388,
+    "partOfSpeech": "名詞（形容詞的）",
+    "lemma": "school lunch",
+    "surfaceForms": [
+      "school-lunch"
+    ]
+  },
+  {
+    "id": "rwanda_0d9dc99548",
+    "english": "daughter",
+    "japanese": "娘",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "daughter"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 389,
+    "partOfSpeech": "名詞",
+    "lemma": "daughter",
+    "surfaceForms": [
+      "daughters"
+    ]
+  },
+  {
+    "id": "rwanda_dc4b76d51e",
+    "english": "president",
+    "japanese": "大統領",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "SSS",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "president"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 390,
+    "partOfSpeech": "名詞",
+    "lemma": "president",
+    "surfaceForms": [
+      "president"
+    ],
+    "generalMeaning": "社長"
+  },
+  {
+    "id": "rwanda_f5f900fdde",
+    "english": "value",
+    "japanese": "価値・大切さ",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "SS",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "value"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 391,
+    "partOfSpeech": "名詞",
+    "lemma": "value",
+    "surfaceForms": [
+      "value"
+    ],
+    "generalMeaning": "価値観"
+  },
+  {
+    "id": "rwanda_c2bd3fc816",
+    "english": "change",
+    "japanese": "変える",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "change"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 392,
+    "partOfSpeech": "動詞",
+    "lemma": "change",
+    "surfaceForms": [
+      "change"
+    ]
+  },
+  {
+    "id": "rwanda_feb9b00120",
+    "english": "believe",
+    "japanese": "〜だと信じている・考えている",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "A",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "believe"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 393,
+    "partOfSpeech": "動詞",
+    "lemma": "believe",
+    "surfaceForms": [
+      "believes"
+    ],
+    "generalMeaning": "信じる"
+  },
+  {
+    "id": "rwanda_6bc40355eb",
+    "english": "link",
+    "japanese": "結びつける（受動で「結びついている」）",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "SSS",
+    "difficulty": "C",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "link"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 394,
+    "partOfSpeech": "動詞",
+    "lemma": "link",
+    "surfaceForms": [
+      "linked"
+    ],
+    "generalMeaning": "（動詞）つなぐ・（名詞）つながり"
+  },
+  {
+    "id": "rwanda_35d31ba655",
+    "english": "sponsor",
+    "japanese": "後援する（JICA主催の）",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "SSS",
+    "difficulty": "D",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "sponsor"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 395,
+    "partOfSpeech": "動詞（過去分詞）",
+    "lemma": "sponsor",
+    "surfaceForms": [
+      "sponsored（JICA-sponsored）"
+    ],
+    "generalMeaning": "（動詞）後援する・（名詞）スポンサー"
+  },
+  {
+    "id": "rwanda_3e25253fbd",
+    "english": "kill",
+    "japanese": "殺す（受動で「殺される」）",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "kill"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 396,
+    "partOfSpeech": "動詞",
+    "lemma": "kill",
+    "surfaceForms": [
+      "killed"
+    ]
+  },
+  {
+    "id": "rwanda_9fe4f7aaf6",
+    "english": "flee",
+    "japanese": "逃げる・避難する",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "SSS",
+    "difficulty": "D",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "flee"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 397,
+    "partOfSpeech": "動詞",
+    "lemma": "flee",
+    "surfaceForms": [
+      "fled"
+    ]
+  },
+  {
+    "id": "rwanda_9afb15b6cb",
+    "english": "lie",
+    "japanese": "横たわる",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "S",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "lie"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 398,
+    "partOfSpeech": "動詞",
+    "lemma": "lie",
+    "surfaceForms": [
+      "lying"
+    ],
+    "generalMeaning": "うそをつく"
+  },
+  {
+    "id": "rwanda_9a58283fcf",
+    "english": "hate",
+    "japanese": "憎む",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "hate"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 399,
+    "partOfSpeech": "動詞",
+    "lemma": "hate",
+    "surfaceForms": [
+      "hate"
+    ],
+    "generalMeaning": "ひどく嫌う"
+  },
+  {
+    "id": "rwanda_49182a77f3",
+    "english": "realize",
+    "japanese": "気づく・悟る",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "SS",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "realize"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 400,
+    "partOfSpeech": "動詞",
+    "lemma": "realize",
+    "surfaceForms": [
+      "realized"
+    ],
+    "generalMeaning": "実現する"
+  },
+  {
+    "id": "rwanda_009386f3a0",
+    "english": "end",
+    "japanese": "終わらせる",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "end"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 401,
+    "partOfSpeech": "動詞",
+    "lemma": "end",
+    "surfaceForms": [
+      "ending"
+    ],
+    "generalMeaning": "終える・終わる"
+  },
+  {
+    "id": "rwanda_80ec9e1725",
+    "english": "establish",
+    "japanese": "設立する",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "SS",
+    "difficulty": "C",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "establish"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 402,
+    "partOfSpeech": "動詞",
+    "lemma": "establish",
+    "surfaceForms": [
+      "establish"
+    ],
+    "generalMeaning": "確立する"
+  },
+  {
+    "id": "rwanda_d860018fb9",
+    "english": "attend",
+    "japanese": "〜に通う",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "SS",
+    "difficulty": "C",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "attend"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 403,
+    "partOfSpeech": "動詞",
+    "lemma": "attend",
+    "surfaceForms": [
+      "attend"
+    ],
+    "generalMeaning": "出席する・通う"
+  },
+  {
+    "id": "rwanda_4ab5013caa",
+    "english": "serve",
+    "japanese": "（食事を）出す・提供する",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "S",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "serve"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 404,
+    "partOfSpeech": "動詞",
+    "lemma": "serve",
+    "surfaceForms": [
+      "served"
+    ],
+    "generalMeaning": "仕える・出す・役立つ"
+  },
+  {
+    "id": "rwanda_47a090fdaa",
+    "english": "concentrate",
+    "japanese": "集中する",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "S",
+    "difficulty": "C",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "concentrate"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 405,
+    "partOfSpeech": "動詞",
+    "lemma": "concentrate",
+    "surfaceForms": [
+      "concentrate"
+    ],
+    "generalMeaning": "集中させる"
+  },
+  {
+    "id": "rwanda_c4104ff614",
+    "english": "introduce",
+    "japanese": "導入する",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "SS",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "introduce"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 406,
+    "partOfSpeech": "動詞",
+    "lemma": "introduce",
+    "surfaceForms": [
+      "introduced"
+    ],
+    "generalMeaning": "紹介する"
+  },
+  {
+    "id": "rwanda_71a1e21075",
+    "english": "hope",
+    "japanese": "〜を願う",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "hope"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 407,
+    "partOfSpeech": "動詞",
+    "lemma": "hope",
+    "surfaceForms": [
+      "hope"
+    ],
+    "generalMeaning": "望む"
+  },
+  {
+    "id": "rwanda_5d355a077a",
+    "english": "stay",
+    "japanese": "とどまる",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "stay"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 408,
+    "partOfSpeech": "動詞",
+    "lemma": "stay",
+    "surfaceForms": [
+      "stayed"
+    ],
+    "generalMeaning": "滞在する"
+  },
+  {
+    "id": "rwanda_577f57fc68",
+    "english": "save",
+    "japanese": "救う",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "A",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "save"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 409,
+    "partOfSpeech": "動詞",
+    "lemma": "save",
+    "surfaceForms": [
+      "saved"
+    ],
+    "generalMeaning": "節約する・保存する"
+  },
+  {
+    "id": "rwanda_5abaa54237",
+    "english": "impressive",
+    "japanese": "印象的な",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "S",
+    "difficulty": "C",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "impressive"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 410,
+    "partOfSpeech": "形容詞",
+    "lemma": "impressive",
+    "surfaceForms": [
+      "impressive"
+    ]
+  },
+  {
+    "id": "rwanda_9ab95fab9e",
+    "english": "powerful",
+    "japanese": "強力な",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "A",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "powerful"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 411,
+    "partOfSpeech": "形容詞",
+    "lemma": "powerful",
+    "surfaceForms": [
+      "powerful"
+    ]
+  },
+  {
+    "id": "rwanda_babab590db",
+    "english": "sub-Saharan",
+    "japanese": "サハラ以南の",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "SSS",
+    "difficulty": "D",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "sub-Saharan"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 412,
+    "partOfSpeech": "形容詞",
+    "lemma": "sub-Saharan",
+    "surfaceForms": [
+      "sub-Saharan"
+    ]
+  },
+  {
+    "id": "rwanda_c6e26d1a90",
+    "english": "main",
+    "japanese": "主な",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "A",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "main"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 413,
+    "partOfSpeech": "形容詞",
+    "lemma": "main",
+    "surfaceForms": [
+      "main"
+    ]
+  },
+  {
+    "id": "rwanda_1100ec1f1f",
+    "english": "enough",
+    "japanese": "十分な",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "A",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "enough"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 414,
+    "partOfSpeech": "形容詞",
+    "lemma": "enough",
+    "surfaceForms": [
+      "enough"
+    ]
+  },
+  {
+    "id": "rwanda_058092ea1b",
+    "english": "poor",
+    "japanese": "貧しい",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "poor"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 415,
+    "partOfSpeech": "形容詞",
+    "lemma": "poor",
+    "surfaceForms": [
+      "poor"
+    ],
+    "generalMeaning": "下手な"
+  },
+  {
+    "id": "rwanda_dcd851de05",
+    "english": "closely",
+    "japanese": "密接に（___ linked）／よく・注意深く（looked more ___）",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "S",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "closely"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 416,
+    "partOfSpeech": "副詞",
+    "lemma": "closely",
+    "surfaceForms": [
+      "closely"
+    ],
+    "generalMeaning": "密接に・注意深く"
+  },
+  {
+    "id": "rwanda_bebf963635",
+    "english": "personal",
+    "japanese": "個人的な",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "A",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "personal"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 417,
+    "partOfSpeech": "形容詞",
+    "lemma": "personal",
+    "surfaceForms": [
+      "personal"
+    ]
+  },
+  {
+    "id": "rwanda_d4f3f057c0",
+    "english": "central",
+    "japanese": "中部の",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "A",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "central"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 418,
+    "partOfSpeech": "形容詞",
+    "lemma": "central",
+    "surfaceForms": [
+      "central"
+    ],
+    "generalMeaning": "中央の・中心的な"
+  },
+  {
+    "id": "rwanda_89f7936d6f",
+    "english": "Rwandan",
+    "japanese": "ルワンダの",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "SSS",
+    "difficulty": "C",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "Rwandan"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 419,
+    "partOfSpeech": "形容詞",
+    "lemma": "Rwandan",
+    "surfaceForms": [
+      "Rwandan"
+    ]
+  },
+  {
+    "id": "rwanda_494b434910",
+    "english": "ethnic",
+    "japanese": "民族の",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "SSS",
+    "difficulty": "C",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "ethnic"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 420,
+    "partOfSpeech": "形容詞",
+    "lemma": "ethnic",
+    "surfaceForms": [
+      "ethnic"
+    ]
+  },
+  {
+    "id": "rwanda_c87568b547",
+    "english": "terrible",
+    "japanese": "ひどい・恐ろしい",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "terrible"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 421,
+    "partOfSpeech": "形容詞",
+    "lemma": "terrible",
+    "surfaceForms": [
+      "terrible"
+    ]
+  },
+  {
+    "id": "rwanda_d0a9460b78",
+    "english": "dead",
+    "japanese": "死んでいる",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "dead"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 422,
+    "partOfSpeech": "形容詞",
+    "lemma": "dead",
+    "surfaceForms": [
+      "dead"
+    ]
+  },
+  {
+    "id": "rwanda_c5aa581343",
+    "english": "awful",
+    "japanese": "ひどい・恐ろしい",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "SSS",
+    "difficulty": "C",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "awful"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 423,
+    "partOfSpeech": "形容詞",
+    "lemma": "awful",
+    "surfaceForms": [
+      "awful"
+    ]
+  },
+  {
+    "id": "rwanda_6944014dac",
+    "english": "horrible",
+    "japanese": "恐ろしい・ぞっとする",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "SSS",
+    "difficulty": "C",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "horrible"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 424,
+    "partOfSpeech": "形容詞",
+    "lemma": "horrible",
+    "surfaceForms": [
+      "horrible"
+    ]
+  },
+  {
+    "id": "rwanda_d2f534ef93",
+    "english": "nonprofit",
+    "japanese": "非営利の",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "SSS",
+    "difficulty": "D",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "nonprofit"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 425,
+    "partOfSpeech": "形容詞",
+    "lemma": "nonprofit",
+    "surfaceForms": [
+      "nonprofit"
+    ]
+  },
+  {
+    "id": "rwanda_a08c7b3d6f",
+    "english": "regular",
+    "japanese": "定期的な",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "SSS",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "regular"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 426,
+    "partOfSpeech": "形容詞",
+    "lemma": "regular",
+    "surfaceForms": [
+      "regular"
+    ],
+    "generalMeaning": "規則的な・通常の"
+  },
+  {
+    "id": "rwanda_39c129d472",
+    "english": "medical",
+    "japanese": "医療の",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "A",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "medical"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 427,
+    "partOfSpeech": "形容詞",
+    "lemma": "medical",
+    "surfaceForms": [
+      "medical"
+    ]
+  },
+  {
+    "id": "rwanda_18660cea2f",
+    "english": "healthy",
+    "japanese": "健康な",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "healthy"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 428,
+    "partOfSpeech": "形容詞",
+    "lemma": "healthy",
+    "surfaceForms": [
+      "healthier"
+    ]
+  },
+  {
+    "id": "rwanda_4bfc218b15",
+    "english": "long",
+    "japanese": "長く",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "long"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 429,
+    "partOfSpeech": "副詞",
+    "lemma": "long",
+    "surfaceForms": [
+      "longer",
+      "long"
+    ]
+  },
+  {
+    "id": "rwanda_8515497fe1",
+    "english": "amazing",
+    "japanese": "すばらしい",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "SSS",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "amazing"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 430,
+    "partOfSpeech": "形容詞",
+    "lemma": "amazing",
+    "surfaceForms": [
+      "amazing"
+    ],
+    "generalMeaning": "驚くべき"
+  },
+  {
+    "id": "rwanda_092eaa3b31",
+    "english": "aware",
+    "japanese": "気づいている",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "SSS",
+    "difficulty": "C",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "aware"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 431,
+    "partOfSpeech": "形容詞",
+    "lemma": "aware",
+    "surfaceForms": [
+      "aware"
+    ]
+  },
+  {
+    "id": "rwanda_09c2c4e956",
+    "english": "disastrous",
+    "japanese": "悲惨な・壊滅的な",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "A",
+    "difficulty": "D",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "disastrous"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 432,
+    "partOfSpeech": "形容詞",
+    "lemma": "disastrous",
+    "surfaceForms": [
+      "disastrous"
+    ]
+  },
+  {
+    "id": "rwanda_d7353935e8",
+    "english": "no",
+    "japanese": "1人の〜も…ない",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "no"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 433,
+    "partOfSpeech": "限定詞",
+    "lemma": "no",
+    "surfaceForms": [
+      "no"
+    ]
+  },
+  {
+    "id": "rwanda_fab705e74a",
+    "english": "along",
+    "japanese": "〜に沿って",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "B",
+    "difficulty": "A",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "along"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 434,
+    "partOfSpeech": "前置詞",
+    "lemma": "along",
+    "surfaceForms": [
+      "along"
+    ]
+  },
+  {
+    "id": "rwanda_9461706f9d",
+    "english": "if",
+    "japanese": "〜かどうか",
+    "type": "word",
+    "sourceType": "単語",
+    "importance": "A",
+    "difficulty": "B",
+    "range": "Rwanda",
+    "lesson": "Chapter 10",
+    "title": "Rwanda",
+    "source": "Chapter 10 Rwanda",
+    "sourceDetail": "Chapter 10",
+    "sources": [
+      {
+        "range": "Rwanda",
+        "lesson": "Chapter 10",
+        "title": "Rwanda",
+        "page": "",
+        "paragraph": "",
+        "note": "",
+        "detail": "",
+        "label": "Chapter 10 Rwanda"
+      }
+    ],
+    "tags": [
+      "word",
+      "spelling"
+    ],
+    "acceptedAnswers": [
+      "if"
+    ],
+    "questionModes": [
+      "en_to_ja_choice",
+      "ja_to_en_choice",
+      "ja_to_en_input",
+      "spelling_input"
+    ],
+    "order": 435,
+    "partOfSpeech": "接続詞",
+    "lemma": "if",
+    "surfaceForms": [
+      "if"
+    ],
+    "generalMeaning": "もし〜なら"
   }
 ]

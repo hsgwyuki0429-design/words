@@ -6,7 +6,7 @@
 
 古文の「古文単語」に、全7作品（伊勢物語3編・徒然草2編・羅生門・今昔物語集）の重要語句360語句を追加しました。本文中の短い用例に語句のアンダーラインとふりがなを付けたフラッシュカードで、裏面に本文中での意味・覚えるポイント・範囲を出します。教材に難易度の指定がないため、ここだけ並び替えの「難易度順」を外しています。詳しくは [古文単語の重要語句](docs/kobun-vocabulary.md) を参照してください。
 
-英語（3定）342語句・英語（2定）1,314語句、古文単語360語句、公共207問、保健282問を収録した、GitHub Pages向けの静的学習アプリです。3定（2026.3）の教科選択、SIMPLE／MAX演出、PWA・オフライン利用まで対応しています。
+英語（3定）435語句・英語（2定）1,314語句、古文単語360語句、公共207問、保健282問を収録した、GitHub Pages向けの静的学習アプリです。3定（2026.3）の教科選択、SIMPLE／MAX演出、PWA・オフライン利用まで対応しています。
 
 ## 画面の流れ（スマホ基準）
 
@@ -38,7 +38,8 @@
 ## 3定（2026.3）の教科
 
 - 3定では英語と公共だけを学習する（保健・古文は教科選択から隠している）
-- 3定の英語は Chapter 8「A Loving Story」と Chapter 9「Edo, the Resilient City」の342語句（単語266・熟語71・構文5、SSS150・SS8・S54・A36・B94）を `data/english-2026-3.json` に収録している。範囲は「A Loving Story」「Edo」の2つ
+- 3定の英語は Chapter 8「A Loving Story」・Chapter 9「Edo, the Resilient City」・Chapter 10（ルワンダの教育）の435語句（単語359・熟語71・構文5、SSS182・SS14・S61・A56・B122）を `data/english-2026-3.json` に収録している。範囲は「A Loving Story」「Edo」「Rwanda」の3つ
+- 複数の章に出てくる語句は1件にまとめ、出典に含まれるどの章の範囲でも出題する（`victim` は Edo と Rwanda の両方）
 - 3定の公共は学習範囲のデータがまだ入っていないので、ホームと単語帳には「学習範囲のデータはまだありません」と出す（`SUBJECTS_WITHOUT_DATA`）
 - 2定の英語（1,314語句）は `data/items.json` に残しているが、アプリでは読み込まない
 - 学習の記録（分析画面）は画面から外している。学習を終えた直後の結果画面だけを出す
@@ -334,8 +335,10 @@ python tools/import_xlsx.py path/to/source.xlsx data/items.json
 - 一般的な意味は訳に混ぜずに `generalMeaning`、「⇔ ma'am」「← madam」のような補足は `memo` に分け、単語帳に表示する
 - 自動では直せない訳は、スクリプト内の `MEANING_OVERRIDES` で元の訳ごとに書き直している
 
+Chapter 10 の語彙表は出典が「P1-S2」のような本文の位置だけなので、「ファイル=Rwanda」と範囲を指定して読み込みます。区切りの「、」「；」は「・」「／」に、一般的な意味の「同左」は空に、「動 〜；名 〜」は「（動詞）〜・（名詞）〜」に、原形が「—」の固有名詞は本文中の形を見出しにそろえ、「（熟語内だがSSS）」「（比較級）」のような注記は外します。章をまたいで「〜を育てる」と「育てる」のように重なった訳は、詳しいほうだけ残します。
+
 ```sh
-python3 tools/import_english_csv.py path/to/vocab_ch8_ch9.csv data/english-2026-3.json
+python3 tools/import_english_csv.py data/english-2026-3.json path/to/vocab_ch8_ch9.csv path/to/chapter10.csv=Rwanda
 ```
 
 キーボード入力では、「D.C.」「a.m.」のような略語はピリオドを外した1語（DC・am）として入力します（アプリ内キーボードにピリオドが無いため）。

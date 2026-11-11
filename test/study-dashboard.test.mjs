@@ -20,6 +20,7 @@ import {
   summarizeSetRing,
   summarizeRangeModes,
   summarizeCycleMeter,
+  itemMatchesRange,
 } from "../src/logic.js";
 
 const appSource = readFileSync(new URL("../src/app.js", import.meta.url), "utf8");
@@ -334,7 +335,7 @@ test("一問一答の教科も同じダッシュボード構造を使う", () =>
 });
 
 test("real workbook data fills every format gauge for a range", () => {
-  const plasticItems = items.filter((item) => item.range === "Plastic");
+  const plasticItems = items.filter((item) => itemMatchesRange(item, "Plastic"));
   const progress = summarizeRangeModes({ items, history: new Map(), ranges: ["Plastic"] });
   progress.forEach((stat) => {
     assert.equal(stat.totalItems, plasticItems.length);

@@ -2,7 +2,7 @@
 """3定（2026.3）英語の語彙表（CSV）を、アプリの英語データ（JSON）へ変換する。
 
 使い方:
-    python3 tools/import_english_csv.py vocab_ch8_ch9.csv data/english-2026-3.json
+    python3 tools/import_english_csv.py data/english-2026-3.json vocab_ch8_ch9.csv chapter10.csv=Rwanda
 
 CSVの列: 原形, 本文中の形, 品詞, 本文中の意味, 一般的な意味, 出典, 重要度, 難易度
 
@@ -65,8 +65,47 @@ LESSONS = OrderedDict(
                 "title": "Edo, the Resilient City",
             },
         ),
+        (
+            # Chapter 10 の語彙表は出典が「P1-S2」のような本文の位置だけで題名が無いので、
+            # 読み込むときに「ファイル=Rwanda」と範囲を指定する。
+            "Rwanda",
+            {
+                "range": "Rwanda",
+                "slug": "rwanda",
+                "lesson": "Chapter 10",
+                "title": "Rwanda",
+            },
+        ),
     ]
 )
+
+# Chapter 10 の語彙表だけにある書き方。他の章の語彙表にそろえる。
+EDITORIAL_NOTE_RE = re.compile(r"（[^（）]*(?:熟語内|脚注語)[^（）]*）")
+SAME_AS_TEXT = {"同左", "—", "-"}
+GENERAL_POS_LABELS = {"動": "動詞", "名": "名詞", "形": "形容詞", "前": "前置詞", "副": "副詞"}
+
+
+def unify_meaning(text: str) -> str:
+    """「、」「；」区切りと編集用の注記を、他の章と同じ「・」「／」にそろえる。"""
+    text = EDITORIAL_NOTE_RE.sub("", text)
+    # 「（比較級）」「（最上級）」は見出しが原形なので外す。「~」は他の章と同じ「〜」にする。
+    text = re.sub(r"（(?:比較級|最上級)）", "", text).replace("~", "〜")
+    text = text.replace("；", "／")
+    return re.sub(r"、(?![^（]*）)", "・", text).strip()
+
+
+def unify_general(text: str) -> str:
+    """「動 後援する；名 スポンサー」→「（動詞）後援する・（名詞）スポンサー」。"""
+    if text in SAME_AS_TEXT:
+        return ""
+    parts = []
+    for part in re.split(r"[；;]", text):
+        part = part.strip()
+        label = re.match(r"^([動名形前副])\s+", part)
+        if label:
+            part = f"（{GENERAL_POS_LABELS[label.group(1)]}）{part[label.end():]}"
+        parts.append(part.replace("、", "・"))
+    return "・".join(parts)
 
 APP_IMPORTANCE = {"SSS", "SS", "S", "A", "B"}
 PAGE_REF_RE = re.compile(r"P\d{3}-S\d+")
@@ -86,6 +125,9 @@ MEANING_OVERRIDES: dict[tuple[str, str], str | None] = {
     ("reduce A to B", "AをB（の状態）にする（reduce … to ashes で灰にする）"): "AをB（の状態）にする（___ 〜 to ashes で灰にする）",
     ("it", "（時刻を表す it／形式目的語の it）"): None,
     ("it", "それ（its：その）"): "それ・その",
+    ("have", "（完了形をつくる）"): None,
+    ("have", "完了形を作る"): None,
+    ("it", "それ／状況を指すit"): "それ",
     ("the District", "＝Washington D.C."): "（＝ワシントン市）コロンビア特別区",
     ("anything", "何か（P121-S15）／何も（P121-S22）"): "何か／（否定文で）何も",
     ("from", "〜から／〜出身の（P121-S19）"): "〜から／〜出身の",
@@ -175,7 +217,35 @@ def clean_meaning(lemma: str, meaning: str, surface_forms: list[str], hide: bool
     return split_top_level(meaning)
 
 
-def parse_lessons(value: str) -> list[dict[str, str]]:
+def meaning_parts(variant: str) -> set[str]:
+    """「〜を育てる」「育てる」を同じ意味として比べるための形。"""
+    bare = re.sub(r"（[^（）]*）", "", variant)
+    return {re.sub(r"^〜[をにが]?", "", part).strip() for part in bare.split("・") if part.strip()}
+
+
+def drop_covered_meanings(variants: list[str]) -> list[str]:
+    """別の章の行で「〜を育てる」と「育てる」のように重なった訳は、詳しいほうだけ残す。"""
+    kept: list[str] = []
+    for index, variant in enumerate(variants):
+        parts = meaning_parts(variant)
+        flat = re.sub(r"[（）]", "", variant)
+        covered = any(
+            other_index < index and re.sub(r"[（）]", "", other) == flat
+            for other_index, other in enumerate(variants)
+        ) or any(
+            other_index != index
+            and parts <= meaning_parts(other)
+            and (parts != meaning_parts(other) or other_index < index)
+            for other_index, other in enumerate(variants)
+        )
+        if not covered:
+            kept.append(variant)
+    return kept
+
+
+def parse_lessons(value: str, default: str | None = None) -> list[dict[str, str]]:
+    if default:
+        return [LESSONS[default]]
     lessons = []
     for part in re.split(r"\s+/\s+", clean_text(value)):
         if part not in LESSONS:
@@ -221,13 +291,22 @@ def make_source(lesson: dict[str, str]) -> dict[str, str]:
     }
 
 
-def read_rows(path: Path) -> list[dict[str, str]]:
+def read_rows(path: Path, lesson: str | None = None) -> list[dict[str, str]]:
+    """語彙表を読む。lesson を渡すと、出典の欄にかかわらずその範囲の行として扱う。"""
+    rows = []
     with path.open(encoding="utf-8-sig", newline="") as handle:
-        return [
-            {key: clean_text(value) for key, value in row.items()}
-            for row in csv.DictReader(handle)
-            if clean_text(row.get("原形"))
-        ]
+        for raw in csv.DictReader(handle):
+            row = {key: clean_text(value) for key, value in raw.items()}
+            # 固有名詞は原形が「—」のことがあるので、本文中の形を見出しにする。
+            if row.get("原形") in SAME_AS_TEXT:
+                row["原形"] = row.get("本文中の形", "")
+            if not row.get("原形"):
+                continue
+            row["本文中の意味"] = unify_meaning(row["本文中の意味"])
+            row["一般的な意味"] = unify_general(row.get("一般的な意味", ""))
+            row["lesson"] = lesson
+            rows.append(row)
+    return rows
 
 
 def build_records(rows: list[dict[str, str]]) -> list[dict[str, object]]:
@@ -264,7 +343,10 @@ def build_records(rows: list[dict[str, str]]) -> list[dict[str, object]]:
         elif general:
             append_unique(record["general"], split_top_level(normalize_ellipsis(general), "・"))
         append_unique(record["parts_of_speech"], [row["品詞"]])
-        for lesson in parse_lessons(row["出典"]):
+        # 重要度Cの行は訳だけ足し、範囲には加えない（基本語で範囲が増えないように）。
+        # まだ範囲の無い語句（C の行しか無い語句）は、あとで収録しないので関係ない。
+        add_lessons = row["重要度"] in APP_IMPORTANCE or not record["lessons"]
+        for lesson in parse_lessons(row["出典"], row["lesson"]) if add_lessons else []:
             if lesson not in record["lessons"]:
                 record["lessons"].append(lesson)
         record["importances"].append(row["重要度"])
@@ -283,6 +365,7 @@ def build_records(rows: list[dict[str, str]]) -> list[dict[str, object]]:
             for general in record["general"]
             if re.sub(r"^（[^）]*）", "", general) not in meanings
         ]
+        record["japanese"] = drop_covered_meanings(record["japanese"])
         record["importance"] = best_importance(record.pop("importances"))
         record["difficulty"] = hardest_difficulty(record.pop("difficulties"))
         if record["importance"] not in APP_IMPORTANCE:
@@ -361,17 +444,24 @@ def make_item(record: dict[str, object], order: int) -> dict[str, object]:
     return item
 
 
-def convert(path: Path) -> list[dict[str, object]]:
-    records = build_records(read_rows(path))
+def convert(inputs: list[tuple[Path, str | None]]) -> list[dict[str, object]]:
+    rows = [row for path, lesson in inputs for row in read_rows(path, lesson)]
+    records = build_records(rows)
     return [make_item(record, order) for order, record in enumerate(records, start=1)]
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("csv", type=Path)
     parser.add_argument("output", type=Path)
+    parser.add_argument("csv", nargs="+", help="語彙表。題名が出典に無い表は「ファイル=範囲」と書く")
     args = parser.parse_args()
-    items = convert(args.csv)
+    inputs = []
+    for value in args.csv:
+        path, _, lesson = value.partition("=")
+        if lesson and lesson not in LESSONS:
+            raise SystemExit(f"範囲が分かりません: {lesson}")
+        inputs.append((Path(path), lesson or None))
+    items = convert(inputs)
     args.output.write_text(json.dumps(items, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"{len(items)}件を {args.output} に書き出しました")
 

@@ -21,6 +21,7 @@ import {
   inputPlanForAnswers,
   itemSupportsMode,
   isAnswerCorrect,
+  itemMatchesRange,
   mergeAttempt,
   normalizeAnswer,
   normalizeStudySelection,
@@ -385,7 +386,7 @@ test("sessions never repeat an item and only use supported modes", () => {
   });
   assert.equal(session.length, 30);
   assert.equal(new Set(session.map((entry) => entry.item.id)).size, 30);
-  assert.ok(session.every((entry) => entry.item.range === "Mars"));
+  assert.ok(session.every((entry) => itemMatchesRange(entry.item, "Mars")));
   assert.ok(session.every((entry) => itemSupportsMode(entry.item, entry.mode)));
 });
 
@@ -609,9 +610,28 @@ test("3定の英語は、訳に答えの英語がそのまま出ず、熟語の�
   assert.equal(byEnglish.get("sir").memo, "⇔ ma'am（女性への敬称）");
   assert.equal(byEnglish.get("legal").generalMeaning, "法律の・法律に関する");
   // 重要度Cの基本語は、単語・熟語とも収録しない。
-  for (const basic of ["and", "of", "be", "I", "well", "have to do", "a lot of", "for example"]) {
+  for (const basic of ["and", "of", "be", "I", "have to do", "a lot of", "for example", "Shun", "the"]) {
     assert.ok(!byEnglish.has(basic), basic);
   }
+});
+
+test("Chapter 10 の語句は、他の章と同じ書き方にそろえて Rwanda の範囲に入る", () => {
+  const period3 = JSON.parse(fs.readFileSync(new URL("../data/english-2026-3.json", import.meta.url), "utf8"));
+  const byEnglish = new Map(period3.map((item) => [item.english, item]));
+  // 「、」「；」区切りは「・」「／」に、「同左」は一般的な意味に入れない。
+  assert.equal(byEnglish.get("program").japanese, "研修プログラム／給食制度");
+  assert.equal(byEnglish.get("poverty").generalMeaning, undefined);
+  assert.equal(byEnglish.get("sponsor").generalMeaning, "（動詞）後援する・（名詞）スポンサー");
+  // 編集用の注記と「（比較級）」は外す。
+  assert.equal(byEnglish.get("ethnic").japanese, "民族の");
+  assert.equal(byEnglish.get("healthy").japanese, "健康な");
+  // 原形が「—」の固有名詞は本文中の形を見出しにする。
+  assert.equal(byEnglish.get("Great East Japan Earthquake").range, "Rwanda");
+  // 他の章にもある語句は1件にまとめ、どちらの範囲でも出題する。
+  const victim = byEnglish.get("victim");
+  assert.equal(victim.japanese, "被害者／被災者");
+  assert.ok(itemMatchesRange(victim, "Edo") && itemMatchesRange(victim, "Rwanda"));
+  assert.equal(byEnglish.get("raise").japanese, "〜を育てる");
 });
 
 test("4択の誤答は品詞と訳の形をそろえ、正解だけが浮かないようにする", async () => {

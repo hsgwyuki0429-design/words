@@ -356,7 +356,7 @@ function emptyPeriodMarkup() {
 }
 
 // いま学習する英語の教材データ（3定）。sw.js の APP_SHELL にも同じURLを載せる。
-const ENGLISH_DATA_URL = "./data/english-2026-3.json?v=2026.11.09";
+const ENGLISH_DATA_URL = "./data/english-2026-3.json?v=2026.11.11";
 
 // いま選べる定期テストの回。2定（2026.2）は終えたので外し、3定だけにしている。
 // 選べる回が1つだけのときは、回を選ぶ画面を出さずに自動で選ぶ。
@@ -811,7 +811,7 @@ function dashboardRanges() {
   if (isPublicSubject()) {
     return [...new Set(state.items.map((item) => item.title || item.range))];
   }
-  return currentRangeOrder().filter((range) => state.items.some((item) => item.range === range));
+  return currentRangeOrder().filter((range) => state.items.some((item) => itemMatchesRange(item, range)));
 }
 
 // 演習の周回か（範囲1つ・重要度1つ・内容はすべて）。以前の作りで残った、

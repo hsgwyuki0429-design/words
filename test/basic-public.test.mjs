@@ -63,7 +63,7 @@ test("公共のホームは、形式の切り替え・題名と重要度の複�
 });
 
 test("形式の切り替えは、英語は向き→形式、公共は一問一答・正誤問題→形式の2段", () => {
-  assert.match(appSource, /\{ key: "en_to_ja", label: "英語 → 日本語", subs: \[/);
+  assert.match(appSource, /\{ key: "en_to_ja", label: "英語 → 日本語", short: "英→日", subs: \[/);
   assert.match(appSource, /\{ key: "ja_to_en_input", label: "キーボード", mode: "ja_to_en_input" \}/);
   assert.match(appSource, /\{ key: "statement", label: "正誤問題", subs: \[\s*\{ key: "statement_choice", label: "4択", mode: "public_choice", type: "public-statement" \},\s*\] \}/);
   // 1つしか無い形式は動かせない。
@@ -72,4 +72,13 @@ test("形式の切り替えは、英語は向き→形式、公共は一問一�
   assert.match(appSource, /if \(target\.dataset\.englishRange\) pickEnglish\("range", target\.dataset\.englishRange\);/);
   assert.match(appSource, /if \(target\.dataset\.englishImportance\) pickEnglish\("importance", target\.dataset\.englishImportance\);/);
   assert.match(appSource, /if \(target\.hasAttribute\("data-english-start"\)\) startEnglishPractice\(\);/);
+});
+
+test("公共の題名・重要度は、なぞるだけで続けて選べ、形式の切り替えは横に並ぶ", () => {
+  assert.match(appSource, /function bindBasicPaintSelect\(\) \{/);
+  assert.match(appSource, /paint = \{ field, select: !basicDraft\(\)\[field\]\.includes\(valueOf\(button\)\), touched: new Set\(\), pointerId: event\.pointerId \};/);
+  // 指で切り替えたあとの click では、もう一度切り替えない（キーボードのときだけ click で切り替える）。
+  assert.match(appSource, /if \(target\.dataset\.basicRange && event\.detail === 0\) toggleBasicValue/);
+  const styles = readFileSync(new URL("../styles.css", import.meta.url), "utf8");
+  assert.match(styles, /\.format-bars \{\s*display: flex;\s*align-items: center;\s*justify-content: space-between;/);
 });

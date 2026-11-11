@@ -1,4 +1,4 @@
-import { MAX_AUDIO_LIMITS, resolveMaxCue } from "./max-cues.js?v=2026.11.33";
+import { MAX_AUDIO_LIMITS, resolveMaxCue } from "./max-cues.js?v=2026.11.34";
 
 const CORRECT_EVENTS = new Set(["correct", "combo-3", "combo-5", "combo-10", "combo-20", "combo-30"]);
 

@@ -6619,8 +6619,11 @@ body.fx-lite.max-mode.fx-fever .fx-backdrop.is-on {
 }
 
 /* 形式の切り替え（英語・公共）：教科の切り替えと同じ見た目・動きで、横幅いっぱいを等分する。 */
+/* 2つの切り替えは横に並べ、上段（向き・問題の種類）は左詰め、下段（形式）は右詰めにする。 */
 .format-bars {
-  display: grid;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
   margin: -12px 0 18px;
 }
@@ -6630,12 +6633,16 @@ body.fx-lite.max-mode.fx-fever .fx-backdrop.is-on {
 }
 
 .format-switch {
-  width: 100%;
-  grid-template-columns: repeat(var(--count, 2), minmax(0, 1fr));
+  grid-template-columns: repeat(var(--count, 2), 64px);
+}
+
+.format-switch[data-format-level="sub"] {
+  margin-left: auto;
 }
 
 .format-switch button {
-  font-size: 13px;
+  font-size: 12.5px;
+  letter-spacing: 0;
 }
 
 /* 選べる形式が1つだけのときは、つまみを置いたまま動かせない。 */
@@ -6802,4 +6809,12 @@ body.fx-lite.max-mode.fx-fever .fx-backdrop.is-on {
   .english-card .continue-foot {
     display: none;
   }
+}
+
+/* 公共の題名・重要度は指でなぞって続けて選ぶので、なぞっても画面が動かないようにする。 */
+[data-basic-range],
+[data-basic-importance] {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }

@@ -6777,3 +6777,29 @@ body.fx-lite.max-mode.fx-fever .fx-backdrop.is-on {
     display: none;
   }
 }
+
+/* 英語：範囲の下の重要度も、範囲と同じ大きさのボタンを2列で並べる。 */
+#english-importance-head {
+  margin-top: 18px;
+}
+
+.english-card .continue-foot {
+  margin-top: 10px;
+}
+
+@media (max-height: 760px) {
+  #english-importance-head {
+    margin-top: 10px;
+  }
+
+  .english-card .continue-foot {
+    margin-top: 4px;
+  }
+}
+
+/* とても背の低い画面では、英語のカードの「今の周回」の行を省く（円と見出しで様子は分かる）。 */
+@media (max-height: 700px) {
+  .english-card .continue-foot {
+    display: none;
+  }
+}

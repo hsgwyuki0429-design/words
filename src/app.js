@@ -53,6 +53,7 @@ import {
   normalizeStudyProgress,
   pendingCycleItemIds,
   reviewDelayForAnswer,
+  orderByRange,
   sortItems,
   normalizeStudySelection,
   normalizeRecentStudyConfig,
@@ -4604,13 +4605,15 @@ function buildCycleQueue({ progress, poolItems, mode, sortKey }) {
   const scopedHistory = new Map(
     poolItems.map((item) => [item.id, historyForModes(getHistory(state.history, item.id), [mode])]),
   );
-  const ordered = sortItems(
+  const sorted = sortItems(
     poolItems.filter((item) => pending.has(item.id)),
     scopedHistory,
     sortKey,
     Math.random,
     { randomizeTies: true },
   );
+  // ランダムの学習でも、範囲は教科書の順にまとめる（同じ範囲の中だけがランダム）。
+  const ordered = sortKey === "random" ? orderByRange(sorted) : sorted;
   const dueById = new Map((progress.pendingReviews ?? []).map((review) => [review.itemId, review.dueAt]));
   const now = Date.now();
   const queue = [];

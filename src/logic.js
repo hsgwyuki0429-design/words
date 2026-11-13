@@ -625,6 +625,19 @@ export const RANDOM_TIE_BREAK_SORT_KEYS = [
   "difficulty-level-desc",
 ];
 
+/**
+ * 範囲の並び順（教科書の順）に並べ替える。同じ範囲の中は、渡された並びのまま変えない。
+ * 範囲を複数選んだ学習で、範囲ごとにまとまって出題されるようにするために使う。
+ */
+export function orderByRange(items) {
+  const rangeIndex = (item) => {
+    const order = rangeOrderForSubject(item.subject);
+    const index = order.indexOf(item.range);
+    return index < 0 ? order.length : index;
+  };
+  return [...items].sort((a, b) => rangeIndex(a) - rangeIndex(b));
+}
+
 export function sortItems(
   items,
   history,

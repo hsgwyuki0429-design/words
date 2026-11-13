@@ -484,3 +484,20 @@ test("スタートのボタンは、何問から・何周目から始まるか�
   // 出題できる問題が無ければ押せない。
   assert.match(functionSource("renderSetupProgress", "renderStudySetup"), /elements\.setupStart\.disabled = !plan\.pool\.length;/);
 });
+
+test("範囲を複数選んだ学習は、範囲の順にまとまり、同じ範囲の中だけがランダムになる", async () => {
+  const { orderByRange, PUBLIC_RANGE_ORDER, shuffle } = await import("../src/logic.js");
+  const items = PUBLIC_RANGE_ORDER.slice(0, 3).flatMap((range) => (
+    [1, 2, 3, 4].map((number) => ({ id: `${range}-${number}`, subject: "public", range }))
+  ));
+  const ordered = orderByRange(shuffle(items));
+  assert.deepEqual(
+    [...new Set(ordered.map((item) => item.range))],
+    PUBLIC_RANGE_ORDER.slice(0, 3),
+    "範囲が教科書の順に並ぶ",
+  );
+  assert.equal(ordered.length, items.length);
+  const seen = new Set();
+  for (let run = 0; run < 30; run += 1) seen.add(orderByRange(shuffle(items)).map((item) => item.id).join(","));
+  assert.ok(seen.size > 1, "同じ範囲の中はランダムなまま");
+});

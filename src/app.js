@@ -1,5 +1,5 @@
-import { createHaptics } from "./haptics.js?v=2026.11.35";
-import { createKobunController } from "./kobun.js?v=2026.11.35";
+import { createHaptics } from "./haptics.js?v=2026.11.36";
+import { createKobunController } from "./kobun.js?v=2026.11.36";
 import {
   ALL_MODES,
   BASIC_SCOPES,
@@ -81,8 +81,8 @@ import {
   unmasterStudyItems,
   gaugeColorIndex,
   hasAnsweredMode,
-} from "./logic.js?v=2026.11.35";
-import { createMaxAudioEngine } from "./audio.js?v=2026.11.35";
+} from "./logic.js?v=2026.11.36";
+import { createMaxAudioEngine } from "./audio.js?v=2026.11.36";
 import {
   CORRECT_VARIANTS,
   LANDING_VARIANTS,
@@ -90,7 +90,7 @@ import {
   SFX_VOLUME_OPTIONS,
   createSfxEngine,
   normalizeSfxVolume,
-} from "./sfx.js?v=2026.11.35";
+} from "./sfx.js?v=2026.11.36";
 import {
   MAX_FEVER_GOAL,
   MAX_TIMELINE_PHASES,
@@ -105,7 +105,7 @@ import {
   resolveMaxCue,
   scaledVisualPlan,
   shouldPlayMaxSound,
-} from "./max-cues.js?v=2026.11.35";
+} from "./max-cues.js?v=2026.11.36";
 import {
   clearAllData,
   getMeta,
@@ -117,7 +117,7 @@ import {
   removeHistory,
   setMeta,
   stashMeta,
-} from "./storage.js?v=2026.11.35";
+} from "./storage.js?v=2026.11.36";
 import {
   bindQuizGestures,
   isRecallMode,
@@ -125,7 +125,7 @@ import {
   oppositeDirection,
   quizGesturePolicy,
   recallActionForDirection,
-} from "./quiz-gestures.js?v=2026.11.35";
+} from "./quiz-gestures.js?v=2026.11.36";
 import {
   DEFAULT_SPEECH_RATE,
   SPEECH_RATE_OPTIONS,
@@ -134,7 +134,7 @@ import {
   normalizeSpeechRate,
   normalizeSpeechVoiceURI,
   voiceKey,
-} from "./speech.js?v=2026.11.35";
+} from "./speech.js?v=2026.11.36";
 import {
   AI_LINK_JOURNAL_KEY,
   AI_LINK_META_KEY,
@@ -150,7 +150,7 @@ import {
   isAiLinkConfigured,
   mcpUrlFor,
   normalizeAiLinkConfig,
-} from "./ai-link.js?v=2026.11.35";
+} from "./ai-link.js?v=2026.11.36";
 import {
   DEFAULT_DEVICE_SYNC,
   DEVICE_SYNC_META_KEY,
@@ -167,13 +167,13 @@ import {
   syncStateLabel,
   transferFileName,
   unsentEntries,
-} from "./sync.js?v=2026.11.35";
+} from "./sync.js?v=2026.11.36";
 import {
   applyThemePreference,
   normalizeThemePreference,
   readStoredThemePreference,
   watchSystemTheme,
-} from "./theme.js?v=2026.11.35";
+} from "./theme.js?v=2026.11.36";
 
 const DEFAULT_SETTINGS = {
   effectsMode: null,
@@ -1360,10 +1360,27 @@ function englishCurrentSelection() {
   return selection ? normalizeStudySelection(selection) : state.studySelection;
 }
 
+// 黒いカードの青い見出し。折り返さないよう、短い呼び名（英→日・カード）で1行に収める。
+function cardEyebrow({ top, sub }) {
+  return `${top.short ?? top.label} · ${sub.short ?? sub.label}`;
+}
+
+// 黒いカードの下段（習得の進み具合の棒）。英語・公共・情報のカードの高さをそろえるため、
+// 全部のカードに同じ段を置く。
+function basicFootMarkup(summary, total, unit) {
+  const percent = summary.masteredPercent;
+  return `
+      <span class="continue-foot">
+        <span class="meter-cycle${percent ? "" : " is-idle"}">
+          <span class="meter-cycle-head"><strong>${percent ? `習得 ${percent}%` : "まだ習得していません"}</strong><span>${total}${unit}</span></span>
+          <span class="meter-cycle-bar" role="img" aria-label="${escapeHtml(`習得 ${percent}パーセント`)}"><span style="width:${percent}%"></span></span>
+        </span>
+      </span>`;
+}
+
 function englishCardMarkup(pick) {
   const unit = recallUnit();
-  const { top, sub } = currentFormat();
-  const eyebrow = `${top.label} · ${sub.label}`;
+  const eyebrow = cardEyebrow(currentFormat());
   if (!pick.range || !pick.importance) {
     const empty = summarizeBasicLevels({ itemIds: [], levels: {} });
     const detail = !pick.range && !pick.importance ? "範囲と重要度を選ぶ" : !pick.range ? "範囲を選ぶ" : "重要度を選ぶ";
@@ -1378,6 +1395,7 @@ function englishCardMarkup(pick) {
         </span>
         <span class="continue-action">スタート<span aria-hidden="true">→</span></span>
       </span>
+      <span class="continue-foot">${cycleBarMarkup(null, { total: 0 })}</span>
     </button>`;
   }
   const status = practiceStatus(practiceConfig({ range: pick.range, importance: pick.importance, selection: englishCurrentSelection() }));
@@ -1491,7 +1509,7 @@ function basicSummary(items, mode = currentFormat().sub.mode) {
 
 function basicCardMarkup(draft) {
   const unit = recallUnit();
-  const { top, sub } = currentFormat();
+  const { sub } = currentFormat();
   const inRanges = basicItems({ ranges: draft.ranges });
   const choosingImportance = draft.step === "importance";
   const picked = choosingImportance ? basicItems({ ranges: draft.ranges, importance: draft.importance }) : inRanges;
@@ -1514,12 +1532,12 @@ function basicCardMarkup(draft) {
       <span class="continue-top meter-card">
         ${setRingMarkup(summary)}
         <span class="meter-body">
-          <span class="continue-eyebrow">${escapeHtml(`${top.label} · ${sub.label}`)}</span>
+          <span class="continue-eyebrow">${escapeHtml(cardEyebrow(currentFormat()))}</span>
           <span class="continue-title">${escapeHtml(title)}</span>
           <span class="continue-detail">${escapeHtml(detail)}</span>
         </span>
         <span class="continue-action">${action}<span aria-hidden="true">→</span></span>
-      </span>
+      </span>${basicFootMarkup(summary, shown.length, unit)}
     </button>`;
 }
 
@@ -7073,7 +7091,7 @@ async function boot() {
       fetch(PUBLIC_DATA_URL),
       fetch(INFO_DATA_URL),
       fetch("./data/health-items.json?v=2026.09.01"),
-      fetch("./data/kobun-vocabulary.json?v=2026.11.35"),
+      fetch("./data/kobun-vocabulary.json?v=2026.11.36"),
       loadHistory(),
       getMeta("selectedMode"),
       getMetaObject("settings", DEFAULT_SETTINGS),
@@ -7161,7 +7179,7 @@ async function boot() {
         .catch((error) => console.warn("AI連携の同期に失敗しました", error));
     }
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=2026.11.35").catch((error) => console.warn("オフライン準備に失敗しました", error));
+      navigator.serviceWorker.register("./sw.js?v=2026.11.36").catch((error) => console.warn("オフライン準備に失敗しました", error));
     }
   } catch (error) {
     console.error(error);

@@ -6675,6 +6675,13 @@ body.fx-lite.max-mode.fx-fever .fx-backdrop.is-on {
   min-width: 0;
 }
 
+.basic-card .continue-eyebrow,
+.basic-card .continue-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .basic-card .continue-detail {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -6795,8 +6802,29 @@ body.fx-lite.max-mode.fx-fever .fx-backdrop.is-on {
   margin-top: 18px;
 }
 
-.english-card .continue-foot {
+/* 下段は、棒の有る無しで高さが変わらないよう固定する（英語・公共・情報のカードの高さをそろえる）。 */
+.basic-card .continue-foot {
+  align-items: flex-end;
+  height: 32px;
   margin-top: 10px;
+}
+
+/* 狭い画面でも、青い見出しを1行に収める（ボタンの余白と見出しの字間を詰める）。 */
+@media (max-width: 380px) {
+  .basic-card .continue-action {
+    padding: 0 10px;
+  }
+
+  .basic-card .continue-eyebrow {
+    letter-spacing: 0.02em;
+  }
+}
+
+@media (max-width: 340px) {
+  .basic-card .continue-eyebrow {
+    font-size: 10.5px;
+    letter-spacing: 0;
+  }
 }
 
 @media (max-height: 760px) {
@@ -6804,14 +6832,14 @@ body.fx-lite.max-mode.fx-fever .fx-backdrop.is-on {
     margin-top: 10px;
   }
 
-  .english-card .continue-foot {
+  .basic-card .continue-foot {
     margin-top: 4px;
   }
 }
 
 /* とても背の低い画面では、英語のカードの「今の周回」の行を省く（円と見出しで様子は分かる）。 */
 @media (max-height: 700px) {
-  .english-card .continue-foot {
+  .basic-card .continue-foot {
     display: none;
   }
 }

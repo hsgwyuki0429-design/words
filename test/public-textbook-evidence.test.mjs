@@ -2,11 +2,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import vm from "node:vm";
+import { isRecallChoiceMode } from "../src/logic.js";
 
 const source = readFileSync(new URL("../src/app.js", import.meta.url), "utf8");
 const items = JSON.parse(readFileSync(new URL("../data/public-items.json", import.meta.url), "utf8"));
 const functionSource = (name) => source.match(new RegExp(`function ${name}\\([^]*?\\n}`))[0];
-const context = vm.createContext({ state: { settings: { showSources: false }, session: { answered: true } }, isKobunVocabSubject: () => false, answersForMode: (item) => [item.publicAnswer] });
+const context = vm.createContext({ isRecallChoiceMode, state: { settings: { showSources: false }, session: { answered: true } }, isKobunVocabSubject: () => false, answersForMode: (item) => [item.publicAnswer ?? item.infoAnswer] });
 for (const name of ["escapeHtml", "recallExplanation", "markTextbookQuote", "renderTextbookEvidence", "recallCardBody", "renderFeedback"]) vm.runInContext(functionSource(name), context);
 
 test("公共全207問の答え面に教科書の位置・すべての抜粋・注記を表示する", () => {
@@ -48,4 +49,20 @@ test("抜粋をHTMLとして解釈せず、他教科や未収録データには�
     context.item = item;
     assert.equal(vm.runInContext("renderTextbookEvidence(item)", context), "");
   }
+});
+
+test("情報の答え面にも、解説・教科書の抜粋（正答語に印）・出典を出す", () => {
+  const infoItems = JSON.parse(readFileSync(new URL("../data/info-2026-3.json", import.meta.url), "utf8"));
+  for (const item of infoItems) {
+    context.question = { mode: "info_choice", item };
+    const back = vm.runInContext("renderFeedback(question, '', true)", context);
+    assert.match(back, /模範回答/, item.id);
+    assert.match(back, /textbook-evidence/, item.id);
+    assert.ok(back.includes(vm.runInContext("escapeHtml", context)(item.sourceDetail)), item.id);
+    assert.equal((back.match(/<blockquote>/g) ?? []).length, item.editorial.evidenceQuotes.length, item.id);
+  }
+  const first = infoItems.find((item) => item.number === 1);
+  context.question = { mode: "info_recall", item: first, prompt: first.infoQuestion, answer: first.infoAnswer };
+  const card = vm.runInContext("recallCardBody(question, true)", context);
+  assert.match(card, /<mark>情報<\/mark>/);
 });

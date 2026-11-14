@@ -360,11 +360,11 @@ export function createTools() {
 }
 
 /** AIへ渡す、このサーバーの使い方の説明。 */
-export const SERVER_INSTRUCTIONS = `words は、英語・古文単語・公共・保健の定期テスト対策アプリです。
+export const SERVER_INSTRUCTIONS = `words は、英語・古文単語・公共・情報・保健の定期テスト対策アプリです。
 このサーバーからは、wordsに入っている問題と、その人の学習履歴を読み書きできます。
 
 使うときの目安:
-- まず getAppInfo を呼ぶと、教科（english / public / health / kobun-vocab）と、
+- まず getAppInfo を呼ぶと、教科（english / public / info / health / kobun-vocab）と、
   それぞれで使える範囲（range）の一覧が分かります。range は決まった値しか使えません。
 - 問題を探すときは searchQuestions、条件だけで絞るときは listQuestions を使います。
   返る件数には上限があるので、続きは nextOffset を offset に渡してください。

@@ -5,6 +5,7 @@ import {
   ALL_MODES,
   KOBUN_VOCAB_RANGE_ORDER,
   HEALTH_RANGE_ORDER,
+  INFO_RANGE_ORDER,
   PUBLIC_RANGE_ORDER,
   RANGE_ORDER,
   acceptedInputAnswers,
@@ -28,6 +29,8 @@ const englishPeriod3 = JSON.parse(fs.readFileSync(new URL("../data/english-2026-
 const publicItems = JSON.parse(fs.readFileSync(new URL("../data/public-items.json", import.meta.url), "utf8"));
 // 3定の公共（単元20〜30）。アプリが読むのはこちら。
 const publicPeriod3 = JSON.parse(fs.readFileSync(new URL("../data/public-2026-3.json", import.meta.url), "utf8"));
+// 3定の情報Ⅰ（第1〜3章）。公共と同じ形。
+const infoPeriod3 = JSON.parse(fs.readFileSync(new URL("../data/info-2026-3.json", import.meta.url), "utf8"));
 const healthItems = JSON.parse(fs.readFileSync(new URL("../data/health-items.json", import.meta.url), "utf8"));
 const kobunVocabulary = JSON.parse(fs.readFileSync(new URL("../data/kobun-vocabulary.json", import.meta.url), "utf8")).items;
 
@@ -231,6 +234,44 @@ assert.deepEqual(
 );
 console.log(`3定の公共: ${publicPeriod3.length}問（${PUBLIC_RANGE_ORDER.slice(6).length}範囲）`);
 console.log(`Public data check passed: ${publicItems.length} questions across ${PUBLIC_RANGE_ORDER.length} ranges.`);
+
+// 情報Ⅰ：問題集2冊（第1章 Q001〜Q152、第2・3章 Q153〜Q386）を章ごとの範囲でまとめたもの。
+assert.equal(infoPeriod3.length, 386, "3定の情報は386問（第1章152問・第2章60問・第3章174問）");
+assert.equal(new Set(infoPeriod3.map((item) => item.id)).size, 386, "3定の情報のIDが重複している");
+assert.deepEqual(infoPeriod3.map((item) => item.number), infoPeriod3.map((_, index) => index + 1), "情報の問題番号は1から続けて並べる");
+for (const item of infoPeriod3) {
+  for (const field of ["id", "number", "importance", "infoQuestion", "infoAnswer", "source", "range", "title"]) {
+    assert.ok(item[field], `${item.id}: ${field} is required`);
+  }
+  assert.equal(item.subject, "info", `${item.id}: subject must be info`);
+  assert.equal(item.type, "info-term", `${item.id}: type must be info-term`);
+  assert.equal(item.title, item.range, `${item.id}: 情報は範囲（章）と題名をそろえる`);
+  assert.ok(INFO_RANGE_ORDER.includes(item.range), `${item.id}: unknown info range ${item.range}`);
+  assert.equal(item.acceptedAnswers[0], item.infoAnswer, `${item.id}: accepted answer must match`);
+  assert.ok(recallExplanationOf(item), `${item.id}: explanation is required`);
+  assert.ok(item.editorial?.evidenceQuotes?.length, `${item.id}: 根拠の抜粋が必要`);
+  // 選択肢の無い問題（フラッシュカード専用）は一問一答だけで出す。
+  if (item.editorial?.choices) {
+    assert.deepEqual(item.questionModes, ["info_recall", "info_choice"], `${item.id}: info modes are required`);
+    const choices = recallChoicesFor(item);
+    assert.equal(choices.length, 4, `${item.id}: four choices are required`);
+    assert.equal(recallCorrectChoiceFor(item), item.infoAnswer, `${item.id}: 正解の記号が答えと合わない`);
+  } else {
+    assert.deepEqual(item.questionModes, ["info_recall"], `${item.id}: フラッシュカード専用は一問一答だけ`);
+  }
+}
+assert.equal(infoPeriod3.filter((item) => !item.editorial?.choices).length, 9, "フラッシュカード専用は9問（第1章3問・第2・3章6問）");
+assert.deepEqual(
+  countBy(infoPeriod3, "importance", ["S", "A", "B", "C", "D"]),
+  { S: 119, A: 92, B: 80, C: 74, D: 21 },
+  "3定の情報の重要度の内訳",
+);
+assert.deepEqual(
+  countBy(infoPeriod3, "range", INFO_RANGE_ORDER),
+  { [INFO_RANGE_ORDER[0]]: 152, [INFO_RANGE_ORDER[1]]: 60, [INFO_RANGE_ORDER[2]]: 174 },
+  "3定の情報の章ごとの問題数",
+);
+console.log(`3定の情報: ${infoPeriod3.length}問（${INFO_RANGE_ORDER.length}章）`);
 
 assert.equal(healthItems.length, 282, "Health data must contain 282 unique reviewed questions");
 assert.equal(new Set(healthItems.map((item) => item.id)).size, healthItems.length, "Health IDs must be unique");

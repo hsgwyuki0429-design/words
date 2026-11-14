@@ -5,6 +5,7 @@
 
 import {
   HEALTH_RANGE_ORDER,
+  INFO_RANGE_ORDER,
   KOBUN_VOCAB_RANGE_ORDER,
   PUBLIC_RANGE_ORDER,
   RANGE_ORDER,
@@ -39,6 +40,19 @@ export const SUBJECTS = Object.freeze({
     questionField: "publicQuestion",
     answerField: "publicAnswer",
     modes: ["public_recall", "public_choice"],
+  },
+  info: {
+    id: "info",
+    label: "情報",
+    // 3定（2026.3）の情報Ⅰ（第1〜3章）。公共と同じ形で、範囲は章ごと。
+    file: "info-2026-3.json",
+    pick: (json) => json,
+    ranges: INFO_RANGE_ORDER,
+    types: ["info-term"],
+    required: ["infoQuestion", "infoAnswer", "importance", "range"],
+    questionField: "infoQuestion",
+    answerField: "infoAnswer",
+    modes: ["info_recall", "info_choice"],
   },
   health: {
     id: "health",

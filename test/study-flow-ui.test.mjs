@@ -231,7 +231,7 @@ test("学習する回は3定だけを選べ、2定は隠れている", () => {
 });
 
 test("前回開いた教科のホームから始まり、教科はホーム上部の切り替えで選ぶ", () => {
-  assert.match(appSource, /const PERIOD_SUBJECTS = \{ "2026\.3": \["english", "public"\]/);
+  assert.match(appSource, /const PERIOD_SUBJECTS = \{ "2026\.3": \["english", "public", "info"\]/);
   assert.match(appSource, /function startingSubject\(lastSubject\) \{\s*\n\s*const subjects = periodSubjects\(\);\s*\n\s*return subjects\.includes\(lastSubject\) \? lastSubject : subjects\[0\];/);
   assert.match(appSource, /getMeta\("lastSubject", null\)/);
   assert.match(appSource, /if \(state\.selectedPeriod\) selectSubject\(startingSubject\(lastSubject\)\);/);

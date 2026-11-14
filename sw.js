@@ -1,4 +1,4 @@
-const APP_VERSION = "2026.11.34";
+const APP_VERSION = "2026.11.35";
 const CACHE_NAME = `words-${APP_VERSION}`;
 const APP_SHELL = [
   "./",
@@ -26,6 +26,7 @@ const APP_SHELL = [
   "./public-notes.html?v=2026.9.39",
   "./data/english-2026-3.json?v=2026.11.12",
   "./data/public-2026-3.json?v=2026.11.13",
+  "./data/info-2026-3.json?v=2026.11.14",
   "./data/health-items.json?v=2026.09.01",
   "./manifest.webmanifest",
   "./icons/app-icon.svg",

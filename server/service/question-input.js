@@ -6,9 +6,11 @@
 // 「この問題は本当に出題できるか」を確かめる。
 
 import {
+  CHOICE_RECALL_SUBJECTS,
   DIFFICULTY_ORDER,
   IMPORTANCE_ORDER,
   acceptedInputAnswers,
+  isRecallChoiceMode,
   recallChoicesFor,
   recallCorrectChoiceFor,
   slotTokensForQuestion,
@@ -227,13 +229,14 @@ function buildRecallItem(id, input, { subject, questionField, answerField, kindL
   return item;
 }
 
-function buildPublicItem(id, input) {
+// 公共と情報は同じ形（教科書の選択肢をそのまま使う4択つきの一問一答）。
+function buildChoiceRecallItem(subject, id, input) {
   const item = buildRecallItem(id, input, {
-    subject: "public",
-    questionField: "publicQuestion",
-    answerField: "publicAnswer",
+    subject,
+    questionField: `${subject}Question`,
+    answerField: `${subject}Answer`,
     kindLabel: "用語",
-    type: readEnum(input.type ?? "public-term", "question.type", SUBJECTS.public.types),
+    type: readEnum(input.type ?? `${subject}-term`, "question.type", SUBJECTS[subject].types),
   });
   if (input.choices) {
     const correctChoice = input.correctChoice ?? CHOICE_KEYS.find((key) => input.choices[key] === input.answer);
@@ -245,9 +248,18 @@ function buildPublicItem(id, input) {
     }
     item.editorial = { choices: input.choices, correctChoice };
     // 4択として出せる問題だけ、4択モードを付ける。選択肢が無い問題は一問一答だけになる。
-    item.questionModes = ["public_recall", "public_choice"];
+    item.questionModes = [`${subject}_recall`, `${subject}_choice`];
   }
   return item;
+}
+
+function buildPublicItem(id, input) {
+  return buildChoiceRecallItem("public", id, input);
+}
+
+// 情報は範囲（章）で絞るときに title を見るので、範囲と同じにそろえる。
+function buildInfoItem(id, input) {
+  return buildChoiceRecallItem("info", id, { ...input, title: input.range, lesson: input.range });
 }
 
 function buildHealthItem(id, input) {
@@ -305,6 +317,7 @@ function buildKobunVocabItem(id, input) {
 const BUILDERS = {
   english: buildEnglishItem,
   public: buildPublicItem,
+  info: buildInfoItem,
   health: buildHealthItem,
   "kobun-vocab": buildKobunVocabItem,
 };
@@ -323,7 +336,7 @@ export function assertPlayable(item) {
       fail(`「${item.english}」は入力で受け付けられる答えがありません。`, "answer");
     }
   }
-  if (item.questionModes?.includes("public_choice")) {
+  if (item.questionModes?.some((mode) => isRecallChoiceMode(mode))) {
     const choices = recallChoicesFor(item);
     if (choices.length !== 4 || !choices.includes(recallCorrectChoiceFor(item))) {
       fail("4択にするには、重複しない4つの選択肢と、正解の記号（correctChoice）が必要です。", "choices");
@@ -404,8 +417,8 @@ export function patchQuestion(item, input, { field = "patch" } = {}) {
       ?? CHOICE_KEYS.find((key) => common.choices[key] === next[config.answerField]);
     if (!correctChoice) fail(`${field}.correctChoice（A〜D）も指定してください。`, `${field}.correctChoice`);
     next.editorial = { ...(next.editorial ?? {}), choices: common.choices, correctChoice };
-    if (subject === "public" && !next.questionModes.includes("public_choice")) {
-      next.questionModes = ["public_recall", "public_choice"];
+    if (CHOICE_RECALL_SUBJECTS.includes(subject) && !next.questionModes.includes(`${subject}_choice`)) {
+      next.questionModes = [`${subject}_recall`, `${subject}_choice`];
     }
     changed.push("choices");
   } else if (common.correctChoice) {
@@ -424,6 +437,10 @@ export function patchQuestion(item, input, { field = "patch" } = {}) {
   if (common.range) {
     requireKnownRange(subject, common.range, field);
     next.range = common.range;
+    if (subject === "info") {
+      next.title = common.range;
+      next.lesson = common.range;
+    }
     changed.push("range");
   }
   if (common.tags) {

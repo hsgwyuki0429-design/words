@@ -34,6 +34,12 @@ export const PUBLIC_RANGE_ORDER = [
   "p.122–123",
   "p.126–127",
 ];
+// 情報Ⅰ（3定）。範囲は章ごと（Theory 01〜11＝第1章、21〜25＝第2章、40〜52＝第3章）。
+export const INFO_RANGE_ORDER = [
+  "第1章 情報社会",
+  "第2章 メディアとデザイン",
+  "第3章 ネットワークとデータの活用",
+];
 export const HEALTH_RANGE_ORDER = [
   "p.12–13",
   "p.14–15",
@@ -54,7 +60,7 @@ export const KOBUN_VOCAB_RANGE_ORDER = [
   "今昔物語集 羅城門",
 ];
 // 自己採点のカード（一問一答・重要語句）で学習する教科。英語と出題の作り方が違う。
-export const RECALL_SUBJECTS = ["public", "health", "kobun-vocab"];
+export const RECALL_SUBJECTS = ["public", "info", "health", "kobun-vocab"];
 
 export function isRecallSubjectId(subject) {
   return RECALL_SUBJECTS.includes(subject);
@@ -62,6 +68,7 @@ export function isRecallSubjectId(subject) {
 
 export function rangeOrderForSubject(subject) {
   if (subject === "public") return PUBLIC_RANGE_ORDER;
+  if (subject === "info") return INFO_RANGE_ORDER;
   if (subject === "health") return HEALTH_RANGE_ORDER;
   if (subject === "kobun-vocab") return KOBUN_VOCAB_RANGE_ORDER;
   return RANGE_ORDER;
@@ -78,6 +85,8 @@ export const MODE_LABELS = {
   phrase_blank_input: "熟語・語法穴埋め",
   public_recall: "公共 一問一答",
   public_choice: "公共 4択",
+  info_recall: "情報 一問一答",
+  info_choice: "情報 4択",
   health_recall: "保健 一問一答",
   "kobun-vocab_recall": "古文単語 重要語句",
 };
@@ -90,6 +99,7 @@ export const TYPE_LABELS = {
   "public-term": "語句回答",
   "public-short": "短文回答",
   "public-statement": "正誤選択",
+  "info-term": "語句回答",
   "health-term": "語句回答",
   "health-short": "短文回答",
   "kobun-vocab-term": "重要語句",
@@ -135,8 +145,13 @@ export const STUDY_METHOD_LABELS = {
   choice: "4択問題",
 };
 
-// 一問一答の教科で4択も出せるのは、教材側に選択肢がそろっている公共だけ。
-export const CHOICE_RECALL_SUBJECTS = ["public"];
+// 一問一答の教科で4択も出せるのは、教材側に選択肢がそろっている公共と情報。
+export const CHOICE_RECALL_SUBJECTS = ["public", "info"];
+
+/** 教材の選択肢をそのまま使う4択（公共・情報）か。 */
+export function isRecallChoiceMode(mode) {
+  return CHOICE_RECALL_SUBJECTS.some((subject) => mode === `${subject}_choice`);
+}
 
 export function recallChoicesFor(item) {
   const choices = item?.editorial?.choices;
@@ -153,7 +168,7 @@ export function recallCorrectChoiceFor(item) {
   const key = item?.editorial?.correctChoice;
   const marked = key && choices ? String(choices[key] ?? "").trim() : "";
   if (marked) return marked;
-  const answer = String(item?.publicAnswer ?? "").trim();
+  const answer = String(item?.[`${item?.subject}Answer`] ?? item?.publicAnswer ?? "").trim();
   return choices && Object.values(choices).some((value) => String(value ?? "").trim() === answer)
     ? answer
     : "";
@@ -575,7 +590,7 @@ function matchesPerformance(record, performance) {
 // その範囲の語句として扱う（例：victim は Edo と Rwanda の両方で出題される）。
 export function itemMatchesRange(item, range) {
   if (item.range === range) return true;
-  if (item.subject === "public") return item.title === range;
+  if (item.subject === "public" || item.subject === "info") return item.title === range;
   return (item.subject ?? "english") === "english"
     && (item.sources ?? []).some((source) => source.range === range);
 }
@@ -852,6 +867,7 @@ export function buildQuestion(item, mode, pool, rng = Math.random, excludedChoic
   };
   switch (mode) {
     case "public_recall":
+    case "info_recall":
     case "health_recall":
     case "kobun-vocab_recall":
       return {
@@ -860,12 +876,13 @@ export function buildQuestion(item, mode, pool, rng = Math.random, excludedChoic
         answer: item[`${item.subject}Answer`] ?? item.recallAnswer ?? item.publicAnswer ?? item.japanese,
         instruction: "tap",
       };
-    // 公共の4択は、教材が用意した選択肢をそのまま使う。
+    // 公共・情報の4択は、教材が用意した選択肢をそのまま使う。
     // 機械的に作った誤答より、まぎらわしさの狙いがはっきりしている。
     case "public_choice":
+    case "info_choice":
       return {
         ...base,
-        prompt: item.publicQuestion,
+        prompt: item[`${item.subject}Question`] ?? item.publicQuestion,
         instruction: "正しいものを選んでください",
         choices: [...shuffle(recallChoicesFor(item), rng), UNKNOWN_CHOICE],
         correctChoice: recallCorrectChoiceFor(item),

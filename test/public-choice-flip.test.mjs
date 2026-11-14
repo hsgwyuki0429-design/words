@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import vm from "node:vm";
 import { quizGesturePolicy } from "../src/quiz-gestures.js";
+import { isRecallChoiceMode } from "../src/logic.js";
 
 const source = readFileSync(new URL("../src/app.js", import.meta.url), "utf8");
 const functionSource = (name) => source.match(new RegExp(`function ${name}\\([^]*?\\n}`))[0];
@@ -20,7 +21,7 @@ test("表裏を何度切り替えても回答・採点・進捗を変えない",
   const session = { currentQuestion: { mode: "public_choice" }, answered: true, currentAnswer: "選択B", results: [{ correct: false }], cursor: 3 };
   let renders = 0;
   const sounds = [];
-  const context = vm.createContext({ haptics: { trigger() {} }, sfx: { play: (event) => sounds.push(event) }, state: { session }, currentQuizGesturePolicy: () => quizGesturePolicy({ mode: "public_choice", answered: true }), renderQuiz: () => renders++ });
+  const context = vm.createContext({ isRecallChoiceMode, haptics: { trigger() {} }, sfx: { play: (event) => sounds.push(event) }, state: { session }, currentQuizGesturePolicy: () => quizGesturePolicy({ mode: "public_choice", answered: true }), renderQuiz: () => renders++ });
   vm.runInContext(functionSource("toggleRecallFace"), context);
   for (let i = 0; i < 6; i++) {
     vm.runInContext("toggleRecallFace()", context);
@@ -35,7 +36,7 @@ test("表裏を何度切り替えても回答・採点・進捗を変えない",
 });
 
 test("公共の答え面は正誤・模範回答・解説を表示し、問題面は選択した回答を明示する", () => {
-  const context = vm.createContext({ state: { session: { answered: true } }, answersForMode: () => ["模範の用語"], recallExplanation: () => "用語の解説", escapeHtml: (s) => s, normalizeAnswer: (s) => s, UNKNOWN_CHOICE: "わからない" });
+  const context = vm.createContext({ isRecallChoiceMode, state: { session: { answered: true } }, answersForMode: () => ["模範の用語"], recallExplanation: () => "用語の解説", escapeHtml: (s) => s, normalizeAnswer: (s) => s, UNKNOWN_CHOICE: "わからない" });
   vm.runInContext(functionSource("renderTextbookEvidence") + functionSource("glossMarkup") + functionSource("renderFeedback") + functionSource("renderChoiceArea"), context);
   for (const correct of [true, false]) {
     context.question = { mode: "public_choice", item: {}, choices: ["選択A", "選択B", "選択C", "選択D", "わからない"], correctChoice: "選択A" };

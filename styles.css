@@ -6707,6 +6707,11 @@ body.fx-lite.max-mode.fx-fever .fx-backdrop.is-on {
   gap: 8px;
 }
 
+/* 情報の章は名前が長く、数も3つだけなので、1列に並べて章名を縮めずに出す。 */
+.range-choice-list.basic-wide-list {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 /* 範囲 → 重要度：一覧を左へ流し、次の一覧を右から入れる（戻るときは逆向き）。 */
 .slide-out-left {
   animation: home-slide-out-left 170ms var(--ease-out, ease-out) forwards;

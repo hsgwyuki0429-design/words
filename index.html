@@ -11,9 +11,9 @@
     <meta name="format-detection" content="telephone=no" />
     <meta
       name="description"
-      content="英語の基礎暗記と公共の一問一答に対応した定期テスト対策アプリ"
+      content="英語の基礎暗記と公共・情報の一問一答に対応した定期テスト対策アプリ"
     />
-    <title>Words — 英語・公共対策</title>
+    <title>Words — 英語・公共・情報対策</title>
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icons/app-icon.svg" type="image/svg+xml" />
     <link rel="icon" href="./icons/app-icon-192.png" sizes="192x192" type="image/png" />
@@ -37,8 +37,8 @@
         }
       })();
     </script>
-    <link rel="stylesheet" href="./styles.css?v=2026.11.34" />
-    <link rel="stylesheet" href="./kobun.css?v=2026.11.34" />
+    <link rel="stylesheet" href="./styles.css?v=2026.11.35" />
+    <link rel="stylesheet" href="./kobun.css?v=2026.11.35" />
   </head>
   <body>
     <div class="fx-backdrop" id="fx-backdrop" aria-hidden="true">
@@ -111,7 +111,12 @@
                 <span><strong>公共</strong><small>一問一答</small></span>
                 <span aria-hidden="true">›</span>
               </button>
-              <!-- 3定では英語と公共だけを学習する。保健・古文は隠しておき、使うときに hidden を外し、
+              <button class="subject-button info" type="button" data-subject="info">
+                <span class="subject-icon" aria-hidden="true">情</span>
+                <span><strong>情報</strong><small>一問一答</small></span>
+                <span aria-hidden="true">›</span>
+              </button>
+              <!-- 3定では英語・公共・情報を学習する。保健・古文は隠しておき、使うときに hidden を外し、
                    app.js の PERIOD_SUBJECTS にも足す。 -->
               <button class="subject-button health" type="button" data-subject="health" hidden>
                 <span class="subject-icon" aria-hidden="true">保</span>
@@ -143,7 +148,7 @@
           <!-- 習得：続きから → 範囲（1つ）→ 形式 → 学習の準備。 -->
           <div class="home-pane" id="home-pane">
             <div class="home-continue" id="home-continue"></div>
-            <!-- 英語・公共の形式の切り替え（上段：向き・問題の種類、下段：形式）。 -->
+            <!-- 英語・公共・情報の形式の切り替え（上段：向き・問題の種類、下段：形式）。 -->
             <div class="format-bars" id="format-bars" hidden></div>
             <div class="section-head">
               <h2 id="dashboard-title">範囲を選ぶ</h2>
@@ -285,6 +290,6 @@
     </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-    <script type="module" src="./src/app.js?v=2026.11.34"></script>
+    <script type="module" src="./src/app.js?v=2026.11.35"></script>
   </body>
 </html>

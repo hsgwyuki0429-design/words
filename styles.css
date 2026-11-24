@@ -4927,6 +4927,13 @@ body.max-mode.fx-max-entrance .fx-backdrop.is-on .fx-aurora { opacity: 0.82; }
 body.max-mode.fx-max-entrance .fx-backdrop.is-on .fx-orbit { opacity: 0.7; }
 body.max-mode.fx-cue-combo-10 .fx-backdrop.is-on .fx-aurora,
 body.max-mode.fx-cue-new-record .fx-backdrop.is-on .fx-aurora { opacity: .96; filter: saturate(1.25); }
+body.max-mode.fx-cue-combo-7 .fx-backdrop.is-on .fx-aurora { opacity: .9; filter: hue-rotate(32deg) saturate(1.35); }
+body.max-mode.fx-cue-combo-15 .fx-backdrop.is-on .fx-aurora { opacity: .98; filter: hue-rotate(150deg) saturate(1.55) brightness(1.08); }
+body.max-mode.fx-cue-combo-25 .fx-backdrop.is-on .fx-aurora { opacity: 1; filter: hue-rotate(75deg) saturate(1.7) brightness(1.1); }
+body.max-mode.fx-cue-combo-40 .fx-backdrop.is-on .fx-aurora { opacity: 1; filter: hue-rotate(205deg) saturate(1.8) brightness(1.12); }
+body.max-mode.fx-cue-combo-50 .fx-backdrop.is-on .fx-aurora { opacity: 1; filter: hue-rotate(285deg) saturate(2) brightness(1.16); }
+body.max-mode.fx-cue-combo-40 .fx-backdrop.is-on .fx-orbit,
+body.max-mode.fx-cue-combo-50 .fx-backdrop.is-on .fx-orbit { opacity: 1; }
 body.max-mode.fx-cue-combo-20 .fx-backdrop.is-on .fx-aurora,
 body.max-mode.fx-cue-combo-30 .fx-backdrop.is-on .fx-aurora,
 body.max-mode.fx-cue-perfect .fx-backdrop.is-on .fx-aurora,

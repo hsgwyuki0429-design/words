@@ -181,8 +181,8 @@ const DEFAULT_SETTINGS = {
   // null は未設定。起動前に控えた値（localStorage）を引き継ぐ。
   theme: null,
   // MAX のコンボ・大当たりなどの派手な音。初期設定はオフ。
-  sound: false,
-  soundIntensity: "gentle",
+  sound: true,
+  soundIntensity: "full",
   // カードをめくる・答える・ボタンを押すときの効果音（SIMPLE・MAX 共通、src/sfx.js）。
   uiSound: true,
   uiSoundVolume: "normal",
@@ -3371,6 +3371,14 @@ function drawParticles(context, step) {
       context.beginPath();
       context.ellipse(0, 0, particle.size, particle.size * Math.max(0.18, Math.abs(Math.cos(particle.rotation))), 0, 0, Math.PI * 2);
       context.stroke();
+    } else if (particle.kind === "comet") {
+      context.strokeStyle = particle.color;
+      context.lineWidth = Math.max(1, particle.size * 0.48);
+      context.beginPath();
+      context.moveTo(-particle.vx * 3.2, -particle.vy * 3.2);
+      context.lineTo(0, 0);
+      context.stroke();
+      context.drawImage(glowSprite(particle.color), -particle.size * 2, -particle.size * 2, particle.size * 4, particle.size * 4);
     } else if (particle.kind === "star") {
       context.beginPath();
       for (let point = 0; point < 8; point += 1) {
@@ -3809,7 +3817,7 @@ function triggerStrobe(pulses = 3, strength = 0.7) {
 }
 
 function applyCueFlash(plan, visual) {
-  if (plan.power >= 4 || plan.event === "critical") triggerStrobe(plan.power >= 4 ? 4 : 3, Math.min(0.8, visual.flash + 0.2));
+  if (plan.power >= 4 || plan.event === "critical") triggerStrobe(plan.event === "combo-50" ? 7 : plan.event === "combo-40" ? 6 : plan.power >= 4 ? 4 : 3, Math.min(0.8, visual.flash + 0.2));
   else if (visual.flash > 0) triggerScreenFlash(visual.flash, 220 + plan.power * 42);
   if (visual.palette === "gold" || ["perfect", "sss-master", "combo-30"].includes(plan.event)) {
     fxAnimate(elements.fxGoldFrame, [
@@ -3895,6 +3903,7 @@ function applyCueParticles(plan, visual) {
     });
   }
   if (visual.rays) spawnSpeedLines({ origin, count: visual.rays, power: plan.power, palette: visual.colors });
+  if (visual.comets) spawnParticleBurst({ count: visual.comets, power: plan.power + 1, origin, speed: 1.25, palette: visual.colors, kinds: ["comet", "spark"], gravity: 0.012, spread: Math.PI * 1.8 });
   if (visual.shower) spawnGoldShower({ count: visual.shower, palette: visual.colors, power: plan.power });
 }
 
@@ -4023,9 +4032,14 @@ function installMaxEffectsLab() {
     correct: { combo: 1, label: "CORRECT" },
     "combo-3": { combo: 3, label: "チャンス!", detail: "3連" },
     "combo-5": { combo: 5, label: "激アツ!!", detail: "5連" },
+    "combo-7": { combo: 7, label: "RUSH!!", detail: "7連" },
     "combo-10": { combo: 10, label: "10連チャン", detail: "超激アツ" },
+    "combo-15": { combo: 15, label: "OVERDRIVE!!", detail: "15連" },
     "combo-20": { combo: 20, label: "20連チャン", detail: "止まらない" },
+    "combo-25": { combo: 25, label: "ULTRA!!", detail: "25連" },
     "combo-30": { combo: 30, label: "全回転!!", detail: "30連" },
+    "combo-40": { combo: 40, label: "HYPER!!", detail: "40連" },
+    "combo-50": { combo: 50, label: "LEGEND!!", detail: "50連" },
     "new-record": { combo: 12, label: "新記録!!", detail: "12連" },
     "weakness-destroyed": { combo: 8, label: "苦手撃破!!", detail: "BREAK THROUGH" },
     critical: { combo: 4, label: "大当たり!!", detail: "会心の一撃" },
@@ -4317,8 +4331,12 @@ function correctEffect(special = "", { durationMs = null, fever = null, answerSo
     "combo-3": ["チャンス!", `${state.combo}連`],
     "combo-5": ["激アツ!!", `${state.combo}連`],
     "combo-10": [`${state.combo}連チャン`, "超激アツ"],
+    "combo-15": ["OVERDRIVE!!", `${state.combo}連`],
     "combo-20": [`${state.combo}連チャン`, "止まらない"],
+    "combo-25": ["ULTRA!!", `${state.combo}連`],
     "combo-30": ["全回転!!", `${state.combo}連`],
+    "combo-40": ["HYPER!!", `${state.combo}連`],
+    "combo-50": ["LEGEND!!", `${state.combo}連`],
     "new-record": ["新記録!!", `${state.combo}連`],
     "weakness-destroyed": ["苦手撃破!!", "BREAK THROUGH"],
   }[event] ?? ["", ""];

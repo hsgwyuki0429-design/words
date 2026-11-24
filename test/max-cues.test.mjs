@@ -22,8 +22,11 @@ const serviceWorker = fs.readFileSync(new URL("../sw.js", import.meta.url), "utf
 test("answer combo thresholds select progressively richer cues", () => {
   const expectations = new Map([
     [1, "correct"], [2, "correct"], [3, "combo-3"], [4, "combo-3"],
-    [5, "combo-5"], [9, "combo-5"], [10, "combo-10"], [19, "combo-10"],
-    [20, "combo-20"], [29, "combo-20"], [30, "combo-30"], [70, "combo-30"],
+    [5, "combo-5"], [6, "combo-5"], [7, "combo-7"], [9, "combo-7"],
+    [10, "combo-10"], [14, "combo-10"], [15, "combo-15"], [19, "combo-15"],
+    [20, "combo-20"], [24, "combo-20"], [25, "combo-25"], [29, "combo-25"],
+    [30, "combo-30"], [39, "combo-30"], [40, "combo-40"], [49, "combo-40"],
+    [50, "combo-50"], [70, "combo-50"],
   ]);
   for (const [combo, expected] of expectations) {
     assert.equal(maxCueForAnswer({ correct: true, combo }), expected, `combo ${combo}`);
@@ -41,10 +44,10 @@ test("achievement and finale cues remain unique", () => {
   assert.ok(MAX_CUE_DEFINITIONS["sss-master"].duration > MAX_CUE_DEFINITIONS.perfect.duration);
 });
 
-test("combo notes stay in C major pentatonic and provide four deterministic variations", () => {
+test("combo notes stay in C major pentatonic and provide twelve deterministic variations", () => {
   const allowedPitchClasses = new Set([0, 2, 4, 7, 9]);
   const signatures = new Set();
-  for (let variation = 0; variation < 4; variation += 1) {
+  for (let variation = 0; variation < 12; variation += 1) {
     const plan = comboPitchPlan(17, variation);
     assert.equal(plan.scale, "C-major-pentatonic");
     assert.equal(plan.variation, variation);
@@ -54,8 +57,8 @@ test("combo notes stay in C major pentatonic and provide four deterministic vari
     plan.frequencies.forEach((frequency) => assert.ok(Number.isFinite(frequency) && frequency > 0));
     signatures.add(plan.midi.join(","));
   }
-  assert.equal(signatures.size, 4);
-  assert.equal(comboPitchPlan(9).variation, comboPitchPlan(1).variation);
+  assert.equal(signatures.size, 12);
+  assert.equal(comboPitchPlan(13).variation, comboPitchPlan(1).variation);
 });
 
 test("all cue timelines are ordered, bounded and share every phase", () => {
@@ -77,7 +80,7 @@ test("visual richness grows at combo milestones and scales down safely", () => {
     const visual = MAX_CUE_DEFINITIONS[event].visual;
     return visual.particles + visual.prisms + visual.coins + visual.stars + visual.rays + visual.rings * 8;
   };
-  const milestones = ["correct", "combo-3", "combo-5", "combo-10", "combo-20", "combo-30"];
+  const milestones = ["correct", "combo-3", "combo-5", "combo-7", "combo-10", "combo-15", "combo-20", "combo-25", "combo-30", "combo-40", "combo-50"];
   for (let index = 1; index < milestones.length; index += 1) {
     assert.ok(richness(milestones[index]) > richness(milestones[index - 1]));
   }
@@ -239,6 +242,7 @@ test("クリティカルは、ときどき出る。速い答えとフィーバ�
   assert.equal(rollCritical({ durationMs: 9000, random: () => 0.05 }), true);
   assert.equal(rollCritical({ durationMs: 9000, random: () => 0.5 }), false);
   assert.equal(rollCritical({ combo: 10, random: () => 0 }), false, "節目は節目の演出だけ");
+  for (const combo of [3, 5, 7, 10, 15, 20, 25, 30, 40, 50, 60]) assert.equal(rollCritical({ combo, random: () => 0 }), false, `combo ${combo} は重ねない`);
 });
 
 test("新記録の演出は、始めた時点の自己ベストを超えた1回だけ", async () => {

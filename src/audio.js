@@ -1,6 +1,6 @@
 import { MAX_AUDIO_LIMITS, resolveMaxCue } from "./max-cues.js?v=2026.11.36";
 
-const CORRECT_EVENTS = new Set(["correct", "combo-3", "combo-5", "combo-10", "combo-20", "combo-30"]);
+const CORRECT_EVENTS = new Set(["correct", "combo-3", "combo-5", "combo-7", "combo-10", "combo-15", "combo-20", "combo-25", "combo-30", "combo-40", "combo-50"]);
 
 function defaultAudioContextClass() {
   if (typeof window === "undefined") return null;
@@ -355,11 +355,26 @@ export function createMaxAudioEngine({ getAudioContextClass = defaultAudioContex
         run(notes.slice(0, 3), hit + 0.045, { spacing: 0.066, gain: 0.023 * scale, width: 0.44, normal: true });
         if (full) shimmer(root * 2, hit + 0.15, 0.34, 0.52, true);
         break;
+      case "combo-7":
+        reward(plan, hit, scale, true);
+        riser(root * 0.8, t, 0.11, 0.42 * scale);
+        run(notes, hit + 0.035, { spacing: 0.052, duration: 0.18, gain: 0.021 * scale, width: 0.56, normal: true });
+        chord(notes.slice(0, 4), hit + 0.19, { duration: 0.38, gain: 0.021 * scale, width: 0.52, normal: true });
+        if (full) shimmer(root * 2, hit + 0.22, 0.38, 0.62, true);
+        break;
       case "combo-10":
         reward(plan, hit, scale, true);
         impact(hit, 0.75 * scale, true);
         chord(notes.slice(0, 4), hit + 0.035, { duration: 0.46, gain: 0.026 * scale, width: 0.5, normal: true });
         if (full) run(notes, hit + 0.1, { spacing: 0.055, gain: 0.019 * scale, width: 0.62, normal: true });
+        break;
+      case "combo-15":
+        riser(root * 0.72, t, Math.max(0.12, plan.timeline.impactAt / 1000), 0.72 * scale);
+        kyuin(hit - 0.08, 0.55 * scale);
+        impact(hit, 0.82 * scale);
+        run(notes.concat(notes.slice().reverse()), hit + 0.025, { spacing: 0.046, duration: 0.2, gain: 0.018 * scale, width: 0.72 });
+        chord(notes.slice(0, 5), hit + 0.16, { duration: 0.64, gain: 0.026 * scale, width: 0.72, send: 0.32 });
+        if (full) shimmer(root * 2, hit + 0.34, 0.62, 0.82);
         break;
       case "combo-20":
         riser(root, t, Math.max(0.12, (plan.timeline.impactAt - 12) / 1000), 0.8 * scale);
@@ -369,6 +384,14 @@ export function createMaxAudioEngine({ getAudioContextClass = defaultAudioContex
         chord(notes.slice(0, 5), hit + 0.025, { duration: 0.62, gain: 0.028 * scale, width: 0.68, send: 0.3 });
         if (full) shimmer(root * 2, hit + 0.24, 0.58, 0.78);
         break;
+      case "combo-25":
+        riser(root * 0.62, t, Math.max(0.14, plan.timeline.impactAt / 1000), 0.92 * scale);
+        run(notes.concat(notes.slice().reverse()), t + 0.018, { spacing: 0.031, duration: 0.17, gain: 0.016 * scale, width: 0.8 });
+        impact(hit, 1.1 * scale);
+        chord(notes.slice(0, 5), hit + 0.015, { duration: 0.92, gain: 0.029 * scale, width: 0.82, send: 0.38 });
+        run(notes.slice().reverse(), hit + 0.2, { spacing: 0.062, duration: 0.26, gain: 0.02 * scale, width: 0.84 });
+        if (full) shimmer(root * 2, hit + 0.42, 0.78, 0.88);
+        break;
       case "combo-30":
         riser(root * 0.75, t, Math.max(0.14, (plan.timeline.impactAt - 8) / 1000), scale);
         run(notes, t + 0.02, { spacing: 0.028, duration: 0.17, gain: 0.014 * scale, width: 0.76, repeats: full ? 2 : 1 });
@@ -376,6 +399,26 @@ export function createMaxAudioEngine({ getAudioContextClass = defaultAudioContex
         chord(notes.slice(0, 5), hit + 0.018, { duration: 0.88, gain: 0.03 * scale, width: 0.78, send: 0.34 });
         run(notes.concat(notes.slice(-3).reverse()), hit + 0.18, { spacing: 0.07, duration: 0.28, gain: 0.021 * scale, width: 0.8 });
         if (full) shimmer(root * 2, hit + 0.42, 0.72, 0.85);
+        break;
+      case "combo-40":
+        riser(root * 0.5, t, Math.max(0.16, plan.timeline.impactAt / 1000), scale);
+        kyuin(hit - 0.1, 0.78 * scale);
+        run(notes.concat(notes.slice().reverse(), notes), t + 0.02, { spacing: 0.032, duration: 0.2, gain: 0.017 * scale, width: 0.86 });
+        impact(hit, 1.22 * scale);
+        chord(notes.slice(0, 5), hit + 0.012, { duration: 1.12, gain: 0.031 * scale, width: 0.88, send: 0.42 });
+        run(notes.concat(notes.slice(-4).reverse()), hit + 0.18, { spacing: 0.058, duration: 0.3, gain: 0.022 * scale, width: 0.88 });
+        if (full) shimmer(root * 2, hit + 0.5, 0.94, 0.9);
+        break;
+      case "combo-50":
+        riser(root * 0.45, t, Math.max(0.18, plan.timeline.impactAt / 1000), scale);
+        kyuin(hit - 0.12, scale);
+        run(notes.concat(notes.slice().reverse(), notes), t + 0.018, { spacing: 0.029, duration: 0.22, gain: 0.018 * scale, width: 0.9 });
+        impact(hit, 1.28 * scale);
+        impact(hit + 0.16, 0.82 * scale);
+        chord(notes.slice(0, 5), hit + 0.01, { duration: 1.5, gain: 0.032 * scale, width: 0.9, send: 0.46 });
+        run(notes.concat(notes.slice().reverse()), hit + 0.2, { spacing: 0.052, duration: 0.32, gain: 0.023 * scale, width: 0.9 });
+        chord(notes.slice(-4), hit + 0.78, { duration: 0.9, gain: 0.019 * scale, width: 0.84, send: 0.46 });
+        if (full) shimmer(root * 2, hit + 0.58, 1.18, 0.92);
         break;
       case "max-enter":
         riser(root * 0.5, t, 0.29, 0.9 * scale);

@@ -25,6 +25,10 @@ const PALETTES = {
   jackpot: ["#ffffff", "#ffe27a", "#ffb020", "#ff3b2f", "#fff2b0"],
   platinum: ["#ffffff", "#eef2f8", "#ffd96e", "#cfd8e6"],
   royal: ["#fff4c2", "#ffd45f", "#ff8a1f", "#ffffff", "#ff3b2f"],
+  violet: ["#ffffff", "#e5b7ff", "#a45bff", "#6434d8", "#f8eaff"],
+  electric: ["#ffffff", "#9ffbff", "#22d3ee", "#4f46e5", "#e0e7ff"],
+  aurora: ["#d8fff5", "#6ee7d8", "#8b8cff", "#d8a7ff", "#fff0bd"],
+  nebula: ["#ffffff", "#b8c7ff", "#788cff", "#c5a2ff", "#ffe1a6"],
   muted: ["#d8dbe3", "#aeb4c0", "#84909e"],
   release: ["#4c5263", "#ffffff", "#ffd96e", "#ff5a3c"],
 };
@@ -48,6 +52,7 @@ const cue = ({
   coins = 0,
   stars = 0,
   prisms = 0,
+  comets = 0,
   shower = 0,
   converge = 0,
   beams = 0,
@@ -84,6 +89,7 @@ const cue = ({
     coins,
     stars,
     prisms,
+    comets,
     shower,
     converge,
     beams,
@@ -115,31 +121,71 @@ export const MAX_CUE_DEFINITIONS = Object.freeze({
   }),
   "combo-5": cue({
     power: 2, duration: 620, palette: "red", callout: "pop", emblem: "HOT",
-    particles: 78, rings: 2, rays: 16, coins: 14, stars: 12, prisms: 20, aura: 2,
+    particles: 78, rings: 2, rays: 16, coins: 14, stars: 12, prisms: 20, comets: 12, aura: 2,
     zoom: 0.028, shake: 3.5, flash: 0.3, freeze: 38, stereo: 0.42, tail: 0.38, layers: 5,
+  }),
+  "combo-7": cue({
+    power: 3, duration: 720, anticipationAt: 0, hitStopAt: 24, impactAt: 72,
+    flashAt: 72, calloutAt: 64, particleBurstAt: 72, fanfareAt: 72,
+    palette: "violet", callout: "pop", emblem: "RUSH", particles: 90,
+    rings: 2, rays: 20, coins: 12, stars: 16, prisms: 24, comets: 22,
+    converge: 16, beams: 1, aura: 3, zoom: 0.034, shake: 4, flash: 0.34,
+    freeze: 42, stereo: 0.42, tail: 0.46, layers: 6,
   }),
   "combo-10": cue({
     power: 3, duration: 820, anticipationAt: 0, hitStopAt: 16, impactAt: 58,
     flashAt: 58, calloutAt: 48, particleBurstAt: 58, fanfareAt: 58,
     palette: "gold", callout: "slam", emblem: "連チャン", particles: 120,
-    rings: 3, rays: 28, coins: 24, stars: 18, prisms: 36, beams: 1, aura: 3,
+    rings: 3, rays: 28, coins: 24, stars: 18, prisms: 36, comets: 28, beams: 1, aura: 3,
     zoom: 0.046, shake: 6, flash: 0.48, freeze: 48, stereo: 0.58, tail: 0.58, layers: 7,
+  }),
+  "combo-15": cue({
+    power: 3, duration: 940, anticipationAt: 0, hitStopAt: 36, impactAt: 104,
+    flashAt: 104, calloutAt: 94, particleBurstAt: 104, fanfareAt: 104,
+    palette: "electric", callout: "slam", emblem: "OVERDRIVE", particles: 142,
+    rings: 3, rays: 34, coins: 24, stars: 28, prisms: 42, comets: 36,
+    shower: 18, converge: 26, beams: 2, aura: 4, zoom: 0.05, shake: 5.2,
+    flash: 0.44, freeze: 54, stereo: 0.62, tail: 0.68, layers: 8,
   }),
   "combo-20": cue({
     power: 4, duration: 1120, anticipationAt: 0, hitStopAt: 72, impactAt: 156,
     flashAt: 156, calloutAt: 142, particleBurstAt: 156, fanfareAt: 156,
     palette: "jackpot", callout: "jackpot", emblem: "連チャン", particles: 160,
-    rings: 4, rays: 40, coins: 44, stars: 28, prisms: 45, shower: 38,
+    rings: 4, rays: 40, coins: 44, stars: 28, prisms: 45, comets: 44, shower: 38,
     converge: 42, beams: 2, aura: 4, zoom: 0.06, shake: 7,
     flash: 0.58, freeze: 62, stereo: 0.7, tail: 0.84, layers: 9,
+  }),
+  "combo-25": cue({
+    power: 4, duration: 1320, anticipationAt: 0, hitStopAt: 72, impactAt: 158,
+    flashAt: 158, calloutAt: 146, particleBurstAt: 158, fanfareAt: 158,
+    palette: "aurora", callout: "jackpot", emblem: "ULTRA", particles: 178,
+    rings: 5, rays: 48, coins: 50, stars: 42, prisms: 52, comets: 52,
+    shower: 44, converge: 48, beams: 3, aura: 5, zoom: 0.064, shake: 7,
+    flash: 0.58, freeze: 68, stereo: 0.76, tail: 0.98, layers: 10,
   }),
   "combo-30": cue({
     power: 4, duration: 1450, anticipationAt: 0, hitStopAt: 94, impactAt: 168,
     flashAt: 168, calloutAt: 158, particleBurstAt: 168, fanfareAt: 168,
     palette: "royal", callout: "unstoppable", emblem: "全回転", particles: 190,
-    rings: 5, rays: 52, coins: 58, stars: 38, prisms: 58, shower: 56,
+    rings: 5, rays: 52, coins: 58, stars: 38, prisms: 58, comets: 60, shower: 56,
     converge: 54, beams: 3, aura: 5, zoom: 0.072, shake: 8,
     flash: 0.64, freeze: 76, stereo: 0.78, tail: 1.05, layers: 11,
+  }),
+  "combo-40": cue({
+    power: 4, duration: 1640, anticipationAt: 0, hitStopAt: 102, impactAt: 184,
+    flashAt: 184, calloutAt: 172, particleBurstAt: 184, fanfareAt: 184,
+    palette: "nebula", callout: "unstoppable", emblem: "HYPER", particles: 215,
+    rings: 6, rays: 62, coins: 66, stars: 54, prisms: 70, comets: 72,
+    shower: 68, converge: 64, beams: 4, aura: 6, zoom: 0.076, shake: 8,
+    flash: 0.64, freeze: 78, stereo: 0.84, tail: 1.28, layers: 13,
+  }),
+  "combo-50": cue({
+    power: 4, duration: 1960, anticipationAt: 0, hitStopAt: 118, impactAt: 208,
+    flashAt: 208, calloutAt: 194, particleBurstAt: 208, fanfareAt: 208,
+    palette: "royal", callout: "royal", emblem: "LEGEND", particles: 250,
+    rings: 7, rays: 78, coins: 82, stars: 70, prisms: 90, comets: 88,
+    shower: 94, converge: 78, beams: 5, aura: 7, zoom: 0.082, shake: 9,
+    flash: 0.68, freeze: 84, stereo: 0.9, tail: 1.62, layers: 15,
   }),
   "new-record": cue({
     power: 4, duration: 1180, anticipationAt: 0, hitStopAt: 48, impactAt: 112,
@@ -198,7 +244,10 @@ export const MAX_CUE_DEFINITIONS = Object.freeze({
   }),
 });
 
-const PENTATONIC_MIDI = [60, 62, 64, 67, 69, 72, 74, 76, 79, 81, 84, 86, 88, 91, 93, 96];
+const PENTATONIC_STEPS = [0, 2, 4, 7, 9];
+const PENTATONIC_MIDI = Array.from({ length: 40 }, (_, index) => (
+  48 + Math.floor(index / 5) * 12 + PENTATONIC_STEPS[index % 5]
+));
 
 export function midiToFrequency(midi) {
   return 440 * (2 ** ((Number(midi) - 69) / 12));
@@ -206,17 +255,25 @@ export function midiToFrequency(midi) {
 
 export function comboPitchPlan(combo = 1, requestedVariation = null) {
   const step = Math.max(1, Number(combo) || 1) - 1;
-  const variation = requestedVariation === null
-    ? step % 4
-    : Math.abs(Math.floor(Number(requestedVariation) || 0)) % 4;
-  const rootIndex = 5 + (step % 5);
   const patterns = [
     [0, 1, 2],
     [0, 2, 4],
     [0, 1, 3, 5],
     [0, 3, 4, 6],
+    [0, 2, 5, 7],
+    [0, 1, 4, 6, 8],
+    [0, 2, 3, 5, 7],
+    [0, 3, 5, 6, 8],
+    [0, 1, 3, 6, 8],
+    [0, 2, 4, 6, 9],
+    [0, 1, 4, 7, 9],
+    [0, 2, 5, 7, 9],
   ];
-  const midi = patterns[variation].map((offset) => PENTATONIC_MIDI[Math.min(rootIndex + offset, PENTATONIC_MIDI.length - 1)]);
+  const variation = requestedVariation === null
+    ? step % patterns.length
+    : Math.abs(Math.floor(Number(requestedVariation) || 0)) % patterns.length;
+  const rootIndex = 5 + (step % 7) * 2;
+  const midi = patterns[variation].map((offset) => PENTATONIC_MIDI[rootIndex + offset]);
   return Object.freeze({
     variation,
     scale: "C-major-pentatonic",
@@ -231,12 +288,19 @@ export function maxCueForAnswer({ correct = true, combo = 0, special = "" } = {}
   if (normalizedSpecial === "NEW RECORD") return "new-record";
   if (normalizedSpecial === "WEAKNESS DESTROYED") return "weakness-destroyed";
   const value = Math.max(0, Number(combo) || 0);
-  if (value >= 30) return "combo-30";
-  if (value >= 20) return "combo-20";
-  if (value >= 10) return "combo-10";
-  if (value >= 5) return "combo-5";
-  if (value >= 3) return "combo-3";
-  return "correct";
+  if (value >= 50 && value % 10 === 0) return "combo-50";
+  return ({
+    3: "combo-3",
+    5: "combo-5",
+    7: "combo-7",
+    10: "combo-10",
+    15: "combo-15",
+    20: "combo-20",
+    25: "combo-25",
+    30: "combo-30",
+    40: "combo-40",
+    50: "combo-50",
+  })[value] ?? "correct";
 }
 
 export function maxCueForFinale(sssOnly = false) {
@@ -254,6 +318,7 @@ export function scaledVisualPlan(visual, { lowPower = false, reducedMotion = fal
     coins: scale(visual.coins),
     stars: scale(visual.stars),
     prisms: scale(visual.prisms),
+    comets: scale(visual.comets),
     shower: scale(visual.shower),
     converge: scale(visual.converge),
     beams: reducedMotion ? 0 : scale(visual.beams),
@@ -340,7 +405,9 @@ export function criticalChance({ durationMs = null, fever = false } = {}) {
 
 export function rollCritical({ durationMs = null, fever = false, combo = 0, random = Math.random } = {}) {
   // コンボの節目（3・5・10…）は、それ自体が大きな演出なので重ねない。
-  if ([3, 5, 10, 20, 30].includes(Number(combo))) return false;
+  const value = Number(combo);
+  if ([3, 5, 7, 10, 15, 20, 25, 30, 40, 50].includes(value)
+    || (value >= 60 && value % 10 === 0)) return false;
   return random() < criticalChance({ durationMs, fever });
 }
 

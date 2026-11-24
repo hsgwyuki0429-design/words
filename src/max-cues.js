@@ -288,19 +288,17 @@ export function maxCueForAnswer({ correct = true, combo = 0, special = "" } = {}
   if (normalizedSpecial === "NEW RECORD") return "new-record";
   if (normalizedSpecial === "WEAKNESS DESTROYED") return "weakness-destroyed";
   const value = Math.max(0, Number(combo) || 0);
-  if (value >= 50 && value % 10 === 0) return "combo-50";
-  return ({
-    3: "combo-3",
-    5: "combo-5",
-    7: "combo-7",
-    10: "combo-10",
-    15: "combo-15",
-    20: "combo-20",
-    25: "combo-25",
-    30: "combo-30",
-    40: "combo-40",
-    50: "combo-50",
-  })[value] ?? "correct";
+  if (value >= 50) return "combo-50";
+  if (value >= 40) return "combo-40";
+  if (value >= 30) return "combo-30";
+  if (value >= 25) return "combo-25";
+  if (value >= 20) return "combo-20";
+  if (value >= 15) return "combo-15";
+  if (value >= 10) return "combo-10";
+  if (value >= 7) return "combo-7";
+  if (value >= 5) return "combo-5";
+  if (value >= 3) return "combo-3";
+  return "correct";
 }
 
 export function maxCueForFinale(sssOnly = false) {
